@@ -18,7 +18,7 @@ import {
     type ReactNode
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
@@ -36,7 +36,8 @@ import {
 } from '@/services/updateInstallService';
 import {
     enterSidebarWindowMode,
-    restoreNormalWindowMode
+    restoreNormalWindowMode,
+    runAfterRestoringNormalWindow
 } from '@/services/windowModeService';
 import { getBuildBadgeLabel } from '@/shared/buildLabel';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
@@ -141,6 +142,8 @@ interface TitleBarActionsResult {
     isSessionReady: boolean;
     actions: ReactNode;
     sidebarWindowModeButton: ReactNode;
+    notificationAction: ReactNode;
+    themeToggleAction: ReactNode;
     quickSearchDialog: ReactNode;
     openQuickSearch: () => void;
     openDirectAccessFromClipboard: () => void;
@@ -154,6 +157,7 @@ export function useTitleBarActions(
 ): TitleBarActionsResult {
     const { t } = useTranslation();
     const location = useLocation();
+    const navigate = useNavigate();
     const [quickSearchOpen, setQuickSearchOpen] = useState(false);
     const { openDirectAccessFromClipboard } = useDirectAccessAction();
     const isSessionReady = useSessionStore(
@@ -210,8 +214,9 @@ export function useTitleBarActions(
     } = useRightSidePanelVisibility(location.pathname);
 
     const isMacHost = hostPlatform === 'macos';
+    const notificationCenterEnabled = notificationLayout !== 'table';
     const notificationActionVisible =
-        isSessionReady && notificationLayout !== 'table';
+        isSessionReady && (sidebarWindowMode || notificationCenterEnabled);
     const themeToggleVisible =
         !backgroundImageEnabled &&
         !communityThemeControlsAppearance(
@@ -311,15 +316,21 @@ export function useTitleBarActions(
         }
     }
 
-    function toggleVrcNotificationCenter() {
-        setVrcNotificationCenterOpen(!isVrcNotificationCenterOpen);
+    function openNotifications() {
+        if (notificationCenterEnabled) {
+            setVrcNotificationCenterOpen(!isVrcNotificationCenterOpen);
+            return;
+        }
+        runAfterRestoringNormalWindow(() => {
+            void navigate('/notification');
+        });
     }
 
     const notificationButton = (
         <TitleBarButton
             label={t('side_panel.notification_center.title')}
             className="relative size-7 min-w-7 rounded-md px-0"
-            onClick={toggleVrcNotificationCenter}
+            onClick={openNotifications}
             onContextMenu={
                 vrcUnseenNotificationCount > 0
                     ? undefined
@@ -343,6 +354,62 @@ export function useTitleBarActions(
             ) : null}
         </TitleBarButton>
     );
+
+    const notificationAction = notificationActionVisible ? (
+        vrcUnseenNotificationCount > 0 ? (
+            <ContextMenu>
+                <ContextMenuTrigger render={notificationButton} />
+                <ContextMenuContent className="w-48">
+                    <ContextMenuGroup>
+                        <ContextMenuItem
+                            onClick={() => {
+                                markAllNotificationsRead();
+                            }}
+                        >
+                            {t('nav_menu.mark_all_read')}
+                        </ContextMenuItem>
+                    </ContextMenuGroup>
+                </ContextMenuContent>
+            </ContextMenu>
+        ) : (
+            notificationButton
+        )
+    ) : null;
+
+    const themeToggleAction = themeToggleVisible ? (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <span className="inline-flex">
+                        <AnimatedThemeToggler
+                            theme={resolvedThemeMode}
+                            onThemeChange={(nextThemeMode) => {
+                                void setThemeModePreference(
+                                    nextThemeMode
+                                ).catch((error: unknown) => {
+                                    console.warn(
+                                        'Theme mode change failed:',
+                                        error
+                                    );
+                                });
+                            }}
+                            aria-label={themeToggleLabel}
+                            className={cn(
+                                buttonVariants({
+                                    variant: 'ghost',
+                                    size: 'icon-sm'
+                                }),
+                                'text-muted-foreground hover:bg-muted/40 hover:text-foreground size-7 min-w-7 rounded-md px-0'
+                            )}
+                        />
+                    </span>
+                }
+            />
+            <TooltipContent hidden={shortcutHintsVisible}>
+                {themeToggleLabel}
+            </TooltipContent>
+        </Tooltip>
+    ) : null;
 
     const actions = isSessionReady ? (
         <div
@@ -412,26 +479,7 @@ export function useTitleBarActions(
                     <CompassIcon data-icon="icon" />
                 </TitleBarButton>
             </div>
-            {notificationActionVisible ? (
-                vrcUnseenNotificationCount > 0 ? (
-                    <ContextMenu>
-                        <ContextMenuTrigger render={notificationButton} />
-                        <ContextMenuContent className="w-48">
-                            <ContextMenuGroup>
-                                <ContextMenuItem
-                                    onClick={() => {
-                                        markAllNotificationsRead();
-                                    }}
-                                >
-                                    {t('nav_menu.mark_all_read')}
-                                </ContextMenuItem>
-                            </ContextMenuGroup>
-                        </ContextMenuContent>
-                    </ContextMenu>
-                ) : (
-                    notificationButton
-                )
-            ) : null}
+            {notificationAction}
             <TitleBarButton
                 label={t('assistant.title')}
                 className="size-7 min-w-7 rounded-md px-0"
@@ -439,40 +487,7 @@ export function useTitleBarActions(
             >
                 <SparklesIcon data-icon="icon" />
             </TitleBarButton>
-            {themeToggleVisible ? (
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <span className="inline-flex">
-                                <AnimatedThemeToggler
-                                    theme={resolvedThemeMode}
-                                    onThemeChange={(nextThemeMode) => {
-                                        void setThemeModePreference(
-                                            nextThemeMode
-                                        ).catch((error: unknown) => {
-                                            console.warn(
-                                                'Theme mode change failed:',
-                                                error
-                                            );
-                                        });
-                                    }}
-                                    aria-label={themeToggleLabel}
-                                    className={cn(
-                                        buttonVariants({
-                                            variant: 'ghost',
-                                            size: 'icon-sm'
-                                        }),
-                                        'text-muted-foreground hover:bg-muted/40 hover:text-foreground size-7 min-w-7 rounded-md px-0'
-                                    )}
-                                />
-                            </span>
-                        }
-                    />
-                    <TooltipContent hidden={shortcutHintsVisible}>
-                        {themeToggleLabel}
-                    </TooltipContent>
-                </Tooltip>
-            ) : null}
+            {themeToggleAction}
             <TitleBarButton
                 label={leftSidebarLabel}
                 className="size-7 min-w-7 rounded-md px-0"
@@ -564,6 +579,8 @@ export function useTitleBarActions(
         openNotificationCenter: openVrcNotificationCenter,
         toggleRightSidebar,
         rightSidebarOpen,
-        sidebarWindowModeButton
+        sidebarWindowModeButton,
+        notificationAction,
+        themeToggleAction
     };
 }

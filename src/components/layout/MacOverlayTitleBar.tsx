@@ -19,7 +19,9 @@ export function MacOverlayTitleBar() {
         isSessionReady,
         openQuickSearch,
         quickSearchDialog,
-        sidebarWindowModeButton
+        sidebarWindowModeButton,
+        notificationAction,
+        themeToggleAction
     } = useTitleBarActions('px-2');
 
     return (
@@ -51,6 +53,8 @@ export function MacOverlayTitleBar() {
                                 <SearchIcon data-icon="icon" />
                             </TitleBarButton>
                         ) : null}
+                        {notificationAction}
+                        {themeToggleAction}
                         {sidebarWindowModeButton}
                     </div>
                 ) : (

@@ -26,6 +26,12 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle
+} from '@/ui/shadcn/sheet';
 
 import {
     isSidebarAutoHideInteractionBlocked,
@@ -40,7 +46,7 @@ vi.mock('@/services/shellIntegrationService', () => ({
     setTrayIconNotification: vi.fn()
 }));
 
-type OverlayKind = 'select' | 'dialog' | 'popover' | 'menu';
+type OverlayKind = 'select' | 'dialog' | 'popover' | 'menu' | 'sheet';
 
 function overlay(kind: OverlayKind, open: boolean): ReactNode {
     switch (kind) {
@@ -84,6 +90,16 @@ function overlay(kind: OverlayKind, open: boolean): ReactNode {
                     </DropdownMenuContent>
                 </DropdownMenu>
             );
+        case 'sheet':
+            return (
+                <Sheet open={open} modal="trap-focus">
+                    <SheetContent side="right" variant="inset">
+                        <SheetHeader>
+                            <SheetTitle>Notifications</SheetTitle>
+                        </SheetHeader>
+                    </SheetContent>
+                </Sheet>
+            );
     }
 }
 
@@ -106,7 +122,7 @@ afterEach(async () => {
 });
 
 describe('auto-hide with real application overlays', () => {
-    it.each<OverlayKind>(['select', 'dialog', 'popover', 'menu'])(
+    it.each<OverlayKind>(['select', 'dialog', 'popover', 'menu', 'sheet'])(
         'blocks an open %s and releases it on close',
         async (kind) => {
             const changes = vi.fn<(blocked: boolean) => void>();

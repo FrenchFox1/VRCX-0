@@ -74,6 +74,8 @@ export function AppTitleBar() {
         openDirectAccessFromClipboard,
         openNotificationCenter,
         sidebarWindowModeButton,
+        notificationAction,
+        themeToggleAction,
         toggleRightSidebar,
         rightSidebarOpen
     } = useTitleBarActions('px-1');
@@ -138,6 +140,8 @@ export function AppTitleBar() {
                                 <SearchIcon data-icon="icon" />
                             </TitleBarButton>
                         ) : null}
+                        {notificationAction}
+                        {themeToggleAction}
                         {sidebarWindowModeButton}
                     </div>
                 ) : (
