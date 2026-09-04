@@ -212,6 +212,15 @@
     --vrcx-0-table-row-focus: color-mix(in oklch, var(--ring) 70%, transparent);
 }
 
+:root.is-compact-table,
+.is-compact-table {
+    --vrcx-0-table-header-height: 2rem;
+    --vrcx-0-table-row-height: 2rem;
+    --vrcx-0-table-cell-padding-inline: 0.5rem;
+    --vrcx-0-table-cell-padding-block: 0.25rem;
+    --vrcx-0-table-control-cell-padding-block: 0;
+}
+
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme]) {
         color-scheme: dark;
@@ -670,23 +679,6 @@
         background: var(--vrcx-0-sidebar-surface);
     }
 
-    .vrcx-0-sidebar-surface
-        :is(
-            [data-slot='sidebar-menu-button'],
-            [data-slot='sidebar-menu-sub-button']
-        )[data-active='true'] {
-        color: var(--content-primary);
-        background: var(--state-selected-surface);
-    }
-
-    .vrcx-0-sidebar-surface
-        :is(
-            [data-slot='sidebar-menu-button'],
-            [data-slot='sidebar-menu-sub-button']
-        )[data-active='true']:hover {
-        background: var(--state-selected-hover-surface);
-    }
-
     .vrcx-0-sidebar-inset {
         background: var(--vrcx-0-sidebar-inset-surface);
     }
@@ -839,14 +831,6 @@
         [data-vrcx-0-table-row]:has([aria-expanded='true'])
         > [data-slot='table-cell'].vrcx-0-table-sticky-action {
         background: var(--vrcx-0-table-row-expanded-surface);
-    }
-
-    .is-compact-table {
-        --vrcx-0-table-header-height: 2rem;
-        --vrcx-0-table-row-height: 2rem;
-        --vrcx-0-table-cell-padding-inline: 0.5rem;
-        --vrcx-0-table-cell-padding-block: 0.25rem;
-        --vrcx-0-table-control-cell-padding-block: 0;
     }
 
     i.x-user-status,
@@ -1093,6 +1077,23 @@
             transition: none;
         }
     }
+}
+
+.vrcx-0-sidebar-surface
+    :is(
+        [data-slot='sidebar-menu-button'],
+        [data-slot='sidebar-menu-sub-button']
+    )[data-active='true'] {
+    color: var(--content-primary);
+    background: var(--state-selected-surface);
+}
+
+.vrcx-0-sidebar-surface
+    :is(
+        [data-slot='sidebar-menu-button'],
+        [data-slot='sidebar-menu-sub-button']
+    )[data-active='true']:hover {
+    background: var(--state-selected-hover-surface);
 }
 
 /* no real reason, I wanted it so I added it. XD */
