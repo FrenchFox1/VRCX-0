@@ -708,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "View",
-        "tools": "Tools",
         "help": "Help",
         "preview_build_badge": "Preview Build",
         "devkit_build_badge": "Dev Kit",
@@ -721,7 +719,6 @@
         "quit": "Quit VRCX-0",
         "quick_search": "Quick Search",
         "keyboard_shortcuts": "Keyboard Shortcuts",
-        "notification_center": "Notification Center",
         "show_friends_sidebar": "Show Friends Sidebar",
         "hide_friends_sidebar": "Hide Friends Sidebar",
         "enter_sidebar_mode": "Sidebar Mode",
@@ -729,7 +726,6 @@
         "zoom_in": "Zoom In",
         "zoom_out": "Zoom Out",
         "reset_zoom": "Reset Zoom",
-        "all_tools": "All Tools...",
         "open_devtools": "Open DevTools",
         "report_issue": "Report Issue",
         "community": "Community",

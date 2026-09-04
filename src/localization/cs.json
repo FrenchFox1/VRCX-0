@@ -708,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "Zobrazit",
-        "tools": "Nástroje",
         "help": "Nápověda",
         "preview_build_badge": "Testovací sestavení",
         "devkit_build_badge": "Vývojářská sada",
@@ -721,7 +719,6 @@
         "quit": "Ukončit VRCX-0",
         "quick_search": "Rychlé vyhledávání",
         "keyboard_shortcuts": "Klávesové zkratky",
-        "notification_center": "Centrum oznámení",
         "show_friends_sidebar": "Zobrazit postranní panel přátel",
         "hide_friends_sidebar": "Skrýt postranní panel přátel",
         "enter_sidebar_mode": "Režim postranního panelu",
@@ -729,7 +726,6 @@
         "zoom_in": "Přiblížit",
         "zoom_out": "Oddálit",
         "reset_zoom": "Obnovit přiblížení",
-        "all_tools": "Všechny nástroje...",
         "open_devtools": "Otevřít DevTools",
         "report_issue": "Nahlásit problém",
         "community": "Komunita",

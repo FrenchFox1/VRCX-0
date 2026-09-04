@@ -708,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "表示",
-        "tools": "ツール",
         "help": "ヘルプ",
         "preview_build_badge": "Preview Build",
         "devkit_build_badge": "Dev Kit",
@@ -721,7 +719,6 @@
         "quit": "VRCX-0 を終了",
         "quick_search": "クイック検索",
         "keyboard_shortcuts": "キーボードショートカット",
-        "notification_center": "通知センター",
         "show_friends_sidebar": "フレンドサイドバーを表示",
         "hide_friends_sidebar": "フレンドサイドバーを非表示",
         "enter_sidebar_mode": "サイドバーモード",
@@ -729,7 +726,6 @@
         "zoom_in": "拡大",
         "zoom_out": "縮小",
         "reset_zoom": "ズームをリセット",
-        "all_tools": "すべてのツール...",
         "open_devtools": "DevTools を開く",
         "report_issue": "問題を報告",
         "community": "コミュニティ",

@@ -707,8 +707,6 @@
         }
     },
     "app_menu": {
-        "view": "보기",
-        "tools": "도구",
         "help": "도움말",
         "preview_build_badge": "미리보기 빌드",
         "devkit_build_badge": "개발 키트",
@@ -718,7 +716,6 @@
         "logout": "로그아웃",
         "quick_search": "빠른 검색",
         "keyboard_shortcuts": "키보드 단축키",
-        "notification_center": "알림 센터",
         "show_friends_sidebar": "친구 사이드바 표시",
         "hide_friends_sidebar": "친구 사이드바 숨기기",
         "enter_sidebar_mode": "사이드바 모드",
@@ -726,7 +723,6 @@
         "zoom_in": "확대",
         "zoom_out": "축소",
         "reset_zoom": "줌 재설정",
-        "all_tools": "모든 도구...",
         "open_devtools": "DevTools 열기",
         "report_issue": "문제 보고",
         "community": "커뮤니티",

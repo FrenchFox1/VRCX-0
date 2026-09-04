@@ -71,13 +71,9 @@ export function AppTitleBar() {
         actions,
         quickSearchDialog,
         openQuickSearch,
-        openDirectAccessFromClipboard,
-        openNotificationCenter,
         sidebarWindowModeButton,
         notificationAction,
-        themeToggleAction,
-        toggleRightSidebar,
-        rightSidebarOpen
+        themeToggleAction
     } = useTitleBarActions('px-1');
 
     const MaximizeIcon = isMaximized ? CopyIcon : SquareIcon;
@@ -111,17 +107,7 @@ export function AppTitleBar() {
                                 event.stopPropagation();
                             }}
                         >
-                            <AppMenuBar
-                                rightSidebarOpen={rightSidebarOpen}
-                                onOpenQuickSearch={openQuickSearch}
-                                onOpenDirectAccess={
-                                    openDirectAccessFromClipboard
-                                }
-                                onOpenNotificationCenter={
-                                    openNotificationCenter
-                                }
-                                onToggleRightSidebar={toggleRightSidebar}
-                            />
+                            <AppMenuBar />
                         </div>
                     ) : null}
                     <div

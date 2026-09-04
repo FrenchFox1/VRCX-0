@@ -708,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "Ansicht",
-        "tools": "Tools",
         "help": "Hilfe",
         "preview_build_badge": "Preview-Build",
         "devkit_build_badge": "Dev Kit",
@@ -721,7 +719,6 @@
         "quit": "VRCX-0 beenden",
         "quick_search": "Schnellsuche",
         "keyboard_shortcuts": "Tastenkombinationen",
-        "notification_center": "Benachrichtigungszentrale",
         "show_friends_sidebar": "Freundesleiste anzeigen",
         "hide_friends_sidebar": "Freundesleiste ausblenden",
         "enter_sidebar_mode": "Seitenleistenmodus",
@@ -729,7 +726,6 @@
         "zoom_in": "Vergrößern",
         "zoom_out": "Verkleinern",
         "reset_zoom": "Zoom zurücksetzen",
-        "all_tools": "Alle Tools...",
         "open_devtools": "DevTools öffnen",
         "report_issue": "Problem melden",
         "community": "Community",
