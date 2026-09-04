@@ -12,8 +12,14 @@ import {
     applyMutualFriendsViewFilters,
     countIsolatedMutualFriendNodes
 } from './mutualFriendsFilters';
-import { buildMutualFriendsBaseGraph } from './mutualFriendsGraphData';
-import { mutualFriendsCommunityPalette } from './mutualFriendsPalette';
+import {
+    buildMutualFriendsBaseGraph,
+    buildMutualFriendsCoverage
+} from './mutualFriendsGraphData';
+import {
+    mutualFriendsCommunityPalette,
+    mutualFriendsNeutralCommunityColor
+} from './mutualFriendsPalette';
 import {
     buildMutualFriendExcludePickerOptions,
     filterMutualFriendPickerOptions
@@ -97,10 +103,38 @@ export function useMutualFriendsPageState() {
         () => mutualFriendsCommunityPalette(resolvedTheme === 'dark'),
         [resolvedTheme]
     );
+    const neutralCommunityColor = useMemo(
+        () => mutualFriendsNeutralCommunityColor(resolvedTheme === 'dark'),
+        [resolvedTheme]
+    );
 
     const { communityIndexById, communities } = useMemo(
-        () => assignMutualFriendCommunities(baseGraph, communityPalette),
-        [baseGraph, communityPalette]
+        () =>
+            assignMutualFriendCommunities(
+                baseGraph,
+                communityPalette,
+                neutralCommunityColor
+            ),
+        [baseGraph, communityPalette, neutralCommunityColor]
+    );
+
+    const namedCommunityIndexes = useMemo(
+        () =>
+            new Set(
+                communities
+                    .filter((community) => community.isNamed)
+                    .map((community) => community.index)
+            ),
+        [communities]
+    );
+
+    const coverage = useMemo(
+        () =>
+            buildMutualFriendsCoverage(
+                snapshot.snapshotData.meta,
+                orderedFriendIds
+            ),
+        [orderedFriendIds, snapshot.snapshotData.meta]
     );
 
     const filteredGraph = useMemo(
@@ -176,6 +210,7 @@ export function useMutualFriendsPageState() {
         graph: filteredGraph,
         layoutSettings,
         communityIndexById,
+        namedCommunityIndexes,
         resolvedTheme,
         selectedNodeId,
         selectedNodeIdRef,
@@ -292,11 +327,12 @@ export function useMutualFriendsPageState() {
             baseNodeCount: baseGraph.nodes.length,
             communities,
             communityIndexById,
+            coverage,
             currentUserId,
             detail: snapshot.detail,
             edgeCount: filteredGraph.links.length,
             friendCount: orderedFriendIds.length,
-            isolatedCount: countIsolatedMutualFriendNodes(baseGraph),
+            isolatedCounts: countIsolatedMutualFriendNodes(baseGraph),
             isLayoutRunning: sigma.isLayoutRunning,
             nodeCount: filteredGraph.nodes.length,
             setGraphElementRef: sigma.setGraphElementRef,

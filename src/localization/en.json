@@ -1750,10 +1750,16 @@
                 },
                 "legend": {
                     "circles": "Communities",
-                    "more_circles": "+{count} more",
+                    "more_circles": "+{count} smaller, shown in grey",
                     "size_means_degree": "Bigger dot = more mutual friends",
+                    "hollow_means_unknown": "Hollow dot = mutuals not shared",
+                    "coverage": "Fetched",
+                    "coverage_value": "{fetched}/{total} friends",
+                    "coverage_unavailable": "Not shared",
+                    "coverage_updated": "Updated",
                     "min_degree": "Min. connections",
-                    "isolated_nodes": "{count} with no connections"
+                    "isolated_nodes": "{count} with no mutual friends",
+                    "unavailable_nodes": "{count} not shared or not fetched"
                 }
             },
             "loading": {

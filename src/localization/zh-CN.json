@@ -1750,10 +1750,16 @@
                 },
                 "legend": {
                     "circles": "圈子",
-                    "more_circles": "另有 {count} 个圈子",
+                    "more_circles": "另有 {count} 个小圈子，显示为灰色",
                     "size_means_degree": "点越大，共同好友越多",
+                    "hollow_means_unknown": "空心点 = 对方未公开共同好友",
+                    "coverage": "已获取",
+                    "coverage_value": "{fetched}/{total} 位好友",
+                    "coverage_unavailable": "未公开",
+                    "coverage_updated": "更新于",
                     "min_degree": "最少连接数",
-                    "isolated_nodes": "{count} 人没有任何连接"
+                    "isolated_nodes": "{count} 人没有共同好友",
+                    "unavailable_nodes": "{count} 人未公开或未获取"
                 }
             },
             "loading": {

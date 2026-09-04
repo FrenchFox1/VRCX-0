@@ -1729,10 +1729,16 @@
                 },
                 "legend": {
                     "circles": "커뮤니티",
-                    "more_circles": "외 {count}개",
+                    "more_circles": "작은 그룹 {count}개는 회색으로 표시",
                     "size_means_degree": "점이 클수록 공통 친구가 많음",
+                    "hollow_means_unknown": "빈 점 = 공통 친구 비공개",
+                    "coverage": "가져옴",
+                    "coverage_value": "{fetched}/{total}명",
+                    "coverage_unavailable": "비공개",
+                    "coverage_updated": "업데이트",
                     "min_degree": "최소 연결 수",
-                    "isolated_nodes": "연결이 없는 {count}명"
+                    "isolated_nodes": "공통 친구 없음 {count}명",
+                    "unavailable_nodes": "비공개 또는 미수집 {count}명"
                 }
             },
             "loading": {

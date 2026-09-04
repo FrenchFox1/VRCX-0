@@ -1752,10 +1752,16 @@
                 },
                 "legend": {
                     "circles": "Komunity",
-                    "more_circles": "+{count} dalších",
+                    "more_circles": "Dalších {count} menších, šedě",
                     "size_means_degree": "Větší bod = více společných přátel",
+                    "hollow_means_unknown": "Prázdný bod = společní přátelé nesdíleni",
+                    "coverage": "Načteno",
+                    "coverage_value": "{fetched}/{total} přátel",
+                    "coverage_unavailable": "Nesdíleno",
+                    "coverage_updated": "Aktualizováno",
                     "min_degree": "Min. spojení",
-                    "isolated_nodes": "{count} bez spojení"
+                    "isolated_nodes": "{count} bez společných přátel",
+                    "unavailable_nodes": "{count} nesdíleno nebo nenačteno"
                 }
             },
             "loading": {

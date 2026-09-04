@@ -1752,10 +1752,16 @@
                 },
                 "legend": {
                     "circles": "Сообщества",
-                    "more_circles": "ещё {count}",
+                    "more_circles": "Ещё {count} меньших — серым",
                     "size_means_degree": "Больше точка — больше общих друзей",
+                    "hollow_means_unknown": "Полый кружок — общие друзья скрыты",
+                    "coverage": "Получено",
+                    "coverage_value": "{fetched}/{total} друзей",
+                    "coverage_unavailable": "Скрыто",
+                    "coverage_updated": "Обновлено",
                     "min_degree": "Мин. связей",
-                    "isolated_nodes": "{count} без связей"
+                    "isolated_nodes": "{count} без общих друзей",
+                    "unavailable_nodes": "{count} скрыто или не получено"
                 }
             },
             "loading": {

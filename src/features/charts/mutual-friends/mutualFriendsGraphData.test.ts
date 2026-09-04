@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildMutualFriendsBaseGraph } from './mutualFriendsGraphData';
+import {
+    buildMutualFriendsBaseGraph,
+    buildMutualFriendsCoverage
+} from './mutualFriendsGraphData';
 import { MUTUAL_GRAPH_EMPTY_USER_ID } from './mutualFriendsSettings';
 
 describe('mutualFriendsGraphData', () => {
@@ -83,5 +86,52 @@ describe('mutualFriendsGraphData', () => {
             ['usr_b', 'usr_b', 1]
         ]);
         expect(graph.links).toEqual([{ source: 'usr_a', target: 'usr_b' }]);
+    });
+});
+
+describe('buildMutualFriendsCoverage', () => {
+    const meta = new Map([
+        [
+            'usr_a',
+            {
+                lastFetchedAt: '2026-09-01T10:00:00.000Z',
+                optedOut: false,
+                totalCount: 4
+            }
+        ],
+        [
+            'usr_b',
+            {
+                lastFetchedAt: '2026-09-03T10:00:00.000Z',
+                optedOut: true,
+                totalCount: null
+            }
+        ],
+        ['usr_c', { lastFetchedAt: null, optedOut: false, totalCount: null }]
+    ]);
+
+    it('reports how much of the roster the graph actually covers', () => {
+        expect(
+            buildMutualFriendsCoverage(meta, [
+                'usr_a',
+                'usr_b',
+                'usr_c',
+                'usr_d'
+            ])
+        ).toEqual({
+            friendCount: 4,
+            fetchedCount: 2,
+            unavailableCount: 1,
+            lastFetchedAt: '2026-09-03T10:00:00.000Z'
+        });
+    });
+
+    it('reports an empty roster as fully unfetched instead of complete', () => {
+        expect(buildMutualFriendsCoverage(null, null)).toEqual({
+            friendCount: 0,
+            fetchedCount: 0,
+            unavailableCount: 0,
+            lastFetchedAt: null
+        });
     });
 });

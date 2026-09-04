@@ -1746,10 +1746,16 @@
                 },
                 "legend": {
                     "circles": "コミュニティ",
-                    "more_circles": "ほか {count} 件",
+                    "more_circles": "ほかに小さなグループが {count} 件（グレー表示）",
                     "size_means_degree": "円が大きいほど共通のフレンドが多い",
+                    "hollow_means_unknown": "白抜きの円 = 共通のフレンドが非公開",
+                    "coverage": "取得済み",
+                    "coverage_value": "{fetched}/{total} 人",
+                    "coverage_unavailable": "非公開",
+                    "coverage_updated": "更新日時",
                     "min_degree": "つながり数の下限",
-                    "isolated_nodes": "つながりのない {count} 人"
+                    "isolated_nodes": "共通のフレンドがいない人 {count} 人",
+                    "unavailable_nodes": "非公開または未取得 {count} 人"
                 }
             },
             "loading": {

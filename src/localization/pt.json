@@ -1750,10 +1750,16 @@
                 },
                 "legend": {
                     "circles": "Comunidades",
-                    "more_circles": "+{count} mais",
+                    "more_circles": "{count} menores, em cinza",
                     "size_means_degree": "Ponto maior = mais amigos em comum",
+                    "hollow_means_unknown": "Ponto vazado = amigos em comum não compartilhados",
+                    "coverage": "Obtidos",
+                    "coverage_value": "{fetched}/{total} amigos",
+                    "coverage_unavailable": "Não compartilhado",
+                    "coverage_updated": "Atualizado",
                     "min_degree": "Conexões mín.",
-                    "isolated_nodes": "{count} sem conexões"
+                    "isolated_nodes": "{count} sem amigos em comum",
+                    "unavailable_nodes": "{count} não compartilhados ou não obtidos"
                 }
             },
             "loading": {
