@@ -19,7 +19,8 @@ export function MutualFriendsLegend({
     isolatedCounts,
     minDegree,
     onMinDegreeChange,
-    onToggleFocusedCommunity
+    onToggleFocusedCommunity,
+    unknownCount
 }: {
     communities: MutualFriendCommunity[];
     coverage: MutualFriendsCoverage;
@@ -28,12 +29,15 @@ export function MutualFriendsLegend({
     minDegree: number;
     onMinDegreeChange: (value: number) => void;
     onToggleFocusedCommunity: (communityIndex: number) => void;
+    unknownCount: number;
 }) {
     const { t } = useTranslation();
     const namedCommunities = communities.filter(
         (community) => community.isNamed
     );
-    const groupedCommunityCount = communities.length - namedCommunities.length;
+    const groupedCommunityCount = communities.filter(
+        (community) => !community.isNamed && community.size > 1
+    ).length;
 
     return (
         <MutualFriendsSurface className="animate-in fade-in-0 slide-in-from-bottom-2 pointer-events-auto absolute bottom-3 left-3 z-10 w-64 p-3 duration-200 ease-out">
@@ -98,12 +102,16 @@ export function MutualFriendsLegend({
                     </span>
                     {t('view.charts.mutual_friend.legend.size_means_degree')}
                 </li>
-                <li className="flex items-center gap-2">
-                    <span className="flex w-4 shrink-0 items-center justify-center">
-                        <span className="border-muted-foreground/70 size-2.5 rounded-full border-[1.5px]" />
-                    </span>
-                    {t('view.charts.mutual_friend.legend.hollow_means_unknown')}
-                </li>
+                {unknownCount > 0 ? (
+                    <li className="flex items-center gap-2">
+                        <span className="flex w-4 shrink-0 items-center justify-center">
+                            <span className="border-muted-foreground/70 size-2.5 rounded-full border-[1.5px]" />
+                        </span>
+                        {t(
+                            'view.charts.mutual_friend.legend.hollow_means_unknown'
+                        )}
+                    </li>
+                ) : null}
             </ul>
 
             <div className="bg-border my-2.5 h-px" />

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     applyMutualFriendsViewFilters,
     countIsolatedMutualFriendNodes,
+    countUnknownMutualFriendNodes,
     MUTUAL_GRAPH_DEFAULT_VIEW_FILTERS
 } from './mutualFriendsFilters';
 import type { MutualFriendGraph } from './mutualFriendsTypes';
@@ -126,6 +127,23 @@ describe('applyMutualFriendsViewFilters', () => {
         expect(countIsolatedMutualFriendNodes(graphWithGaps)).toEqual({
             noConnections: 1,
             unavailable: 2
+        });
+    });
+
+    it('counts people with unknown mutuals even when others already linked them', () => {
+        const graphWithGaps: MutualFriendGraph = {
+            nodes: [
+                buildNode('usr_a', 'Ava', 1),
+                buildNode('usr_b', 'Ben', 1, { optedOut: true }),
+                buildNode('usr_c', 'Cora', 0, { lastFetchedAt: null })
+            ],
+            links: [{ source: 'usr_a', target: 'usr_b' }]
+        };
+
+        expect(countUnknownMutualFriendNodes(graphWithGaps)).toBe(2);
+        expect(countIsolatedMutualFriendNodes(graphWithGaps)).toEqual({
+            noConnections: 0,
+            unavailable: 1
         });
     });
 });

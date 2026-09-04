@@ -48,6 +48,7 @@ type MutualFriendsNodeAttributes = Record<string, unknown> & {
     forceLabel?: boolean;
     fullLabel: string;
     holeColor?: string;
+    ringColor?: string;
     label: string;
     lastFetchedAt: string | null;
     mutualCount: number;
@@ -77,9 +78,14 @@ const {
     communitySeparation: COMMUNITY_SEPARATION_LIMITS
 } = MUTUAL_GRAPH_LAYOUT_LIMITS;
 
+const NODE_RING_COLOR = '#f2f2f2';
+
 const NodeBorderProgram = createNodeBorderProgram({
     borders: [
-        { size: { value: 0.1 }, color: { value: '#f2f2f2' } },
+        {
+            size: { value: 0.1 },
+            color: { attribute: 'ringColor', defaultValue: NODE_RING_COLOR }
+        },
         { size: { fill: true }, color: { attribute: 'color' } }
     ]
 });
@@ -343,6 +349,7 @@ export async function buildSigmaGraph({
             lastFetchedAt: node.lastFetchedAt,
             community,
             communityNamed: namedCommunityIndexes.has(community),
+            ringColor: NODE_RING_COLOR,
             type: isMutualFriendNodeUnavailable(node) ? 'hollow' : 'border',
             zIndex: 1
         });
@@ -517,6 +524,7 @@ export function renderSigmaGraph({
 
         if (isHovered) {
             result.color = baseColor;
+            result.ringColor = NODE_RING_COLOR;
             result.size = baseSize * (1 + (HOVER_SIZE_SCALE - 1) * dim);
             result.forceLabel = true;
             result.zIndex = 4;
@@ -525,6 +533,7 @@ export function renderSigmaGraph({
 
         if (stayLit) {
             result.color = baseColor;
+            result.ringColor = NODE_RING_COLOR;
             result.forceLabel = isSelected || (isNeighbor && dim > 0.5);
             result.zIndex = isSelected ? 3 : 2;
             return result;
@@ -532,6 +541,11 @@ export function renderSigmaGraph({
 
         result.color = mixGraphColors(
             baseColor,
+            theme.backgroundColor,
+            dim * NODE_DIM_STRENGTH
+        );
+        result.ringColor = mixGraphColors(
+            NODE_RING_COLOR,
             theme.backgroundColor,
             dim * NODE_DIM_STRENGTH
         );

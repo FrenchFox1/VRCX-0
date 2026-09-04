@@ -10,7 +10,8 @@ import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
 import { assignMutualFriendCommunities } from './mutualFriendsCommunities';
 import {
     applyMutualFriendsViewFilters,
-    countIsolatedMutualFriendNodes
+    countIsolatedMutualFriendNodes,
+    countUnknownMutualFriendNodes
 } from './mutualFriendsFilters';
 import {
     buildMutualFriendsBaseGraph,
@@ -333,6 +334,7 @@ export function useMutualFriendsPageState() {
             edgeCount: filteredGraph.links.length,
             friendCount: orderedFriendIds.length,
             isolatedCounts: countIsolatedMutualFriendNodes(baseGraph),
+            unknownCount: countUnknownMutualFriendNodes(baseGraph),
             isLayoutRunning: sigma.isLayoutRunning,
             nodeCount: filteredGraph.nodes.length,
             setGraphElementRef: sigma.setGraphElementRef,

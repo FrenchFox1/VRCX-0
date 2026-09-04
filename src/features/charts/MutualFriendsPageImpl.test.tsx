@@ -90,6 +90,7 @@ function controllerValue(currentUserId: string, friendCount: number) {
             edgeCount: 0,
             friendCount,
             isolatedCounts: { noConnections: 0, unavailable: 0 },
+            unknownCount: 0,
             isLayoutRunning: false,
             nodeCount: 0,
             setGraphElementRef: noop,

@@ -87,6 +87,7 @@ export function MutualFriendsPage() {
                         onToggleFocusedCommunity={
                             actions.toggleFocusedCommunity
                         }
+                        unknownCount={graph.unknownCount}
                     />
                 ) : null}
 

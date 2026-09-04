@@ -101,3 +101,11 @@ export function countIsolatedMutualFriendNodes(
     }
     return { noConnections, unavailable };
 }
+
+export function countUnknownMutualFriendNodes(graph: MutualFriendGraph) {
+    return graph.nodes.reduce(
+        (total, node) =>
+            isMutualFriendNodeUnavailable(node) ? total + 1 : total,
+        0
+    );
+}
