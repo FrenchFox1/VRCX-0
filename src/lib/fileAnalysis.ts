@@ -1,10 +1,15 @@
-import type { PlatformFileAnalysis } from '@/domain/entities/world';
+import type {
+    AvatarStatsRecord,
+    FileAnalysisRecord,
+    PlatformFileAnalysis
+} from '@/domain/entities/world';
 import {
     entityQueryPolicies,
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import { isVrchatRequestError } from '@/repositories/vrchatRequest';
 import { compareUnityVersion } from '@/shared/utils/avatar';
 import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils';
 import { isRecord } from '@/shared/utils/record';
@@ -22,6 +27,17 @@ type FileAnalysisOptions = {
     endpoint?: string;
 };
 
+type FileAnalysisRequest = {
+    fileId: string;
+    variant: string;
+    version: number;
+};
+
+export type FileAnalysisLoadResult = {
+    fileAnalysis: PlatformFileAnalysis;
+    pending: boolean;
+};
+
 function formatMiB(value: unknown) {
     const size = Number(value);
     return Number.isFinite(size) ? `${(size / 1048576).toFixed(2)} MB` : '';
@@ -30,6 +46,43 @@ function formatMiB(value: unknown) {
 function normalizePlatform(value: unknown) {
     return typeof value === 'string' ? value.trim() : '';
 }
+
+const AVATAR_STAT_KEYS = [
+    'animatorCount',
+    'audioSourceCount',
+    'blendShapeCount',
+    'boneCount',
+    'bounds',
+    'cameraCount',
+    'clothCount',
+    'constraintCount',
+    'constraintDepth',
+    'contactCount',
+    'lightCount',
+    'lineRendererCount',
+    'materialCount',
+    'materialSlotsUsed',
+    'meshCount',
+    'meshParticleMaxPolygons',
+    'particleCollisionEnabled',
+    'particleSystemCount',
+    'particleTrailsEnabled',
+    'physBoneColliderCount',
+    'physBoneCollisionCheckCount',
+    'physBoneComponentCount',
+    'physBoneTransformCount',
+    'physicsColliders',
+    'physicsRigidbodies',
+    'raycastCount',
+    'skinnedMeshCount',
+    'totalClothVertices',
+    'totalMaxParticles',
+    'totalPolygons',
+    'totalTextureUsage',
+    'totalVertices',
+    'trailRendererCount',
+    'writeDefaultsUsed'
+] as const satisfies readonly (keyof AvatarStatsRecord)[];
 
 function isAnalyzablePackage(
     unityPackage: unknown,
@@ -56,24 +109,49 @@ function isAnalyzablePackage(
     return true;
 }
 
-function fileAnalysisSize(json: unknown): string | null {
+function pickAvatarStats(value: unknown): AvatarStatsRecord | undefined {
+    if (!isRecord(value)) {
+        return undefined;
+    }
+    const entries = AVATAR_STAT_KEYS.flatMap((key) =>
+        typeof value[key] === 'undefined' ? [] : [[key, value[key]]]
+    );
+    return entries.length
+        ? (Object.fromEntries(entries) as AvatarStatsRecord)
+        : undefined;
+}
+
+function formatFileAnalysis(json: unknown): FileAnalysisRecord | null {
     if (!isRecord(json) || !json.success) {
         return null;
     }
-    return typeof json.fileSize === 'undefined' ? '' : formatMiB(json.fileSize);
+    const avatarStats = pickAvatarStats(json.avatarStats);
+    return {
+        _fileSize:
+            typeof json.fileSize === 'undefined'
+                ? ''
+                : formatMiB(json.fileSize),
+        ...(typeof json.uncompressedSize === 'undefined'
+            ? {}
+            : { _uncompressedSize: formatMiB(json.uncompressedSize) }),
+        ...(avatarStats && typeof avatarStats.totalTextureUsage !== 'undefined'
+            ? {
+                  _totalTextureUsage: formatMiB(avatarStats.totalTextureUsage)
+              }
+            : {}),
+        ...(typeof json.performanceRating === 'string'
+            ? { performanceRating: json.performanceRating }
+            : {}),
+        ...(avatarStats ? { avatarStats } : {})
+    };
 }
 
-export async function getFileAnalysisForUnityPackages({
+function collectFileAnalysisRequests({
     unityPackages = [],
-    sdkUnityVersion = '',
-    endpoint = ''
-}: FileAnalysisOptions = {}) {
-    const result: PlatformFileAnalysis = {};
+    sdkUnityVersion = ''
+}: FileAnalysisOptions = {}): Map<string, FileAnalysisRequest> {
+    const requests = new Map<string, FileAnalysisRequest>();
     const packages = Array.isArray(unityPackages) ? unityPackages : [];
-    const requests = new Map<
-        string,
-        { fileId: string; variant: string; version: number }
-    >();
 
     for (const unityPackage of packages) {
         if (!isAnalyzablePackage(unityPackage, sdkUnityVersion)) {
@@ -96,16 +174,42 @@ export async function getFileAnalysisForUnityPackages({
         requests.set(platform, { fileId, variant, version });
     }
 
+    return requests;
+}
+
+export function hasFileAnalysisCandidates(
+    options: FileAnalysisOptions = {}
+): boolean {
+    return collectFileAnalysisRequests(options).size > 0;
+}
+
+export function isPendingFileAnalysisError(error: unknown): boolean {
+    return isVrchatRequestError(error) && error.status === 202;
+}
+
+export async function loadFileAnalysisForUnityPackages({
+    unityPackages = [],
+    sdkUnityVersion = '',
+    endpoint = ''
+}: FileAnalysisOptions = {}) {
+    const result: PlatformFileAnalysis = {};
+    let pending = false;
+    const requests = collectFileAnalysisRequests({
+        unityPackages,
+        sdkUnityVersion
+    });
+
     await Promise.all(
         Array.from(
             requests,
             async ([platform, { fileId, variant, version }]) => {
+                const queryKey = queryKeys.fileAnalysis(
+                    { fileId, version, variant },
+                    endpoint
+                );
                 try {
-                    const fileSize = await fetchCachedData({
-                        queryKey: queryKeys.fileAnalysis(
-                            { fileId, version, variant },
-                            endpoint
-                        ),
+                    const analysis = await fetchCachedData({
+                        queryKey,
                         policy: entityQueryPolicies.fileAnalysis,
                         queryFn: async () => {
                             const response =
@@ -114,18 +218,30 @@ export async function getFileAnalysisForUnityPackages({
                                     version,
                                     variant
                                 });
-                            return fileAnalysisSize(response.json);
+                            return formatFileAnalysis(response.json);
                         }
                     });
-                    if (fileSize !== null) {
-                        result[platform] = { _fileSize: fileSize };
+                    if (analysis !== null) {
+                        result[platform] = analysis;
                     }
-                } catch {
-                    // no-op
+                } catch (error) {
+                    if (isPendingFileAnalysisError(error)) {
+                        pending = true;
+                    }
                 }
             }
         )
     );
 
-    return result;
+    return {
+        fileAnalysis: result,
+        pending
+    } satisfies FileAnalysisLoadResult;
+}
+
+export async function getFileAnalysisForUnityPackages(
+    options: FileAnalysisOptions = {}
+) {
+    const { fileAnalysis } = await loadFileAnalysisForUnityPackages(options);
+    return fileAnalysis;
 }

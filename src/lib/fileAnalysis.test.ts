@@ -6,8 +6,12 @@ vi.mock('@/repositories/vrchatAuthRepository', () => ({
     default: { getFileAnalysis }
 }));
 
-import { clearEntityQueryCache, queryKeys } from './entityQueryCache';
-import { getFileAnalysisForUnityPackages } from './fileAnalysis';
+import { queryKeys } from './entityQueryCache';
+import {
+    getFileAnalysisForUnityPackages,
+    hasFileAnalysisCandidates,
+    isPendingFileAnalysisError
+} from './fileAnalysis';
 import { queryClient } from './queryClient';
 
 const unityPackage = {
@@ -15,11 +19,113 @@ const unityPackage = {
     platform: 'standalonewindows'
 };
 
-describe('file analysis cache', () => {
+describe('getFileAnalysisForUnityPackages', () => {
     beforeEach(() => getFileAnalysis.mockReset());
-    afterEach(() => clearEntityQueryCache());
+    afterEach(() => queryClient.clear());
 
-    it('caches only the display size and shares a request across platforms and callers', async () => {
+    it('preserves avatar stats and formats analysis byte sizes', async () => {
+        getFileAnalysis.mockResolvedValue({
+            json: {
+                success: true,
+                performanceRating: 'Poor',
+                fileSize: 10485760,
+                uncompressedSize: 26214400,
+                avatarStats: {
+                    totalPolygons: 123456,
+                    totalTextureUsage: 5242880,
+                    physBoneComponentCount: 12,
+                    raycastCount: 4
+                }
+            }
+        });
+
+        const result = await getFileAnalysisForUnityPackages({
+            unityPackages: [
+                {
+                    platform: 'standalonewindows',
+                    assetUrl:
+                        'https://api.vrchat.cloud/api/1/file/file_12345678-1234-1234-1234-1234567890ab/2/file'
+                }
+            ],
+            endpoint: 'https://api.vrchat.cloud/api/1'
+        });
+
+        expect(getFileAnalysis).toHaveBeenCalledWith({
+            fileId: 'file_12345678-1234-1234-1234-1234567890ab',
+            version: 2,
+            variant: 'security'
+        });
+        expect(result.standalonewindows).toMatchObject({
+            performanceRating: 'Poor',
+            _fileSize: '10.00 MB',
+            _uncompressedSize: '25.00 MB',
+            _totalTextureUsage: '5.00 MB',
+            avatarStats: {
+                totalPolygons: 123456,
+                totalTextureUsage: 5242880,
+                physBoneComponentCount: 12,
+                raycastCount: 4
+            }
+        });
+    });
+
+    it('identifies analysis responses that are not ready yet', () => {
+        const pendingError = Object.assign(
+            new Error('Analysis not yet available'),
+            {
+                status: 202,
+                endpoint:
+                    'analysis/file_12345678-1234-1234-1234-1234567890ab/2/security',
+                payload: {
+                    error: {
+                        message: 'Analysis not yet available',
+                        status_code: 202
+                    }
+                }
+            }
+        );
+
+        expect(isPendingFileAnalysisError(pendingError)).toBe(true);
+        expect(isPendingFileAnalysisError(new Error('Network error'))).toBe(
+            false
+        );
+    });
+
+    it('identifies Unity packages that can request file analysis', () => {
+        expect(
+            hasFileAnalysisCandidates({
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        assetUrl:
+                            'https://api.vrchat.cloud/api/1/file/file_12345678-1234-1234-1234-1234567890ab/2/file'
+                    }
+                ]
+            })
+        ).toBe(true);
+    });
+
+    it('rejects packages without a usable file reference', () => {
+        expect(
+            hasFileAnalysisCandidates({
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        assetUrl: '',
+                        variant: 'standard'
+                    },
+                    {
+                        platform: 'android',
+                        assetUrl:
+                            'https://api.vrchat.cloud/api/1/file/file_12345678-1234-1234-1234-1234567890ab/2/file',
+                        variant: 'impostor'
+                    }
+                ]
+            })
+        ).toBe(false);
+    });
+
+    it('caches only display-safe analysis and shares a request across callers', async () => {
         getFileAnalysis.mockResolvedValue({
             json: {
                 success: true,
@@ -52,7 +158,7 @@ describe('file analysis cache', () => {
                     options.endpoint
                 )
             )
-        ).toBe('1.50 MB');
+        ).toEqual({ _fileSize: '1.50 MB' });
         expect(await getFileAnalysisForUnityPackages(options)).toEqual(first);
         expect(getFileAnalysis).toHaveBeenCalledTimes(1);
     });
