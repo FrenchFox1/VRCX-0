@@ -194,7 +194,8 @@ export function AppSidebar({
             )}
             {!sidebarWindowMode && sidebarOpen ? (
                 <div
-                    className="absolute top-0 bottom-0 z-30 w-1 cursor-ew-resize select-none"
+                    data-vrcx-0-resize="nav"
+                    className="absolute top-0 bottom-0 z-30 w-(--vrcx-0-main-content-gutter) cursor-ew-resize bg-transparent select-none"
                     style={{ left: 'var(--sidebar-width)' }}
                     onPointerDown={startNavResize}
                 />

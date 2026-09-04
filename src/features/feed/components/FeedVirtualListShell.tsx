@@ -163,10 +163,8 @@ function FeedListResizeHandle({
             aria-valuemin={minSize}
             aria-valuemax={maxSize}
             aria-valuenow={header.column.getSize()}
-            className={cn(
-                'hover:bg-border absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none rounded-none border-0 bg-transparent p-0',
-                header.column.getIsResizing() && 'bg-primary'
-            )}
+            data-resizing={header.column.getIsResizing() ? '' : undefined}
+            className="vrcx-0-column-resize absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none rounded-none border-0 bg-transparent p-0 hover:bg-transparent"
             onPointerDown={(event) => {
                 event.preventDefault();
                 event.currentTarget.setPointerCapture(event.pointerId);
@@ -483,10 +481,10 @@ export function FeedVirtualListShell({
     }, [hasMore, loadingOlder, onLoadOlder, rows.length, viewportElement]);
 
     return (
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-[var(--vrcx-0-table-border)] bg-[var(--vrcx-0-table-surface)]">
+        <div className="vrcx-0-data-table relative flex min-h-0 flex-1 flex-col overflow-hidden">
             <div
                 ref={headerViewportRef}
-                className="shrink-0 overflow-hidden bg-[var(--vrcx-0-table-header-surface)]"
+                className="shrink-0 overflow-hidden border-b bg-[var(--vrcx-0-table-header-surface)]"
             >
                 <FeedListHeader layout={layout} table={table} />
             </div>

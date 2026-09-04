@@ -93,7 +93,7 @@ export function AppTitleBar() {
                 data-window-blurred={!isFocused || undefined}
                 data-window-sidebar-mode={sidebarWindowMode || undefined}
                 data-vrcx-0-surface="titlebar"
-                className="vrcx-0-titlebar text-foreground pointer-events-auto relative z-[60] flex h-8 shrink-0 items-center border-b select-none"
+                className="vrcx-0-titlebar text-foreground pointer-events-auto relative z-[60] flex h-8 shrink-0 items-center select-none"
             >
                 <div
                     data-tauri-drag-region

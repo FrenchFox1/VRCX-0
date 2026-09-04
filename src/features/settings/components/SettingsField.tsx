@@ -165,12 +165,12 @@ export function SettingsGroup({
     children
 }: SettingsGroupProps) {
     return (
-        <section className={cn('flex flex-col gap-2.5', className)}>
+        <section className={cn('flex flex-col gap-2', className)}>
             {title || action ? (
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-col gap-0.5">
                         {title ? (
-                            <h2 className="font-heading text-base leading-snug font-medium">
+                            <h2 className="font-heading text-base leading-snug font-semibold">
                                 {title}
                             </h2>
                         ) : null}

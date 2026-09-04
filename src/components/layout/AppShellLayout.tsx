@@ -173,7 +173,8 @@ export function AppShellLayout() {
                         <>
                             {sidebarWindowMode ? null : (
                                 <div
-                                    className="hover:bg-border z-20 w-(--vrcx-0-side-panel-resizer-width) shrink-0 cursor-ew-resize bg-transparent select-none"
+                                    data-vrcx-0-resize="side-panel"
+                                    className="z-20 w-(--vrcx-0-side-panel-resizer-width) shrink-0 cursor-ew-resize bg-transparent select-none"
                                     onPointerDown={startSidePanelResize}
                                 />
                             )}

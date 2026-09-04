@@ -100,7 +100,7 @@ export function StatusSegment({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                    'h-6 min-w-0 shrink-0 justify-start gap-1.5 rounded-none border-r px-2 text-left font-normal',
+                    'h-6 min-w-0 shrink-0 justify-start gap-1.5 rounded-none px-2 text-left font-normal',
                     className
                 )}
                 onClick={onClick}
@@ -122,7 +122,7 @@ export function StatusSegment({
     const segment = (
         <div
             className={cn(
-                'flex h-6 min-w-0 shrink-0 items-center gap-1.5 border-r px-2',
+                'flex h-6 min-w-0 shrink-0 items-center gap-1.5 px-2',
                 className
             )}
         >

@@ -60,13 +60,13 @@ export function buildBackgroundImageCss(
   --surface-panel: color-mix(in oklch, var(--background) 46%, transparent);
   --surface-raised: color-mix(in oklch, var(--background) 52%, transparent);
   --vrcx-0-app-surface: ${opaqueBase ? 'var(--background)' : 'transparent'};
-  --vrcx-0-titlebar-surface: color-mix(in oklch, var(--background) 38%, transparent);
+  --vrcx-0-titlebar-surface: var(--vrcx-0-app-surface);
   --vrcx-0-main-surface: transparent;
   --vrcx-0-main-content-surface: color-mix(in oklch, var(--background) 20%, transparent);
-  --vrcx-0-sidebar-surface: color-mix(in oklch, var(--sidebar) 40%, transparent);
+  --vrcx-0-sidebar-surface: var(--vrcx-0-app-surface);
   --vrcx-0-sidebar-inset-surface: color-mix(in oklch, var(--background) 22%, transparent);
-  --vrcx-0-side-panel-surface: color-mix(in oklch, var(--background) 38%, transparent);
-  --vrcx-0-statusbar-surface: color-mix(in oklch, var(--background) 36%, transparent);
+  --vrcx-0-side-panel-surface: var(--vrcx-0-app-surface);
+  --vrcx-0-statusbar-surface: var(--vrcx-0-app-surface);
   --vrcx-0-table-surface: color-mix(in oklch, var(--background) 46%, transparent);
   --vrcx-0-table-header-surface: color-mix(in oklch, var(--background) 52%, transparent);
 }
