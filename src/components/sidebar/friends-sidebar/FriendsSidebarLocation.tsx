@@ -85,7 +85,7 @@ export function resolveFriendRowLocationState({
     friend,
     isCurrentUser = false,
     isGroupByInstance = false,
-    locationTime
+    locationTime = null
 }: {
     friend: SidebarFriendRecord;
     isCurrentUser?: boolean;
@@ -104,11 +104,20 @@ export function resolveFriendRowLocationState({
         ? 'online'
         : normalizeStateBucket(statusSource?.state);
     const friendStateBucket = friendState;
+    const apiFriendLocation = isCurrentUser
+        ? resolvePresenceLocation(friend)
+        : readFriendRefLocation(friend);
+    const projectedFriendLocation = normalizeId(locationTime?.location);
+    const useProjectedFriendLocation = Boolean(
+        !isCurrentUser &&
+        locationSentinel(apiFriendLocation) === 'private' &&
+        parseLocation(projectedFriendLocation).isRealInstance
+    );
     const rawFriendLocation =
         localLocation ||
-        (isCurrentUser
-            ? resolvePresenceLocation(friend)
-            : readFriendRefLocation(friend));
+        (useProjectedFriendLocation
+            ? projectedFriendLocation
+            : apiFriendLocation);
     const friendLocation = clearStaleOfflineLocation(
         rawFriendLocation,
         friendState
@@ -377,7 +386,12 @@ export function StaticSidebarLocation({
     );
 }
 
-export function buildSidebarLocationMetadataEntry(row: SidebarVirtualRow) {
+export function buildSidebarLocationMetadataEntry(
+    row: SidebarVirtualRow,
+    locationTimesByUserId: Readonly<
+        Record<string, FriendLocationTimeEntry>
+    > = {}
+) {
     if (row?.type === 'instance-header') {
         const currentLocation = sidebarLocationTarget(row.location);
         return {
@@ -394,7 +408,8 @@ export function buildSidebarLocationMetadataEntry(row: SidebarVirtualRow) {
     const locationState = resolveFriendRowLocationState({
         friend: row.friend,
         isCurrentUser: row.isCurrentUser,
-        isGroupByInstance: row.isGroupByInstance
+        isGroupByInstance: row.isGroupByInstance,
+        locationTime: locationTimesByUserId[normalizeId(row.friend.id)] ?? null
     });
     if (!locationState.showLocationSubline) {
         return null;

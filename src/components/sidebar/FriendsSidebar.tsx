@@ -126,7 +126,9 @@ export function FriendsSidebar({
         onlineIds,
         orderedFriendIds
     } = useFriendsSidebarRosterState();
-    const locationTimes = useFriendLocationTimeStore((state) => state.byUserId);
+    const locationTimesByUserId = useFriendLocationTimeStore(
+        (state) => state.byUserId
+    );
     const {
         favoriteFriendGroups,
         favoriteFriendIds,
@@ -355,12 +357,12 @@ export function FriendsSidebar({
             rows,
             prefs,
             currentLocationSnapshot,
-            locationTimes
+            locationTimesByUserId
         );
     }, [
         currentLocationSnapshot,
         favoriteCollectionTab,
-        locationTimes,
+        locationTimesByUserId,
         prefs,
         rows
     ]);
@@ -372,13 +374,13 @@ export function FriendsSidebar({
             rows: favoriteCollectionRows,
             prefs,
             currentLocationSnapshot,
-            locationTimes
+            locationTimes: locationTimesByUserId
         });
     }, [
         currentLocationSnapshot,
         favoriteCollectionRows,
         favoriteCollectionTab,
-        locationTimes,
+        locationTimesByUserId,
         prefs
     ]);
     const favoriteCollectionSameInstanceIds = useMemo(
@@ -722,9 +724,14 @@ export function FriendsSidebar({
         () =>
             virtualItems
                 .map((item) => item.row)
-                .map((row) => buildSidebarLocationMetadataEntry(row))
+                .map((row) =>
+                    buildSidebarLocationMetadataEntry(
+                        row,
+                        locationTimesByUserId
+                    )
+                )
                 .filter(Boolean),
-        [virtualItems]
+        [locationTimesByUserId, virtualItems]
     );
     const locationMetadataByKey = useLocationMetadataBatch(
         visibleLocationMetadataEntries,
@@ -746,7 +753,8 @@ export function FriendsSidebar({
         trustColor
     };
     const locationView = {
-        locationMetadataByKey
+        locationMetadataByKey,
+        locationTimesByUserId
     };
     const friendRowCommands = {
         onOpenFriend: openFriend,
