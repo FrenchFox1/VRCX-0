@@ -18,10 +18,13 @@ const TYPE_ICONS: Record<string, { Icon: LucideIcon; className: string }> = {
     Offline: { Icon: LogOutIcon, className: 'text-slate-400' },
     Status: {
         Icon: PencilLineIcon,
-        className: 'text-muted-foreground/70'
+        className: 'text-muted-foreground opacity-70'
     },
-    Avatar: { Icon: PersonStandingIcon, className: 'text-muted-foreground/70' },
-    Bio: { Icon: FileTextIcon, className: 'text-muted-foreground/70' }
+    Avatar: {
+        Icon: PersonStandingIcon,
+        className: 'text-muted-foreground opacity-70'
+    },
+    Bio: { Icon: FileTextIcon, className: 'text-muted-foreground opacity-70' }
 };
 
 function FeedTypeIndicator({

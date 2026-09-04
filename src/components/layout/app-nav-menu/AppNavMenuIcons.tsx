@@ -10,6 +10,9 @@ import {
 
 import type { NavMenuItem } from '../navMenuModel';
 
+const navMenuLucideClassName =
+    '[&_.lucide]:text-sidebar-foreground [&_.lucide]:opacity-65 hover:[&_.lucide]:text-sidebar-accent-foreground hover:[&_.lucide]:opacity-100 active:[&_.lucide]:text-sidebar-accent-foreground active:[&_.lucide]:opacity-100 data-active:[&_.lucide]:text-sidebar-accent-foreground data-active:[&_.lucide]:opacity-100';
+
 function NavIcon({
     entry,
     className
@@ -50,4 +53,4 @@ function NotifiedNavIcon({
     );
 }
 
-export { NavIcon, NotifiedNavIcon };
+export { NavIcon, navMenuLucideClassName, NotifiedNavIcon };

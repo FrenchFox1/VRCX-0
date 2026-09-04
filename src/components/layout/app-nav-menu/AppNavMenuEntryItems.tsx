@@ -36,7 +36,7 @@ import {
     DashboardEntryAction,
     NavItemContextMenu
 } from './AppNavItemContextMenu';
-import { NotifiedNavIcon } from './AppNavMenuIcons';
+import { navMenuLucideClassName, NotifiedNavIcon } from './AppNavMenuIcons';
 import {
     isDashboardEntry,
     isEntryActive,
@@ -210,6 +210,7 @@ function NavMenuFolderItem({
                                 <SidebarMenuButton
                                     isActive={Boolean(isActive)}
                                     tooltip={label}
+                                    className={navMenuLucideClassName}
                                 >
                                     <NotifiedNavIcon
                                         entry={item}
@@ -260,6 +261,7 @@ function NavMenuFolderItem({
                     type="button"
                     isActive={Boolean(isActive)}
                     tooltip={label}
+                    className={navMenuLucideClassName}
                     onClick={() => setOpen((current) => !current)}
                 >
                     <NotifiedNavIcon entry={item} isNotified={isNotified} />
@@ -304,7 +306,8 @@ function NavMenuFolderItem({
                                                 (isDashboardEntry(entry) ||
                                                     isToolEntry(entry)) &&
                                                     'pr-8',
-                                                showShortcut && 'pr-8'
+                                                showShortcut && 'pr-8',
+                                                navMenuLucideClassName
                                             )}
                                             isActive={
                                                 entry.index === activeIndex ||
@@ -397,6 +400,7 @@ function NavMenuEntryItem({
                     isActive={item.index === activeIndex}
                     tooltip={labelForEntry(item, t)}
                     className={cn(
+                        navMenuLucideClassName,
                         (isDashboardEntry(item) || isToolEntry(item)) && 'pr-8',
                         showShortcut && 'pr-8'
                     )}

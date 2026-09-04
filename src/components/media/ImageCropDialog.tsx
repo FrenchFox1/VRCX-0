@@ -557,7 +557,7 @@ export function ImageCropDialog({
                                                         }
                                                     >
                                                         <span className="flex size-7 items-center justify-center rounded-full bg-black/55 text-white/80 shadow-[0_1px_3px_rgb(0_0_0/0.35)] ring-1 ring-white/15 backdrop-blur-sm transition-[transform,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] group-focus-visible:ring-2 group-focus-visible:ring-white/70 group-active:scale-[0.96] pointer-fine:group-hover:bg-white/15 pointer-fine:group-hover:text-white">
-                                                            <RotateCw className="size-4" />
+                                                            <RotateCw className="size-4 text-white opacity-80 group-focus-visible:opacity-100 pointer-fine:group-hover:opacity-100" />
                                                         </span>
                                                     </span>
                                                     {CROP_CORNER_HANDLES.map(

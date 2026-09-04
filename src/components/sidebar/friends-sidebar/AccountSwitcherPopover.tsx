@@ -160,7 +160,7 @@ export function AccountSwitcherPopover() {
                                     </div>
                                 </div>
                                 {isCurrent ? (
-                                    <CheckIcon className="text-foreground/70 shrink-0" />
+                                    <CheckIcon className="text-foreground shrink-0 opacity-70" />
                                 ) : null}
                             </Button>
                         );
