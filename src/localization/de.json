@@ -1753,6 +1753,8 @@
                     "more_circles": "{count} kleinere in Grau",
                     "size_means_degree": "Größerer Punkt = mehr gemeinsame Freunde",
                     "hollow_means_unknown": "Hohler Punkt = gemeinsame Freunde nicht geteilt",
+                    "cross_edges": "Hellere Linien verbinden Kreise",
+                    "cross_edges_only": "Verbindungen innerhalb der Kreise dämpfen",
                     "coverage": "Abgerufen",
                     "coverage_value": "{fetched}/{total} Freunde",
                     "coverage_unavailable": "Nicht geteilt",

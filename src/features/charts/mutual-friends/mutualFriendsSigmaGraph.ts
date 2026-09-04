@@ -32,6 +32,9 @@ const SELECTED_SIZE_SCALE = 1.35;
 const HOVER_SIZE_SCALE = 1.55;
 const NODE_DIM_STRENGTH = 0.9;
 const EDGE_DIM_STRENGTH = 0.85;
+const INTRA_COMMUNITY_EDGE_SIZE = 0.4;
+const CROSS_COMMUNITY_EDGE_SIZE = 0.75;
+const INTRA_EDGE_MUTE_STRENGTH = 0.82;
 const HOVER_ENTER_DURATION = 140;
 const HOVER_LEAVE_DURATION = 110;
 const SELECTION_DURATION = 180;
@@ -62,6 +65,7 @@ type MutualFriendsNodeAttributes = Record<string, unknown> & {
 
 type MutualFriendsEdgeAttributes = Record<string, unknown> & {
     color?: string;
+    crossCommunity: boolean;
     curvature?: number;
     size: number;
     type?: string;
@@ -361,7 +365,15 @@ export async function buildSigmaGraph({
         }
         const key = [link.source, link.target].sort().join('__');
         if (!graph.hasEdge(key)) {
-            graph.addEdgeWithKey(key, link.source, link.target, { size: 0.5 });
+            const crossCommunity =
+                graph.getNodeAttribute(link.source, 'community') !==
+                graph.getNodeAttribute(link.target, 'community');
+            graph.addEdgeWithKey(key, link.source, link.target, {
+                crossCommunity,
+                size: crossCommunity
+                    ? CROSS_COMMUNITY_EDGE_SIZE
+                    : INTRA_COMMUNITY_EDGE_SIZE
+            });
         }
     }
 
@@ -413,6 +425,7 @@ export function renderSigmaGraph({
     resizeObserverRef,
     themeRef,
     selectedNodeIdRef,
+    crossCommunityOnlyRef,
     onSelectNode,
     onOpenNode,
     hoverCardStringsRef
@@ -423,6 +436,7 @@ export function renderSigmaGraph({
     resizeObserverRef: { current: ResizeObserver | null };
     themeRef: { current: MutualFriendsGraphTheme };
     selectedNodeIdRef: { current: string };
+    crossCommunityOnlyRef: { current: boolean };
     onSelectNode: (nodeId: string) => void;
     onOpenNode: (nodeId: string) => void;
     hoverCardStringsRef: { current: HoverCardStrings };
@@ -560,8 +574,20 @@ export function renderSigmaGraph({
         const result: Record<string, unknown> = { ...data };
         const theme = themeRef.current;
         const dim = hoverTransition.value;
+        const isCross = data.crossCommunity === true;
+        const baseColor = isCross ? theme.edgeCrossColor : theme.edgeColor;
+        const restingColor =
+            crossCommunityOnlyRef.current && !isCross
+                ? mixGraphColors(
+                      baseColor,
+                      theme.backgroundColor,
+                      INTRA_EDGE_MUTE_STRENGTH
+                  )
+                : baseColor;
+
         if (!dim) {
-            result.color = theme.edgeColor;
+            result.color = restingColor;
+            result.zIndex = isCross ? 1 : 0;
             return result;
         }
 
@@ -572,13 +598,13 @@ export function renderSigmaGraph({
         const [source, target] = graph.extremities(edge);
         const isIncident = source === hovered || target === hovered;
         result.color = isIncident
-            ? mixGraphColors(theme.edgeColor, theme.edgeActiveColor, dim)
+            ? mixGraphColors(baseColor, theme.edgeActiveColor, dim)
             : mixGraphColors(
-                  theme.edgeColor,
+                  restingColor,
                   theme.backgroundColor,
                   dim * EDGE_DIM_STRENGTH
               );
-        result.zIndex = isIncident ? 1 : 0;
+        result.zIndex = isIncident ? 2 : isCross ? 1 : 0;
         return result;
     });
 
@@ -643,6 +669,9 @@ export function renderSigmaGraph({
             );
         },
         applyTheme,
+        applyEdgeEmphasis() {
+            repaint();
+        },
         dispose() {
             cancelTransition(hoverTransition);
             cancelTransition(selectionTransition);

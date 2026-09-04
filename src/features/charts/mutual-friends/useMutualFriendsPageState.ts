@@ -64,9 +64,11 @@ export function useMutualFriendsPageState() {
         useMutualFriendsLayoutSettings();
     const {
         filters,
+        crossCommunityOnly,
         setSearchQuery,
         setMinDegree,
         toggleFocusedCommunity,
+        toggleCrossCommunityOnly,
         clearFilters
     } = useMutualFriendsViewFilters();
 
@@ -213,6 +215,7 @@ export function useMutualFriendsPageState() {
         communityIndexById,
         namedCommunityIndexes,
         resolvedTheme,
+        crossCommunityOnly,
         selectedNodeId,
         selectedNodeIdRef,
         onSelectNode: handleSelectNode,
@@ -311,6 +314,7 @@ export function useMutualFriendsPageState() {
             clearSelection: () => handleSelectNode(''),
             setMinDegree,
             setSearchQuery,
+            toggleCrossCommunityOnly,
             toggleExcludedFriendId,
             toggleFocusedCommunity
         },
@@ -355,6 +359,7 @@ export function useMutualFriendsPageState() {
             user: selectedNode ? (friendsById[selectedNode.id] ?? null) : null
         },
         view: {
+            crossCommunityOnly,
             filters
         }
     };

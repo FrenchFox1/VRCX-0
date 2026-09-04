@@ -24,6 +24,7 @@ interface SigmaLifecycleOptions {
     communityIndexById: Map<string, number>;
     namedCommunityIndexes: ReadonlySet<number>;
     resolvedTheme: string;
+    crossCommunityOnly: boolean;
     selectedNodeId: string;
     selectedNodeIdRef: { current: string };
     onSelectNode: (nodeId: string) => void;
@@ -36,6 +37,7 @@ export function useMutualFriendsSigmaLifecycle({
     communityIndexById,
     namedCommunityIndexes,
     resolvedTheme,
+    crossCommunityOnly,
     selectedNodeId,
     selectedNodeIdRef,
     onSelectNode,
@@ -63,6 +65,8 @@ export function useMutualFriendsSigmaLifecycle({
     );
     const themeRef = useRef(theme);
     themeRef.current = theme;
+    const crossCommunityOnlyRef = useRef(crossCommunityOnly);
+    crossCommunityOnlyRef.current = crossCommunityOnly;
     const hoverCardStringsRef = useRef({
         connections: '',
         lastFetched: '',
@@ -166,6 +170,7 @@ export function useMutualFriendsSigmaLifecycle({
                     resizeObserverRef,
                     themeRef,
                     selectedNodeIdRef,
+                    crossCommunityOnlyRef,
                     onSelectNode: (nodeId) => selectNodeRef.current(nodeId),
                     onOpenNode: (nodeId) => openNodeRef.current(nodeId),
                     hoverCardStringsRef
@@ -215,6 +220,10 @@ export function useMutualFriendsSigmaLifecycle({
     useEffect(() => {
         controllerRef.current?.applySelection(selectedNodeId);
     }, [selectedNodeId]);
+
+    useEffect(() => {
+        controllerRef.current?.applyEdgeEmphasis();
+    }, [crossCommunityOnly]);
 
     return {
         isLayoutRunning,

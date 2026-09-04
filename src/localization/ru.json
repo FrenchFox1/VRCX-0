@@ -1755,6 +1755,8 @@
                     "more_circles": "Ещё {count} меньших — серым",
                     "size_means_degree": "Больше точка — больше общих друзей",
                     "hollow_means_unknown": "Полый кружок — общие друзья скрыты",
+                    "cross_edges": "Светлые линии — связи между кругами",
+                    "cross_edges_only": "Приглушить связи внутри кругов",
                     "coverage": "Получено",
                     "coverage_value": "{fetched}/{total} друзей",
                     "coverage_unavailable": "Скрыто",

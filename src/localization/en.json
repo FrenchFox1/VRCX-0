@@ -1753,6 +1753,8 @@
                     "more_circles": "+{count} smaller, shown in grey",
                     "size_means_degree": "Bigger dot = more mutual friends",
                     "hollow_means_unknown": "Hollow dot = mutuals not shared",
+                    "cross_edges": "Brighter lines cross circles",
+                    "cross_edges_only": "Mute links inside circles",
                     "coverage": "Fetched",
                     "coverage_value": "{fetched}/{total} friends",
                     "coverage_unavailable": "Not shared",

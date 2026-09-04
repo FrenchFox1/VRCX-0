@@ -1732,6 +1732,8 @@
                     "more_circles": "작은 그룹 {count}개는 회색으로 표시",
                     "size_means_degree": "점이 클수록 공통 친구가 많음",
                     "hollow_means_unknown": "빈 점 = 공통 친구 비공개",
+                    "cross_edges": "밝은 선 = 그룹 간 연결",
+                    "cross_edges_only": "그룹 내부 연결을 흐리게",
                     "coverage": "가져옴",
                     "coverage_value": "{fetched}/{total}명",
                     "coverage_unavailable": "비공개",

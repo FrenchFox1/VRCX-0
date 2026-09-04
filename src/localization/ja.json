@@ -1749,6 +1749,8 @@
                     "more_circles": "ほかに小さなグループが {count} 件（グレー表示）",
                     "size_means_degree": "円が大きいほど共通のフレンドが多い",
                     "hollow_means_unknown": "白抜きの円 = 共通のフレンドが非公開",
+                    "cross_edges": "明るい線はグループをまたぐつながり",
+                    "cross_edges_only": "グループ内のつながりを薄くする",
                     "coverage": "取得済み",
                     "coverage_value": "{fetched}/{total} 人",
                     "coverage_unavailable": "非公開",

@@ -1753,6 +1753,8 @@
                     "more_circles": "另有 {count} 个小圈子，显示为灰色",
                     "size_means_degree": "点越大，共同好友越多",
                     "hollow_means_unknown": "空心点 = 对方未公开共同好友",
+                    "cross_edges": "较亮的线 = 跨圈子连接",
+                    "cross_edges_only": "压暗圈子内部的连线",
                     "coverage": "已获取",
                     "coverage_value": "{fetched}/{total} 位好友",
                     "coverage_unavailable": "未公开",

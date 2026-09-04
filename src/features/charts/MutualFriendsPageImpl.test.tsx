@@ -59,6 +59,7 @@ function controllerValue(currentUserId: string, friendCount: number) {
             setMinDegree: noop,
             setSearchQuery: noop,
             toggleExcludedFriendId: noop,
+            toggleCrossCommunityOnly: noop,
             toggleFocusedCommunity: noop
         },
         exclusions: {
@@ -107,6 +108,7 @@ function controllerValue(currentUserId: string, friendCount: number) {
             user: null
         },
         view: {
+            crossCommunityOnly: false,
             filters: {
                 focusedCommunity: null,
                 minDegree: 0,

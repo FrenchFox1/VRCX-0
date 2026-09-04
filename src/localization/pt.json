@@ -1753,6 +1753,8 @@
                     "more_circles": "{count} menores, em cinza",
                     "size_means_degree": "Ponto maior = mais amigos em comum",
                     "hollow_means_unknown": "Ponto vazado = amigos em comum não compartilhados",
+                    "cross_edges": "Linhas mais claras cruzam círculos",
+                    "cross_edges_only": "Atenuar as ligações dentro dos círculos",
                     "coverage": "Obtidos",
                     "coverage_value": "{fetched}/{total} amigos",
                     "coverage_unavailable": "Não compartilhado",

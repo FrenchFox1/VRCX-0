@@ -1755,6 +1755,8 @@
                     "more_circles": "Dalších {count} menších, šedě",
                     "size_means_degree": "Větší bod = více společných přátel",
                     "hollow_means_unknown": "Prázdný bod = společní přátelé nesdíleni",
+                    "cross_edges": "Světlejší čáry spojují kruhy",
+                    "cross_edges_only": "Ztlumit spoje uvnitř kruhů",
                     "coverage": "Načteno",
                     "coverage_value": "{fetched}/{total} přátel",
                     "coverage_unavailable": "Nesdíleno",
