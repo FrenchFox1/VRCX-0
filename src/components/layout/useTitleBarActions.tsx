@@ -256,10 +256,7 @@ export function useTitleBarActions(
         <TitleBarButton
             label={sidebarWindowModeLabel}
             aria-pressed={sidebarWindowMode}
-            className={cn(
-                'ml-1 size-7 min-w-7 rounded-md px-0',
-                sidebarWindowMode && 'bg-muted/50 text-foreground'
-            )}
+            className="ml-1 size-7 min-w-7 rounded-md px-0"
             onClick={toggleSidebarWindowMode}
         >
             <PanelRightDashedIcon data-icon="icon" />
