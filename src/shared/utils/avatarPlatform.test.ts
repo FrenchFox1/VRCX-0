@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { getAvailablePlatforms, getPlatformInfo } from './avatarPlatform';
+import {
+    getAvailablePlatforms,
+    getPlatformInfo,
+    hasAvatarPerformanceDetails
+} from './avatarPlatform';
 
 describe('avatarPlatform', () => {
     it('detects available PC, Quest, and iOS packages from supported variants', () => {
@@ -45,7 +49,7 @@ describe('avatarPlatform', () => {
         };
         const pcNone = {
             platform: 'standalonewindows',
-            performanceRating: 'None',
+            performanceRating: ' None ',
             variant: 'standard'
         };
         const androidNoneFirst = {
@@ -77,5 +81,76 @@ describe('avatarPlatform', () => {
             android: androidMedium,
             ios: {}
         });
+    });
+
+    it('removes whitespace-padded None ratings', () => {
+        expect(
+            getPlatformInfo([
+                {
+                    platform: 'standalonewindows',
+                    performanceRating: ' None '
+                }
+            ]).pc
+        ).toEqual({ platform: 'standalonewindows' });
+    });
+
+    it('falls back through file analysis, package, and avatar ratings', () => {
+        expect(
+            getPlatformInfo(
+                [
+                    {
+                        platform: 'standalonewindows',
+                        performanceRating: 'Good'
+                    },
+                    { platform: 'android', performanceRating: 'None' }
+                ],
+                {
+                    standalonewindows: 'Poor',
+                    android: 'Medium',
+                    ios: 'Excellent'
+                },
+                {
+                    standalonewindows: { performanceRating: 'VeryPoor' }
+                }
+            )
+        ).toEqual({
+            pc: {
+                platform: 'standalonewindows',
+                performanceRating: 'VeryPoor'
+            },
+            android: {
+                platform: 'android',
+                performanceRating: 'Medium'
+            },
+            ios: {
+                platform: 'ios',
+                performanceRating: 'Excellent'
+            }
+        });
+    });
+
+    it('shows performance details only when analysis contains detailed data', () => {
+        expect(hasAvatarPerformanceDetails(null)).toBe(false);
+        expect(hasAvatarPerformanceDetails({})).toBe(false);
+        expect(
+            hasAvatarPerformanceDetails({
+                standalonewindows: { performanceRating: 'Good' }
+            })
+        ).toBe(false);
+        expect(
+            hasAvatarPerformanceDetails({
+                standalonewindows: { fileSize: 0 }
+            })
+        ).toBe(true);
+        expect(
+            hasAvatarPerformanceDetails({
+                android: {
+                    avatarStats: {
+                        totalPolygons: 0,
+                        particleCollisionEnabled: false
+                    }
+                }
+            })
+        ).toBe(true);
     });
 });

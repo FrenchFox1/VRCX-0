@@ -15,6 +15,7 @@ import {
     TRUST_COLOR_DEFAULTS,
     type TrustColorMap
 } from '@/shared/utils/trustColors';
+import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 import { buttonVariants } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -50,6 +51,7 @@ type FriendRowModel = {
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
     instanceLocation?: string;
+    locationTime?: FriendLocationTimeEntry | null;
     canSendInvite?: boolean;
     canRequestInvite?: boolean;
     canBoop?: boolean;
@@ -58,7 +60,6 @@ type FriendRowModel = {
 
 type FriendRowCommands = {
     onOpen?: () => void;
-    onLaunch?: (location: string) => void;
     onSelfInvite?: (location: string) => void;
     onInvite?: (friend: SidebarFriendRecord) => void;
     onRequestInvite?: (friend: SidebarFriendRecord) => void;
@@ -101,6 +102,7 @@ export function FriendRow({
         isCurrentUser,
         isGroupByInstance = false,
         instanceLocation,
+        locationTime,
         canSendInvite,
         canRequestInvite,
         canBoop,
@@ -108,7 +110,6 @@ export function FriendRow({
     } = rowModel || {};
     const {
         onOpen,
-        onLaunch,
         onSelfInvite,
         onInvite,
         onRequestInvite,
@@ -167,7 +168,8 @@ export function FriendRow({
     } = resolveFriendRowLocationState({
         friend,
         isCurrentUser,
-        isGroupByInstance
+        isGroupByInstance,
+        locationTime
     });
     const timerLocation = isTraveling
         ? displayTraveling || ''
@@ -281,7 +283,6 @@ export function FriendRow({
                         canRequestInvite={canRequestInvite}
                         canBoop={canBoop}
                         onOpen={onOpen}
-                        onLaunch={onLaunch}
                         onSelfInvite={onSelfInvite}
                         onInvite={onInvite}
                         onRequestInvite={onRequestInvite}

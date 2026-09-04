@@ -15,14 +15,48 @@ export type UnityPackageRecord = EntityRecord & {
     worldSignature?: string;
 };
 
-export type FileAnalysisRecord = EntityRecord & {
-    created_at?: string;
-    encryptionKey?: string;
-    fileSize?: number;
-    success?: boolean;
-    uncompressedSize?: number;
-    worldSignature?: string;
+export type AvatarStatsRecord = EntityRecord & {
+    animatorCount?: number;
+    audioSourceCount?: number;
+    blendShapeCount?: number;
+    boneCount?: number;
+    bounds?: number[];
+    cameraCount?: number;
+    clothCount?: number;
+    constraintCount?: number;
+    constraintDepth?: number;
+    contactCount?: number;
+    lightCount?: number;
+    lineRendererCount?: number;
+    materialCount?: number;
+    materialSlotsUsed?: number;
+    meshCount?: number;
+    meshParticleMaxPolygons?: number;
+    particleCollisionEnabled?: boolean;
+    particleSystemCount?: number;
+    particleTrailsEnabled?: boolean;
+    physBoneColliderCount?: number;
+    physBoneCollisionCheckCount?: number;
+    physBoneComponentCount?: number;
+    physBoneTransformCount?: number;
+    physicsColliders?: number;
+    physicsRigidbodies?: number;
+    raycastCount?: number;
+    skinnedMeshCount?: number;
+    totalClothVertices?: number;
+    totalMaxParticles?: number;
+    totalPolygons?: number;
+    totalTextureUsage?: number;
+    totalVertices?: number;
+    trailRendererCount?: number;
+    writeDefaultsUsed?: boolean;
+};
+
+export type FileAnalysisRecord = {
+    avatarStats?: AvatarStatsRecord;
+    performanceRating?: string;
     _fileSize?: string;
+    _totalTextureUsage?: string;
     _uncompressedSize?: string;
 };
 
