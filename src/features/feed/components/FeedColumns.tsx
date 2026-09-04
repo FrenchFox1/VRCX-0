@@ -127,6 +127,7 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
             },
             {
                 id: 'created_at',
+                enableHiding: false,
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'created_at', meta),
                 meta: {
@@ -139,7 +140,22 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                 cell: ({ row }) => <DateCell row={row} />
             },
             {
+                id: 'displayName',
+                enableHiding: false,
+                accessorFn: (row: FeedRow) =>
+                    getFeedTableSortValue(row, 'displayName', meta),
+                meta: {
+                    label: t('table.feed.user'),
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+                },
+                header: ({ column }) => (
+                    <SortButton column={column} label={t('table.feed.user')} />
+                ),
+                cell: UserCell
+            },
+            {
                 id: 'type',
+                enableHiding: false,
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'type', meta),
                 meta: { label: t('table.feed.type') },
@@ -157,19 +173,6 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                         />
                     );
                 }
-            },
-            {
-                id: 'displayName',
-                accessorFn: (row: FeedRow) =>
-                    getFeedTableSortValue(row, 'displayName', meta),
-                meta: {
-                    label: t('table.feed.user'),
-                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
-                },
-                header: ({ column }) => (
-                    <SortButton column={column} label={t('table.feed.user')} />
-                ),
-                cell: UserCell
             },
             {
                 id: 'detail',

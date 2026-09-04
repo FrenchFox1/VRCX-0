@@ -4,7 +4,7 @@ import {
     StarIcon,
     XIcon
 } from 'lucide-react';
-import { memo, type ReactNode } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { FeedDateRange } from '@/components/feed/feedTypes';
@@ -39,7 +39,6 @@ import { FeedSearchBox } from './FeedSearchBox';
 import { FeedViewModeToggle } from './FeedViewModeToggle';
 
 type FeedToolbarProps = {
-    viewMenu: ReactNode;
     onViewModeChange(value: FeedViewMode): void;
     filterCommands: {
         onApplyDateFilter(): void;
@@ -259,7 +258,6 @@ function FeedDateRangeFilter({
 }
 
 export const FeedToolbar = memo(function FeedToolbar({
-    viewMenu,
     onViewModeChange,
     filterCommands,
     filterModel,
@@ -390,7 +388,6 @@ export const FeedToolbar = memo(function FeedToolbar({
                         {feedPersistenceDisabled ? (
                             <FeedPersistenceDisabledIndicator />
                         ) : null}
-                        {viewMenu}
                     </ToolbarActions>
                 </div>
             </PageToolbarRow>

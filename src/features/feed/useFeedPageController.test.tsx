@@ -1,9 +1,7 @@
 // @vitest-environment jsdom
 
 import type {
-    ColumnOrderState,
     ColumnSizingState,
-    ColumnVisibilityState,
     ExpandedState,
     PaginationState,
     SortingState
@@ -17,9 +15,11 @@ import type { FeedRow, FeedTableMeta } from '@/components/feed/feedTypes';
 const mocks = vi.hoisted(
     (): {
         rows: FeedRow[];
+        searchMode: boolean;
         meta: Pick<FeedTableMeta, 'knownUsersById' | 'friendLogNamesById'>;
     } => ({
         rows: [],
+        searchMode: true,
         meta: { knownUsersById: {}, friendLogNamesById: {} }
     })
 );
@@ -68,8 +68,16 @@ vi.mock('./useFeedPreviousInstancesDialog', () => ({
 vi.mock('./useFeedRows', () => ({
     useFeedRows: () => ({
         friendLogNamesById: {},
+        hasMore: false,
+        hasUnloadedLatest: false,
         isFavoritesLoaded: true,
+        loadOlder: vi.fn(),
         loadStatus: 'ready',
+        loadingOlder: false,
+        normalQueryKey: 'normal',
+        reloadLatest: vi.fn(),
+        searchMode: mocks.searchMode,
+        setViewingLatest: vi.fn(),
         rows: mocks.rows
     })
 }));
@@ -80,11 +88,7 @@ vi.mock('./useFeedTableMeta', () => ({
 
 vi.mock('./useFeedTableState', () => ({
     useFeedTableState: () => {
-        const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
-        const [columnOrderLocked, setColumnOrderLocked] = useState(false);
         const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-        const [columnVisibility, setColumnVisibility] =
-            useState<ColumnVisibilityState>({});
         const [expanded, setExpanded] = useState<ExpandedState>({});
         const [pagination, setPagination] = useState<PaginationState>({
             pageIndex: 0,
@@ -93,18 +97,12 @@ vi.mock('./useFeedTableState', () => ({
         const [sorting, setSorting] = useState<SortingState>([]);
 
         return {
-            columnOrder,
-            columnOrderLocked,
             columnSizing,
-            columnVisibility,
             expanded,
             pageSizes: [20],
             pagination,
             preferencesReady: true,
-            setColumnOrder,
-            setColumnOrderLocked,
             setColumnSizing,
-            setColumnVisibility,
             setExpanded,
             setPagination,
             setSorting,
@@ -120,6 +118,7 @@ import { useFeedPageController } from './useFeedPageController';
 describe('useFeedPageController', () => {
     beforeEach(() => {
         mocks.rows = [];
+        mocks.searchMode = true;
         mocks.meta = { knownUsersById: {}, friendLogNamesById: {} };
     });
 
@@ -243,6 +242,9 @@ describe('useFeedPageController', () => {
                 .getRowModel()
                 .rows.map((row) => row.original.rowId)
         ).toEqual(Array.from({ length: 20 }, (_, index) => 45 - index));
+        expect(result.current.listRows.map((row) => row.rowId)).toEqual(
+            Array.from({ length: 45 }, (_, index) => 45 - index)
+        );
 
         act(() => result.current.table.nextPage());
 

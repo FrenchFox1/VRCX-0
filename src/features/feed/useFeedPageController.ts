@@ -95,17 +95,13 @@ export function useFeedPageController({
         manualSorting: true,
         rowCount: feedRows.rows.length,
         state: {
-            expanded: tableModel.expanded,
-            columnVisibility: tableModel.columnVisibility,
-            columnOrder: tableModel.columnOrder,
             columnSizing: tableModel.columnSizing,
+            expanded: tableModel.expanded,
             sorting: tableModel.sorting,
             pagination: tableModel.pagination
         },
-        onExpandedChange: tableModel.setExpanded,
-        onColumnVisibilityChange: tableModel.setColumnVisibility,
-        onColumnOrderChange: tableModel.setColumnOrder,
         onColumnSizingChange: tableModel.setColumnSizing,
+        onExpandedChange: tableModel.setExpanded,
         onSortingChange: tableModel.setSorting,
         onPaginationChange: tableModel.setPagination,
         autoResetExpanded: false,
@@ -115,21 +111,28 @@ export function useFeedPageController({
         getRowId: (row) => getFeedRowId(row),
         getRowCanExpand: (row) => canExpandFeedRow(row.original),
         meta: {
-            columnOrderLocked: tableModel.columnOrderLocked,
-            setColumnOrderLocked: tableModel.setColumnOrderLocked,
             feed: feedTableMeta
         }
     });
 
     return {
-        columns,
         filters,
+        friendLogNamesById: feedRows.friendLogNamesById,
+        hasMore: feedRows.hasMore,
+        hasUnloadedLatest: feedRows.hasUnloadedLatest,
         friendActions,
         isFavoritesLoaded: feedRows.isFavoritesLoaded,
+        listRows: sortedRows,
+        loadOlder: feedRows.loadOlder,
         loadStatus: feedRows.loadStatus,
+        loadingOlder: feedRows.loadingOlder,
+        normalQueryKey: feedRows.normalQueryKey,
         previousInstancesDialog,
         resolvePageSize,
         rows: feedRows.rows,
+        reloadLatest: feedRows.reloadLatest,
+        searchMode: feedRows.searchMode,
+        setViewingLatest: feedRows.setViewingLatest,
         table,
         tableModel
     };

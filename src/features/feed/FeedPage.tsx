@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
 import { PageBody, PageScaffold } from '@/components/layout/PageScaffold';
 import {
@@ -13,9 +12,9 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { FeedColumnsMode } from './columns/FeedColumnsMode';
 import { FeedTableShell } from './components/FeedTableShell';
 import { FeedToolbar } from './components/FeedToolbar';
+import { FeedVirtualListShell } from './components/FeedVirtualListShell';
 import type { FeedViewMode } from './feedColumnsState';
 import { useFeedPageController } from './useFeedPageController';
-import { useFeedRowArrivals } from './useFeedRowArrivals';
 import { useFeedViewModeState } from './useFeedViewModeState';
 
 type FeedPageProps = {
@@ -110,18 +109,26 @@ function FeedTableMode({
     setRouteScopedUserIds(userIds: readonly string[]): void;
 }) {
     const {
-        columns,
         filters,
+        friendLogNamesById,
         friendActions,
+        hasMore,
+        hasUnloadedLatest,
         isFavoritesLoaded,
+        listRows,
+        loadOlder,
         loadStatus,
+        loadingOlder,
+        normalQueryKey,
         previousInstancesDialog,
         resolvePageSize,
         rows,
+        reloadLatest,
+        searchMode,
+        setViewingLatest,
         table,
         tableModel
     } = useFeedPageController({ routeScopedUserIds });
-    const arrivals = useFeedRowArrivals(rows, loadStatus);
     const {
         activeFilters,
         applyDateFilter,
@@ -221,33 +228,57 @@ function FeedTableMode({
     return (
         <>
             <FeedToolbar
-                viewMenu={<TableColumnVisibilityMenu table={table} />}
                 onViewModeChange={onViewModeChange}
                 filterModel={filterModel}
                 filterCommands={filterCommands}
                 isSearching={isSearching}
             />
             <PageBody>
-                <FeedTableShell
-                    arrivals={arrivals}
-                    columns={columns}
-                    favoritesOnly={filters.favoritesOnly}
-                    isFavoritesLoaded={isFavoritesLoaded}
-                    loadStatus={loadStatus}
-                    loadingPreviousInstancesKey={
-                        previousInstancesDialog.loadingKey
-                    }
-                    onNewInstance={friendActions.openFeedNewInstance}
-                    onOpenPreviousInstances={
-                        previousInstancesDialog.openPreviousInstancesForLocation
-                    }
-                    onPaginationChange={tableModel.setPagination}
-                    pageSizes={tableModel.pageSizes}
-                    pagination={tableModel.pagination}
-                    resolvePageSize={resolvePageSize}
-                    rows={rows}
-                    table={table}
-                />
+                {searchMode ? (
+                    <FeedTableShell
+                        favoritesOnly={filters.favoritesOnly}
+                        isFavoritesLoaded={isFavoritesLoaded}
+                        loadStatus={loadStatus}
+                        loadingPreviousInstancesKey={
+                            previousInstancesDialog.loadingKey
+                        }
+                        onNewInstance={friendActions.openFeedNewInstance}
+                        onOpenPreviousInstances={
+                            previousInstancesDialog.openPreviousInstancesForLocation
+                        }
+                        onPaginationChange={tableModel.setPagination}
+                        pageSizes={tableModel.pageSizes}
+                        pagination={tableModel.pagination}
+                        resolvePageSize={resolvePageSize}
+                        rows={rows}
+                        table={table}
+                    />
+                ) : (
+                    <FeedVirtualListShell
+                        actions={friendActions}
+                        favoritesOnly={filters.favoritesOnly}
+                        friendLogNamesById={friendLogNamesById}
+                        hasMore={hasMore}
+                        hasUnloadedLatest={hasUnloadedLatest}
+                        isFavoritesLoaded={isFavoritesLoaded}
+                        loadStatus={loadStatus}
+                        loadingOlder={loadingOlder}
+                        loadingPreviousInstancesKey={
+                            previousInstancesDialog.loadingKey
+                        }
+                        onLoadOlder={loadOlder}
+                        onReloadLatest={reloadLatest}
+                        onOpenPreviousInstances={
+                            previousInstancesDialog.openPreviousInstancesForLocation
+                        }
+                        resetKey={normalQueryKey}
+                        rows={listRows}
+                        sorting={tableModel.sorting}
+                        sourceRows={rows}
+                        table={table}
+                        onViewingLatestChange={setViewingLatest}
+                    />
+                )}
             </PageBody>
             <PreviousInstancesTableDialog
                 open={previousInstancesDialog.open}

@@ -963,6 +963,11 @@
                 "table": "Tabela",
                 "columns": "Colunas"
             },
+            "actions": {
+                "back_to_top": "Voltar ao topo",
+                "expand_entry": "Expandir item",
+                "collapse_entry": "Recolher item"
+            },
             "columns": {
                 "add": "Adicionar Coluna",
                 "manage": "Gerenciar Colunas",

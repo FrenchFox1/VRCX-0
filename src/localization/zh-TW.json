@@ -963,6 +963,11 @@
                 "table": "表格",
                 "columns": "分欄"
             },
+            "actions": {
+                "back_to_top": "回到頂部",
+                "expand_entry": "展開動態",
+                "collapse_entry": "收起動態"
+            },
             "columns": {
                 "add": "新增欄",
                 "manage": "管理分欄",

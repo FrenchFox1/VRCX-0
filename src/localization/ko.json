@@ -958,6 +958,11 @@
                 "table": "테이블",
                 "columns": "열"
             },
+            "actions": {
+                "back_to_top": "맨 위로",
+                "expand_entry": "항목 펼치기",
+                "collapse_entry": "항목 접기"
+            },
             "columns": {
                 "add": "열 추가",
                 "manage": "열 관리",

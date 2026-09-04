@@ -963,6 +963,11 @@
                 "table": "Tabulka",
                 "columns": "Sloupce"
             },
+            "actions": {
+                "back_to_top": "Zpět nahoru",
+                "expand_entry": "Rozbalit záznam",
+                "collapse_entry": "Sbalit záznam"
+            },
             "columns": {
                 "add": "Přidat sloupec",
                 "manage": "Spravovat sloupce",

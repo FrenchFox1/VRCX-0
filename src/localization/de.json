@@ -963,6 +963,11 @@
                 "table": "Tabelle",
                 "columns": "Spalten"
             },
+            "actions": {
+                "back_to_top": "Nach oben",
+                "expand_entry": "Eintrag aufklappen",
+                "collapse_entry": "Eintrag einklappen"
+            },
             "columns": {
                 "add": "Spalte hinzufügen",
                 "manage": "Spalten verwalten",

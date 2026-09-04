@@ -963,6 +963,11 @@
                 "table": "表格",
                 "columns": "分栏"
             },
+            "actions": {
+                "back_to_top": "回到顶部",
+                "expand_entry": "展开动态",
+                "collapse_entry": "收起动态"
+            },
             "columns": {
                 "add": "添加栏",
                 "manage": "管理分栏",

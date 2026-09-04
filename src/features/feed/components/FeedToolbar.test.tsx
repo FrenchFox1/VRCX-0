@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 
-import type { ColumnVisibilityState } from '@tanstack/react-table';
 import {
     cleanup,
     render,
@@ -22,11 +21,6 @@ import {
     vi
 } from 'vitest';
 
-import {
-    useAppTable,
-    type AppColumnDef
-} from '@/components/data-table/appTable';
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import en from '@/localization/en.json';
 import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -80,7 +74,6 @@ function FilterHarness({ userIds = [] }: { userIds?: string[] }) {
                     onToggleFeedFilter: filters.toggleFeedFilter
                 }}
                 isSearching={false}
-                viewMenu={null}
                 onViewModeChange={() => undefined}
             />
             <output aria-label="Applied search">
@@ -433,31 +426,9 @@ describe('Feed compound search', () => {
     });
 });
 
-type LayoutRow = { detail: string };
-const layoutColumns: AppColumnDef<LayoutRow>[] = [
-    { accessorKey: 'detail', id: 'detail', meta: { label: 'Detail' } }
-];
-const layoutRows: LayoutRow[] = [];
-
 function ViewHarness() {
     const [mode, setMode] = useState<FeedViewMode>('table');
-    const [columnVisibility, setColumnVisibility] =
-        useState<ColumnVisibilityState>({});
-    const [columnOrderLocked, setColumnOrderLocked] = useState(false);
-    const table = useAppTable({
-        columns: layoutColumns,
-        data: layoutRows,
-        state: { columnVisibility },
-        onColumnVisibilityChange: setColumnVisibility,
-        meta: { columnOrderLocked, setColumnOrderLocked }
-    });
-
-    return (
-        <>
-            <FeedViewModeToggle value={mode} onValueChange={setMode} />
-            <TableColumnVisibilityMenu table={table} />
-        </>
-    );
+    return <FeedViewModeToggle value={mode} onValueChange={setMode} />;
 }
 
 describe('Feed view controls', () => {
@@ -487,56 +458,5 @@ describe('Feed view controls', () => {
         await user.keyboard(' ');
         expect(table.getAttribute('aria-pressed')).toBe('true');
         expect(columns.getAttribute('aria-pressed')).toBe('false');
-    });
-
-    it('keeps column visibility, locking and reset in a separate display menu', async () => {
-        const user = userEvent.setup();
-        render(
-            <I18nextProvider i18n={i18n}>
-                <ViewHarness />
-            </I18nextProvider>
-        );
-
-        const trigger = screen.getByRole('button', {
-            name: en.common.actions.view_options
-        });
-        await user.click(trigger);
-        const detail = await screen.findByRole('menuitemcheckbox', {
-            name: 'Detail'
-        });
-        expect(
-            screen.queryByRole('menuitemradio', { name: 'Columns' })
-        ).toBeNull();
-        await user.click(detail);
-        expect(detail.getAttribute('aria-checked')).toBe('false');
-
-        await user.click(
-            screen.getByRole('menuitem', {
-                name: en.table.label.lock_column_order
-            })
-        );
-        expect(
-            screen.getByRole('menuitem', {
-                name: en.table.label.unlock_column_order
-            })
-        ).toBeTruthy();
-
-        await user.click(
-            screen.getByRole('menuitem', {
-                name: en.table.action.reset_columns
-            })
-        );
-        expect(detail.getAttribute('aria-checked')).toBe('true');
-
-        await user.keyboard('{Escape}');
-        await waitFor(() => {
-            expect(trigger.getAttribute('aria-expanded')).toBe('false');
-            expect(document.activeElement).toBe(trigger);
-        });
-        expect(
-            screen
-                .getByRole('button', { name: 'Table' })
-                .getAttribute('aria-pressed')
-        ).toBe('true');
     });
 });

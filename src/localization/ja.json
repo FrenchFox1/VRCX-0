@@ -963,6 +963,11 @@
                 "table": "テーブル",
                 "columns": "カラム"
             },
+            "actions": {
+                "back_to_top": "先頭に戻る",
+                "expand_entry": "詳細を開く",
+                "collapse_entry": "詳細を閉じる"
+            },
             "columns": {
                 "add": "カラムを追加",
                 "manage": "カラム管理",
