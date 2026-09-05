@@ -2,28 +2,18 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { WindowGeometry } from '@/platform/tauri/webview';
-
-import type { WindowAnimationBounds } from './windowModeAnimation';
+import type { WindowBounds, WindowGeometry } from '@/platform/tauri/webview';
 
 const mocks = vi.hoisted(() => ({
     suspendSidebarAutoHide: vi.fn<(suspended: boolean) => Promise<void>>(),
     getWindowGeometry: vi.fn<() => Promise<WindowGeometry | null>>(),
     maximizeWindow: vi.fn<() => Promise<void>>(),
     unmaximizeWindow: vi.fn<() => Promise<void>>(),
-    setWindowBounds: vi.fn<(bounds: WindowAnimationBounds) => Promise<void>>(),
+    setWindowBounds: vi.fn<(bounds: WindowBounds) => Promise<void>>(),
     setWindowPhysicalPosition: vi.fn<(x: number, y: number) => Promise<void>>(),
     setWindowSizeConstraints:
         vi.fn<(constraints: Record<string, number>) => Promise<void>>(),
-    setWindowMaximizable: vi.fn<(maximizable: boolean) => Promise<void>>(),
-    animateWindowBounds:
-        vi.fn<
-            (
-                start: WindowAnimationBounds,
-                end: WindowAnimationBounds,
-                allowAnimation?: boolean
-            ) => Promise<void>
-        >()
+    setWindowMaximizable: vi.fn<(maximizable: boolean) => Promise<void>>()
 }));
 
 vi.mock('@/platform/tauri/client', () => ({
@@ -35,10 +25,6 @@ vi.mock('@/platform/tauri/client', () => ({
 vi.mock('@/services/shellIntegrationService', () => ({
     setTaskbarOverlayNotification: vi.fn(),
     setTrayIconNotification: vi.fn()
-}));
-
-vi.mock('./windowModeAnimation', () => ({
-    animateWindowBounds: mocks.animateWindowBounds
 }));
 
 vi.mock('./sidebarAutoHideService', () => ({
@@ -102,9 +88,6 @@ beforeEach(() => {
     mocks.setWindowPhysicalPosition.mockResolvedValue(undefined);
     mocks.setWindowSizeConstraints.mockResolvedValue(undefined);
     mocks.setWindowMaximizable.mockResolvedValue(undefined);
-    mocks.animateWindowBounds.mockImplementation(async (_start, end) => {
-        await mocks.setWindowBounds(end);
-    });
 });
 
 describe('windowModeService', () => {
@@ -123,9 +106,7 @@ describe('windowModeService', () => {
         ).toBeLessThan(mocks.getWindowGeometry.mock.invocationCallOrder[0]);
         expect(
             mocks.suspendSidebarAutoHide.mock.invocationCallOrder[1]
-        ).toBeGreaterThan(
-            mocks.animateWindowBounds.mock.invocationCallOrder[0]
-        );
+        ).toBeGreaterThan(mocks.setWindowBounds.mock.invocationCallOrder[0]);
     });
 
     it('keeps sidebar mode when revealing the edge-hidden window fails', async () => {
@@ -190,6 +171,7 @@ describe('windowModeService', () => {
             x: 820,
             y: 100
         });
+        expect(mocks.setWindowBounds).toHaveBeenCalledTimes(1);
         expect(mocks.setWindowMaximizable).toHaveBeenCalledWith(false);
         expect(
             JSON.parse(
@@ -264,6 +246,7 @@ describe('windowModeService', () => {
             x: 80,
             y: 150
         });
+        expect(mocks.setWindowBounds).toHaveBeenCalledTimes(1);
         expect(mocks.maximizeWindow).not.toHaveBeenCalled();
         expect(
             window.localStorage.getItem('vrcx-main-window-sidebar-width')
@@ -293,12 +276,10 @@ describe('windowModeService', () => {
         });
         useShellStore.getState().setWindowDisplayMode('sidebar');
         mocks.getWindowGeometry.mockResolvedValueOnce(compactGeometry);
-        mocks.animateWindowBounds.mockRejectedValueOnce(
-            new Error('animation failed')
-        );
+        mocks.setWindowBounds.mockRejectedValueOnce(new Error('resize failed'));
 
         await expect(restoreNormalWindowMode()).rejects.toThrow(
-            'animation failed'
+            'resize failed'
         );
 
         expect(useShellStore.getState().windowDisplayMode).toBe('sidebar');
