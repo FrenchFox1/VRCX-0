@@ -708,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "Affichage",
-        "tools": "Outils",
         "help": "Aide",
         "preview_build_badge": "Version d'aperçu",
         "devkit_build_badge": "Dev Kit",
@@ -721,7 +719,6 @@
         "quit": "Quitter VRCX-0",
         "quick_search": "Recherche rapide",
         "keyboard_shortcuts": "Raccourcis clavier",
-        "notification_center": "Centre de notifications",
         "show_friends_sidebar": "Afficher la barre latérale des amis",
         "hide_friends_sidebar": "Masquer la barre latérale des amis",
         "enter_sidebar_mode": "Mode Barre Latérale",
@@ -729,7 +726,6 @@
         "zoom_in": "Zoom avant",
         "zoom_out": "Zoom arrière",
         "reset_zoom": "Réinitialiser le zoom",
-        "all_tools": "Tous les outils...",
         "open_devtools": "Ouvrir les DevTools",
         "report_issue": "Signaler un problème",
         "community": "Communauté",
@@ -1753,6 +1749,8 @@
                     "more_circles": "+{count} plus petits, affichés en gris",
                     "size_means_degree": "Point plus grand = plus d'amis communs",
                     "hollow_means_unknown": "Point vide = amis communs non partagés",
+                    "cross_edges": "Lignes plus claires traversent les cercles",
+                    "cross_edges_only": "Liens muets à l'intérieur des cercles",
                     "coverage": "Récupérés",
                     "coverage_value": "{fetched}/{total} amis",
                     "coverage_unavailable": "Non partagés",
