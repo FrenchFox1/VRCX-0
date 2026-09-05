@@ -260,7 +260,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                 )}
                 {...props}
             >
-                <div className="flex min-h-7 flex-col gap-1 overflow-hidden @2xl/statusbar:flex-row @2xl/statusbar:items-center @2xl/statusbar:justify-between">
+                <div className="flex min-h-6 flex-col gap-1 overflow-hidden @2xl/statusbar:flex-row @2xl/statusbar:items-center @2xl/statusbar:justify-between">
                     <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                         <StatusSegment
                             visible={visibility.steamvr}
@@ -434,7 +434,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                                     runtimeTransport.websocketConnected
                                                 )}
                                             />
-                                            <span className="text-muted-foreground text-xs">
+                                            <span className="text-content-tertiary text-xs">
                                                 {t(
                                                     'status_bar.realtime_connection'
                                                 )}

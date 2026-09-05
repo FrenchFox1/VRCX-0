@@ -23,6 +23,12 @@ vi.mock('@/repositories/vrchatMediaRepository', async (importOriginal) => {
 
 import { useUserDialogProfileAppearance } from './useUserDialogProfileAppearance';
 
+const VISIBLE_PROFILE_DECORATIONS = {
+    avatarFrame: true,
+    profileEffect: true,
+    nameplateEffect: true
+};
+
 describe('useUserDialogProfileAppearance', () => {
     beforeEach(() => {
         mocks.getInventoryTemplate.mockReset();
@@ -51,7 +57,8 @@ describe('useUserDialogProfileAppearance', () => {
                     iconFrame: 'invt_frame',
                     profileEffect: 'invt_profile',
                     nameplateEffect: 'invt_nameplate'
-                }
+                },
+                visibility: VISIBLE_PROFILE_DECORATIONS
             })
         );
 
@@ -90,7 +97,8 @@ describe('useUserDialogProfileAppearance', () => {
                         iconFrame,
                         profileEffect: 'invt_profile',
                         nameplateEffect: 'invt_nameplate'
-                    }
+                    },
+                    visibility: VISIBLE_PROFILE_DECORATIONS
                 }),
             {
                 initialProps: {
@@ -154,7 +162,8 @@ describe('useUserDialogProfileAppearance', () => {
                     iconFrame: 'invt_shared',
                     profileEffect: 'invt_failed',
                     nameplateEffect: 'invt_shared'
-                }
+                },
+                visibility: VISIBLE_PROFILE_DECORATIONS
             })
         );
 
@@ -191,7 +200,8 @@ describe('useUserDialogProfileAppearance', () => {
                     profile: {
                         id: userId,
                         iconFrame
-                    }
+                    },
+                    visibility: VISIBLE_PROFILE_DECORATIONS
                 }),
             {
                 initialProps: {
@@ -229,7 +239,8 @@ describe('useUserDialogProfileAppearance', () => {
                     iconFrame: '',
                     profileEffect: '',
                     nameplateEffect: ''
-                }
+                },
+                visibility: VISIBLE_PROFILE_DECORATIONS
             })
         );
 
@@ -237,21 +248,35 @@ describe('useUserDialogProfileAppearance', () => {
         expect(mocks.getInventoryTemplate).not.toHaveBeenCalled();
     });
 
-    it('requests and exposes profile decorations only while display is enabled', async () => {
+    it('requests and exposes only the visible profile decoration slots', async () => {
         const { result, rerender } = renderHook(
-            ({ enabled }: { enabled: boolean }) =>
+            ({
+                avatarFrame,
+                profileEffect,
+                nameplateEffect
+            }: {
+                avatarFrame: boolean;
+                profileEffect: boolean;
+                nameplateEffect: boolean;
+            }) =>
                 useUserDialogProfileAppearance({
-                    enabled,
                     profile: {
                         id: 'usr_target',
                         iconFrame: 'invt_frame',
                         profileEffect: 'invt_profile',
                         nameplateEffect: 'invt_nameplate'
+                    },
+                    visibility: {
+                        avatarFrame,
+                        profileEffect,
+                        nameplateEffect
                     }
                 }),
             {
                 initialProps: {
-                    enabled: false
+                    avatarFrame: false,
+                    profileEffect: false,
+                    nameplateEffect: false
                 }
             }
         );
@@ -259,16 +284,49 @@ describe('useUserDialogProfileAppearance', () => {
         expect(result.current).toEqual({});
         expect(mocks.getInventoryTemplate).not.toHaveBeenCalled();
 
-        rerender({ enabled: true });
+        rerender({
+            avatarFrame: true,
+            profileEffect: false,
+            nameplateEffect: false
+        });
 
         await waitFor(() => {
             expect(result.current.iconFrame?.id).toBe('invt_frame');
+        });
+        expect(result.current.profileEffect).toBeUndefined();
+        expect(result.current.nameplateEffect).toBeUndefined();
+        expect(mocks.getInventoryTemplate).toHaveBeenCalledOnce();
+
+        rerender({
+            avatarFrame: false,
+            profileEffect: true,
+            nameplateEffect: false
+        });
+
+        expect(result.current.iconFrame).toBeUndefined();
+        await waitFor(() => {
             expect(result.current.profileEffect?.id).toBe('invt_profile');
+        });
+        expect(result.current.nameplateEffect).toBeUndefined();
+        expect(mocks.getInventoryTemplate).toHaveBeenCalledTimes(2);
+
+        rerender({
+            avatarFrame: false,
+            profileEffect: false,
+            nameplateEffect: true
+        });
+
+        expect(result.current.profileEffect).toBeUndefined();
+        await waitFor(() => {
             expect(result.current.nameplateEffect?.id).toBe('invt_nameplate');
         });
         expect(mocks.getInventoryTemplate).toHaveBeenCalledTimes(3);
 
-        rerender({ enabled: false });
+        rerender({
+            avatarFrame: false,
+            profileEffect: false,
+            nameplateEffect: false
+        });
 
         expect(result.current).toEqual({});
     });

@@ -13,11 +13,11 @@ export function StatusDot({
     warn?: boolean;
     className?: string;
 }) {
-    const color = warn
-        ? 'bg-[var(--status-active)]'
-        : active
-          ? 'bg-[var(--status-online)]'
-          : 'bg-muted-foreground/40';
+    if (active && !warn) {
+        return null;
+    }
+
+    const color = warn ? 'bg-[var(--status-active)]' : 'bg-muted-foreground/40';
     return (
         <span
             className={cn(
@@ -73,7 +73,7 @@ export function StatusSegment({
             ) : null}
             <span
                 className={cn(
-                    'text-muted-foreground shrink-0 text-xs',
+                    'text-content-tertiary shrink-0 text-xs',
                     labelClassName
                 )}
             >
@@ -82,7 +82,7 @@ export function StatusSegment({
             {value ? (
                 <span
                     className={cn(
-                        'text-foreground min-w-0 truncate text-xs',
+                        'text-content-secondary min-w-0 truncate text-xs',
                         valueClassName
                     )}
                 >

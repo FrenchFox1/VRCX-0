@@ -552,7 +552,7 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
             className="flex-1"
             style={{ overflowY: 'auto' }}
         >
-            <PageToolbar className="px-1.5">
+            <PageToolbar>
                 <PageToolbarRow className="justify-end">
                     <Button
                         type="button"

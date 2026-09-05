@@ -30,8 +30,6 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { InputGroupButton } from '@/ui/shadcn/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
-import { Toggle } from '@/ui/shadcn/toggle';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { FeedViewMode } from '../feedColumnsState';
 import { FeedPersistenceDisabledIndicator } from './FeedPersistenceDisabledIndicator';
@@ -73,13 +71,19 @@ type FeedToolbarProps = {
 
 function FeedTypeFilterMenu({
     activeFilters,
+    favoritesOnly,
+    favoritesOnlyDisabled,
     feedFilterTypes,
     onClearFeedFilters,
+    onToggleFavoritesOnly,
     onToggleFeedFilter
 }: {
     activeFilters: FeedFilterType[];
+    favoritesOnly: boolean;
+    favoritesOnlyDisabled: boolean;
     feedFilterTypes: readonly FeedFilterType[];
     onClearFeedFilters(): void;
+    onToggleFavoritesOnly(): void;
     onToggleFeedFilter(filter: FeedFilterType): void;
 }) {
     const { t } = useTranslation();
@@ -102,7 +106,11 @@ function FeedTypeFilterMenu({
             <DropdownMenuTrigger
                 render={
                     <Button
-                        variant={activeFilters.length ? 'secondary' : 'outline'}
+                        variant={
+                            activeFilters.length || favoritesOnly
+                                ? 'secondary'
+                                : 'outline'
+                        }
                     />
                 }
                 aria-label={t('view.feed.toolbar.type_summary', {
@@ -113,6 +121,17 @@ function FeedTypeFilterMenu({
                 <ChevronDownIcon data-icon="inline-end" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
+                <DropdownMenuGroup>
+                    <DropdownMenuCheckboxItem
+                        checked={favoritesOnly}
+                        disabled={favoritesOnlyDisabled}
+                        closeOnClick={false}
+                        onCheckedChange={onToggleFavoritesOnly}
+                    >
+                        {t('view.feed.toolbar.grouped_friends_only')}
+                    </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                     <DropdownMenuLabel>
                         {t('view.feed.columns.types')}
@@ -304,39 +323,14 @@ export const FeedToolbar = memo(function FeedToolbar({
                         value="table"
                         onValueChange={onViewModeChange}
                     />
-                    <Tooltip>
-                        <TooltipTrigger
-                            render={
-                                <Toggle
-                                    variant="outline"
-                                    className="size-8 shrink-0 p-0"
-                                    aria-label={t(
-                                        'view.feed.toolbar.grouped_friends_only'
-                                    )}
-                                    pressed={favoritesOnly}
-                                    disabled={scopedUserIds.length > 0}
-                                    onPressedChange={onToggleFavoritesOnly}
-                                >
-                                    <StarIcon
-                                        data-icon="icon"
-                                        fill={
-                                            favoritesOnly
-                                                ? 'currentColor'
-                                                : 'none'
-                                        }
-                                    />
-                                </Toggle>
-                            }
-                        />
-                        <TooltipContent>
-                            {t('view.feed.toolbar.grouped_friends_only')}
-                        </TooltipContent>
-                    </Tooltip>
                     <div className="@min-4xl/feed-toolbar:hidden">
                         <FeedTypeFilterMenu
                             activeFilters={activeFilters}
+                            favoritesOnly={favoritesOnly}
+                            favoritesOnlyDisabled={scopedUserIds.length > 0}
                             feedFilterTypes={feedFilterTypes}
                             onClearFeedFilters={onClearFeedFilters}
+                            onToggleFavoritesOnly={onToggleFavoritesOnly}
                             onToggleFeedFilter={onToggleFeedFilter}
                         />
                     </div>
@@ -345,6 +339,15 @@ export const FeedToolbar = memo(function FeedToolbar({
                             value={activeFilters}
                             onValueChange={onFeedFiltersChange}
                             allLabel={t('view.feed.toolbar.all_types')}
+                            leading={{
+                                label: t(
+                                    'view.feed.toolbar.grouped_friends_only'
+                                ),
+                                icon: StarIcon,
+                                pressed: favoritesOnly,
+                                disabled: scopedUserIds.length > 0,
+                                onPressedChange: onToggleFavoritesOnly
+                            }}
                             options={feedFilterTypes.map((filter) => ({
                                 value: filter,
                                 label: t(`view.feed.filters.${filter}`)

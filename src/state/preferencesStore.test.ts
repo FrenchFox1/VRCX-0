@@ -20,16 +20,29 @@ describe('preferencesStore normalizers', () => {
         ).toBe(false);
     });
 
-    it('shows user dialog profile decorations by default and preserves an explicit opt-out', () => {
-        expect(DEFAULT_PREFERENCES.showUserDialogProfileDecorations).toBe(true);
-        expect(
-            normalizePreferenceSnapshot({}).showUserDialogProfileDecorations
-        ).toBe(true);
+    it('shows every user dialog appearance layer by default and preserves explicit opt-outs', () => {
+        const defaults = {
+            showUserDialogProfileBackground: true,
+            showUserDialogAvatarFrame: true,
+            showUserDialogProfileEffect: true,
+            showUserDialogNameplateEffect: true
+        };
+
+        expect(DEFAULT_PREFERENCES).toMatchObject(defaults);
+        expect(normalizePreferenceSnapshot({})).toMatchObject(defaults);
         expect(
             normalizePreferenceSnapshot({
-                showUserDialogProfileDecorations: false
-            }).showUserDialogProfileDecorations
-        ).toBe(false);
+                showUserDialogProfileBackground: false,
+                showUserDialogAvatarFrame: false,
+                showUserDialogProfileEffect: false,
+                showUserDialogNameplateEffect: false
+            })
+        ).toMatchObject({
+            showUserDialogProfileBackground: false,
+            showUserDialogAvatarFrame: false,
+            showUserDialogProfileEffect: false,
+            showUserDialogNameplateEffect: false
+        });
     });
 
     it('keeps startup auto update enabled by default', () => {

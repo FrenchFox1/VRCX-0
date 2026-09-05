@@ -6,7 +6,6 @@ import configRepository from '@/repositories/configRepository';
 import type { StatusPreset } from './FriendsSidebarActionItems';
 
 export type FriendsSidebarGroupKey =
-    | 'me'
     | 'favorites'
     | 'online'
     | 'active'
@@ -16,7 +15,6 @@ export type FriendsSidebarGroupKey =
 export type FriendsSidebarOpenGroups = Record<FriendsSidebarGroupKey, boolean>;
 
 const groupToggleKeys: Record<FriendsSidebarGroupKey, string> = {
-    me: 'isFriendsGroupMe',
     favorites: 'isFriendsGroupFavorites',
     online: 'isFriendsGroupOnline',
     active: 'isFriendsGroupActive',
@@ -31,7 +29,6 @@ export function isFriendsSidebarGroupKey(
 }
 
 const defaultGroupState: FriendsSidebarOpenGroups = {
-    me: true,
     favorites: true,
     online: true,
     active: false,
@@ -46,7 +43,6 @@ export function useFriendsSidebarPreferences() {
     useEffect(() => {
         let active = true;
         Promise.all([
-            configRepository.getBool(groupToggleKeys.me, true),
             configRepository.getBool(groupToggleKeys.favorites, true),
             configRepository.getBool(groupToggleKeys.online, true),
             configRepository.getBool(groupToggleKeys.active, false),
@@ -55,7 +51,6 @@ export function useFriendsSidebarPreferences() {
         ])
             .then(
                 ([
-                    me,
                     favorites,
                     online,
                     activeFriends,
@@ -66,7 +61,6 @@ export function useFriendsSidebarPreferences() {
                         return;
                     }
                     setOpenGroups({
-                        me: Boolean(me),
                         favorites: Boolean(favorites),
                         online: Boolean(online),
                         active: Boolean(activeFriends),

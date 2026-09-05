@@ -365,7 +365,7 @@ describe('settingsPageStateSections', () => {
         expect(setAvatarProviderDialogOpen).toHaveBeenCalledWith(true);
     });
 
-    it('routes profile decoration visibility through the interface section', () => {
+    it('routes user dialog appearance visibility through the interface section', () => {
         const saveBoolPreference = vi.fn();
         const prefs = createDefaultSettingsPrefs();
         const sections = buildSettingsPageStateSections(
@@ -376,15 +376,26 @@ describe('settingsPageStateSections', () => {
             })
         );
 
-        expect(prefs.showUserDialogProfileDecorations).toBe(true);
+        expect(prefs).toMatchObject({
+            showUserDialogProfileBackground: true,
+            showUserDialogAvatarFrame: true,
+            showUserDialogProfileEffect: true,
+            showUserDialogNameplateEffect: true
+        });
 
-        sections.interface.onShowUserDialogProfileDecorationsChange(false);
+        sections.interface.onShowUserDialogProfileBackgroundChange(false);
+        sections.interface.onShowUserDialogAvatarFrameChange(false);
+        sections.interface.onShowUserDialogProfileEffectChange(false);
+        sections.interface.onShowUserDialogNameplateEffectChange(false);
 
-        expect(saveBoolPreference).toHaveBeenCalledWith(
-            'showUserDialogProfileDecorations',
-            'showUserDialogProfileDecorations',
-            false
-        );
+        for (const key of [
+            'showUserDialogProfileBackground',
+            'showUserDialogAvatarFrame',
+            'showUserDialogProfileEffect',
+            'showUserDialogNameplateEffect'
+        ]) {
+            expect(saveBoolPreference).toHaveBeenCalledWith(key, key, false);
+        }
     });
 
     it('routes Friend Log preferences through the social section', () => {

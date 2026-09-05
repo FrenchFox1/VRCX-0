@@ -47,6 +47,41 @@ import {
     type SidebarFriendRecord
 } from './friendsSidebarModel';
 
+export function resolveFriendRowDisplay(
+    friend: SidebarFriendRecord | null | undefined,
+    {
+        randomUserColours = false,
+        isDarkMode = false,
+        trustColor = TRUST_COLOR_DEFAULTS
+    }: {
+        randomUserColours?: boolean;
+        isDarkMode?: boolean;
+        trustColor?: TrustColorMap;
+    }
+) {
+    const displaySource = readFriendRef(friend);
+    const nameStyle: CSSProperties =
+        randomUserColours && friend?.id
+            ? { color: getNameColour(friend.id, isDarkMode) }
+            : {
+                  color:
+                      displaySource?.$userColour ||
+                      resolveTrustNameColour(displaySource, trustColor)
+              };
+    return {
+        displaySource,
+        imageUrl: userImage(displaySource, true, '64'),
+        displayName:
+            displaySource?.displayName ||
+            displaySource?.username ||
+            friend?.displayName ||
+            friend?.username ||
+            friend?.id ||
+            'Unknown',
+        nameStyle
+    };
+}
+
 type FriendRowModel = {
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
@@ -132,23 +167,12 @@ export function FriendRow({
         ageGatedInstancesVisible = false,
         currentLocationStartedAt = null
     } = appearance || {};
-    const displaySource = readFriendRef(friend);
-    const imageUrl = userImage(displaySource, true, '64');
-    const displayName =
-        displaySource?.displayName ||
-        displaySource?.username ||
-        friend?.displayName ||
-        friend?.username ||
-        friend?.id ||
-        'Unknown';
-    const nameStyle: CSSProperties =
-        randomUserColours && friend?.id
-            ? { color: getNameColour(friend.id, isDarkMode) }
-            : {
-                  color:
-                      displaySource?.$userColour ||
-                      resolveTrustNameColour(displaySource, trustColor)
-              };
+    const { displaySource, imageUrl, displayName, nameStyle } =
+        resolveFriendRowDisplay(friend, {
+            randomUserColours,
+            isDarkMode,
+            trustColor
+        });
     const statusDotClassName = resolveSidebarStatusDotClassName(
         friend,
         currentUserSnapshot,

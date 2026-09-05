@@ -75,7 +75,7 @@ export function VrchatLogToolbar({
     const { t } = useTranslation();
 
     return (
-        <PageToolbar className="border-b">
+        <PageToolbar>
             <PageToolbarRow>
                 <ToolbarViews className="min-w-0">
                     <Select

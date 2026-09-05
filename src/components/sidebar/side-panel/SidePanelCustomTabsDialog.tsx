@@ -73,21 +73,17 @@ import {
     SelectItem,
     SelectTrigger
 } from '@/ui/shadcn/select';
-import { Separator } from '@/ui/shadcn/separator';
 import { Switch } from '@/ui/shadcn/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     DEFAULT_SIDEBAR_TAB_LAYOUT,
     type FavoriteGroupItem,
     type SidebarFavoriteCollectionTabLayoutItem,
-    type SidebarTabDisplayMode,
     type SidebarTabLayout,
     type SidebarTabLayoutItem,
     createFavoriteCollectionTab,
     moveSidebarTab,
-    normalizeSidebarTabDisplayMode,
     normalizeSidebarTabLayout,
     sidebarTabFallbackIcon
 } from './sidebarTabLayout';
@@ -290,17 +286,10 @@ function FavoriteSourceChecklist({
     );
 }
 
-const DISPLAY_MODE_OPTIONS = [
-    ['auto', 'side_panel.settings.custom_tabs.display_auto'],
-    ['iconText', 'side_panel.settings.custom_tabs.display_icon_text'],
-    ['iconOnly', 'side_panel.settings.custom_tabs.display_icon_only']
-] as const satisfies ReadonlyArray<readonly [SidebarTabDisplayMode, string]>;
-
 export function SidePanelCustomTabsDialog({
     open,
     onOpenChange,
     layout,
-    displayMode,
     favoriteGroupItems,
     autoCreateCollection = false,
     onSave
@@ -308,22 +297,14 @@ export function SidePanelCustomTabsDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
     layout: SidebarTabLayout;
-    displayMode: SidebarTabDisplayMode;
     favoriteGroupItems: FavoriteGroupItem[];
     autoCreateCollection?: boolean;
-    onSave: (
-        layout: SidebarTabLayout,
-        displayMode: SidebarTabDisplayMode
-    ) => void;
+    onSave: (layout: SidebarTabLayout) => void;
 }) {
     const { t } = useTranslation();
     const [draftLayout, setDraftLayout] = useState<SidebarTabLayout>(() =>
         normalizeSidebarTabLayout(layout)
     );
-    const [draftDisplayMode, setDraftDisplayMode] =
-        useState<SidebarTabDisplayMode>(() =>
-            normalizeSidebarTabDisplayMode(displayMode)
-        );
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -361,8 +342,7 @@ export function SidePanelCustomTabsDialog({
                   ])
                 : baseLayout
         );
-        setDraftDisplayMode(normalizeSidebarTabDisplayMode(displayMode));
-    }, [autoCreateCollection, displayMode, layout, open, t]);
+    }, [autoCreateCollection, layout, open, t]);
 
     function updateItem(
         id: string,
@@ -453,16 +433,8 @@ export function SidePanelCustomTabsDialog({
         );
     }
 
-    function handleDisplayModeChange(next: string[]) {
-        const value = next[next.length - 1];
-        if (!value) {
-            return;
-        }
-        setDraftDisplayMode(normalizeSidebarTabDisplayMode(value));
-    }
-
     function save() {
-        onSave(normalizeSidebarTabLayout(draftLayout), draftDisplayMode);
+        onSave(normalizeSidebarTabLayout(draftLayout));
         onOpenChange(false);
     }
 
@@ -478,36 +450,6 @@ export function SidePanelCustomTabsDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex min-h-0 flex-col gap-5 overflow-auto pr-1">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex min-w-0 flex-col gap-0.5">
-                            <span className="text-sm font-medium">
-                                {t(
-                                    'side_panel.settings.custom_tabs.display_mode'
-                                )}
-                            </span>
-                            <span className="text-muted-foreground text-xs">
-                                {t(
-                                    'side_panel.settings.custom_tabs.display_hint'
-                                )}
-                            </span>
-                        </div>
-                        <ToggleGroup
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0"
-                            value={[draftDisplayMode]}
-                            onValueChange={handleDisplayModeChange}
-                        >
-                            {DISPLAY_MODE_OPTIONS.map(([value, labelKey]) => (
-                                <ToggleGroupItem key={value} value={value}>
-                                    {t(labelKey)}
-                                </ToggleGroupItem>
-                            ))}
-                        </ToggleGroup>
-                    </div>
-
-                    <Separator />
-
                     <div className="flex min-h-0 flex-col gap-3">
                         <div className="flex flex-col gap-0.5">
                             <span className="text-sm font-medium">
@@ -880,7 +822,6 @@ export function SidePanelCustomTabsDialog({
                                     DEFAULT_SIDEBAR_TAB_LAYOUT
                                 )
                             );
-                            setDraftDisplayMode('auto');
                         }}
                     >
                         {t('common.actions.reset')}

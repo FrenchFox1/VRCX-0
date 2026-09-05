@@ -9,7 +9,6 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     getVisibleFavoriteCollectionSourceGroupKeys,
     getVisibleSidebarTabs,
-    normalizeSidebarTabDisplayMode,
     normalizeSidebarTabLayout,
     type FavoriteGroupItem
 } from './side-panel/sidebarTabLayout';
@@ -123,7 +122,7 @@ export function useSidePanelTabData({
                     return {
                         value: item.id,
                         label: item.name,
-                        countLabel,
+                        railCountLabel: countLabel,
                         title,
                         icon: item.icon,
                         layoutItem: item
@@ -136,7 +135,7 @@ export function useSidePanelTabData({
                     return {
                         value: 'groups',
                         label,
-                        countLabel,
+                        railCountLabel: countLabel,
                         title,
                         icon: item.icon,
                         layoutItem: item
@@ -148,7 +147,7 @@ export function useSidePanelTabData({
                 return {
                     value: 'friends',
                     label,
-                    countLabel,
+                    railCountLabel: String(onlineIds.length),
                     title,
                     icon: item.icon,
                     layoutItem: item
@@ -162,9 +161,6 @@ export function useSidePanelTabData({
             totalFriendCount,
             visibleTabLayout
         ]
-    );
-    const tabDisplayMode = normalizeSidebarTabDisplayMode(
-        prefs.sidebarTabDisplayMode
     );
     const groupsTabVisible = visibleTabLayout.some(
         (item) => item.type === 'system' && item.systemTab === 'groups'
@@ -238,7 +234,6 @@ export function useSidePanelTabData({
         orderedFavoriteGroupItems,
         resolvedSidebarFavoriteGroups,
         selectedFavoriteGroupLabel,
-        tabDisplayMode,
         tabItems,
         tabLayout,
         visibleFavoriteCollectionSourceGroupKeys,

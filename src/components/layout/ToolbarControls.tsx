@@ -244,19 +244,34 @@ export function toolbarDateRangeTrigger({
 }
 
 const ALL_CHIP_VALUE = '__all__';
+const LEADING_CHIP_VALUE = '__leading__';
+
+export type ToolbarFilterChipsLeading = {
+    label: string;
+    icon: LucideIcon;
+    pressed: boolean;
+    disabled?: boolean;
+    onPressedChange: (pressed: boolean) => void;
+};
 
 export function ToolbarFilterChips<TValue extends string>({
     value,
     onValueChange,
     options,
-    allLabel
+    allLabel,
+    leading
 }: {
     value: readonly TValue[];
     onValueChange: (value: TValue[]) => void;
     options: readonly { value: TValue; label: string }[];
     allLabel: string;
+    leading?: ToolbarFilterChipsLeading;
 }) {
-    const pressed: string[] = value.length ? [...value] : [ALL_CHIP_VALUE];
+    const typePressed: string[] = value.length ? [...value] : [ALL_CHIP_VALUE];
+    const pressed = leading?.pressed
+        ? [LEADING_CHIP_VALUE, ...typePressed]
+        : typePressed;
+    const LeadingIcon = leading?.icon;
 
     return (
         <ToggleGroup
@@ -265,6 +280,14 @@ export function ToolbarFilterChips<TValue extends string>({
             spacing={0.5}
             value={pressed}
             onValueChange={(next) => {
+                if (leading) {
+                    const nextLeadingPressed =
+                        next.includes(LEADING_CHIP_VALUE);
+                    if (nextLeadingPressed !== leading.pressed) {
+                        leading.onPressedChange(nextLeadingPressed);
+                        return;
+                    }
+                }
                 if (next.includes(ALL_CHIP_VALUE) && value.length) {
                     onValueChange([]);
                     return;
@@ -280,8 +303,29 @@ export function ToolbarFilterChips<TValue extends string>({
                 }
                 onValueChange(picked.length === options.length ? [] : picked);
             }}
-            className="vrcx-0-segmented-control max-w-full shrink-0 overflow-x-auto"
+            className="vrcx-0-segmented-control vrcx-0-filter-chips max-w-full shrink-0 overflow-x-auto"
         >
+            {leading && LeadingIcon ? (
+                <Tooltip>
+                    <TooltipTrigger
+                        render={
+                            <ToggleGroupItem
+                                value={LEADING_CHIP_VALUE}
+                                aria-label={leading.label}
+                                disabled={leading.disabled}
+                            >
+                                <LeadingIcon
+                                    data-icon="icon"
+                                    className={cn(
+                                        leading.pressed && 'fill-current'
+                                    )}
+                                />
+                            </ToggleGroupItem>
+                        }
+                    />
+                    <TooltipContent>{leading.label}</TooltipContent>
+                </Tooltip>
+            ) : null}
             <ToggleGroupItem value={ALL_CHIP_VALUE} aria-label={allLabel}>
                 {allLabel}
             </ToggleGroupItem>

@@ -188,6 +188,26 @@ function stripStoppedGameCurrentUserPresence(
     return strippedUser;
 }
 
+export function buildCurrentUserDisplayRecord(
+    currentUser: CurrentUserPresenceRecord | null | undefined,
+    gameState: SidebarGameState | null | undefined
+): SidebarFriendRecord | null {
+    if (!currentUser) {
+        return null;
+    }
+    const currentUserRow = buildCurrentUserPresenceView(currentUser, {
+        gameState
+    });
+    const currentUserDisplayRow = stripStoppedGameCurrentUserPresence(
+        currentUserRow,
+        gameState
+    );
+    return {
+        ...currentUserDisplayRow,
+        stateBucket: resolveCurrentUserStateBucket(currentUserDisplayRow)
+    };
+}
+
 function buildCurrentUserRows({
     currentUser,
     currentUserId,
@@ -216,24 +236,14 @@ function buildCurrentUserRows({
         );
     }
 
-    const currentUserRow = buildCurrentUserPresenceView(currentUser, {
-        gameState
-    });
-    const currentUserDisplayRow = stripStoppedGameCurrentUserPresence(
-        currentUserRow,
+    const currentUserDisplayRecord = buildCurrentUserDisplayRecord(
+        currentUser,
         gameState
     );
 
     return buildFriendRows(
         sectionKey,
-        [
-            {
-                ...currentUserDisplayRow,
-                stateBucket: resolveCurrentUserStateBucket(
-                    currentUserDisplayRow
-                )
-            }
-        ],
+        currentUserDisplayRecord ? [currentUserDisplayRecord] : [],
         { currentUserId, isCurrentUser: true, isGroupByInstance }
     );
 }
@@ -275,21 +285,6 @@ export function buildFriendsSidebarVirtualRows({
         pushSkeletonRows(nextRows, 'loading');
         nextRows.push({ type: 'footer', key: 'footer' });
         return nextRows;
-    }
-
-    pushSection(nextRows, {
-        id: 'me',
-        title: t('side_panel.me'),
-        open: openGroups.me
-    });
-    if (openGroups.me) {
-        nextRows.push(
-            ...buildCurrentUserRows({
-                currentUser,
-                currentUserId,
-                gameState
-            })
-        );
     }
 
     const pushSameInstance = () => {

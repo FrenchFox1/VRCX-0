@@ -36,10 +36,6 @@ export function SettingsInterfaceTab() {
             dtIsoFormat: state.dtIsoFormat,
             weekStartsOn: state.weekStartsOn,
             feedTimeDisplayMode: state.feedTimeDisplayMode,
-            showUserDialogProfileDecorations:
-                state.showUserDialogProfileDecorations,
-            hideUserNotes: state.hideUserNotes,
-            hideUserMemos: state.hideUserMemos,
             randomUserColours: state.randomUserColours,
             trustColor: state.trustColor
         }))
@@ -70,7 +66,6 @@ export function SettingsInterfaceTab() {
         onAgeGatedInstancesVisibleChange,
         onHideNicknamesChange,
         onDisplayVrcPlusIconsAsAvatarChange,
-        onShowUserDialogProfileDecorationsChange,
         onShowNewDashboardButtonChange,
         onOpenTablePageSizes,
         onOpenTableLimits,
@@ -78,8 +73,6 @@ export function SettingsInterfaceTab() {
         onIsoFormatChange,
         onWeekStartsOnChange,
         onFeedTimeDisplayModeChange,
-        onHideUserNotesChange,
-        onHideUserMemosChange,
         onRandomUserColoursChange,
         onResetTrustColors,
         onSaveTrustColor,
@@ -122,9 +115,6 @@ export function SettingsInterfaceTab() {
                 onDisplayVrcPlusIconsAsAvatarChange={
                     onDisplayVrcPlusIconsAsAvatarChange
                 }
-                onShowUserDialogProfileDecorationsChange={
-                    onShowUserDialogProfileDecorationsChange
-                }
                 onShowNewDashboardButtonChange={onShowNewDashboardButtonChange}
                 onOpenTablePageSizes={onOpenTablePageSizes}
                 onOpenTableLimits={onOpenTableLimits}
@@ -132,8 +122,6 @@ export function SettingsInterfaceTab() {
                 onIsoFormatChange={onIsoFormatChange}
                 onWeekStartsOnChange={onWeekStartsOnChange}
                 onFeedTimeDisplayModeChange={onFeedTimeDisplayModeChange}
-                onHideUserNotesChange={onHideUserNotesChange}
-                onHideUserMemosChange={onHideUserMemosChange}
             />
             <SettingsInterfaceUserColorsCard
                 prefs={prefs}

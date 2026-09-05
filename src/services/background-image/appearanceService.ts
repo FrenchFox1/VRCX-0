@@ -49,6 +49,9 @@ export function buildBackgroundImageCss(
     snapshot: Pick<BackgroundImageSnapshot, 'imageUrl'>,
     opaqueBase = false
 ): string {
+    const shellSurface = opaqueBase
+        ? 'var(--surface-shell)'
+        : 'var(--vrcx-0-app-surface)';
     return `:root {
   --vrcx-0-wallpaper-image: url(${toCssString(snapshot.imageUrl)});
   --vrcx-0-wallpaper-size: cover;
@@ -60,13 +63,13 @@ export function buildBackgroundImageCss(
   --surface-panel: color-mix(in oklch, var(--background) 46%, transparent);
   --surface-raised: color-mix(in oklch, var(--background) 52%, transparent);
   --vrcx-0-app-surface: ${opaqueBase ? 'var(--background)' : 'transparent'};
-  --vrcx-0-titlebar-surface: var(--vrcx-0-app-surface);
+  --vrcx-0-titlebar-surface: ${shellSurface};
   --vrcx-0-main-surface: transparent;
   --vrcx-0-main-content-surface: color-mix(in oklch, var(--background) 20%, transparent);
-  --vrcx-0-sidebar-surface: var(--vrcx-0-app-surface);
+  --vrcx-0-sidebar-surface: ${shellSurface};
   --vrcx-0-sidebar-inset-surface: color-mix(in oklch, var(--background) 22%, transparent);
-  --vrcx-0-side-panel-surface: var(--vrcx-0-app-surface);
-  --vrcx-0-statusbar-surface: var(--vrcx-0-app-surface);
+  --vrcx-0-side-panel-surface: ${shellSurface};
+  --vrcx-0-statusbar-surface: ${shellSurface};
   --vrcx-0-table-surface: color-mix(in oklch, var(--background) 46%, transparent);
   --vrcx-0-table-header-surface: color-mix(in oklch, var(--background) 52%, transparent);
 }

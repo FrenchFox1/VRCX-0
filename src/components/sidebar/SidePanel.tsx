@@ -25,22 +25,20 @@ import { FriendsSidebar } from './FriendsSidebar';
 import { GroupsSidebar } from './GroupsSidebar';
 import {
     DEFAULT_SIDEBAR_TAB_LAYOUT,
-    normalizeSidebarTabDisplayMode,
     normalizeSidebarTabLayout,
     serializeSidebarTabLayout,
     sidebarTabFallbackIcon,
     type SidebarFavoriteCollectionTabLayoutItem,
-    type SidebarTabDisplayMode,
     type SidebarTabLayout
 } from './side-panel/sidebarTabLayout';
 import { SidePanelCustomTabsDialog } from './side-panel/SidePanelCustomTabsDialog';
 import { SidePanelFavoriteGroupOrderDialog } from './side-panel/SidePanelFavoriteGroupOrderDialog';
+import { SidePanelSelfHeader } from './side-panel/SidePanelSelfHeader';
 import { SidePanelSettingsPopover } from './side-panel/SidePanelSettingsPopover';
 import type {
     SidePanelPreferences,
     SidePanelSortMethod
 } from './side-panel/sidePanelTypes';
-import { useResponsiveSidePanelTabText } from './useResponsiveSidePanelTabText';
 import { useSidePanelSettingsState } from './useSidePanelSettingsState';
 import { useSidePanelTabData } from './useSidePanelTabData';
 
@@ -55,8 +53,7 @@ const defaultPrefs: SidePanelPreferences = {
     sidebarSortMethod3: '',
     sidebarFavoriteGroups: [],
     sidebarFavoriteGroupOrder: [],
-    sidebarTabLayout: DEFAULT_SIDEBAR_TAB_LAYOUT,
-    sidebarTabDisplayMode: 'auto'
+    sidebarTabLayout: DEFAULT_SIDEBAR_TAB_LAYOUT
 };
 
 const FRIEND_REFRESH_COOLDOWN_MS = 30 * SECOND_MS;
@@ -146,8 +143,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 configRepository.getString('sidebarSortMethod3', ''),
                 configRepository.getString('sidebarFavoriteGroups', '[]'),
                 configRepository.getString('sidebarFavoriteGroupOrder', '[]'),
-                configRepository.getString('sidebarTabLayout', '[]'),
-                configRepository.getString('sidebarTabDisplayMode', 'auto')
+                configRepository.getString('sidebarTabLayout', '[]')
             ])
                 .then(
                     ([
@@ -161,8 +157,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                         sidebarSortMethod3,
                         sidebarFavoriteGroups,
                         sidebarFavoriteGroupOrder,
-                        sidebarTabLayout,
-                        sidebarTabDisplayMode
+                        sidebarTabLayout
                     ]) => {
                         if (!active) {
                             return;
@@ -199,11 +194,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                 sidebarFavoriteGroupOrder
                             ),
                             sidebarTabLayout:
-                                normalizeSidebarTabLayout(sidebarTabLayout),
-                            sidebarTabDisplayMode:
-                                normalizeSidebarTabDisplayMode(
-                                    sidebarTabDisplayMode
-                                )
+                                normalizeSidebarTabLayout(sidebarTabLayout)
                         });
                     }
                 )
@@ -221,17 +212,11 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             orderedFavoriteGroupItems,
             resolvedSidebarFavoriteGroups,
             selectedFavoriteGroupLabel,
-            tabDisplayMode,
             tabItems,
             tabLayout,
             visibleFavoriteCollectionSourceGroupKeys,
             visibleTabLayout
         } = useSidePanelTabData({ activeTab, prefs, setActiveTab });
-        const { showTabText, tabListRef, tabViewportRef } =
-            useResponsiveSidePanelTabText(
-                tabDisplayMode,
-                tabItems.map((item) => item.title)
-            );
 
         const {
             favoriteGroupOrderDialogOpen,
@@ -304,25 +289,15 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             }
         }
 
-        function saveCustomTabs(
-            nextLayout: SidebarTabLayout,
-            nextDisplayMode: SidebarTabDisplayMode
-        ) {
+        function saveCustomTabs(nextLayout: SidebarTabLayout) {
             const normalizedLayout = normalizeSidebarTabLayout(nextLayout);
-            const normalizedDisplayMode =
-                normalizeSidebarTabDisplayMode(nextDisplayMode);
             setPrefs((current) => ({
                 ...current,
-                sidebarTabLayout: normalizedLayout,
-                sidebarTabDisplayMode: normalizedDisplayMode
+                sidebarTabLayout: normalizedLayout
             }));
             configRepository.setString(
                 'sidebarTabLayout',
                 serializeSidebarTabLayout(normalizedLayout)
-            );
-            configRepository.setString(
-                'sidebarTabDisplayMode',
-                normalizedDisplayMode
             );
         }
 
@@ -342,129 +317,158 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 }
                 return item;
             });
-            saveCustomTabs(nextLayout, tabDisplayMode);
+            saveCustomTabs(nextLayout);
         }
 
         return (
             <aside
                 ref={ref}
                 data-vrcx-0-surface="side-panel"
+                data-window-sidebar-mode={
+                    sidebarWindowMode ? 'true' : undefined
+                }
                 className={cn(
-                    'vrcx-0-side-panel flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden',
+                    'vrcx-0-side-panel flex min-h-0 w-80 shrink-0 flex-col overflow-hidden',
                     className
                 )}
                 style={style}
             >
+                <SidePanelSelfHeader />
                 <Tabs
+                    orientation="vertical"
                     value={activeTab}
                     onValueChange={setActiveTab}
-                    className={cn(
-                        'flex min-h-0 flex-1 flex-col overflow-hidden px-2 pt-4.5 pb-2',
-                        sidebarWindowMode && 'pt-2'
-                    )}
+                    className="flex min-h-0 min-w-0 flex-1 gap-0 overflow-hidden"
                 >
-                    <div className="flex min-w-0 shrink-0 items-center gap-2">
-                        <div
-                            ref={tabViewportRef}
-                            className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden"
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-2 pl-2">
+                        <TabsContent
+                            value="friends"
+                            className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
                         >
-                            <TabsList
-                                ref={tabListRef}
-                                className="min-w-max justify-start"
+                            <FriendsSidebar
+                                prefs={prefs}
+                                excludedFavoriteGroupKeys={
+                                    visibleFavoriteCollectionSourceGroupKeys
+                                }
+                            />
+                        </TabsContent>
+                        {groupsTabVisible ? (
+                            <TabsContent
+                                value="groups"
+                                className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
                             >
-                                {tabItems.map((item) => {
-                                    const Icon = getNavIconComponent(
-                                        item.icon,
-                                        sidebarTabFallbackIcon(item.layoutItem)
-                                    );
-                                    const canHideTab =
-                                        item.layoutItem.type ===
-                                            'favoriteCollection' ||
-                                        item.layoutItem.systemTab === 'groups';
-                                    const hideLabel =
-                                        item.layoutItem.type === 'system' &&
-                                        item.layoutItem.systemTab === 'groups'
-                                            ? t(
-                                                  'side_panel.settings.custom_tabs.hide_groups'
-                                              )
-                                            : t(
-                                                  'side_panel.settings.custom_tabs.hide_tab'
-                                              );
-                                    return (
-                                        <ContextMenu key={item.value}>
-                                            <ContextMenuTrigger
-                                                render={
-                                                    <TabsTrigger
-                                                        value={item.value}
-                                                        title={item.title}
-                                                        data-active={
-                                                            activeTab ===
-                                                            item.value
-                                                                ? ''
-                                                                : undefined
-                                                        }
-                                                        className={cn(
-                                                            'min-w-0 flex-none',
-                                                            showTabText
-                                                                ? 'max-w-40'
-                                                                : 'px-1'
-                                                        )}
-                                                    >
-                                                        <Icon data-icon="inline-start" />
-                                                        <span
-                                                            className={cn(
-                                                                showTabText
-                                                                    ? 'min-w-0 truncate'
-                                                                    : 'sr-only'
-                                                            )}
+                                <GroupsSidebar />
+                            </TabsContent>
+                        ) : null}
+                        {visibleTabLayout
+                            .filter(
+                                (
+                                    item
+                                ): item is SidebarFavoriteCollectionTabLayoutItem =>
+                                    item.type === 'favoriteCollection'
+                            )
+                            .map((item) => (
+                                <TabsContent
+                                    key={item.id}
+                                    value={item.id}
+                                    className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
+                                >
+                                    <FriendsSidebar
+                                        prefs={prefs}
+                                        favoriteCollectionTab={item}
+                                    />
+                                </TabsContent>
+                            ))}
+                    </div>
+                    <div className="vrcx-0-side-panel-rail flex w-9 shrink-0 flex-col items-center gap-0.5 py-1.5">
+                        <TabsList
+                            variant="underline"
+                            className="w-full flex-col gap-0.5 p-0 [&>[data-slot=tab-indicator]]:hidden"
+                        >
+                            {tabItems.map((item) => {
+                                const Icon = getNavIconComponent(
+                                    item.icon,
+                                    sidebarTabFallbackIcon(item.layoutItem)
+                                );
+                                const canHideTab =
+                                    item.layoutItem.type ===
+                                        'favoriteCollection' ||
+                                    item.layoutItem.systemTab === 'groups';
+                                const hideLabel =
+                                    item.layoutItem.type === 'system' &&
+                                    item.layoutItem.systemTab === 'groups'
+                                        ? t(
+                                              'side_panel.settings.custom_tabs.hide_groups'
+                                          )
+                                        : t(
+                                              'side_panel.settings.custom_tabs.hide_tab'
+                                          );
+                                return (
+                                    <ContextMenu key={item.value}>
+                                        <ContextMenuTrigger
+                                            render={
+                                                <TabsTrigger
+                                                    value={item.value}
+                                                    title={item.title}
+                                                    data-active={
+                                                        activeTab === item.value
+                                                            ? ''
+                                                            : undefined
+                                                    }
+                                                    className="h-auto w-full flex-col justify-center gap-0.5 px-0 py-1.5 data-active:bg-(--vrcx-0-toolbar-item-selected-surface)"
+                                                >
+                                                    <Icon data-icon="icon" />
+                                                    <span className="sr-only">
+                                                        {item.label}
+                                                    </span>
+                                                    {item.railCountLabel ? (
+                                                        <span className="text-[10px] leading-none tabular-nums">
+                                                            {
+                                                                item.railCountLabel
+                                                            }
+                                                        </span>
+                                                    ) : null}
+                                                </TabsTrigger>
+                                            }
+                                        />
+                                        <ContextMenuContent className="w-44">
+                                            {canHideTab ? (
+                                                <>
+                                                    <ContextMenuGroup>
+                                                        <ContextMenuItem
+                                                            onClick={() =>
+                                                                setTabVisibilityFromMenu(
+                                                                    item
+                                                                        .layoutItem
+                                                                        .id,
+                                                                    false
+                                                                )
+                                                            }
                                                         >
-                                                            {item.label}
-                                                        </span>
-                                                        <span className="text-muted-foreground shrink-0 text-[11px] leading-none font-medium tabular-nums">
-                                                            {item.countLabel}
-                                                        </span>
-                                                    </TabsTrigger>
-                                                }
-                                            />
-                                            <ContextMenuContent className="w-44">
-                                                {canHideTab ? (
-                                                    <>
-                                                        <ContextMenuGroup>
-                                                            <ContextMenuItem
-                                                                onClick={() =>
-                                                                    setTabVisibilityFromMenu(
-                                                                        item
-                                                                            .layoutItem
-                                                                            .id,
-                                                                        false
-                                                                    )
-                                                                }
-                                                            >
-                                                                <EyeOffIcon />
-                                                                {hideLabel}
-                                                            </ContextMenuItem>
-                                                        </ContextMenuGroup>
-                                                        <ContextMenuSeparator />
-                                                    </>
-                                                ) : null}
-                                                <ContextMenuGroup>
-                                                    <ContextMenuItem
-                                                        onClick={() =>
-                                                            openCustomTabsDialog()
-                                                        }
-                                                    >
-                                                        <SlidersHorizontalIcon />
-                                                        {t(
-                                                            'side_panel.settings.custom_tabs.configure'
-                                                        )}
-                                                    </ContextMenuItem>
-                                                </ContextMenuGroup>
-                                            </ContextMenuContent>
-                                        </ContextMenu>
-                                    );
-                                })}
-                            </TabsList>
-                        </div>
+                                                            <EyeOffIcon />
+                                                            {hideLabel}
+                                                        </ContextMenuItem>
+                                                    </ContextMenuGroup>
+                                                    <ContextMenuSeparator />
+                                                </>
+                                            ) : null}
+                                            <ContextMenuGroup>
+                                                <ContextMenuItem
+                                                    onClick={() =>
+                                                        openCustomTabsDialog()
+                                                    }
+                                                >
+                                                    <SlidersHorizontalIcon />
+                                                    {t(
+                                                        'side_panel.settings.custom_tabs.configure'
+                                                    )}
+                                                </ContextMenuItem>
+                                            </ContextMenuGroup>
+                                        </ContextMenuContent>
+                                    </ContextMenu>
+                                );
+                            })}
+                        </TabsList>
                         <Button
                             type="button"
                             variant="ghost"
@@ -478,79 +482,45 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             )}
                             onClick={() => openCustomTabsDialog(true)}
                         >
-                            <PlusIcon data-icon="inline-start" />
+                            <PlusIcon data-icon="icon" />
                         </Button>
-                        <SidePanelSettingsPopover
-                            open={settingsPopoverOpen}
-                            onOpenChange={setSettingsPopoverOpen}
-                            isRefreshing={isRefreshing}
-                            onRefreshFriends={() => {
-                                refreshFriends();
-                            }}
-                            prefs={prefs}
-                            onUpdateBoolPreference={updateBoolPreference}
-                            onUpdateStringPreference={updateStringPreference}
-                            isAdvancedOpen={isAdvancedOpen}
-                            onAdvancedOpenChange={setIsAdvancedOpen}
-                            favoriteGroupItems={favoriteGroupItems}
-                            favoriteLoadStatus={favoriteLoadStatus}
-                            selectedFavoriteGroupLabel={
-                                selectedFavoriteGroupLabel
-                            }
-                            resolvedSidebarFavoriteGroups={
-                                resolvedSidebarFavoriteGroups
-                            }
-                            onToggleFavoriteGroup={toggleFavoriteGroup}
-                            orderedFavoriteGroupItemsLength={
-                                orderedFavoriteGroupItems.length
-                            }
-                            onOpenFavoriteGroupOrderDialog={() => {
-                                restoreNormalWindowModeForIntent();
-                                setFavoriteGroupOrderDialogOpen(true);
-                            }}
-                            onOpenCustomTabsDialog={() =>
-                                openCustomTabsDialog()
-                            }
-                        />
+                        <div className="mt-auto shrink-0">
+                            <SidePanelSettingsPopover
+                                open={settingsPopoverOpen}
+                                onOpenChange={setSettingsPopoverOpen}
+                                isRefreshing={isRefreshing}
+                                onRefreshFriends={() => {
+                                    refreshFriends();
+                                }}
+                                prefs={prefs}
+                                onUpdateBoolPreference={updateBoolPreference}
+                                onUpdateStringPreference={
+                                    updateStringPreference
+                                }
+                                isAdvancedOpen={isAdvancedOpen}
+                                onAdvancedOpenChange={setIsAdvancedOpen}
+                                favoriteGroupItems={favoriteGroupItems}
+                                favoriteLoadStatus={favoriteLoadStatus}
+                                selectedFavoriteGroupLabel={
+                                    selectedFavoriteGroupLabel
+                                }
+                                resolvedSidebarFavoriteGroups={
+                                    resolvedSidebarFavoriteGroups
+                                }
+                                onToggleFavoriteGroup={toggleFavoriteGroup}
+                                orderedFavoriteGroupItemsLength={
+                                    orderedFavoriteGroupItems.length
+                                }
+                                onOpenFavoriteGroupOrderDialog={() => {
+                                    restoreNormalWindowModeForIntent();
+                                    setFavoriteGroupOrderDialogOpen(true);
+                                }}
+                                onOpenCustomTabsDialog={() =>
+                                    openCustomTabsDialog()
+                                }
+                            />
+                        </div>
                     </div>
-                    <TabsContent
-                        value="friends"
-                        className="mt-1 min-h-0 flex-1 overflow-hidden data-hidden:hidden"
-                    >
-                        <FriendsSidebar
-                            prefs={prefs}
-                            excludedFavoriteGroupKeys={
-                                visibleFavoriteCollectionSourceGroupKeys
-                            }
-                        />
-                    </TabsContent>
-                    {groupsTabVisible ? (
-                        <TabsContent
-                            value="groups"
-                            className="mt-1 min-h-0 flex-1 overflow-hidden data-hidden:hidden"
-                        >
-                            <GroupsSidebar />
-                        </TabsContent>
-                    ) : null}
-                    {visibleTabLayout
-                        .filter(
-                            (
-                                item
-                            ): item is SidebarFavoriteCollectionTabLayoutItem =>
-                                item.type === 'favoriteCollection'
-                        )
-                        .map((item) => (
-                            <TabsContent
-                                key={item.id}
-                                value={item.id}
-                                className="mt-1 min-h-0 flex-1 overflow-hidden data-hidden:hidden"
-                            >
-                                <FriendsSidebar
-                                    prefs={prefs}
-                                    favoriteCollectionTab={item}
-                                />
-                            </TabsContent>
-                        ))}
                 </Tabs>
                 <SidePanelFavoriteGroupOrderDialog
                     open={favoriteGroupOrderDialogOpen}
@@ -569,7 +539,6 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                         }
                     }}
                     layout={tabLayout}
-                    displayMode={tabDisplayMode}
                     favoriteGroupItems={favoriteGroupItems}
                     autoCreateCollection={customTabsAutoAdd}
                     onSave={saveCustomTabs}

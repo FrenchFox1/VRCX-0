@@ -7,14 +7,6 @@ import { isRecord } from '@/shared/utils/record';
 const SYSTEM_TAB_FRIENDS = 'friends';
 const SYSTEM_TAB_GROUPS = 'groups';
 
-export const SIDEBAR_TAB_DISPLAY_MODES = [
-    'auto',
-    'iconText',
-    'iconOnly'
-] as const;
-
-export type SidebarTabDisplayMode = (typeof SIDEBAR_TAB_DISPLAY_MODES)[number];
-
 export type SidebarSystemTabId =
     | typeof SYSTEM_TAB_FRIENDS
     | typeof SYSTEM_TAB_GROUPS;
@@ -187,15 +179,6 @@ export function normalizeSidebarTabLayout(value: unknown): SidebarTabLayout {
 
 export function serializeSidebarTabLayout(layout: SidebarTabLayout): string {
     return JSON.stringify(normalizeSidebarTabLayout(layout));
-}
-
-export function normalizeSidebarTabDisplayMode(
-    value: unknown
-): SidebarTabDisplayMode {
-    if (value === 'auto' || value === 'iconText' || value === 'iconOnly') {
-        return value;
-    }
-    return 'auto';
 }
 
 export function createFavoriteCollectionTab(

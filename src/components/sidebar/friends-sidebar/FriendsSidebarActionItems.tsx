@@ -25,6 +25,13 @@ const statusOptions = [
 
 export type StatusPreset = SocialStatusPreset;
 
+export function resolveCurrentUserStatusLabelKey(
+    status: string | null | undefined
+): string {
+    const option = statusOptions.find((row) => row.value === status);
+    return option ? option.labelKey : 'dialog.user.status.online';
+}
+
 type ContextMenuItemComponent = ComponentType<{
     children?: ReactNode;
     checked?: boolean;
@@ -79,7 +86,8 @@ export function CurrentUserActionItems({
     Sub,
     SubTrigger,
     SubContent,
-    statusPresets = []
+    statusPresets = [],
+    showOpen = true
 }: {
     friend: SidebarFriendRecord & { statusHistory?: unknown };
     onOpen?: () => void;
@@ -95,6 +103,7 @@ export function CurrentUserActionItems({
     SubTrigger: ContextMenuSubTriggerComponent;
     SubContent: ContextMenuContainerComponent;
     statusPresets?: StatusPreset[];
+    showOpen?: boolean;
 }) {
     const { t } = useTranslation();
     const statusHistory = Array.isArray(friend?.statusHistory)
@@ -103,10 +112,16 @@ export function CurrentUserActionItems({
 
     return (
         <>
-            <Group>
-                <MenuItem onClick={onOpen}>{t('common.actions.open')}</MenuItem>
-            </Group>
-            <Separator />
+            {showOpen ? (
+                <>
+                    <Group>
+                        <MenuItem onClick={onOpen}>
+                            {t('common.actions.open')}
+                        </MenuItem>
+                    </Group>
+                    <Separator />
+                </>
+            ) : null}
             <Group>
                 {statusOptions.map((option) => (
                     <CheckboxItem

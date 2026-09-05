@@ -113,9 +113,12 @@ export function AppShellLayout() {
         document.body.style.userSelect = 'none';
         document.body.style.cursor = 'col-resize';
         let cleanedUp = false;
+        const panelRight =
+            sidePanelElementRef.current?.getBoundingClientRect().right ??
+            window.innerWidth;
 
         const handleMove = (moveEvent: PointerEvent) => {
-            applySidePanelWidth(window.innerWidth - moveEvent.clientX);
+            applySidePanelWidth(panelRight - moveEvent.clientX);
         };
 
         const cleanup = (commit = true) => {
@@ -150,7 +153,7 @@ export function AppShellLayout() {
         window.addEventListener('pointercancel', handleEnd);
         window.addEventListener('blur', handleEnd);
         resizeCleanupRef.current = cleanup;
-        applySidePanelWidth(window.innerWidth - event.clientX);
+        applySidePanelWidth(panelRight - event.clientX);
     }
 
     return (
@@ -159,7 +162,13 @@ export function AppShellLayout() {
                 data-vrcx-0-surface="main-shell"
                 className="vrcx-0-main-shell flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
             >
-                <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+                <div
+                    data-vrcx-0-surface="workspace"
+                    data-window-sidebar-mode={
+                        sidebarWindowMode ? 'true' : undefined
+                    }
+                    className="vrcx-0-workspace flex min-h-0 min-w-0 flex-1 overflow-hidden"
+                >
                     <div
                         data-vrcx-0-surface="main-content"
                         className={cn(

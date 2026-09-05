@@ -330,7 +330,10 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     isAgeGatedInstancesVisible: true,
     hideNicknames: false,
     displayVRCPlusIconsAsAvatar: true,
-    showUserDialogProfileDecorations: true,
+    showUserDialogProfileBackground: true,
+    showUserDialogAvatarFrame: true,
+    showUserDialogProfileEffect: true,
+    showUserDialogNameplateEffect: true,
     weekStartsOn: 1,
     dtIsoFormat: false,
     dtHour12: false,
@@ -493,8 +496,17 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         displayVRCPlusIconsAsAvatar: normalizeBool(
             next.displayVRCPlusIconsAsAvatar
         ),
-        showUserDialogProfileDecorations: normalizeBool(
-            next.showUserDialogProfileDecorations
+        showUserDialogProfileBackground: normalizeBool(
+            next.showUserDialogProfileBackground
+        ),
+        showUserDialogAvatarFrame: normalizeBool(
+            next.showUserDialogAvatarFrame
+        ),
+        showUserDialogProfileEffect: normalizeBool(
+            next.showUserDialogProfileEffect
+        ),
+        showUserDialogNameplateEffect: normalizeBool(
+            next.showUserDialogNameplateEffect
         ),
         weekStartsOn: normalizeWeekStartsOn(next.weekStartsOn),
         dtIsoFormat: normalizeBool(next.dtIsoFormat),

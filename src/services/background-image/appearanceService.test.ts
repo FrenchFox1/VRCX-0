@@ -124,6 +124,12 @@ describe('background image appearance', () => {
             'background-image',
             expect.stringContaining('--vrcx-0-app-surface: transparent;')
         );
+        expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
+            'background-image',
+            expect.stringContaining(
+                '--vrcx-0-sidebar-surface: var(--vrcx-0-app-surface);'
+            )
+        );
         expect(transitionLayer?.hasAttribute('data-active')).toBe(false);
         expect(transitionLayer?.style.backgroundImage).toBe('');
     });
@@ -144,7 +150,7 @@ describe('background image appearance', () => {
         );
     });
 
-    it('applies a decoration URL without a backend snapshot', async () => {
+    it('keeps shell surfaces translucent over a decoration URL', async () => {
         mocks.backgroundState.enabled = true;
         mocks.backgroundState.decorationImageUrl =
             'https://assets.vrchat.com/profile-background.png';
@@ -155,6 +161,12 @@ describe('background image appearance', () => {
             'background-image',
             expect.stringMatching(
                 /https:\/\/assets\.vrchat\.com\/profile-background\.png[\s\S]*--vrcx-0-app-surface: var\(--background\);/
+            )
+        );
+        expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
+            'background-image',
+            expect.stringMatching(
+                /--vrcx-0-titlebar-surface: var\(--surface-shell\);[\s\S]*--vrcx-0-sidebar-surface: var\(--surface-shell\);[\s\S]*--vrcx-0-side-panel-surface: var\(--surface-shell\);[\s\S]*--vrcx-0-statusbar-surface: var\(--surface-shell\);/
             )
         );
     });

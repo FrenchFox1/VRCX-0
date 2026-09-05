@@ -207,6 +207,12 @@
     --vrcx-0-main-content-gutter: 0.5rem;
     --vrcx-0-main-content-radius: 0.5rem;
     --vrcx-0-main-content-edge: var(--stroke-subtle);
+    --vrcx-0-workspace-divider: color-mix(
+        in oklch,
+        var(--foreground) 4%,
+        transparent
+    );
+    --vrcx-0-page-toolbar-border: var(--stroke-subtle);
     --vrcx-0-main-content-preferred-min-width: 45rem;
     --vrcx-0-side-panel-min-width: 15rem;
     --vrcx-0-side-panel-resizer-width: 0.5rem;
@@ -690,17 +696,56 @@
         background: var(--vrcx-0-main-surface);
     }
 
-    .vrcx-0-main-content {
+    .vrcx-0-workspace {
         position: relative;
-        isolation: isolate;
         margin: var(--vrcx-0-main-content-gutter);
         border-radius: var(--vrcx-0-main-content-radius);
         background: var(--vrcx-0-main-content-surface);
         box-shadow: 0 0 0 1px var(--vrcx-0-main-content-edge);
     }
 
-    .vrcx-0-main-content:has(+ [data-vrcx-0-resize='side-panel']) {
-        margin-inline-end: 0;
+    .vrcx-0-workspace[data-window-sidebar-mode='true'] {
+        margin: 0;
+        background: transparent;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .vrcx-0-main-content {
+        position: relative;
+        isolation: isolate;
+    }
+
+    [data-vrcx-0-resize='side-panel'] {
+        position: relative;
+    }
+
+    [data-vrcx-0-resize='side-panel']::before {
+        position: absolute;
+        inset-block: 0;
+        inset-inline-start: 50%;
+        width: 1px;
+        pointer-events: none;
+        content: '';
+        background: var(--vrcx-0-workspace-divider);
+        transform: translateX(-50%);
+        transition:
+            width var(--motion-standard) var(--ease-out-ui),
+            background-color var(--motion-standard) var(--ease-out-ui);
+    }
+
+    .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='side-panel']:hover)
+        [data-vrcx-0-resize='side-panel']::before {
+        width: 2px;
+        background: var(--vrcx-0-resize-accent);
+        transition-delay: 100ms;
+    }
+
+    .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='side-panel']:active)
+        [data-vrcx-0-resize='side-panel']::before {
+        width: 2px;
+        background: var(--vrcx-0-resize-accent-active);
+        transition-delay: 0ms;
     }
 
     .vrcx-0-main-content::after {
@@ -722,17 +767,7 @@
         transition-delay: 100ms;
     }
 
-    .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='side-panel']:hover)
-        .vrcx-0-main-content::after {
-        right: 0;
-        left: auto;
-        background: var(--vrcx-0-resize-accent);
-        transition-delay: 100ms;
-    }
-
     .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='nav']:active)
-        .vrcx-0-main-content::after,
-    .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='side-panel']:active)
         .vrcx-0-main-content::after {
         background: var(--vrcx-0-resize-accent-active);
         transition-delay: 0ms;
@@ -771,8 +806,42 @@
         background: var(--vrcx-0-sidebar-inset-surface);
     }
 
-    .vrcx-0-side-panel {
+    .vrcx-0-page-scaffold {
+        --vrcx-0-page-pad: 1rem;
+    }
+
+    .vrcx-0-page-scaffold--embedded {
+        --vrcx-0-page-pad: 0.75rem;
+    }
+
+    .vrcx-0-page-toolbar {
+        margin-block-end: 0.75rem;
+        padding-block-end: 0.75rem;
+        border-block-end: 1px solid var(--vrcx-0-page-toolbar-border);
+    }
+
+    .vrcx-0-page-toolbar:has(+ .vrcx-0-page-toolbar) {
+        margin-block-end: 0;
+        padding-block-end: 0.5rem;
+        border-block-end-width: 0;
+    }
+
+    .vrcx-0-page-scaffold > .vrcx-0-page-toolbar {
+        margin-inline: calc(var(--vrcx-0-page-pad) * -1);
+        padding-inline: var(--vrcx-0-page-pad);
+    }
+
+    .vrcx-0-page-scaffold > .vrcx-0-page-toolbar:first-child {
+        margin-block-start: calc(var(--vrcx-0-page-pad) * -1);
+        padding-block-start: var(--vrcx-0-page-pad);
+    }
+
+    .vrcx-0-side-panel[data-window-sidebar-mode='true'] {
         background: var(--vrcx-0-side-panel-surface);
+    }
+
+    .vrcx-0-side-panel-self {
+        border-block-end: 1px solid var(--vrcx-0-main-content-edge);
     }
 
     .vrcx-0-statusbar {
@@ -871,6 +940,12 @@
         padding: 0.125rem;
         background: var(--vrcx-0-toolbar-group-surface);
         border: 1px solid var(--vrcx-0-toolbar-group-border);
+    }
+
+    [data-slot='toggle-group'].vrcx-0-segmented-control.vrcx-0-filter-chips {
+        padding-inline: 0;
+        background: transparent;
+        border-color: transparent;
     }
 
     [data-slot='toggle-group'].vrcx-0-segmented-control

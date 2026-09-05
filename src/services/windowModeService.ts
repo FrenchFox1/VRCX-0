@@ -1,14 +1,14 @@
 import { tauriClient } from '@/platform/tauri/client';
 import { tauriEvents } from '@/platform/tauri/events';
-import type { WindowGeometry, WindowWorkArea } from '@/platform/tauri/webview';
+import type {
+    WindowBounds,
+    WindowGeometry,
+    WindowWorkArea
+} from '@/platform/tauri/webview';
 import { isRecord } from '@/shared/utils/record';
 import { useShellStore } from '@/state/shellStore';
 
 import { suspendSidebarAutoHide } from './sidebarAutoHideService';
-import {
-    animateWindowBounds,
-    type WindowAnimationBounds
-} from './windowModeAnimation';
 
 const SIDEBAR_WINDOW_MIN_WIDTH = 320;
 const SIDEBAR_WINDOW_MAX_WIDTH = 600;
@@ -156,9 +156,7 @@ function clampPositionToWorkArea(
     };
 }
 
-function toWindowAnimationBounds(
-    geometry: WindowGeometry
-): WindowAnimationBounds {
+function toWindowBounds(geometry: WindowGeometry): WindowBounds {
     return {
         width: geometry.innerSize.width / geometry.scaleFactor,
         height: geometry.innerSize.height / geometry.scaleFactor,
@@ -170,7 +168,7 @@ function toWindowAnimationBounds(
 function resolveSidebarWindowTarget(
     geometry: WindowGeometry,
     width: number
-): { bounds: WindowAnimationBounds; rightEdge: number } {
+): { bounds: WindowBounds; rightEdge: number } {
     const rightEdge = geometry.outerPosition.x + geometry.outerSize.width;
     const targetOuterWidth =
         width * geometry.scaleFactor +
@@ -197,21 +195,6 @@ function resolveSidebarWindowTarget(
         },
         rightEdge
     };
-}
-
-function isSameWorkArea(
-    first: WindowWorkArea | null,
-    second: WindowWorkArea | null
-): boolean {
-    return Boolean(
-        first &&
-        second &&
-        first.x === second.x &&
-        first.y === second.y &&
-        first.width === second.width &&
-        first.height === second.height &&
-        first.scaleFactor === second.scaleFactor
-    );
 }
 
 function resolveInitialRestorePosition(
@@ -302,9 +285,7 @@ async function restoreCapturedSidebarWindow(
 ): Promise<void> {
     try {
         if (geometry) {
-            await tauriClient.webview.setWindowBounds(
-                toWindowAnimationBounds(geometry)
-            );
+            await tauriClient.webview.setWindowBounds(toWindowBounds(geometry));
         }
     } finally {
         await applySidebarWindowConstraints();
@@ -393,10 +374,7 @@ export function enterSidebarWindowMode(
             );
 
             await tauriClient.webview.setWindowMaximizable(false);
-            await animateWindowBounds(
-                toWindowAnimationBounds(normalGeometry),
-                target.bounds
-            );
+            await tauriClient.webview.setWindowBounds(target.bounds);
             await applySidebarWindowSizeConstraints();
 
             const sidebarGeometry =
@@ -483,16 +461,12 @@ export function restoreNormalWindowMode(remember = true): Promise<void> {
                 compactGeometry
             );
 
-            await animateWindowBounds(
-                toWindowAnimationBounds(compactGeometry),
-                {
-                    width: targetWidth,
-                    height: targetHeight,
-                    x: initialPosition.x,
-                    y: initialPosition.y
-                },
-                isSameWorkArea(compactGeometry.currentWorkArea, targetArea)
-            );
+            await tauriClient.webview.setWindowBounds({
+                width: targetWidth,
+                height: targetHeight,
+                x: initialPosition.x,
+                y: initialPosition.y
+            });
 
             const restoredGeometry =
                 await tauriClient.webview.getWindowGeometry();

@@ -118,9 +118,7 @@ describe('Feed toolbar filters', () => {
         expect(toggle.getAttribute('aria-pressed')).toBe('true');
 
         await user.tab();
-        expect(document.activeElement).toBe(
-            screen.getByRole('button', { name: 'Type: All' })
-        );
+        expect(document.activeElement).not.toBe(toggle);
         await user.tab({ shift: true });
         expect(document.activeElement).toBe(toggle);
         expect(

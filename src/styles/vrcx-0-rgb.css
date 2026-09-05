@@ -157,15 +157,6 @@ html.vrcx-0-rgb [data-slot='sidebar-container'][data-vrcx-0-surface='sidebar'] {
     border-image-slice: 1 !important;
 }
 
-html.vrcx-0-rgb .vrcx-0-side-panel {
-    position: relative !important;
-    border-image-source: linear-gradient(
-        0deg,
-        var(--vrcx-0-rgb-edge-stops)
-    ) !important;
-    border-image-slice: 1 !important;
-}
-
 html.vrcx-0-rgb .vrcx-0-statusbar {
     position: relative !important;
     border-image-source: linear-gradient(
@@ -177,7 +168,6 @@ html.vrcx-0-rgb .vrcx-0-statusbar {
 
 html.vrcx-0-rgb
     [data-slot='sidebar-container'][data-vrcx-0-surface='sidebar']::after,
-html.vrcx-0-rgb .vrcx-0-side-panel::after,
 html.vrcx-0-rgb .vrcx-0-statusbar::before {
     position: absolute !important;
     z-index: 2 !important;
@@ -188,8 +178,7 @@ html.vrcx-0-rgb .vrcx-0-statusbar::before {
 }
 
 html.vrcx-0-rgb
-    [data-slot='sidebar-container'][data-vrcx-0-surface='sidebar']::after,
-html.vrcx-0-rgb .vrcx-0-side-panel::after {
+    [data-slot='sidebar-container'][data-vrcx-0-surface='sidebar']::after {
     top: 0 !important;
     bottom: 0 !important;
     width: 5px !important;
@@ -199,23 +188,11 @@ html.vrcx-0-rgb .vrcx-0-side-panel::after {
     ) !important;
     background-size: 100% 200% !important;
     background-position: 0 0;
-}
-
-html.vrcx-0-rgb
-    [data-slot='sidebar-container'][data-vrcx-0-surface='sidebar']::after {
     right: -1px !important;
     animation:
         vrcx-0-rgb-wave-up var(--vrcx-0-rgb-wave-duration) linear infinite,
         vrcx-0-rgb-breathe 7s ease-in-out infinite !important;
     animation-delay: -9s, 0s !important;
-}
-
-html.vrcx-0-rgb .vrcx-0-side-panel::after {
-    left: -1px !important;
-    animation:
-        vrcx-0-rgb-wave-down var(--vrcx-0-rgb-wave-duration) linear infinite,
-        vrcx-0-rgb-breathe 7s ease-in-out infinite !important;
-    animation-delay: -3s, -3.5s !important;
 }
 
 html.vrcx-0-rgb .vrcx-0-statusbar::before {
@@ -361,7 +338,6 @@ html.reduce-effects.vrcx-0-rgb
     :is(
         .vrcx-0-titlebar,
         [data-slot='sidebar-container'][data-vrcx-0-surface='sidebar'],
-        .vrcx-0-side-panel,
         [data-slot='menubar-content'],
         [data-slot='menubar-sub-content']
     )::after,
@@ -382,7 +358,6 @@ html.reduce-effects.vrcx-0-rgb .vrcx-0-brand {
         :is(
             .vrcx-0-titlebar,
             [data-slot='sidebar-container'][data-vrcx-0-surface='sidebar'],
-            .vrcx-0-side-panel,
             [data-slot='menubar-content'],
             [data-slot='menubar-sub-content']
         )::after,

@@ -14,6 +14,7 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import type { SettingsPageStateSections } from '../../settingsPageStateSections';
 import { Field, SegmentedPreference, SettingsGroup } from '../SettingsField';
+import { SettingsInterfaceUserDialogCard } from './SettingsInterfaceUserDialogCard';
 
 type InterfaceState = SettingsPageStateSections['interface'];
 type SettingsInterfaceDisplayPrefs = Pick<
@@ -27,9 +28,6 @@ type SettingsInterfaceDisplayPrefs = Pick<
     | 'dtIsoFormat'
     | 'weekStartsOn'
     | 'feedTimeDisplayMode'
-    | 'showUserDialogProfileDecorations'
-    | 'hideUserNotes'
-    | 'hideUserMemos'
 >;
 type SettingsInterfaceDisplayCardsProps = {
     prefs: SettingsInterfaceDisplayPrefs;
@@ -39,7 +37,6 @@ type SettingsInterfaceDisplayCardsProps = {
     | 'onAgeGatedInstancesVisibleChange'
     | 'onHideNicknamesChange'
     | 'onDisplayVrcPlusIconsAsAvatarChange'
-    | 'onShowUserDialogProfileDecorationsChange'
     | 'onShowNewDashboardButtonChange'
     | 'onOpenTablePageSizes'
     | 'onOpenTableLimits'
@@ -47,8 +44,6 @@ type SettingsInterfaceDisplayCardsProps = {
     | 'onIsoFormatChange'
     | 'onWeekStartsOnChange'
     | 'onFeedTimeDisplayModeChange'
-    | 'onHideUserNotesChange'
-    | 'onHideUserMemosChange'
 >;
 
 const timeFormatOptions = [
@@ -68,16 +63,13 @@ export function SettingsInterfaceDisplayCards({
     onAgeGatedInstancesVisibleChange,
     onHideNicknamesChange,
     onDisplayVrcPlusIconsAsAvatarChange,
-    onShowUserDialogProfileDecorationsChange,
     onShowNewDashboardButtonChange,
     onOpenTablePageSizes,
     onOpenTableLimits,
     onHour12Change,
     onIsoFormatChange,
     onWeekStartsOnChange,
-    onFeedTimeDisplayModeChange,
-    onHideUserNotesChange,
-    onHideUserMemosChange
+    onFeedTimeDisplayModeChange
 }: SettingsInterfaceDisplayCardsProps) {
     const { t } = useTranslation();
 
@@ -135,6 +127,8 @@ export function SettingsInterfaceDisplayCards({
                     />
                 </Field>
             </SettingsGroup>
+
+            <SettingsInterfaceUserDialogCard />
 
             <SettingsGroup
                 title={t('view.settings.interface.navigation.header')}
@@ -297,52 +291,6 @@ export function SettingsInterfaceDisplayCards({
                                 )
                             }
                         ]}
-                    />
-                </Field>
-            </SettingsGroup>
-
-            <SettingsGroup
-                title={t('view.settings.appearance.user_dialog.header')}
-            >
-                <Field
-                    label={t(
-                        'view.settings.appearance.user_dialog.profile_decorations'
-                    )}
-                    description={t(
-                        'view.settings.appearance.user_dialog.profile_decorations_description'
-                    )}
-                >
-                    <Switch
-                        checked={prefs.showUserDialogProfileDecorations}
-                        onCheckedChange={
-                            onShowUserDialogProfileDecorationsChange
-                        }
-                    />
-                </Field>
-
-                <Field
-                    label={t(
-                        'view.settings.appearance.user_dialog.vrchat_notes'
-                    )}
-                    description={t(
-                        'view.settings.appearance.user_dialog.vrchat_notes_description'
-                    )}
-                >
-                    <Switch
-                        checked={!prefs.hideUserNotes}
-                        onCheckedChange={onHideUserNotesChange}
-                    />
-                </Field>
-
-                <Field
-                    label={t('view.settings.appearance.user_dialog.vrcx_memos')}
-                    description={t(
-                        'view.settings.appearance.user_dialog.vrcx_memos_description'
-                    )}
-                >
-                    <Switch
-                        checked={!prefs.hideUserMemos}
-                        onCheckedChange={onHideUserMemosChange}
                     />
                 </Field>
             </SettingsGroup>

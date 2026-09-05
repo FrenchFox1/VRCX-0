@@ -47,7 +47,8 @@ import {
     resolveProfileGradientScrimAlpha,
     resolveUserDialogBackgroundTextureUrl,
     resolveProfileDecorationAssetUrls,
-    type UserDialogProfileAppearance
+    type UserDialogProfileAppearance,
+    type UserDialogProfileAppearanceVisibility
 } from '../userDialogProfileAppearance';
 import {
     formatStatsDuration,
@@ -183,6 +184,7 @@ function resolveProfileBackgroundStyle(
 
 export interface UserHeaderModel {
     actionStatus: string;
+    appearanceVisibility: UserDialogProfileAppearanceVisibility;
     avatarOverrideState: AvatarOverrideState;
     bannerFallbackUrl: string;
     canInviteFromCurrentLocation: boolean;
@@ -507,6 +509,7 @@ export function UserDialogHeaderSection({
     const resolvedThemeMode = useResolvedThemeMode();
     const {
         actionStatus = 'idle',
+        appearanceVisibility,
         avatarOverrideState,
         bannerFallbackUrl,
         canInviteFromCurrentLocation,
@@ -645,24 +648,24 @@ export function UserDialogHeaderSection({
         : '';
     const hasProfileBadges = hasRenderableUserProfileBadges(profile);
     const isOwner = profile.id === OWNER_USER_ID;
-    const profileBackgroundStyle = resolveProfileBackgroundStyle(
-        profile,
-        resolvedThemeMode === 'dark'
-    );
+    const profileBackgroundStyle = appearanceVisibility.profileBackground
+        ? resolveProfileBackgroundStyle(profile, resolvedThemeMode === 'dark')
+        : undefined;
+    const nameplateEffect = appearanceVisibility.nameplateEffect
+        ? profileAppearance.nameplateEffect
+        : undefined;
     const nameplateGradientStart = normalizeProfileAppearanceColor(
-        profileAppearance.nameplateEffect?.metadata?.gradientStart
+        nameplateEffect?.metadata?.gradientStart
     );
     const nameplateGradientEnd = normalizeProfileAppearanceColor(
-        profileAppearance.nameplateEffect?.metadata?.gradientEnd
+        nameplateEffect?.metadata?.gradientEnd
     );
     const nameplateStyle = linearGradientStyle(
         90,
         nameplateGradientStart,
         nameplateGradientEnd
     );
-    const nameplateAssets = resolveProfileDecorationAssetUrls(
-        profileAppearance.nameplateEffect
-    );
+    const nameplateAssets = resolveProfileDecorationAssetUrls(nameplateEffect);
     const hasNameplateAppearance = Boolean(
         nameplateStyle ||
         nameplateAssets.animatedUrl ||
@@ -683,7 +686,11 @@ export function UserDialogHeaderSection({
                     bannerAlt={profile.displayName || profile.id || 'User'}
                     bannerFallbackUrl={bannerFallbackUrl}
                     bannerUrl={imageUrl}
-                    iconFrame={profileAppearance.iconFrame}
+                    iconFrame={
+                        appearanceVisibility.avatarFrame
+                            ? profileAppearance.iconFrame
+                            : undefined
+                    }
                     onBannerClick={onImageClick}
                     onOpenUserIcon={onOpenUserIcon}
                     userIconLabel={t('dialog.user.action.open_user_icon')}
@@ -692,7 +699,11 @@ export function UserDialogHeaderSection({
             }
         >
             <UserDialogProfileDecorationImage
-                item={profileAppearance.profileEffect}
+                item={
+                    appearanceVisibility.profileEffect
+                        ? profileAppearance.profileEffect
+                        : undefined
+                }
                 className="absolute inset-x-0 top-0 z-20 aspect-[4/5] overflow-hidden rounded-t-lg"
                 imageClassName="object-cover"
             />
@@ -703,7 +714,7 @@ export function UserDialogHeaderSection({
                         className="relative isolate -ml-1.5 min-h-9 min-w-0 flex-1 overflow-hidden rounded-md"
                     >
                         <UserDialogProfileDecorationImage
-                            item={profileAppearance.nameplateEffect}
+                            item={nameplateEffect}
                             className="absolute inset-0 z-0"
                             imageClassName="object-cover"
                         />
