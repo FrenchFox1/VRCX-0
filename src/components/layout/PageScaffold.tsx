@@ -45,8 +45,10 @@ export function PageScaffold({
         <div
             {...divProps}
             className={cn(
-                'flex h-full min-h-0 min-w-0 flex-col overflow-hidden',
-                embedded ? 'p-3' : 'x-container x-container--auto-height p-4',
+                'vrcx-0-page-scaffold flex h-full min-h-0 min-w-0 flex-col overflow-hidden',
+                embedded
+                    ? 'vrcx-0-page-scaffold--embedded p-3'
+                    : 'x-container x-container--auto-height p-4',
                 embedded ? embeddedClassName : '',
                 className,
                 flushBottom && 'pb-0'
@@ -64,7 +66,7 @@ export function PageToolbar({
     return (
         <div
             className={cn(
-                'border-border flex shrink-0 flex-col gap-2 pb-3',
+                'vrcx-0-page-toolbar flex shrink-0 flex-col gap-2',
                 className
             )}
         >

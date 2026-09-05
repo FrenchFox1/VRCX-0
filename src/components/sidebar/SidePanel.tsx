@@ -349,8 +349,11 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             <aside
                 ref={ref}
                 data-vrcx-0-surface="side-panel"
+                data-window-sidebar-mode={
+                    sidebarWindowMode ? 'true' : undefined
+                }
                 className={cn(
-                    'vrcx-0-side-panel flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden',
+                    'vrcx-0-side-panel flex min-h-0 w-80 shrink-0 flex-col overflow-hidden',
                     className
                 )}
                 style={style}
