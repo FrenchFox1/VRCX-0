@@ -60,7 +60,6 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             offlineRows: [{ id: 'usr_offline' }],
             onlineRows: [{ id: 'usr_online' }],
             openGroups: {
-                me: true,
                 sameInstance: true,
                 favorites: true,
                 online: false,
@@ -83,8 +82,6 @@ describe('friendsSidebarVirtualRowBuilder', () => {
         });
 
         expect(rows.map((row) => row.key)).toEqual([
-            'section:me',
-            'friend:me:usr_me',
             'section:sameInstance',
             'instance:wrld_live:1:0',
             'friend:sameInstance:wrld_live:1:0:currentUser:usr_me',
@@ -99,30 +96,26 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             'friend:offline:usr_offline',
             'footer'
         ]);
-        expect(rows[1]).toMatchObject({
-            type: 'friend',
-            isCurrentUser: true
-        });
-        expect(rows[2]).toMatchObject({
+        expect(rows[0]).toMatchObject({
             type: 'section',
             count: 2
         });
-        expect(rows[3]).toMatchObject({
+        expect(rows[1]).toMatchObject({
             type: 'instance-header',
             count: 2,
             isCurrentInstance: true
         });
-        expect(rows[4]).toMatchObject({
+        expect(rows[2]).toMatchObject({
             isCurrentUser: true,
             isGroupByInstance: true
         });
-        expect(rows[5]).toMatchObject({
+        expect(rows[3]).toMatchObject({
             isGroupByInstance: true,
             instanceLocation: 'wrld_live:1'
         });
     });
 
-    it('can hide the current user from a valid same-instance group while preserving the me row', () => {
+    it('hides the current user from a valid same-instance group when the preference is off', () => {
         const rows = buildFriendsSidebarVirtualRows({
             activeRows: [],
             currentUser: {
@@ -141,7 +134,6 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             offlineRows: [],
             onlineRows: [],
             openGroups: {
-                me: true,
                 sameInstance: true
             },
             prefs: {
@@ -162,7 +154,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             rows
                 .filter((row) => row.type === 'friend' && row.isCurrentUser)
                 .map((row) => row.key)
-        ).toEqual(['friend:me:usr_me']);
+        ).toEqual([]);
         expect(rows.map((row) => row.key)).toContain(
             'friend:sameInstance:wrld_live:1:0:usr_same'
         );

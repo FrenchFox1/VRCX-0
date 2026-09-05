@@ -3,7 +3,6 @@ import type { FriendSortMethod } from '@/shared/utils/friend';
 
 import type { SidebarPreferences } from '../friends-sidebar/friendsSidebarModel';
 import type {
-    SidebarTabDisplayMode,
     SidebarTabLayout,
     SidebarTabLayoutItem
 } from './sidebarTabLayout';
@@ -25,7 +24,6 @@ export type SidePanelPreferences = Required<
     sidebarSortMethod1: SidePanelSortMethod;
     sidebarSortMethod2: SidePanelSortMethod;
     sidebarSortMethod3: SidePanelSortMethod;
-    sidebarTabDisplayMode: SidebarTabDisplayMode;
     sidebarTabLayout: SidebarTabLayout;
 };
 
@@ -48,7 +46,7 @@ export type SidePanelArrayPreferenceKey =
 export type SidePanelTabItem = {
     value: string;
     label: string;
-    countLabel: string;
+    railCountLabel: string;
     title: string;
     icon: string;
     layoutItem: SidebarTabLayoutItem;

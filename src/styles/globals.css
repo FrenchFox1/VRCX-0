@@ -840,6 +840,10 @@
         background: var(--vrcx-0-side-panel-surface);
     }
 
+    .vrcx-0-side-panel-self {
+        border-block-end: 1px solid var(--vrcx-0-main-content-edge);
+    }
+
     .vrcx-0-statusbar {
         background: var(--vrcx-0-statusbar-surface);
     }
