@@ -11,6 +11,7 @@ export function useMutualFriendsViewFilters() {
     const [filters, setFilters] = useState<MutualFriendsViewFilters>(
         MUTUAL_GRAPH_DEFAULT_VIEW_FILTERS
     );
+    const [crossCommunityOnly, setCrossCommunityOnly] = useState(false);
 
     const setSearchQuery = useCallback((searchQuery: string) => {
         setFilters((current) => ({ ...current, searchQuery }));
@@ -38,15 +39,22 @@ export function useMutualFriendsViewFilters() {
         }));
     }, []);
 
+    const toggleCrossCommunityOnly = useCallback(() => {
+        setCrossCommunityOnly((current) => !current);
+    }, []);
+
     const clearFilters = useCallback(() => {
         setFilters(MUTUAL_GRAPH_DEFAULT_VIEW_FILTERS);
+        setCrossCommunityOnly(false);
     }, []);
 
     return {
         filters,
+        crossCommunityOnly,
         setSearchQuery,
         setMinDegree,
         toggleFocusedCommunity,
+        toggleCrossCommunityOnly,
         clearFilters
     };
 }

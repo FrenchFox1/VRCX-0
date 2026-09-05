@@ -708,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "Вид",
-        "tools": "Инструменты",
         "help": "Справка",
         "preview_build_badge": "Строка просмотра",
         "devkit_build_badge": "Дев Кит",
@@ -721,7 +719,6 @@
         "quit": "Выход VRCX-0",
         "quick_search": "Быстрый поиск",
         "keyboard_shortcuts": "Горячие клавиши",
-        "notification_center": "Центр уведомления",
         "show_friends_sidebar": "Показать боковую панель друзей",
         "hide_friends_sidebar": "Скрыть боковую панель друзей",
         "enter_sidebar_mode": "Режим боковой панели",
@@ -729,7 +726,6 @@
         "zoom_in": "Увеличить",
         "zoom_out": "Уменьшить",
         "reset_zoom": "Перезагрузить",
-        "all_tools": "Все инструменты...",
         "open_devtools": "Открыть \"DevTools\"",
         "report_issue": "Вопрос о докладе",
         "community": "Сообщество",
@@ -1755,6 +1751,8 @@
                     "more_circles": "Ещё {count} меньших — серым",
                     "size_means_degree": "Больше точка — больше общих друзей",
                     "hollow_means_unknown": "Полый кружок — общие друзья скрыты",
+                    "cross_edges": "Светлые линии — связи между кругами",
+                    "cross_edges_only": "Приглушить связи внутри кругов",
                     "coverage": "Получено",
                     "coverage_value": "{fetched}/{total} друзей",
                     "coverage_unavailable": "Скрыто",

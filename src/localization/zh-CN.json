@@ -708,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "视图",
-        "tools": "工具",
         "help": "帮助",
         "preview_build_badge": "预览版",
         "devkit_build_badge": "开发版",
@@ -721,7 +719,6 @@
         "quit": "退出 VRCX-0",
         "quick_search": "快速搜索",
         "keyboard_shortcuts": "键盘快捷键",
-        "notification_center": "通知中心",
         "show_friends_sidebar": "显示好友侧栏",
         "hide_friends_sidebar": "隐藏好友侧栏",
         "enter_sidebar_mode": "侧栏模式",
@@ -729,7 +726,6 @@
         "zoom_in": "放大",
         "zoom_out": "缩小",
         "reset_zoom": "重置缩放",
-        "all_tools": "所有工具...",
         "open_devtools": "打开 DevTools",
         "report_issue": "反馈问题",
         "community": "社区",
@@ -1753,6 +1749,8 @@
                     "more_circles": "另有 {count} 个小圈子，显示为灰色",
                     "size_means_degree": "点越大，共同好友越多",
                     "hollow_means_unknown": "空心点 = 对方未公开共同好友",
+                    "cross_edges": "较亮的线 = 跨圈子连接",
+                    "cross_edges_only": "压暗圈子内部的连线",
                     "coverage": "已获取",
                     "coverage_value": "{fetched}/{total} 位好友",
                     "coverage_unavailable": "未公开",

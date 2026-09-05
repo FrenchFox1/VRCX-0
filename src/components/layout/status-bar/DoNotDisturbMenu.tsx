@@ -75,7 +75,7 @@ export function DoNotDisturbMenu(): ReactElement {
                                     aria-pressed={active}
                                     disabled={updating}
                                     className={cn(
-                                        '-ml-px size-6 shrink-0 rounded-none border-l',
+                                        'size-6 shrink-0 rounded-none',
                                         active
                                             ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
                                             : 'text-muted-foreground hover:text-muted-foreground'

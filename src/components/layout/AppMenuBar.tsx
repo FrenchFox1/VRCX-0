@@ -1,10 +1,4 @@
-import {
-    type ComponentProps,
-    type ReactNode,
-    useEffect,
-    useMemo,
-    useState
-} from 'react';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -13,41 +7,17 @@ import { AboutVrcxDialog } from '@/components/about/AboutDialog';
 import { OpenSourceNoticeDialog } from '@/components/hosts/system-dialogs/OpenSourceNoticeDialog';
 import { cn } from '@/lib/utils';
 import { commands } from '@/platform/tauri/bindings';
-import configRepository from '@/repositories/configRepository';
 import { logoutFromReactShell } from '@/services/authExecutionService';
 import { startBackgroundModeForCurrentSession } from '@/services/backgroundModeService';
 import { openExternalLink } from '@/services/entityMediaService';
 import {
-    setNavbarCollapsedPreference,
-    setZoomLevelPreference
-} from '@/services/preferencesService';
-import {
     exitApplication,
     restartApplication
 } from '@/services/shellIntegrationService';
-import {
-    formatZoomPercentage,
-    normalizeZoomLevel
-} from '@/services/themeService';
-import {
-    isToolCapabilityAvailable,
-    triggerToolByKey
-} from '@/services/toolActionService';
 import { getBuildBadgeLabel, isDeveloperToolsBuild } from '@/shared/buildLabel';
 import { links } from '@/shared/constants/link';
-import {
-    TOOLS_QUICK_ACCESS_UPDATED_EVENT,
-    getToolsByCategory,
-    parseQuickAccessToolKeys,
-    quickAccessConfigKey,
-    toolCategories,
-    type ToolDefinition
-} from '@/shared/constants/tools';
-import { publishNavCustomizeRequested } from '@/shared/events/navLayoutEvents';
 import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion';
-import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useShellStore } from '@/state/shellStore';
 import { Badge } from '@/ui/shadcn/badge';
 import {
     Menubar,
@@ -58,13 +28,8 @@ import {
     MenubarMenu,
     MenubarSeparator,
     MenubarShortcut,
-    MenubarSub,
-    MenubarSubContent,
-    MenubarSubTrigger,
     MenubarTrigger
 } from '@/ui/shadcn/menubar';
-
-const ZOOM_STEP = 10;
 
 function MenuItem({
     children,
@@ -91,122 +56,17 @@ function MenuGroupLabel({ children }: { children: ReactNode }) {
     );
 }
 
-function ToolMenuItem({ tool }: { tool: ToolDefinition }) {
-    const { t } = useTranslation();
-    const navigate = useNavigate();
-
-    return (
-        <MenuItem
-            onClick={() => {
-                triggerToolByKey(tool.key, { navigate, t });
-            }}
-        >
-            {t(tool.titleKey)}
-        </MenuItem>
-    );
-}
-
-interface AppMenuBarProps {
-    rightSidebarOpen: boolean;
-    onOpenQuickSearch?: () => void;
-    onOpenDirectAccess?: () => void;
-    onOpenNotificationCenter?: () => void;
-    onToggleRightSidebar: () => void;
-}
-
-export function AppMenuBar({
-    rightSidebarOpen,
-    onOpenNotificationCenter,
-    onToggleRightSidebar
-}: AppMenuBarProps) {
+export function AppMenuBar() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [aboutOpen, setAboutOpen] = useState(false);
     const [openSourceNoticeOpen, setOpenSourceNoticeOpen] = useState(false);
-    const [quickAccessKeys, setQuickAccessKeys] = useState<string[]>([]);
-    const zoomLevel = useShellStore((state) => state.zoomLevel);
-    const navbarOpen = useShellStore((state) => state.sidebarOpen);
-    const notificationLayout = usePreferencesStore(
-        (state) => state.notificationLayout
-    );
     const setSystemHostOpen = useRuntimeStore(
         (state) => state.setSystemHostOpen
     );
-    const hostCapabilities = useRuntimeStore((state) => state.hostCapabilities);
-    const currentZoom = normalizeZoomLevel(zoomLevel);
     const appVersion = formatReleaseDisplayVersion(VERSION || '') || '-';
     const buildBadgeLabel = getBuildBadgeLabel(t);
     const developerToolsAvailable = isDeveloperToolsBuild();
-    const availableToolCategories = useMemo(
-        () =>
-            toolCategories
-                .map((category) => ({
-                    ...category,
-                    tools: getToolsByCategory(category.key).filter((tool) =>
-                        isToolCapabilityAvailable(tool, hostCapabilities)
-                    )
-                }))
-                .filter((category) => category.tools.length > 0),
-        [hostCapabilities]
-    );
-    const availableToolMap = useMemo(
-        () =>
-            new Map(
-                availableToolCategories
-                    .flatMap((category) => category.tools)
-                    .map((tool) => [tool.key, tool])
-            ),
-        [availableToolCategories]
-    );
-    const quickAccessTools = useMemo(
-        () =>
-            quickAccessKeys
-                .map((key) => availableToolMap.get(key))
-                .filter((tool): tool is ToolDefinition => Boolean(tool)),
-        [availableToolMap, quickAccessKeys]
-    );
-    useEffect(() => {
-        let active = true;
-        const loadQuickAccessTools = () => {
-            configRepository
-                .getString(quickAccessConfigKey, '[]')
-                .then((value) => {
-                    if (active) {
-                        setQuickAccessKeys(parseQuickAccessToolKeys(value));
-                    }
-                })
-                .catch(() => {
-                    if (active) {
-                        setQuickAccessKeys([]);
-                    }
-                });
-        };
-
-        loadQuickAccessTools();
-        window.addEventListener(
-            TOOLS_QUICK_ACCESS_UPDATED_EVENT,
-            loadQuickAccessTools
-        );
-        return () => {
-            active = false;
-            window.removeEventListener(
-                TOOLS_QUICK_ACCESS_UPDATED_EVENT,
-                loadQuickAccessTools
-            );
-        };
-    }, []);
-
-    async function applyZoomLevel(nextZoom: number) {
-        try {
-            await setZoomLevelPreference(nextZoom);
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('app_menu.messages.zoom_failed')
-            );
-        }
-    }
 
     async function runLogout() {
         try {
@@ -258,14 +118,6 @@ export function AppMenuBar({
 
     function openLink(url: string) {
         openExternalLink(url);
-    }
-
-    function openNotificationSurface() {
-        if (notificationLayout === 'table') {
-            navigate('/notification');
-            return;
-        }
-        onOpenNotificationCenter?.();
     }
 
     return (
@@ -320,136 +172,6 @@ export function AppMenuBar({
                                 {t('app_menu.quit')}
                             </MenuItem>
                         </MenubarGroup>
-                    </MenubarContent>
-                </MenubarMenu>
-
-                <MenubarMenu>
-                    <MenubarTrigger className="text-muted-foreground hover:text-foreground aria-expanded:text-foreground h-full rounded-none px-2 !py-0 text-xs">
-                        {t('app_menu.view')}
-                    </MenubarTrigger>
-                    <MenubarContent align="start">
-                        <MenubarGroup>
-                            <MenuItem onClick={() => openNotificationSurface()}>
-                                {t('app_menu.notification_center')}
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => {
-                                    setNavbarCollapsedPreference(navbarOpen);
-                                }}
-                            >
-                                {t(
-                                    navbarOpen
-                                        ? 'nav_tooltip.collapse_nav'
-                                        : 'nav_tooltip.expand_nav'
-                                )}
-                            </MenuItem>
-                            <MenuItem onClick={() => onToggleRightSidebar?.()}>
-                                {t(
-                                    rightSidebarOpen
-                                        ? 'app_menu.hide_friends_sidebar'
-                                        : 'app_menu.show_friends_sidebar'
-                                )}
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => publishNavCustomizeRequested()}
-                            >
-                                {t('nav_menu.custom_nav.header')}
-                            </MenuItem>
-                        </MenubarGroup>
-                        <MenubarSeparator />
-                        <MenubarGroup>
-                            <MenuItem
-                                onClick={() => {
-                                    navigate('/themes');
-                                }}
-                            >
-                                {t('view.themes.menu.header')}
-                            </MenuItem>
-                        </MenubarGroup>
-                        <MenubarSeparator />
-                        <MenubarGroup>
-                            <MenuItem
-                                onClick={() => {
-                                    applyZoomLevel(currentZoom + ZOOM_STEP);
-                                }}
-                            >
-                                {t('app_menu.zoom_in')}
-                                <MenubarShortcut className="tracking-normal">
-                                    {formatZoomPercentage(
-                                        currentZoom + ZOOM_STEP
-                                    )}
-                                </MenubarShortcut>
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => {
-                                    applyZoomLevel(currentZoom - ZOOM_STEP);
-                                }}
-                            >
-                                {t('app_menu.zoom_out')}
-                                <MenubarShortcut className="tracking-normal">
-                                    {formatZoomPercentage(
-                                        currentZoom - ZOOM_STEP
-                                    )}
-                                </MenubarShortcut>
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => {
-                                    applyZoomLevel(100);
-                                }}
-                            >
-                                {t('app_menu.reset_zoom')}
-                                <MenubarShortcut className="tracking-normal">
-                                    {formatZoomPercentage(100)}
-                                </MenubarShortcut>
-                            </MenuItem>
-                        </MenubarGroup>
-                    </MenubarContent>
-                </MenubarMenu>
-
-                <MenubarMenu>
-                    <MenubarTrigger className="text-muted-foreground hover:text-foreground aria-expanded:text-foreground h-full rounded-none px-2 !py-0 text-xs">
-                        {t('app_menu.tools')}
-                    </MenubarTrigger>
-                    <MenubarContent align="start" className="w-56">
-                        <MenubarGroup>
-                            <MenuItem onClick={() => navigate('/tools')}>
-                                {t('app_menu.all_tools')}
-                            </MenuItem>
-                        </MenubarGroup>
-                        {quickAccessTools.length > 0 ? (
-                            <>
-                                <MenubarSeparator />
-                                <MenubarGroup>
-                                    <MenuGroupLabel>
-                                        {t('view.tools.quick_access.header')}
-                                    </MenuGroupLabel>
-                                    {quickAccessTools.map((tool) => (
-                                        <ToolMenuItem
-                                            key={tool.key}
-                                            tool={tool}
-                                        />
-                                    ))}
-                                </MenubarGroup>
-                            </>
-                        ) : null}
-                        {availableToolCategories.length > 0 ? (
-                            <MenubarSeparator />
-                        ) : null}
-                        {availableToolCategories.map((category) => (
-                            <MenubarSub key={category.key}>
-                                <MenubarSubTrigger className="min-h-7 min-w-48 text-xs">
-                                    {t(category.labelKey)}
-                                </MenubarSubTrigger>
-                                <MenubarSubContent className="w-56">
-                                    {category.tools.map((tool) => (
-                                        <ToolMenuItem
-                                            key={tool.key}
-                                            tool={tool}
-                                        />
-                                    ))}
-                                </MenubarSubContent>
-                            </MenubarSub>
-                        ))}
                     </MenubarContent>
                 </MenubarMenu>
 

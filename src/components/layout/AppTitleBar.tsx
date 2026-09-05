@@ -71,13 +71,9 @@ export function AppTitleBar() {
         actions,
         quickSearchDialog,
         openQuickSearch,
-        openDirectAccessFromClipboard,
-        openNotificationCenter,
         sidebarWindowModeButton,
         notificationAction,
-        themeToggleAction,
-        toggleRightSidebar,
-        rightSidebarOpen
+        themeToggleAction
     } = useTitleBarActions('px-1');
 
     const MaximizeIcon = isMaximized ? CopyIcon : SquareIcon;
@@ -93,7 +89,7 @@ export function AppTitleBar() {
                 data-window-blurred={!isFocused || undefined}
                 data-window-sidebar-mode={sidebarWindowMode || undefined}
                 data-vrcx-0-surface="titlebar"
-                className="vrcx-0-titlebar text-foreground pointer-events-auto relative z-[60] flex h-8 shrink-0 items-center border-b select-none"
+                className="vrcx-0-titlebar text-foreground pointer-events-auto relative z-[60] flex h-8 shrink-0 items-center select-none"
             >
                 <div
                     data-tauri-drag-region
@@ -111,17 +107,7 @@ export function AppTitleBar() {
                                 event.stopPropagation();
                             }}
                         >
-                            <AppMenuBar
-                                rightSidebarOpen={rightSidebarOpen}
-                                onOpenQuickSearch={openQuickSearch}
-                                onOpenDirectAccess={
-                                    openDirectAccessFromClipboard
-                                }
-                                onOpenNotificationCenter={
-                                    openNotificationCenter
-                                }
-                                onToggleRightSidebar={toggleRightSidebar}
-                            />
+                            <AppMenuBar />
                         </div>
                     ) : null}
                     <div

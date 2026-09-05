@@ -10,7 +10,8 @@ import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
 import { assignMutualFriendCommunities } from './mutualFriendsCommunities';
 import {
     applyMutualFriendsViewFilters,
-    countIsolatedMutualFriendNodes
+    countIsolatedMutualFriendNodes,
+    countUnknownMutualFriendNodes
 } from './mutualFriendsFilters';
 import {
     buildMutualFriendsBaseGraph,
@@ -63,9 +64,11 @@ export function useMutualFriendsPageState() {
         useMutualFriendsLayoutSettings();
     const {
         filters,
+        crossCommunityOnly,
         setSearchQuery,
         setMinDegree,
         toggleFocusedCommunity,
+        toggleCrossCommunityOnly,
         clearFilters
     } = useMutualFriendsViewFilters();
 
@@ -212,6 +215,7 @@ export function useMutualFriendsPageState() {
         communityIndexById,
         namedCommunityIndexes,
         resolvedTheme,
+        crossCommunityOnly,
         selectedNodeId,
         selectedNodeIdRef,
         onSelectNode: handleSelectNode,
@@ -310,6 +314,7 @@ export function useMutualFriendsPageState() {
             clearSelection: () => handleSelectNode(''),
             setMinDegree,
             setSearchQuery,
+            toggleCrossCommunityOnly,
             toggleExcludedFriendId,
             toggleFocusedCommunity
         },
@@ -333,6 +338,7 @@ export function useMutualFriendsPageState() {
             edgeCount: filteredGraph.links.length,
             friendCount: orderedFriendIds.length,
             isolatedCounts: countIsolatedMutualFriendNodes(baseGraph),
+            unknownCount: countUnknownMutualFriendNodes(baseGraph),
             isLayoutRunning: sigma.isLayoutRunning,
             nodeCount: filteredGraph.nodes.length,
             setGraphElementRef: sigma.setGraphElementRef,
@@ -353,6 +359,7 @@ export function useMutualFriendsPageState() {
             user: selectedNode ? (friendsById[selectedNode.id] ?? null) : null
         },
         view: {
+            crossCommunityOnly,
             filters
         }
     };

@@ -708,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "檢視",
-        "tools": "工具",
         "help": "說明",
         "preview_build_badge": "預覽版本",
         "devkit_build_badge": "開發套件",
@@ -721,7 +719,6 @@
         "quit": "退出 VRCX-0",
         "quick_search": "快速搜尋",
         "keyboard_shortcuts": "鍵盤快捷鍵",
-        "notification_center": "通知中心",
         "show_friends_sidebar": "顯示好友側邊欄",
         "hide_friends_sidebar": "隱藏好友側邊欄",
         "enter_sidebar_mode": "側邊欄模式",
@@ -729,7 +726,6 @@
         "zoom_in": "放大",
         "zoom_out": "縮小",
         "reset_zoom": "重設縮放",
-        "all_tools": "所有工具...",
         "open_devtools": "開啟 DevTools",
         "report_issue": "回報問題",
         "community": "社群",
@@ -1753,6 +1749,8 @@
                     "more_circles": "另有 {count} 個小圈子，顯示為灰色",
                     "size_means_degree": "點越大，共同好友越多",
                     "hollow_means_unknown": "空心點 = 對方未公開共同好友",
+                    "cross_edges": "較亮的線 = 跨圈子連接",
+                    "cross_edges_only": "壓暗圈子內部的連線",
                     "coverage": "已取得",
                     "coverage_value": "{fetched}/{total} 位好友",
                     "coverage_unavailable": "未公開",

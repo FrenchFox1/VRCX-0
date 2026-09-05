@@ -126,7 +126,10 @@ describe('useFriendsLocationsPageDerivedState', () => {
                         : rows[index - 1].top + rows[index - 1].height
                 );
                 if (row.type === 'header' || row.type === 'group-header') {
-                    expect(row.height).toBe(40);
+                    expect(row.height).toBe(40 + row.topGap);
+                    if (index === 0) {
+                        expect(row.topGap).toBe(0);
+                    }
                     const next = rows[index + 1];
                     expect(next?.type).toBe('cards');
                     if (next?.type === 'cards') {

@@ -255,13 +255,13 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                 ref={ref}
                 data-vrcx-0-surface="statusbar"
                 className={cn(
-                    'vrcx-0-statusbar @container/statusbar border-t text-xs backdrop-blur',
+                    'vrcx-0-statusbar @container/statusbar text-xs backdrop-blur',
                     className
                 )}
                 {...props}
             >
                 <div className="flex min-h-7 flex-col gap-1 overflow-hidden @2xl/statusbar:flex-row @2xl/statusbar:items-center @2xl/statusbar:justify-between">
-                    <div className="flex min-w-0 flex-1 items-center overflow-hidden">
+                    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                         <StatusSegment
                             visible={visibility.steamvr}
                             active={Boolean(isSteamVRRunning)}
@@ -428,7 +428,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             <Tooltip>
                                 <TooltipTrigger
                                     render={
-                                        <div className="-ml-px flex h-6 shrink-0 items-center gap-1.5 border-x px-2">
+                                        <div className="flex h-6 shrink-0 items-center gap-1.5 px-2">
                                             <StatusDot
                                                 active={Boolean(
                                                     runtimeTransport.websocketConnected
@@ -469,7 +469,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                         </StatusSegment>
                     </div>
 
-                    <div className="text-muted-foreground flex shrink-0 items-center justify-end overflow-hidden">
+                    <div className="text-muted-foreground flex shrink-0 items-center justify-end gap-2 overflow-hidden">
                         <StatusSegment
                             visible={
                                 dataDirMigration.status.state === 'running' ||
@@ -504,7 +504,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                       )
                                     : undefined
                             }
-                            className="text-muted-foreground -ml-px border-l"
+                            className="text-muted-foreground"
                             labelClassName={
                                 dataDirMigration.status.state === 'error'
                                     ? 'text-destructive'
@@ -549,7 +549,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                     ? profileBackup.onOpenDetails
                                     : undefined
                             }
-                            className="text-muted-foreground -ml-px border-l"
+                            className="text-muted-foreground"
                             labelClassName={
                                 profileBackup.status.state === 'retryable' ||
                                 profileBackup.status.state === 'error'
@@ -565,7 +565,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                 progress: worldCollectionImport.progress,
                                 total: worldCollectionImport.total
                             })}
-                            className="text-muted-foreground -ml-px border-l"
+                            className="text-muted-foreground"
                         />
                         <StatusSegment
                             visible={friendProfileLoadVisible}
@@ -582,7 +582,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                 friendProfileLoad,
                                 t
                             )}
-                            className="text-muted-foreground -ml-px border-l"
+                            className="text-muted-foreground"
                             valueClassName="text-muted-foreground"
                         />
                         <StatusSegment
@@ -593,7 +593,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             label={formatMutualGraphLabel(mutualGraph, t)}
                             value={formatMutualGraphValue(mutualGraph)}
                             tooltip={formatMutualGraphTooltip(mutualGraph, t)}
-                            className="text-muted-foreground -ml-px border-l"
+                            className="text-muted-foreground"
                             valueClassName="text-muted-foreground"
                         />
                         {visibility.clocks
@@ -611,7 +611,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                                   type="button"
                                                   variant="ghost"
                                                   size="sm"
-                                                  className="text-muted-foreground hover:text-muted-foreground h-6 gap-1.5 rounded-none border-r px-2 text-xs font-normal tabular-nums"
+                                                  className="text-muted-foreground hover:text-muted-foreground h-6 gap-1.5 rounded-none px-2 text-xs font-normal tabular-nums"
                                               >
                                                   <ClockIcon
                                                       data-icon="inline-start"
@@ -699,7 +699,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                             aria-label={t(
                                                 'status_bar.zoom_tooltip'
                                             )}
-                                            className="text-muted-foreground hover:text-muted-foreground h-6 gap-1.5 rounded-none border-r px-2 text-xs font-normal"
+                                            className="text-muted-foreground hover:text-muted-foreground h-6 gap-1.5 rounded-none px-2 text-xs font-normal"
                                         >
                                             <span className="text-muted-foreground">
                                                 {t('status_bar.zoom')}
@@ -782,7 +782,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             <Tooltip>
                                 <TooltipTrigger
                                     render={
-                                        <div className="-ml-px flex h-6 items-center gap-1.5 border-r px-2">
+                                        <div className="flex h-6 items-center gap-1.5 px-2">
                                             <span className="text-muted-foreground">
                                                 {t(
                                                     'status_bar.app_uptime_short'
@@ -809,7 +809,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             >
                                 <span
                                     ref={proxyAnchorRef}
-                                    className="-ml-px inline-flex h-6 shrink-0 border-l"
+                                    className="inline-flex h-6 shrink-0"
                                 >
                                     <Tooltip>
                                         <TooltipTrigger
@@ -890,7 +890,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                             'status_bar.start_background_mode'
                                         )}
                                         className={cn(
-                                            '-ml-px size-6 shrink-0 rounded-none border-l',
+                                            'size-6 shrink-0 rounded-none',
                                             'text-muted-foreground hover:text-muted-foreground'
                                         )}
                                         onClick={onStartBackgroundMode}

@@ -52,6 +52,7 @@ export function SettingsInterfaceThemesCard() {
             <div className="flex flex-wrap gap-2">
                 <Button
                     type="button"
+                    variant="secondary"
                     size="sm"
                     onClick={() => navigate('/themes')}
                 >

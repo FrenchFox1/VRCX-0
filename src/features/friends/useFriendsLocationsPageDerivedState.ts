@@ -97,12 +97,14 @@ export type FriendsLocationsVirtualRow =
           type: 'group-header';
           key: string;
           height: number;
+          topGap: number;
           section: FriendsLocationsSection;
       }
     | {
           type: 'header';
           key: string;
           height: number;
+          topGap: number;
           section: FriendsLocationsSection;
       }
     | {
@@ -752,6 +754,8 @@ export function useFriendsLocationsPageDerivedState({
         ) || 1
     );
     const sectionHeaderGap = 4;
+    const sectionHeaderTopGap = 16;
+    const sectionHeaderBaseHeight = 40;
     const virtualRows = useMemo<FriendsLocationsVirtualRow[]>(() => {
         const rows: FriendsLocationsVirtualRow[] = [];
         for (const section of visibleSections) {
@@ -765,10 +769,12 @@ export function useFriendsLocationsPageDerivedState({
                 section.type === 'favoriteGroup' ||
                 section.type === 'collapsibleGroup';
             if (isCollapsibleGroup) {
+                const topGap = rows.length ? sectionHeaderTopGap : 0;
                 rows.push({
                     type: 'group-header',
                     key: `group-header:${section.key}`,
-                    height: 40,
+                    height: sectionHeaderBaseHeight + topGap,
+                    topGap,
                     section
                 });
                 if (section.collapsed) {
@@ -784,10 +790,15 @@ export function useFriendsLocationsPageDerivedState({
             }
             const showHeader = !isCollapsibleGroup && section.key !== 'flat';
             if (showHeader) {
+                const topGap =
+                    rows.length && !section.topDivider
+                        ? sectionHeaderTopGap
+                        : 0;
                 rows.push({
                     type: 'header',
                     key: `header:${section.key}`,
-                    height: 40,
+                    height: sectionHeaderBaseHeight + topGap,
+                    topGap,
                     section
                 });
             }
@@ -817,7 +828,9 @@ export function useFriendsLocationsPageDerivedState({
         cardGridColumns,
         cardGridGap,
         densityConfig,
+        sectionHeaderBaseHeight,
         sectionHeaderGap,
+        sectionHeaderTopGap,
         visibleSections
     ]);
     const positionedRows = useMemo(() => {

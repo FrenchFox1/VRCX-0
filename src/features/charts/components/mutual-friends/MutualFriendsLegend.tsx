@@ -15,25 +15,33 @@ import { MutualFriendsSurface } from './MutualFriendsSurface';
 export function MutualFriendsLegend({
     communities,
     coverage,
+    crossCommunityOnly,
     focusedCommunity,
     isolatedCounts,
     minDegree,
     onMinDegreeChange,
-    onToggleFocusedCommunity
+    onToggleCrossCommunityOnly,
+    onToggleFocusedCommunity,
+    unknownCount
 }: {
     communities: MutualFriendCommunity[];
     coverage: MutualFriendsCoverage;
+    crossCommunityOnly: boolean;
     focusedCommunity: number | null;
     isolatedCounts: MutualFriendsIsolatedCounts;
     minDegree: number;
     onMinDegreeChange: (value: number) => void;
+    onToggleCrossCommunityOnly: () => void;
     onToggleFocusedCommunity: (communityIndex: number) => void;
+    unknownCount: number;
 }) {
     const { t } = useTranslation();
     const namedCommunities = communities.filter(
         (community) => community.isNamed
     );
-    const groupedCommunityCount = communities.length - namedCommunities.length;
+    const groupedCommunityCount = communities.filter(
+        (community) => !community.isNamed && community.size > 1
+    ).length;
 
     return (
         <MutualFriendsSurface className="animate-in fade-in-0 slide-in-from-bottom-2 pointer-events-auto absolute bottom-3 left-3 z-10 w-64 p-3 duration-200 ease-out">
@@ -98,11 +106,37 @@ export function MutualFriendsLegend({
                     </span>
                     {t('view.charts.mutual_friend.legend.size_means_degree')}
                 </li>
-                <li className="flex items-center gap-2">
-                    <span className="flex w-4 shrink-0 items-center justify-center">
-                        <span className="border-muted-foreground/70 size-2.5 rounded-full border-[1.5px]" />
-                    </span>
-                    {t('view.charts.mutual_friend.legend.hollow_means_unknown')}
+                {unknownCount > 0 ? (
+                    <li className="flex items-center gap-2">
+                        <span className="flex w-4 shrink-0 items-center justify-center">
+                            <span className="border-muted-foreground/70 size-2.5 rounded-full border-[1.5px]" />
+                        </span>
+                        {t(
+                            'view.charts.mutual_friend.legend.hollow_means_unknown'
+                        )}
+                    </li>
+                ) : null}
+                <li>
+                    <button
+                        type="button"
+                        aria-pressed={crossCommunityOnly}
+                        title={t(
+                            'view.charts.mutual_friend.legend.cross_edges_only'
+                        )}
+                        onClick={onToggleCrossCommunityOnly}
+                        className={cn(
+                            '-mx-1.5 flex w-[calc(100%+0.75rem)] items-center gap-2 rounded-md px-1.5 py-1 text-left transition-[background-color] duration-150 ease-out',
+                            'hover:bg-foreground/5 active:translate-y-px',
+                            crossCommunityOnly ? 'bg-foreground/10' : ''
+                        )}
+                    >
+                        <span className="flex w-4 shrink-0 items-center justify-center">
+                            <span className="bg-muted-foreground/80 h-px w-3.5" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            {t('view.charts.mutual_friend.legend.cross_edges')}
+                        </span>
+                    </button>
                 </li>
             </ul>
 

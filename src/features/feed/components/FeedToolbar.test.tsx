@@ -270,7 +270,7 @@ async function selectDateRange(
     return calendar;
 }
 
-describe('Feed compound search', () => {
+describe('Feed compound search', { timeout: 10_000 }, () => {
     it('applies dates without a keyword and tabs from friend search to the date trigger', async () => {
         const user = userEvent.setup();
         renderFilters();

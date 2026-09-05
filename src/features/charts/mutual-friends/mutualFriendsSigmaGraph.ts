@@ -32,6 +32,9 @@ const SELECTED_SIZE_SCALE = 1.35;
 const HOVER_SIZE_SCALE = 1.55;
 const NODE_DIM_STRENGTH = 0.9;
 const EDGE_DIM_STRENGTH = 0.85;
+const INTRA_COMMUNITY_EDGE_SIZE = 0.4;
+const CROSS_COMMUNITY_EDGE_SIZE = 0.75;
+const INTRA_EDGE_MUTE_STRENGTH = 0.82;
 const HOVER_ENTER_DURATION = 140;
 const HOVER_LEAVE_DURATION = 110;
 const SELECTION_DURATION = 180;
@@ -48,6 +51,7 @@ type MutualFriendsNodeAttributes = Record<string, unknown> & {
     forceLabel?: boolean;
     fullLabel: string;
     holeColor?: string;
+    ringColor?: string;
     label: string;
     lastFetchedAt: string | null;
     mutualCount: number;
@@ -61,6 +65,7 @@ type MutualFriendsNodeAttributes = Record<string, unknown> & {
 
 type MutualFriendsEdgeAttributes = Record<string, unknown> & {
     color?: string;
+    crossCommunity: boolean;
     curvature?: number;
     size: number;
     type?: string;
@@ -77,9 +82,14 @@ const {
     communitySeparation: COMMUNITY_SEPARATION_LIMITS
 } = MUTUAL_GRAPH_LAYOUT_LIMITS;
 
+const NODE_RING_COLOR = '#f2f2f2';
+
 const NodeBorderProgram = createNodeBorderProgram({
     borders: [
-        { size: { value: 0.1 }, color: { value: '#f2f2f2' } },
+        {
+            size: { value: 0.1 },
+            color: { attribute: 'ringColor', defaultValue: NODE_RING_COLOR }
+        },
         { size: { fill: true }, color: { attribute: 'color' } }
     ]
 });
@@ -343,6 +353,7 @@ export async function buildSigmaGraph({
             lastFetchedAt: node.lastFetchedAt,
             community,
             communityNamed: namedCommunityIndexes.has(community),
+            ringColor: NODE_RING_COLOR,
             type: isMutualFriendNodeUnavailable(node) ? 'hollow' : 'border',
             zIndex: 1
         });
@@ -354,7 +365,15 @@ export async function buildSigmaGraph({
         }
         const key = [link.source, link.target].sort().join('__');
         if (!graph.hasEdge(key)) {
-            graph.addEdgeWithKey(key, link.source, link.target, { size: 0.5 });
+            const crossCommunity =
+                graph.getNodeAttribute(link.source, 'community') !==
+                graph.getNodeAttribute(link.target, 'community');
+            graph.addEdgeWithKey(key, link.source, link.target, {
+                crossCommunity,
+                size: crossCommunity
+                    ? CROSS_COMMUNITY_EDGE_SIZE
+                    : INTRA_COMMUNITY_EDGE_SIZE
+            });
         }
     }
 
@@ -406,6 +425,7 @@ export function renderSigmaGraph({
     resizeObserverRef,
     themeRef,
     selectedNodeIdRef,
+    crossCommunityOnlyRef,
     onSelectNode,
     onOpenNode,
     hoverCardStringsRef
@@ -416,6 +436,7 @@ export function renderSigmaGraph({
     resizeObserverRef: { current: ResizeObserver | null };
     themeRef: { current: MutualFriendsGraphTheme };
     selectedNodeIdRef: { current: string };
+    crossCommunityOnlyRef: { current: boolean };
     onSelectNode: (nodeId: string) => void;
     onOpenNode: (nodeId: string) => void;
     hoverCardStringsRef: { current: HoverCardStrings };
@@ -517,6 +538,7 @@ export function renderSigmaGraph({
 
         if (isHovered) {
             result.color = baseColor;
+            result.ringColor = NODE_RING_COLOR;
             result.size = baseSize * (1 + (HOVER_SIZE_SCALE - 1) * dim);
             result.forceLabel = true;
             result.zIndex = 4;
@@ -525,6 +547,7 @@ export function renderSigmaGraph({
 
         if (stayLit) {
             result.color = baseColor;
+            result.ringColor = NODE_RING_COLOR;
             result.forceLabel = isSelected || (isNeighbor && dim > 0.5);
             result.zIndex = isSelected ? 3 : 2;
             return result;
@@ -532,6 +555,11 @@ export function renderSigmaGraph({
 
         result.color = mixGraphColors(
             baseColor,
+            theme.backgroundColor,
+            dim * NODE_DIM_STRENGTH
+        );
+        result.ringColor = mixGraphColors(
+            NODE_RING_COLOR,
             theme.backgroundColor,
             dim * NODE_DIM_STRENGTH
         );
@@ -546,8 +574,20 @@ export function renderSigmaGraph({
         const result: Record<string, unknown> = { ...data };
         const theme = themeRef.current;
         const dim = hoverTransition.value;
+        const isCross = data.crossCommunity === true;
+        const baseColor = isCross ? theme.edgeCrossColor : theme.edgeColor;
+        const restingColor =
+            crossCommunityOnlyRef.current && !isCross
+                ? mixGraphColors(
+                      baseColor,
+                      theme.backgroundColor,
+                      INTRA_EDGE_MUTE_STRENGTH
+                  )
+                : baseColor;
+
         if (!dim) {
-            result.color = theme.edgeColor;
+            result.color = restingColor;
+            result.zIndex = isCross ? 1 : 0;
             return result;
         }
 
@@ -558,13 +598,13 @@ export function renderSigmaGraph({
         const [source, target] = graph.extremities(edge);
         const isIncident = source === hovered || target === hovered;
         result.color = isIncident
-            ? mixGraphColors(theme.edgeColor, theme.edgeActiveColor, dim)
+            ? mixGraphColors(baseColor, theme.edgeActiveColor, dim)
             : mixGraphColors(
-                  theme.edgeColor,
+                  restingColor,
                   theme.backgroundColor,
                   dim * EDGE_DIM_STRENGTH
               );
-        result.zIndex = isIncident ? 1 : 0;
+        result.zIndex = isIncident ? 2 : isCross ? 1 : 0;
         return result;
     });
 
@@ -629,6 +669,9 @@ export function renderSigmaGraph({
             );
         },
         applyTheme,
+        applyEdgeEmphasis() {
+            repaint();
+        },
         dispose() {
             cancelTransition(hoverTransition);
             cancelTransition(selectionTransition);

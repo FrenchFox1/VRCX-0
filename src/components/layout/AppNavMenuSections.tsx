@@ -2,6 +2,7 @@ import { PanelLeftIcon, SettingsIcon, PlusIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { ShortcutKey } from '@/components/keyboard/ShortcutHintPanel';
+import { cn } from '@/lib/utils';
 import {
     SidebarContent,
     SidebarFooter,
@@ -14,6 +15,7 @@ import {
     SidebarMenuItem
 } from '@/ui/shadcn/sidebar';
 
+import { navMenuLucideClassName } from './app-nav-menu/AppNavMenuIcons';
 import type { NavMenuActionHandlers } from './app-nav-menu/types';
 import {
     NavItemContextMenu,
@@ -45,7 +47,10 @@ function AppNavCreateDashboardHeader({
                         type="button"
                         tooltip={t('dashboard.new_dashboard')}
                         disabled={disabled}
-                        className="text-sidebar-foreground/65 border border-dashed"
+                        className={cn(
+                            'text-sidebar-foreground/65 border border-dashed',
+                            navMenuLucideClassName
+                        )}
                         onClick={() => {
                             onCreateDashboard();
                         }}
@@ -177,7 +182,10 @@ function AppNavFooter({
                         type="button"
                         isActive={settingsActive}
                         tooltip={t('nav_tooltip.settings')}
-                        className={shortcutHintsVisible ? 'pr-8' : undefined}
+                        className={cn(
+                            navMenuLucideClassName,
+                            shortcutHintsVisible && 'pr-8'
+                        )}
                         onClick={onNavigateSettings}
                     >
                         <span className="relative inline-flex size-4 items-center justify-center">
@@ -200,7 +208,10 @@ function AppNavFooter({
                                 ? t('nav_tooltip.collapse_nav')
                                 : t('nav_tooltip.expand_nav')
                         }
-                        className={shortcutHintsVisible ? 'pr-8' : undefined}
+                        className={cn(
+                            navMenuLucideClassName,
+                            shortcutHintsVisible && 'pr-8'
+                        )}
                         onClick={() => {
                             onToggleSidebar();
                         }}

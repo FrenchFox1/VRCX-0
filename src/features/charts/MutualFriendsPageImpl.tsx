@@ -80,13 +80,18 @@ export function MutualFriendsPage() {
                     <MutualFriendsLegend
                         communities={graph.communities}
                         coverage={graph.coverage}
+                        crossCommunityOnly={view.crossCommunityOnly}
                         focusedCommunity={view.filters.focusedCommunity}
                         isolatedCounts={graph.isolatedCounts}
                         minDegree={view.filters.minDegree}
                         onMinDegreeChange={actions.setMinDegree}
+                        onToggleCrossCommunityOnly={
+                            actions.toggleCrossCommunityOnly
+                        }
                         onToggleFocusedCommunity={
                             actions.toggleFocusedCommunity
                         }
+                        unknownCount={graph.unknownCount}
                     />
                 ) : null}
 

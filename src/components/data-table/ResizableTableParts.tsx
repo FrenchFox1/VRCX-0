@@ -167,10 +167,10 @@ function ResizableTableHeadContent<TData extends RowData>({
                     aria-valuemax={maxSize}
                     aria-valuenow={header.column.getSize()}
                     aria-valuetext={`${header.column.getSize()} pixels`}
-                    className={cn(
-                        'hover:bg-border absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none rounded-none border-0 bg-transparent p-0',
-                        header.column.getIsResizing() ? 'bg-primary' : ''
-                    )}
+                    data-resizing={
+                        header.column.getIsResizing() ? '' : undefined
+                    }
+                    className="vrcx-0-column-resize absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none rounded-none border-0 bg-transparent p-0 hover:bg-transparent"
                     onMouseDown={
                         stretchHeader ? undefined : header.getResizeHandler()
                     }

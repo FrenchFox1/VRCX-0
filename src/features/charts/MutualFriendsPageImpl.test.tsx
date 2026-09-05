@@ -59,6 +59,7 @@ function controllerValue(currentUserId: string, friendCount: number) {
             setMinDegree: noop,
             setSearchQuery: noop,
             toggleExcludedFriendId: noop,
+            toggleCrossCommunityOnly: noop,
             toggleFocusedCommunity: noop
         },
         exclusions: {
@@ -90,6 +91,7 @@ function controllerValue(currentUserId: string, friendCount: number) {
             edgeCount: 0,
             friendCount,
             isolatedCounts: { noConnections: 0, unavailable: 0 },
+            unknownCount: 0,
             isLayoutRunning: false,
             nodeCount: 0,
             setGraphElementRef: noop,
@@ -106,6 +108,7 @@ function controllerValue(currentUserId: string, friendCount: number) {
             user: null
         },
         view: {
+            crossCommunityOnly: false,
             filters: {
                 focusedCommunity: null,
                 minDegree: 0,

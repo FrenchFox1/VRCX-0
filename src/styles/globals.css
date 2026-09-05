@@ -83,7 +83,7 @@
     --control-quiet-hover-surface: var(--state-hover-surface);
     --control-quiet-active-surface: var(--state-pressed-surface);
     --stroke-subtle: color-mix(in oklch, var(--foreground) 6%, transparent);
-    --stroke-default: color-mix(in oklch, var(--foreground) 10%, transparent);
+    --stroke-default: color-mix(in oklch, var(--foreground) 8%, transparent);
     --stroke-strong: color-mix(in oklch, var(--foreground) 16%, transparent);
     --border-subtle: var(--stroke-subtle);
     --border-hover: var(--stroke-strong);
@@ -154,19 +154,19 @@
      * Surface variables are the readable overlays above wallpaper layers.
      * Themes can replace them with opaque, transparent, or translucent colors.
      */
-    --vrcx-0-app-surface: var(--surface-canvas);
-    --vrcx-0-titlebar-surface: var(--surface-canvas);
-    --vrcx-0-main-surface: var(--surface-canvas);
-    --vrcx-0-main-content-surface: transparent;
-    --vrcx-0-sidebar-surface: var(--surface-shell);
-    --vrcx-0-sidebar-inset-surface: var(--surface-canvas);
-    --vrcx-0-side-panel-surface: var(--surface-shell);
-    --vrcx-0-statusbar-surface: var(--surface-shell);
+    --vrcx-0-app-surface: var(--surface-shell);
+    --vrcx-0-titlebar-surface: var(--vrcx-0-app-surface);
+    --vrcx-0-main-surface: var(--vrcx-0-app-surface);
+    --vrcx-0-main-content-surface: var(--surface-canvas);
+    --vrcx-0-sidebar-surface: var(--vrcx-0-app-surface);
+    --vrcx-0-sidebar-inset-surface: var(--vrcx-0-app-surface);
+    --vrcx-0-side-panel-surface: var(--vrcx-0-app-surface);
+    --vrcx-0-statusbar-surface: var(--vrcx-0-app-surface);
     --vrcx-0-toolbar-control-surface: var(--surface-interactive);
     --vrcx-0-toolbar-control-hover-surface: var(--surface-interactive-hover);
-    --vrcx-0-toolbar-control-border: var(--stroke-default);
+    --vrcx-0-toolbar-control-border: transparent;
     --vrcx-0-toolbar-group-surface: var(--surface-raised);
-    --vrcx-0-toolbar-group-border: var(--stroke-default);
+    --vrcx-0-toolbar-group-border: transparent;
     --vrcx-0-toolbar-item-foreground: var(--content-secondary);
     --vrcx-0-toolbar-item-hover-surface: var(--state-hover-surface);
     --vrcx-0-toolbar-item-selected-surface: var(--state-selected-surface);
@@ -204,9 +204,18 @@
     --vrcx-0-table-header-height: 2.5rem;
     --vrcx-0-table-row-height: 2.5rem;
     --vrcx-0-table-cell-padding-inline: 0.75rem;
+    --vrcx-0-main-content-gutter: 0.5rem;
+    --vrcx-0-main-content-radius: 0.5rem;
+    --vrcx-0-main-content-edge: var(--stroke-subtle);
     --vrcx-0-main-content-preferred-min-width: 45rem;
     --vrcx-0-side-panel-min-width: 15rem;
-    --vrcx-0-side-panel-resizer-width: 0.25rem;
+    --vrcx-0-side-panel-resizer-width: 0.5rem;
+    --vrcx-0-resize-accent: color-mix(
+        in oklab,
+        var(--primary) 55%,
+        transparent
+    );
+    --vrcx-0-resize-accent-active: var(--primary);
     --vrcx-0-table-cell-padding-block: 0.5rem;
     --vrcx-0-table-control-cell-padding-block: 0.25rem;
     --vrcx-0-table-row-focus: color-mix(in oklch, var(--ring) 70%, transparent);
@@ -226,6 +235,22 @@
         color-scheme: dark;
         --background: oklch(0.145 0 0);
         --foreground: oklch(0.985 0 0);
+        --surface-panel: color-mix(
+            in oklch,
+            var(--background) 96%,
+            var(--foreground)
+        );
+        --surface-raised: color-mix(
+            in oklch,
+            var(--background) 93%,
+            var(--foreground)
+        );
+        --vrcx-0-app-surface: var(--surface-canvas);
+        --vrcx-0-main-content-surface: color-mix(
+            in oklch,
+            var(--background) 97.5%,
+            var(--foreground)
+        );
         --vrcx-0-table-row-striped-surface: color-mix(
             in oklch,
             var(--surface-panel) 97%,
@@ -239,7 +264,7 @@
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
+    --popover: oklch(0.225 0 0);
     --popover-foreground: oklch(0.985 0 0);
     --primary: oklch(0.922 0 0);
     --primary-foreground: oklch(0.205 0 0);
@@ -254,6 +279,22 @@
     --sidebar-accent-foreground: var(--content-primary);
     --sidebar-border: var(--stroke-subtle);
     --sidebar-ring: oklch(0.556 0 0);
+    --surface-panel: color-mix(
+        in oklch,
+        var(--background) 96%,
+        var(--foreground)
+    );
+    --surface-raised: color-mix(
+        in oklch,
+        var(--background) 93%,
+        var(--foreground)
+    );
+    --vrcx-0-app-surface: var(--surface-canvas);
+    --vrcx-0-main-content-surface: color-mix(
+        in oklch,
+        var(--background) 97.5%,
+        var(--foreground)
+    );
     --status-online: #2ed319;
     --status-joinme: #00b8ff;
     --status-busy: #c80928;
@@ -652,7 +693,49 @@
     .vrcx-0-main-content {
         position: relative;
         isolation: isolate;
+        margin: var(--vrcx-0-main-content-gutter);
+        border-radius: var(--vrcx-0-main-content-radius);
         background: var(--vrcx-0-main-content-surface);
+        box-shadow: 0 0 0 1px var(--vrcx-0-main-content-edge);
+    }
+
+    .vrcx-0-main-content:has(+ [data-vrcx-0-resize='side-panel']) {
+        margin-inline-end: 0;
+    }
+
+    .vrcx-0-main-content::after {
+        position: absolute;
+        z-index: 2;
+        inset-block: 0;
+        left: 0;
+        width: 2px;
+        pointer-events: none;
+        content: '';
+        background: transparent;
+        transition: background-color var(--motion-standard) var(--ease-out-ui);
+    }
+
+    .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='nav']:hover)
+        .vrcx-0-main-content::after {
+        left: 0;
+        background: var(--vrcx-0-resize-accent);
+        transition-delay: 100ms;
+    }
+
+    .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='side-panel']:hover)
+        .vrcx-0-main-content::after {
+        right: 0;
+        left: auto;
+        background: var(--vrcx-0-resize-accent);
+        transition-delay: 100ms;
+    }
+
+    .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='nav']:active)
+        .vrcx-0-main-content::after,
+    .vrcx-0-sidebar-layout:has([data-vrcx-0-resize='side-panel']:active)
+        .vrcx-0-main-content::after {
+        background: var(--vrcx-0-resize-accent-active);
+        transition-delay: 0ms;
     }
 
     .vrcx-0-main-content::before {
@@ -679,21 +762,32 @@
         background: var(--vrcx-0-sidebar-surface);
     }
 
+    .vrcx-0-sidebar-surface,
+    [data-slot='sidebar-container'] {
+        border-color: transparent;
+    }
+
     .vrcx-0-sidebar-inset {
         background: var(--vrcx-0-sidebar-inset-surface);
     }
 
     .vrcx-0-side-panel {
         background: var(--vrcx-0-side-panel-surface);
-        border-color: var(--stroke-subtle);
     }
 
     .vrcx-0-statusbar {
         background: var(--vrcx-0-statusbar-surface);
     }
 
-    .app-data-table,
+    .app-data-table {
+        background: var(--vrcx-0-table-surface);
+        border-color: var(--vrcx-0-table-border);
+    }
+
     .vrcx-0-data-table {
+        --vrcx-0-table-surface: var(--vrcx-0-main-content-surface);
+        --vrcx-0-table-header-surface: var(--vrcx-0-main-content-surface);
+        --vrcx-0-table-border: transparent;
         background: var(--vrcx-0-table-surface);
         border-color: var(--vrcx-0-table-border);
     }
@@ -710,17 +804,37 @@
         ),
     [data-slot='button'].vrcx-0-toolbar-control[data-vrcx-0-control='toolbar']:hover {
         background: var(--vrcx-0-toolbar-control-hover-surface);
-        border-color: var(--stroke-strong);
     }
 
     [data-slot='button'].vrcx-0-toolbar-control-active[data-vrcx-0-control='toolbar'] {
         color: var(--vrcx-0-toolbar-item-selected-foreground);
         background: var(--vrcx-0-toolbar-item-selected-surface);
-        border-color: color-mix(in oklab, var(--primary) 28%, transparent);
     }
 
     [data-slot='button'].vrcx-0-toolbar-control-active[data-vrcx-0-control='toolbar']:hover {
         background: var(--vrcx-0-toolbar-item-selected-hover-surface);
+    }
+
+    [data-slot='button'].vrcx-0-column-resize::after {
+        position: absolute;
+        inset-block: 0.375rem;
+        left: 50%;
+        width: 2px;
+        content: '';
+        border-radius: 999px;
+        background: transparent;
+        transform: translateX(-50%);
+        transition: background-color var(--motion-standard) var(--ease-out-ui);
+    }
+
+    [data-slot='button'].vrcx-0-column-resize:hover::after {
+        background: var(--vrcx-0-resize-accent);
+        transition-delay: 100ms;
+    }
+
+    [data-slot='button'].vrcx-0-column-resize[data-resizing]::after {
+        background: var(--vrcx-0-resize-accent-active);
+        transition-delay: 0ms;
     }
 
     [data-slot='button'].vrcx-0-quiet-control {

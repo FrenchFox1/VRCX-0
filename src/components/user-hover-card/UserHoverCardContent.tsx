@@ -104,11 +104,11 @@ export function UserHoverCardContent({
                             alt=""
                             className="size-full object-cover"
                             fallback={
-                                <ImageIcon className="text-muted-foreground/50 size-7" />
+                                <ImageIcon className="text-muted-foreground size-7 opacity-50" />
                             }
                         />
                     ) : (
-                        <ImageIcon className="text-muted-foreground/50 size-7" />
+                        <ImageIcon className="text-muted-foreground size-7 opacity-50" />
                     )}
                 </button>
             ) : null}
@@ -168,7 +168,7 @@ export function UserHoverCardContent({
                                 duration: onlineForText
                             })}
                         >
-                            <ClockIcon className="size-3 opacity-70" />
+                            <ClockIcon className="text-muted-foreground size-3 opacity-56" />
                             {onlineForText}
                         </span>
                     ) : null}
@@ -255,14 +255,18 @@ export function UserHoverCardContent({
                     <div className="space-y-1.5 border-t pt-2.5 text-xs">
                         {memo ? (
                             <NoteLine
-                                icon={<StickyNoteIcon className="size-3.5" />}
+                                icon={
+                                    <StickyNoteIcon className="text-muted-foreground size-3.5 opacity-70" />
+                                }
                                 label={t('user_hover_card.note_local')}
                                 text={memo}
                             />
                         ) : null}
                         {model.note ? (
                             <NoteLine
-                                icon={<CloudIcon className="size-3.5" />}
+                                icon={
+                                    <CloudIcon className="text-muted-foreground size-3.5 opacity-70" />
+                                }
                                 label={t('user_hover_card.note_synced')}
                                 text={model.note}
                             />
