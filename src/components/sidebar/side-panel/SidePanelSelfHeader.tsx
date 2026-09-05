@@ -20,7 +20,7 @@ import { useFriendsSidebarActions } from '@/components/sidebar/friends-sidebar/u
 import { useFriendsSidebarPreferences } from '@/components/sidebar/friends-sidebar/useFriendsSidebarPreferences';
 import { useFriendsSidebarDisplayPreferences } from '@/components/sidebar/useFriendsSidebarDisplayPreferences';
 import { useFriendsSidebarRuntimeSnapshot } from '@/components/sidebar/useFriendsSidebarRuntimeSnapshot';
-import { UserDetailContent } from '@/components/UserDetailTile';
+import { UserStatusAvatar } from '@/components/UserStatusAvatar';
 import { cn } from '@/lib/utils';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
 import { useModalStore } from '@/state/modalStore';
@@ -162,6 +162,8 @@ export function SidePanelSelfHeader() {
         setCurrentUserStatusDescription(nextDescription);
     }
 
+    const openSelf = () => openFriend(selfRow);
+
     const renderActionItems = (
         slots: typeof CONTEXT_MENU_SLOTS,
         showOpen: boolean
@@ -169,7 +171,7 @@ export function SidePanelSelfHeader() {
         return (
             <CurrentUserActionItems
                 friend={selfRow}
-                onOpen={() => openFriend(selfRow)}
+                onOpen={openSelf}
                 onChangeStatus={changeCurrentUserStatus}
                 onSetStatusDescription={setCurrentUserStatusDescription}
                 onEditSocialStatus={editCurrentUserSocialStatus}
@@ -182,49 +184,160 @@ export function SidePanelSelfHeader() {
     };
 
     return (
-        <div className="vrcx-0-side-panel-self -ml-2 flex shrink-0 flex-col gap-1.5 py-2 pr-1.5 pl-2">
+        <div className="vrcx-0-side-panel-self ml-2 flex shrink-0 flex-col py-2 pr-1.5 pl-2">
             <ContextMenu>
                 <ContextMenuTrigger
                     render={
-                        <div className="flex w-full min-w-0 items-center gap-0.5">
-                            <button
-                                type="button"
-                                className="focus-visible:ring-ring flex h-auto w-full min-w-0 flex-1 cursor-pointer items-center justify-start gap-2 rounded-md p-1.5 text-left font-normal outline-none focus-visible:ring-2"
-                                onClick={() => openFriend(selfRow)}
-                            >
-                                <UserDetailContent
-                                    imageUrl={imageUrl}
-                                    statusDotClassName={resolveSidebarStatusDotClassName(
-                                        selfRow,
-                                        currentUser,
-                                        true,
-                                        {
-                                            isGameRunning:
-                                                gameState?.isGameRunning
-                                        }
-                                    )}
-                                    displayName={displayName}
-                                    nameStyle={nameStyle}
-                                    subline={
-                                        showLocationSubline ? (
-                                            <StaticSidebarLocation
-                                                location={displayLocation}
-                                                traveling={displayTraveling}
-                                                hint={metadataHint}
-                                                metadata={locationMetadata}
-                                                tooltips={false}
-                                                showInstanceIdInLocation={
-                                                    showInstanceIdInLocation
+                        <div className="flex w-full min-w-0 flex-col gap-1 p-1.5">
+                            <div className="flex min-w-0 items-center gap-2">
+                                <button
+                                    type="button"
+                                    aria-label={displayName}
+                                    className="focus-visible:ring-ring shrink-0 cursor-pointer rounded-full outline-none focus-visible:ring-2"
+                                    onClick={openSelf}
+                                >
+                                    <UserStatusAvatar
+                                        className="size-11"
+                                        imageUrl={imageUrl}
+                                        statusDotClassName={resolveSidebarStatusDotClassName(
+                                            selfRow,
+                                            currentUser,
+                                            true,
+                                            {
+                                                isGameRunning:
+                                                    gameState?.isGameRunning
+                                            }
+                                        )}
+                                    />
+                                </button>
+                                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                                    <button
+                                        type="button"
+                                        style={nameStyle}
+                                        className="focus-visible:ring-ring min-w-0 cursor-pointer truncate rounded-md text-left text-sm leading-5 font-medium outline-none focus-visible:ring-2"
+                                        onClick={openSelf}
+                                    >
+                                        {displayName}
+                                    </button>
+                                    <div className="-ml-2 flex min-w-0 items-center gap-0.5">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger
+                                                render={
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-6 shrink-0 gap-1 rounded-full px-2 text-xs font-normal"
+                                                    />
                                                 }
-                                                ageGatedInstancesVisible={
-                                                    ageGatedInstancesVisible
+                                            >
+                                                <i
+                                                    aria-hidden="true"
+                                                    className={userStatusIndicatorClassName(
+                                                        statusValue
+                                                    )}
+                                                />
+                                                {t(
+                                                    resolveCurrentUserStatusLabelKey(
+                                                        statusValue
+                                                    )
+                                                )}
+                                                <ChevronDownIcon data-icon="inline-end" />
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent
+                                                align="start"
+                                                className="w-56"
+                                            >
+                                                {renderActionItems(
+                                                    DROPDOWN_MENU_SLOTS,
+                                                    false
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        {isEditingDescription ? (
+                                            <input
+                                                ref={descriptionInputRef}
+                                                type="text"
+                                                maxLength={
+                                                    STATUS_DESCRIPTION_MAX_LENGTH
                                                 }
+                                                value={descriptionDraft}
+                                                aria-label={
+                                                    editDescriptionLabel
+                                                }
+                                                className="ring-ring text-content-primary h-6 min-w-0 flex-1 rounded-md bg-transparent px-2 text-xs outline-none focus-visible:ring-2"
+                                                onChange={(event) =>
+                                                    setDescriptionDraft(
+                                                        event.target.value
+                                                    )
+                                                }
+                                                onBlur={commitDescription}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter') {
+                                                        event.currentTarget.blur();
+                                                        return;
+                                                    }
+                                                    if (
+                                                        event.key === 'Escape'
+                                                    ) {
+                                                        setDescriptionDraft(
+                                                            statusDescription
+                                                        );
+                                                        setIsEditingDescription(
+                                                            false
+                                                        );
+                                                    }
+                                                }}
                                             />
-                                        ) : null
-                                    }
-                                />
-                            </button>
-                            <AccountSwitcherPopover />
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                aria-label={
+                                                    editDescriptionLabel
+                                                }
+                                                title={
+                                                    statusDescription ||
+                                                    editDescriptionLabel
+                                                }
+                                                className={cn(
+                                                    'focus-visible:ring-ring h-6 min-w-0 flex-1 cursor-text truncate rounded-md px-2 text-left text-xs outline-none focus-visible:ring-2',
+                                                    statusDescription
+                                                        ? 'text-content-secondary'
+                                                        : 'text-content-tertiary'
+                                                )}
+                                                onClick={() => {
+                                                    setDescriptionDraft(
+                                                        statusDescription
+                                                    );
+                                                    setIsEditingDescription(
+                                                        true
+                                                    );
+                                                }}
+                                            >
+                                                {statusDescription ||
+                                                    editDescriptionLabel}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <AccountSwitcherPopover />
+                            </div>
+                            {showLocationSubline ? (
+                                <div className="text-muted-foreground min-w-0 truncate text-xs">
+                                    <StaticSidebarLocation
+                                        location={displayLocation}
+                                        traveling={displayTraveling}
+                                        hint={metadataHint}
+                                        metadata={locationMetadata}
+                                        tooltips={false}
+                                        showInstanceIdInLocation={
+                                            showInstanceIdInLocation
+                                        }
+                                        ageGatedInstancesVisible={
+                                            ageGatedInstancesVisible
+                                        }
+                                    />
+                                </div>
+                            ) : null}
                         </div>
                     }
                 />
@@ -232,73 +345,6 @@ export function SidePanelSelfHeader() {
                     {renderActionItems(CONTEXT_MENU_SLOTS, true)}
                 </ContextMenuContent>
             </ContextMenu>
-            <div className="flex min-w-0 items-center gap-1.5 pl-1.5">
-                <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-6 shrink-0 gap-1 rounded-full px-2 text-xs font-normal"
-                            />
-                        }
-                    >
-                        <i
-                            aria-hidden="true"
-                            className={userStatusIndicatorClassName(
-                                statusValue
-                            )}
-                        />
-                        {t(resolveCurrentUserStatusLabelKey(statusValue))}
-                        <ChevronDownIcon data-icon="inline-end" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56">
-                        {renderActionItems(DROPDOWN_MENU_SLOTS, false)}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                {isEditingDescription ? (
-                    <input
-                        ref={descriptionInputRef}
-                        type="text"
-                        maxLength={STATUS_DESCRIPTION_MAX_LENGTH}
-                        value={descriptionDraft}
-                        aria-label={editDescriptionLabel}
-                        className="ring-ring text-content-primary h-6 min-w-0 flex-1 rounded-md bg-transparent px-2 text-xs outline-none focus-visible:ring-2"
-                        onChange={(event) =>
-                            setDescriptionDraft(event.target.value)
-                        }
-                        onBlur={commitDescription}
-                        onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                                event.currentTarget.blur();
-                                return;
-                            }
-                            if (event.key === 'Escape') {
-                                setDescriptionDraft(statusDescription);
-                                setIsEditingDescription(false);
-                            }
-                        }}
-                    />
-                ) : (
-                    <button
-                        type="button"
-                        aria-label={editDescriptionLabel}
-                        title={statusDescription || editDescriptionLabel}
-                        className={cn(
-                            'focus-visible:ring-ring h-6 min-w-0 flex-1 cursor-text truncate rounded-md px-2 text-left text-xs outline-none focus-visible:ring-2',
-                            statusDescription
-                                ? 'text-content-secondary'
-                                : 'text-content-tertiary'
-                        )}
-                        onClick={() => {
-                            setDescriptionDraft(statusDescription);
-                            setIsEditingDescription(true);
-                        }}
-                    >
-                        {statusDescription || editDescriptionLabel}
-                    </button>
-                )}
-            </div>
             <CurrentUserSocialStatusDialog controller={socialStatusDialog} />
         </div>
     );

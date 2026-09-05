@@ -333,54 +333,52 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 )}
                 style={style}
             >
+                <SidePanelSelfHeader />
                 <Tabs
                     orientation="vertical"
                     value={activeTab}
                     onValueChange={setActiveTab}
                     className="flex min-h-0 min-w-0 flex-1 gap-0 overflow-hidden"
                 >
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pl-2">
-                        <SidePanelSelfHeader />
-                        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-2">
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-2 pl-2">
+                        <TabsContent
+                            value="friends"
+                            className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
+                        >
+                            <FriendsSidebar
+                                prefs={prefs}
+                                excludedFavoriteGroupKeys={
+                                    visibleFavoriteCollectionSourceGroupKeys
+                                }
+                            />
+                        </TabsContent>
+                        {groupsTabVisible ? (
                             <TabsContent
-                                value="friends"
+                                value="groups"
                                 className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
                             >
-                                <FriendsSidebar
-                                    prefs={prefs}
-                                    excludedFavoriteGroupKeys={
-                                        visibleFavoriteCollectionSourceGroupKeys
-                                    }
-                                />
+                                <GroupsSidebar />
                             </TabsContent>
-                            {groupsTabVisible ? (
+                        ) : null}
+                        {visibleTabLayout
+                            .filter(
+                                (
+                                    item
+                                ): item is SidebarFavoriteCollectionTabLayoutItem =>
+                                    item.type === 'favoriteCollection'
+                            )
+                            .map((item) => (
                                 <TabsContent
-                                    value="groups"
+                                    key={item.id}
+                                    value={item.id}
                                     className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
                                 >
-                                    <GroupsSidebar />
+                                    <FriendsSidebar
+                                        prefs={prefs}
+                                        favoriteCollectionTab={item}
+                                    />
                                 </TabsContent>
-                            ) : null}
-                            {visibleTabLayout
-                                .filter(
-                                    (
-                                        item
-                                    ): item is SidebarFavoriteCollectionTabLayoutItem =>
-                                        item.type === 'favoriteCollection'
-                                )
-                                .map((item) => (
-                                    <TabsContent
-                                        key={item.id}
-                                        value={item.id}
-                                        className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
-                                    >
-                                        <FriendsSidebar
-                                            prefs={prefs}
-                                            favoriteCollectionTab={item}
-                                        />
-                                    </TabsContent>
-                                ))}
-                        </div>
+                            ))}
                     </div>
                     <div className="vrcx-0-side-panel-rail flex w-9 shrink-0 flex-col items-center gap-0.5 py-1.5">
                         <TabsList
