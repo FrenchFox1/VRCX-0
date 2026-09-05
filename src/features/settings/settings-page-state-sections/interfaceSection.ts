@@ -184,10 +184,31 @@ export function buildInterfaceSection({
                 checked
             );
         },
-        onShowUserDialogProfileDecorationsChange: (checked: boolean) => {
+        onShowUserDialogProfileBackgroundChange: (checked: boolean) => {
             saveBoolPreference(
-                'showUserDialogProfileDecorations',
-                'showUserDialogProfileDecorations',
+                'showUserDialogProfileBackground',
+                'showUserDialogProfileBackground',
+                checked
+            );
+        },
+        onShowUserDialogAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showUserDialogAvatarFrame',
+                'showUserDialogAvatarFrame',
+                checked
+            );
+        },
+        onShowUserDialogProfileEffectChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showUserDialogProfileEffect',
+                'showUserDialogProfileEffect',
+                checked
+            );
+        },
+        onShowUserDialogNameplateEffectChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showUserDialogNameplateEffect',
+                'showUserDialogNameplateEffect',
                 checked
             );
         },

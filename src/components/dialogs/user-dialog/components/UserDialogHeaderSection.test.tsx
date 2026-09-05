@@ -58,9 +58,39 @@ const gradientNameplateEffect: InventoryItemRecord = {
     }
 };
 
+const iconFrame: InventoryItemRecord = {
+    id: 'invt_frame',
+    metadata: {
+        assets: [
+            {
+                type: 'base',
+                url: 'https://example.test/frame.webp'
+            }
+        ]
+    }
+};
+
+const profileEffect: InventoryItemRecord = {
+    id: 'invt_profile',
+    metadata: {
+        assets: [
+            {
+                type: 'base',
+                url: 'https://example.test/profile-effect.webp'
+            }
+        ]
+    }
+};
+
 function createHeaderModel(effect?: InventoryItemRecord): UserHeaderModel {
     return {
         actionStatus: 'idle',
+        appearanceVisibility: {
+            profileBackground: true,
+            avatarFrame: true,
+            profileEffect: true,
+            nameplateEffect: true
+        },
         avatarOverrideState: {
             hideAvatar: false,
             showAvatar: false
@@ -273,6 +303,83 @@ describe('UserDialogHeaderSection nameplate', () => {
         const titleRow = title.closest('[data-slot="card-title"]');
 
         expect(titleRow?.classList.contains('text-white')).toBe(false);
+    });
+});
+
+describe('UserDialogHeaderSection appearance visibility', () => {
+    it('hides the profile background without changing the card structure', () => {
+        const headerModel = createHeaderModel();
+        headerModel.profile.backgroundType = 'gradient';
+        headerModel.profile.backgroundGradientTop = '#ff0000';
+        headerModel.profile.backgroundGradientBottom = '#0000ff';
+        headerModel.appearanceVisibility.profileBackground = false;
+
+        const { container } = render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+        const card = container.querySelector<HTMLElement>('[data-slot="card"]');
+
+        expect(card).not.toBeNull();
+        expect(card?.style.backgroundImage).toBe('');
+    });
+
+    it('hides the avatar frame and nameplate effect independently', () => {
+        const headerModel = createHeaderModel(nameplateEffect);
+        headerModel.profileAppearance.iconFrame = iconFrame;
+        headerModel.profileIconUrl = 'https://example.test/icon.webp';
+        headerModel.appearanceVisibility.avatarFrame = false;
+        headerModel.appearanceVisibility.nameplateEffect = false;
+
+        const { container } = render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+        const title = screen.getByText('Map1en_');
+        const titleRow = title.closest('[data-slot="card-title"]');
+
+        expect(
+            container.querySelector(
+                'img[src="https://example.test/frame.webp"]'
+            )
+        ).toBeNull();
+        expect(
+            container.querySelector(
+                'img[src="https://example.test/nameplate.webp"]'
+            )
+        ).toBeNull();
+        expect(titleRow?.classList.contains('text-white')).toBe(false);
+    });
+
+    it('hides the profile effect without hiding the nameplate effect', () => {
+        const headerModel = createHeaderModel(nameplateEffect);
+        headerModel.profileAppearance.profileEffect = profileEffect;
+        headerModel.appearanceVisibility.profileEffect = false;
+
+        const { container } = render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+        const title = screen.getByText('Map1en_');
+        const titleRow = title.closest('[data-slot="card-title"]');
+
+        expect(
+            container.querySelector(
+                'img[src="https://example.test/profile-effect.webp"]'
+            )
+        ).toBeNull();
+        expect(
+            container.querySelector(
+                'img[src="https://example.test/nameplate.webp"]'
+            )
+        ).not.toBeNull();
+        expect(titleRow?.classList.contains('text-white')).toBe(true);
     });
 });
 

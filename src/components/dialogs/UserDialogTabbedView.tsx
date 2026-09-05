@@ -1,6 +1,7 @@
 import { ClockIcon } from 'lucide-react';
 import { useEffect, useMemo, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
@@ -197,28 +198,32 @@ export function UserDialogTabbedView({
         reloadToken = 0,
         initialAction = ''
     } = resource;
-    const showUserDialogProfileDecorations = usePreferencesStore(
-        (state) => state.showUserDialogProfileDecorations
+    const appearanceVisibility = usePreferencesStore(
+        useShallow((state) => ({
+            profileBackground: state.showUserDialogProfileBackground,
+            avatarFrame: state.showUserDialogAvatarFrame,
+            profileEffect: state.showUserDialogProfileEffect,
+            nameplateEffect: state.showUserDialogNameplateEffect
+        }))
     );
     const [selfPanel, setSelfPanel] = useState<SelfPanel>('');
     const activeSelfPanel: SelfPanel = relationship.isCurrentUser
         ? selfPanel
         : '';
     const canonicalProfileAppearance = useUserDialogProfileAppearance({
-        enabled: showUserDialogProfileDecorations,
-        profile
+        profile,
+        visibility: appearanceVisibility
     });
     const profileDecorations = useUserDialogProfileDecorations({
         enabled: activeSelfPanel === 'profile-decorations',
         onProfileUpdated: profileControls.onRefresh
     });
-    const profileAppearance =
-        showUserDialogProfileDecorations && relationship.isCurrentUser
-            ? applyUserDialogProfileAppearanceOverrides(
-                  canonicalProfileAppearance,
-                  profileDecorations.appearanceOverrides
-              )
-            : canonicalProfileAppearance;
+    const profileAppearance = relationship.isCurrentUser
+        ? applyUserDialogProfileAppearanceOverrides(
+              canonicalProfileAppearance,
+              profileDecorations.appearanceOverrides
+          )
+        : canonicalProfileAppearance;
     const {
         moderationState,
         extendedModerationState = { interactOff: false, muteChat: false },
@@ -554,6 +559,7 @@ export function UserDialogTabbedView({
 
     const headerModel = {
         actionStatus,
+        appearanceVisibility,
         avatarOverrideState,
         canInviteFromCurrentLocation,
         currentAvatarTarget,

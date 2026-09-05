@@ -44,6 +44,13 @@ export type UserDialogProfileAppearance = Partial<
     Record<ProfileDecorationSlot, InventoryItemRecord>
 >;
 
+export type UserDialogProfileAppearanceVisibility = {
+    profileBackground: boolean;
+    avatarFrame: boolean;
+    profileEffect: boolean;
+    nameplateEffect: boolean;
+};
+
 export type UserDialogProfileAppearanceOverride =
     | {
           action: 'equip';

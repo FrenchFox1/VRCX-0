@@ -107,7 +107,10 @@ export async function loadPreferenceSnapshot() {
         isAgeGatedInstancesVisible,
         hideNicknames,
         displayVRCPlusIconsAsAvatar,
-        showUserDialogProfileDecorations,
+        showUserDialogProfileBackground,
+        showUserDialogAvatarFrame,
+        showUserDialogProfileEffect,
+        showUserDialogNameplateEffect,
         weekStartsOn,
         hideUserNotes,
         hideUserMemos,
@@ -244,7 +247,10 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('VRCX_isAgeGatedInstancesVisible', true),
         configRepository.getBool('hideNicknames', false),
         configRepository.getBool('displayVRCPlusIconsAsAvatar', true),
-        configRepository.getBool('showUserDialogProfileDecorations', true),
+        configRepository.getBool('showUserDialogProfileBackground', true),
+        configRepository.getBool('showUserDialogAvatarFrame', true),
+        configRepository.getBool('showUserDialogProfileEffect', true),
+        configRepository.getBool('showUserDialogNameplateEffect', true),
         configRepository.getInt('weekStartsOn', 1),
         configRepository.getBool('hideUserNotes', false),
         configRepository.getBool('hideUserMemos', false),
@@ -454,9 +460,12 @@ export async function loadPreferenceSnapshot() {
         isAgeGatedInstancesVisible: Boolean(isAgeGatedInstancesVisible),
         hideNicknames: Boolean(hideNicknames),
         displayVRCPlusIconsAsAvatar: Boolean(displayVRCPlusIconsAsAvatar),
-        showUserDialogProfileDecorations: Boolean(
-            showUserDialogProfileDecorations
+        showUserDialogProfileBackground: Boolean(
+            showUserDialogProfileBackground
         ),
+        showUserDialogAvatarFrame: Boolean(showUserDialogAvatarFrame),
+        showUserDialogProfileEffect: Boolean(showUserDialogProfileEffect),
+        showUserDialogNameplateEffect: Boolean(showUserDialogNameplateEffect),
         weekStartsOn: normalizeWeekStartsOn(weekStartsOn),
         hideUserNotes: Boolean(hideUserNotes),
         hideUserMemos: Boolean(hideUserMemos),

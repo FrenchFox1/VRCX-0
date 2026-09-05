@@ -6,7 +6,8 @@ import vrchatMediaRepository, {
 
 import {
     PROFILE_DECORATION_SLOTS,
-    type UserDialogProfileAppearance
+    type UserDialogProfileAppearance,
+    type UserDialogProfileAppearanceVisibility
 } from './userDialogProfileAppearance';
 import type { UserDialogProfileRecord } from './userDialogProfileTypes';
 
@@ -14,21 +15,29 @@ const EMPTY_APPEARANCE: UserDialogProfileAppearance = Object.freeze({});
 const EMPTY_TEMPLATE_ITEMS: ReadonlyMap<string, InventoryItemRecord | null> =
     new Map();
 
+type ProfileDecorationVisibility = Pick<
+    UserDialogProfileAppearanceVisibility,
+    'avatarFrame' | 'profileEffect' | 'nameplateEffect'
+>;
+
 export function useUserDialogProfileAppearance({
-    enabled = true,
-    profile
+    profile,
+    visibility
 }: {
-    enabled?: boolean;
     profile: UserDialogProfileRecord | null | undefined;
+    visibility: ProfileDecorationVisibility;
 }): UserDialogProfileAppearance {
     const userId = profile?.id?.trim() ?? '';
     const iconFrameId =
-        typeof profile?.iconFrame === 'string' ? profile.iconFrame.trim() : '';
+        visibility.avatarFrame && typeof profile?.iconFrame === 'string'
+            ? profile.iconFrame.trim()
+            : '';
     const profileEffectId =
-        typeof profile?.profileEffect === 'string'
+        visibility.profileEffect && typeof profile?.profileEffect === 'string'
             ? profile.profileEffect.trim()
             : '';
     const nameplateEffectId =
+        visibility.nameplateEffect &&
         typeof profile?.nameplateEffect === 'string'
             ? profile.nameplateEffect.trim()
             : '';
@@ -57,7 +66,7 @@ export function useUserDialogProfileAppearance({
         const templateIds = [
             ...new Set(Object.values(templateIdsBySlot).filter(Boolean))
         ].filter((templateId) => !itemsByTemplateId.has(templateId));
-        if (!enabled || !userId || templateIds.length === 0) {
+        if (!userId || templateIds.length === 0) {
             return;
         }
 
@@ -110,10 +119,10 @@ export function useUserDialogProfileAppearance({
         return () => {
             active = false;
         };
-    }, [enabled, resource, templateIdsBySlot, userId]);
+    }, [resource, templateIdsBySlot, userId]);
 
     return useMemo(() => {
-        if (!enabled || resource.userId !== userId) {
+        if (resource.userId !== userId) {
             return EMPTY_APPEARANCE;
         }
         const value: UserDialogProfileAppearance = {};
@@ -126,5 +135,5 @@ export function useUserDialogProfileAppearance({
             }
         }
         return value;
-    }, [enabled, resource, templateIdsBySlot, userId]);
+    }, [resource, templateIdsBySlot, userId]);
 }

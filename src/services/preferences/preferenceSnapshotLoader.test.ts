@@ -243,25 +243,34 @@ describe('preferenceSnapshotLoader', () => {
         );
     });
 
-    it('loads the user dialog profile decoration visibility preference', async () => {
+    it('loads the user dialog appearance visibility preferences', async () => {
+        const disabledKeys = new Set([
+            'showUserDialogProfileBackground',
+            'showUserDialogAvatarFrame',
+            'showUserDialogProfileEffect',
+            'showUserDialogNameplateEffect'
+        ]);
         mocks.getBool.mockImplementation((key: string, fallback = false) =>
-            Promise.resolve(
-                key === 'showUserDialogProfileDecorations'
-                    ? false
-                    : Boolean(fallback)
-            )
+            Promise.resolve(disabledKeys.has(key) ? false : Boolean(fallback))
         );
 
         const snapshot = await loadPreferenceSnapshot();
 
-        expect(mocks.getBool).toHaveBeenCalledWith(
-            'showUserDialogProfileDecorations',
-            true
-        );
-        expect(snapshot.showUserDialogProfileDecorations).toBe(false);
-        expect(
-            usePreferencesStore.getState().showUserDialogProfileDecorations
-        ).toBe(false);
+        for (const key of disabledKeys) {
+            expect(mocks.getBool).toHaveBeenCalledWith(key, true);
+        }
+        expect(snapshot).toMatchObject({
+            showUserDialogProfileBackground: false,
+            showUserDialogAvatarFrame: false,
+            showUserDialogProfileEffect: false,
+            showUserDialogNameplateEffect: false
+        });
+        expect(usePreferencesStore.getState()).toMatchObject({
+            showUserDialogProfileBackground: false,
+            showUserDialogAvatarFrame: false,
+            showUserDialogProfileEffect: false,
+            showUserDialogNameplateEffect: false
+        });
     });
 
     it('loads an explicit Friend Log notification dot opt-out', async () => {
