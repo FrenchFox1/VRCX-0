@@ -1,4 +1,3 @@
-import { flexRender, type SortingState } from '@tanstack/react-table';
 import { ArrowUpToLineIcon, ChevronRightIcon } from 'lucide-react';
 import {
     useCallback,
@@ -57,7 +56,6 @@ type FeedVirtualListShellProps = {
     onViewingLatestChange(value: boolean): void;
     resetKey: string;
     rows: FeedRow[];
-    sorting: SortingState;
     sourceRows: FeedRow[];
     table: FeedTableInstance;
 };
@@ -214,14 +212,7 @@ function FeedListHeader({
                         key={id}
                         className="relative flex h-full min-w-0 items-center pr-2"
                     >
-                        <span className="min-w-0 truncate">
-                            {header
-                                ? flexRender(
-                                      header.column.columnDef.header,
-                                      header.getContext()
-                                  )
-                                : label}
-                        </span>
+                        <span className="min-w-0 truncate">{label}</span>
                         {header ? (
                             <FeedListResizeHandle
                                 header={header}
@@ -368,7 +359,6 @@ export function FeedVirtualListShell({
     onViewingLatestChange,
     resetKey,
     rows,
-    sorting,
     sourceRows,
     table
 }: FeedVirtualListShellProps) {
@@ -392,12 +382,6 @@ export function FeedVirtualListShell({
     );
     const newRowKeys = useFeedNewTopRowKeys(sourceRows, resetKey);
     const layout = getFeedListLayout(table);
-    const scrollResetKey = `${resetKey}:${JSON.stringify(sorting)}`;
-    const latestAtTop =
-        sorting.length === 0 ||
-        (sorting.length === 1 &&
-            sorting[0].id === 'created_at' &&
-            sorting[0].desc === true);
     const {
         getRowRef,
         scrollToStart,
@@ -407,7 +391,7 @@ export function FeedVirtualListShell({
         virtualItems
     } = useVirtualSidebarRows(entries, estimateRowHeight, {
         preserveScrollAnchor: true,
-        resetKey: scrollResetKey
+        resetKey
     });
     const [viewportElement, setViewportElement] =
         useState<HTMLDivElement | null>(null);
@@ -497,11 +481,7 @@ export function FeedVirtualListShell({
                     onClick={hasUnloadedLatest ? onReloadLatest : scrollToStart}
                 >
                     <ArrowUpToLineIcon data-icon="inline-start" />
-                    {t(
-                        hasUnloadedLatest || latestAtTop
-                            ? 'view.feed.columns.latest'
-                            : 'view.feed.actions.back_to_top'
-                    )}
+                    {t('view.feed.columns.latest')}
                 </Button>
             ) : null}
             <div

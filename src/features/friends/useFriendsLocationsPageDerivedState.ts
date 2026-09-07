@@ -9,11 +9,16 @@ import {
     getVisibleKnownSizeRows,
     positionKnownSizeRows
 } from '@/lib/knownSizeVirtualRows';
+import { buildCurrentUserPresenceView } from '@/shared/utils/currentUserPresence';
 import {
     checkCanInvite,
     type InviteLocationCurrentUserSnapshot,
     type InviteLocationGameState
 } from '@/shared/utils/invite';
+import {
+    computeTrustLevel,
+    computeUserPlatform
+} from '@/shared/utils/userTransforms';
 import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 
 import {
@@ -141,7 +146,6 @@ type FriendsLocationsPageDerivedStateInput = {
     remoteFavoriteFriendIds: string[];
     rosterStatus: string;
     scrollMetrics: FriendsLocationsScrollMetrics;
-    showCurrentUserInSameInstance: boolean;
     showSameInstanceInOnline: boolean;
     sidebarFavoritePrefs: FriendsLocationsFavoritePreferences;
     sidebarSortMethods: string[];
@@ -170,7 +174,6 @@ export function useFriendsLocationsPageDerivedState({
     remoteFavoriteFriendIds,
     rosterStatus,
     scrollMetrics,
-    showCurrentUserInSameInstance,
     showSameInstanceInOnline,
     sidebarFavoritePrefs,
     sidebarSortMethods
@@ -354,16 +357,72 @@ export function useFriendsLocationsPageDerivedState({
                   sidebarSortMethods
               )
             : onlineFriends;
-        return buildSameInstanceGroups(candidates, currentLocationSnapshot, {
-            includeCurrentUser: showCurrentUserInSameInstance,
-            locationTimes
+        const groups = buildSameInstanceGroups(
+            candidates,
+            currentLocationSnapshot,
+            {
+                includeCurrentUser: true,
+                locationTimes
+            }
+        );
+        if (
+            !currentUserId ||
+            !currentUserSnapshot ||
+            normalizeId(currentUserSnapshot.id) !== currentUserId
+        ) {
+            return groups;
+        }
+        const profile = buildCurrentUserPresenceView(currentUserSnapshot, {
+            gameState
         });
+        const tags = Array.isArray(profile.tags)
+            ? profile.tags.filter(
+                  (tag): tag is string => typeof tag === 'string'
+              )
+            : [];
+        const trust = computeTrustLevel(
+            tags,
+            normalizeId(profile.developerType)
+        );
+        const currentUser: FriendRecord = {
+            ...profile,
+            id: currentUserId,
+            displayName: normalizeId(profile.displayName) || currentUserId,
+            tags,
+            state: 'online',
+            stateBucket: 'online',
+            location: currentInviteLocation,
+            $friendNumber: 0,
+            $trustLevel: trust.trustLevel,
+            $trustClass: trust.trustClass,
+            $trustSortNum: trust.trustSortNum,
+            $isModerator: trust.isModerator,
+            $isTroll: trust.isTroll,
+            $isProbableTroll: trust.isProbableTroll,
+            $platform: computeUserPlatform(normalizeId(profile.last_platform))
+        };
+        return groups.map((group) =>
+            group.location === currentInviteLocation
+                ? {
+                      ...group,
+                      friends: [
+                          currentUser,
+                          ...group.friends.filter(
+                              (friend) => friend.id !== currentUserId
+                          )
+                      ]
+                  }
+                : group
+        );
     }, [
+        currentInviteLocation,
         currentLocationSnapshot,
+        currentUserId,
+        currentUserSnapshot,
         friendsById,
+        gameState,
         locationTimes,
         onlineFriends,
-        showCurrentUserInSameInstance,
         sidebarSortMethods
     ]);
     const sameInstanceFriends = useMemo<FriendRecord[]>(

@@ -155,7 +155,7 @@ export function PlayerListTableSection({
     const hasSourceRows = filteredRows.length > 0;
     const hasVisibleRows = visibleRows.length > 0;
     const isLoading = loadStatus === 'running' && playerSourceRows.length === 0;
-    const isError = loadStatus === 'error' && playerSourceRows.length === 0;
+    const isError = loadStatus === 'error';
     const emptyCopy = resolvePlayerListEmptyCopy({
         isGameRunning,
         isPlayerListSourceUnavailable,

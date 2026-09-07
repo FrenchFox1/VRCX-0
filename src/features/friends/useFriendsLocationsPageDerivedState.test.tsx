@@ -70,7 +70,6 @@ function pageInput(
         remoteFavoriteFriendIds: [],
         rosterStatus: 'ready',
         scrollMetrics: { width: 1_000, viewportHeight: 1_000, scrollTop: 0 },
-        showCurrentUserInSameInstance: true,
         showSameInstanceInOnline: true,
         sidebarFavoritePrefs: {
             isDivideByGroup: false,
@@ -86,6 +85,53 @@ describe('useFriendsLocationsPageDerivedState', () => {
         cleanup();
         useFriendLocationTimeStore.getState().reset();
         vi.restoreAllMocks();
+    });
+
+    it.each(['same-instance', 'online'] as const)(
+        'shows the current user beside one friend in the %s view',
+        (activeSegment) => {
+            const input = pageInput([friendAt('wrld_local:1')]);
+            input.activeSegment = activeSegment;
+            input.currentUserSnapshot = {
+                id: 'usr_self',
+                displayName: 'Me',
+                location: 'wrld_stale:2'
+            };
+            const { result } = renderHook(() =>
+                useFriendsLocationsPageDerivedState(input)
+            );
+
+            const cards = result.current.visibleVirtualRows.flatMap((row) =>
+                row.type === 'cards' ? row.friends : []
+            );
+            expect(cards.map((friend) => friend.id)).toEqual([
+                'usr_self',
+                'usr_friend'
+            ]);
+            expect(cards[0]).toMatchObject({
+                displayName: 'Me',
+                location: 'wrld_local:1'
+            });
+        }
+    );
+
+    it('does not show a previous account snapshot as the current user', () => {
+        const input = pageInput([friendAt('wrld_local:1')]);
+        input.currentUserSnapshot = {
+            id: 'usr_previous',
+            displayName: 'Previous'
+        };
+        const { result } = renderHook(() =>
+            useFriendsLocationsPageDerivedState(input)
+        );
+
+        expect(
+            result.current.visibleVirtualRows.flatMap((row) =>
+                row.type === 'cards'
+                    ? row.friends.map((friend) => friend.id)
+                    : []
+            )
+        ).toEqual(['usr_friend']);
     });
 
     it.each(['standard', 'compact', 'dense'])(
@@ -363,7 +409,6 @@ describe('useFriendsLocationsPageDerivedState', () => {
                     viewportHeight: 1000,
                     scrollTop: 0
                 },
-                showCurrentUserInSameInstance: true,
                 showSameInstanceInOnline: true,
                 sidebarFavoritePrefs: {
                     isDivideByGroup: false,

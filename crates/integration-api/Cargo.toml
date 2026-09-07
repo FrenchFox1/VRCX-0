@@ -14,7 +14,7 @@ serde_json = { workspace = true }
 specta = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["io-util", "macros", "net", "rt", "sync", "time"] }
-tokio-util = { workspace = true }
+tokio-util = { workspace = true, features = ["rt"] }
 tracing = { workspace = true }
 vrcx-0-local-server = { path = "../local-server" }
 vrcx-0-runtime-event = { path = "../runtime-event" }

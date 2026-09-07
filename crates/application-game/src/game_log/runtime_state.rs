@@ -6,13 +6,14 @@ use serde::Serialize;
 
 pub use vrcx_0_core::location::world_id_from_location;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct GameLogRuntimeState {
     pub current_location: String,
     pub current_world_name: String,
     pub current_destination: String,
     pub current_location_started_at: String,
     pub current_location_started_at_ms: Option<i64>,
+    pub has_player_events: bool,
     pub players_by_key: HashMap<String, PlayerState>,
     pub last_resource_url: String,
     pub last_video_url: String,
@@ -21,7 +22,7 @@ pub struct GameLogRuntimeState {
     pub is_steamvr_running: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerState {
     pub user_id: String,
@@ -31,6 +32,8 @@ pub struct PlayerState {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct RuntimeSnapshot {
+    pub ready: bool,
+    pub has_player_events: bool,
     pub location: String,
     pub world_name: String,
     pub destination: String,
@@ -85,6 +88,8 @@ impl GameLogRuntimeState {
                 .then_with(|| left.user_id.cmp(&right.user_id))
         });
         RuntimeSnapshot {
+            ready: true,
+            has_player_events: self.has_player_events || !self.players_by_key.is_empty(),
             location: self.current_location.clone(),
             world_name: self.current_world_name.clone(),
             destination: self.current_destination.clone(),

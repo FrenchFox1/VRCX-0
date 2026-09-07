@@ -3,15 +3,14 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use crate::database::DatabaseService;
-use crate::Error;
 
 type BuildLockMap = HashMap<(PathBuf, String), Weak<Mutex<()>>>;
 
-pub(super) fn with_activity_page_build_lock<T>(
+pub fn with_activity_page_build_lock<T>(
     db: &DatabaseService,
     user_id: &str,
-    operation: impl FnOnce() -> Result<T, Error>,
-) -> Result<T, Error> {
+    operation: impl FnOnce() -> T,
+) -> T {
     static LOCKS: OnceLock<Mutex<BuildLockMap>> = OnceLock::new();
     let key = (db.db_path().to_path_buf(), user_id.to_string());
     let lock = {

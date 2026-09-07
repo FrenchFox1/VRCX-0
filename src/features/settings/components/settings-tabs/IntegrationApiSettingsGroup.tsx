@@ -6,13 +6,13 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import { commands, type IntegrationApiStatus } from '@/platform/tauri/bindings';
 import { PlatformCommandError } from '@/platform/tauri/errors';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { subscribeIntegrationApiStatusRefresh } from '@/services/integrationApiService';
+import { toast } from '@/services/toastService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -170,7 +170,7 @@ export function IntegrationApiSettingsGroup() {
                 await refreshStatus();
             } catch {}
             setError(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
             return false;
         } finally {
             setBusy(false);
@@ -202,9 +202,12 @@ export function IntegrationApiSettingsGroup() {
     function applyPort() {
         const port = Number(portInput);
         if (!Number.isInteger(port) || port < 1024 || port > 65535) {
-            toast.error(
-                t('view.settings.integrations.integration_api.port_invalid')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.settings.integrations.integration_api.port_invalid'
+                )
+            });
             return;
         }
         void runCommand(() => commands.appIntegrationApiSetPort(port)).then(
@@ -407,11 +410,12 @@ export function IntegrationApiSettingsGroup() {
                                 commands.appIntegrationApiRotateToken
                             ).then((succeeded) => {
                                 if (succeeded) {
-                                    toast.success(
-                                        t(
+                                    toast.add({
+                                        type: 'success',
+                                        title: t(
                                             'view.settings.integrations.integration_api.token_rotated'
                                         )
-                                    );
+                                    });
                                 }
                             });
                         }}

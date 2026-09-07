@@ -1,3 +1,4 @@
+mod activity_page;
 mod activity_warmup;
 mod auth_credentials;
 mod authenticated_runtime;
@@ -42,6 +43,7 @@ pub mod realtime_lifecycle_log;
 mod realtime_remote_requests;
 mod realtime_store;
 mod realtime_transport;
+mod saved_group_favorites;
 pub mod screenshots;
 mod secret_startup;
 mod social_mutation_remote_requests;
@@ -56,6 +58,7 @@ mod world_cache;
 mod world_name_resolver;
 mod ws_event_log;
 
+pub use activity_page::LocalActivityPageStore;
 pub use activity_warmup::{LocalActivityPageWarmupStore, LocalActivitySessionWarmupStore};
 pub use auth_credentials::LocalAuthCredentialStore;
 pub use authenticated_runtime::{
@@ -104,6 +107,7 @@ pub use quick_search::{LocalQuickSearchDetailStore, VrchatQuickSearchRemoteReque
 pub use realtime_remote_requests::VrchatRealtimeRemoteRequests;
 pub use realtime_store::PersistenceRealtimeStore;
 pub use realtime_transport::VrchatRealtimeTransport;
+pub use saved_group_favorites::LocalSavedGroupFavoritesAdapter;
 pub use secret_startup::LocalSecretStartup;
 pub use social_mutation_remote_requests::VrchatSocialMutationRemoteRequests;
 pub use telemetry::{HttpTelemetryTransport, LocalTelemetryEnvironment};

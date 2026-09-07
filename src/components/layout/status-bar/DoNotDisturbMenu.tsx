@@ -1,13 +1,13 @@
 import { BellOffIcon } from 'lucide-react';
 import { type ReactElement, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import {
     commands,
     type NotificationDoNotDisturbMode
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -50,11 +50,13 @@ export function DoNotDisturbMenu(): ReactElement {
                 await commands.appNotificationDoNotDisturbModeSet(nextMode);
             useRuntimeStore.getState().setNotificationDoNotDisturb(snapshot);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('status_bar.do_not_disturb_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('status_bar.do_not_disturb_failed')
+            });
         } finally {
             setUpdating(false);
         }

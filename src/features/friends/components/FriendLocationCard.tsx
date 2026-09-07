@@ -739,7 +739,7 @@ export function FriendLocationCard({
                     </Card>
                 }
             />
-            <ContextMenuContent className="w-56">
+            <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
                 <ContextMenuGroup>
                     <ContextMenuItem
                         disabled={!canOpenUser}

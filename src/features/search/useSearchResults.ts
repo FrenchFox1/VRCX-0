@@ -1,12 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatSearchRepository from '@/repositories/vrchatSearchRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { toast } from '@/services/toastService';
 import { isAvatarSearchQueryLongEnough } from '@/shared/utils/avatarSearchQuery';
 
 import {
@@ -106,11 +106,13 @@ export function useSearchResults({
                 );
             } catch (error) {
                 if (searchSequenceRef.current.user === sequence) {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t('view.search.toast.failed_to_search_users')
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t('view.search.toast.failed_to_search_users')
+                    });
                 }
             } finally {
                 if (searchSequenceRef.current.user === sequence) {
@@ -143,11 +145,13 @@ export function useSearchResults({
                 );
             } catch (error) {
                 if (searchSequenceRef.current.world === sequence) {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t('view.search.toast.failed_to_search_worlds')
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t('view.search.toast.failed_to_search_worlds')
+                    });
                 }
             } finally {
                 if (searchSequenceRef.current.world === sequence) {
@@ -175,11 +179,13 @@ export function useSearchResults({
                 setGroupResults(dedupeById(response.json));
             } catch (error) {
                 if (searchSequenceRef.current.group === sequence) {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t('view.search.toast.failed_to_search_groups')
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t('view.search.toast.failed_to_search_groups')
+                    });
                 }
             } finally {
                 if (searchSequenceRef.current.group === sequence) {
@@ -210,12 +216,13 @@ export function useSearchResults({
                 });
             } catch (error) {
                 if (searchSequenceRef.current.avatar === sequence) {
-                    toast.error(
-                        userFacingErrorMessage(
+                    toast.add({
+                        type: 'error',
+                        title: userFacingErrorMessage(
                             error,
                             t('view.search.toast.failed_to_search_avatars')
                         )
-                    );
+                    });
                 }
             } finally {
                 if (searchSequenceRef.current.avatar === sequence) {
@@ -260,11 +267,17 @@ export function useSearchResults({
 
         if (activeTab === 'avatar') {
             if (!isAvatarSearchQueryLongEnough(searchText)) {
-                toast.warning(t('view.search.avatar.min_chars_warning'));
+                toast.add({
+                    type: 'warning',
+                    title: t('view.search.avatar.min_chars_warning')
+                });
                 return;
             }
             if (!avatarProviderEnabled || !selectedAvatarProvider) {
-                toast.warning(t('view.search.avatar.no_provider'));
+                toast.add({
+                    type: 'warning',
+                    title: t('view.search.avatar.no_provider')
+                });
                 return;
             }
             runAvatarSearch(

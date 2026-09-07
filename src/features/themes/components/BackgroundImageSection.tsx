@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { formatDateFilter, formatRelativeTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -31,6 +30,7 @@ import {
     setBackgroundImageProvider
 } from '@/services/background-image/backgroundImageService';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { profileBackgroundTextures } from '@/shared/constants/profileBackgrounds';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import { Button } from '@/ui/shadcn/button';
@@ -158,7 +158,10 @@ function CurrentBackgroundImageSummary({
         try {
             await openFolderAndSelectItem(snapshot.imagePath, false);
         } catch {
-            toast.error(t('view.background_image.toast.failed_to_open_folder'));
+            toast.add({
+                type: 'error',
+                title: t('view.background_image.toast.failed_to_open_folder')
+            });
         }
     }
 
@@ -374,14 +377,19 @@ export function BackgroundImageSection() {
         try {
             const updated = await setBackgroundImageMode(nextMode);
             if (updated) {
-                toast.success(t('view.background_image.toast.enabled'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.background_image.toast.enabled')
+                });
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.background_image.toast.failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.background_image.toast.failed')
+            });
         }
     }
 
@@ -389,16 +397,21 @@ export function BackgroundImageSection() {
         try {
             await setBackgroundImageProvider(nextProviderId);
             if (enabled && mode === 'daily') {
-                toast.success(t('view.background_image.toast.enabled'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.background_image.toast.enabled')
+                });
                 return;
             }
-            toast.success(t('common.settings_saved'));
+            toast.add({ type: 'success', title: t('common.settings_saved') });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.background_image.toast.failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.background_image.toast.failed')
+            });
         }
     }
 
@@ -411,13 +424,18 @@ export function BackgroundImageSection() {
         }
         try {
             await setBackgroundImageDecoration(source.imageUrl);
-            toast.success(t('view.background_image.toast.enabled'));
+            toast.add({
+                type: 'success',
+                title: t('view.background_image.toast.enabled')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.background_image.toast.failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.background_image.toast.failed')
+            });
         }
     }
 
@@ -430,13 +448,18 @@ export function BackgroundImageSection() {
             ) {
                 return;
             }
-            toast.success(t('view.background_image.toast.refreshed'));
+            toast.add({
+                type: 'success',
+                title: t('view.background_image.toast.refreshed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.background_image.toast.failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.background_image.toast.failed')
+            });
         }
     }
 
@@ -444,14 +467,19 @@ export function BackgroundImageSection() {
         try {
             const selected = await chooseBackgroundImageFiles();
             if (selected) {
-                toast.success(t('view.background_image.toast.enabled'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.background_image.toast.enabled')
+                });
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.background_image.toast.no_images')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.background_image.toast.no_images')
+            });
         }
     }
 
@@ -459,31 +487,38 @@ export function BackgroundImageSection() {
         try {
             const selected = await chooseBackgroundImageFolder();
             if (selected) {
-                toast.success(t('view.background_image.toast.enabled'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.background_image.toast.enabled')
+                });
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.background_image.toast.no_images')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.background_image.toast.no_images')
+            });
         }
     }
 
     async function updateRotationIntervalMinutes(value: number) {
         try {
             await setBackgroundImageCustomRotationIntervalMinutes(value);
-            toast.success(t('common.settings_saved'));
+            toast.add({ type: 'success', title: t('common.settings_saved') });
         } catch (error) {
             setRotationChoice(
                 rotationChoiceFromMinutes(rotationIntervalMinutes)
             );
             setRotationIntervalDraft(String(rotationIntervalMinutes));
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.background_image.toast.failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.background_image.toast.failed')
+            });
         }
     }
 

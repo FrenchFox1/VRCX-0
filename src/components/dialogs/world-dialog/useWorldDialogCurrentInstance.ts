@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import type { EntityRecord } from '@/domain/entities/shared';
-import {
-    resolveRuntimeCurrentInstanceRoster,
-    type CurrentInstanceRosterSnapshot
-} from '@/domain/instances/currentInstanceRoster';
+import { type CurrentInstanceRosterSnapshot } from '@/domain/instances/currentInstanceRoster';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
@@ -66,19 +63,15 @@ export function useWorldDialogCurrentInstance({
         | 'currentLocationStartedAt'
         | 'currentUserId'
         | 'currentUserSnapshot'
-        | 'currentWorldId'
-        | 'currentWorldName'
     >;
     worldName?: string;
 }) {
     const {
         currentEndpoint,
-        currentLocationPlayers,
+        currentLocationPlayers: currentInstanceRosterRevision,
         currentLocationStartedAt,
         currentUserId,
-        currentUserSnapshot,
-        currentWorldId,
-        currentWorldName
+        currentUserSnapshot
     } = runtime;
     const [details, setDetails] = useState<WorldDialogCurrentInstanceDetails>(
         EMPTY_CURRENT_INSTANCE
@@ -104,6 +97,20 @@ export function useWorldDialogCurrentInstance({
             currentResolvedLocation,
             normalizedWorldId
         );
+        const playerSnapshotPromise = isCurrentLiveInstance
+            ? loadCurrentInstanceRoster({
+                  currentLocation: normalizedWorldId
+              }).catch((): null => null)
+            : Promise.resolve(null);
+        void playerSnapshotPromise.then((playerSnapshot) => {
+            if (active && playerSnapshot) {
+                setDetails((current) => ({
+                    ...current,
+                    location: normalizedWorldId,
+                    playerSnapshot
+                }));
+            }
+        });
         Promise.all([
             vrchatInstanceRepository
                 .getInstance({
@@ -114,19 +121,7 @@ export function useWorldDialogCurrentInstance({
                     isRecord(response.json) ? response.json : null
                 )
                 .catch((): null => null),
-            isCurrentLiveInstance
-                ? loadCurrentInstanceRoster({
-                      currentUserId: currentUserId || '',
-                      currentLocation: normalizedWorldId,
-                      runtime: {
-                          currentLocation: currentResolvedLocation,
-                          currentLocationStartedAt,
-                          currentWorldId,
-                          currentWorldName,
-                          players: currentLocationPlayers
-                      }
-                  }).catch((): null => null)
-                : Promise.resolve(null)
+            playerSnapshotPromise
         ])
             .then(async ([instance, playerSnapshot]) => {
                 const playerContext = playerSnapshot?.context;
@@ -270,51 +265,14 @@ export function useWorldDialogCurrentInstance({
         };
     }, [
         currentEndpoint,
-        currentLocationPlayers,
+        currentInstanceRosterRevision,
         currentResolvedLocation,
         currentLocationStartedAt,
         currentUserId,
         currentUserSnapshot,
-        currentWorldId,
-        currentWorldName,
         isInstanceLocation,
         normalizedWorldId,
         worldName
-    ]);
-
-    useEffect(() => {
-        if (
-            !isInstanceLocation ||
-            !sameLocationTag(currentResolvedLocation, normalizedWorldId)
-        ) {
-            return;
-        }
-        const playerSnapshot = resolveRuntimeCurrentInstanceRoster({
-            requestedLocation: normalizedWorldId,
-            runtime: {
-                currentLocation: currentResolvedLocation,
-                currentLocationStartedAt,
-                currentWorldId,
-                currentWorldName,
-                players: currentLocationPlayers
-            }
-        });
-        if (!playerSnapshot) {
-            return;
-        }
-        setDetails((current) => ({
-            ...current,
-            location: normalizedWorldId,
-            playerSnapshot
-        }));
-    }, [
-        currentLocationPlayers,
-        currentLocationStartedAt,
-        currentResolvedLocation,
-        currentWorldId,
-        currentWorldName,
-        isInstanceLocation,
-        normalizedWorldId
     ]);
 
     return details;

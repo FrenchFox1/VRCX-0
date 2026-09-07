@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { PageScaffold } from '@/components/layout/PageScaffold';
 import type { FavoriteKind } from '@/domain/favorites/types';
 import configRepository from '@/repositories/configRepository';
 import shareCollectionRepository from '@/repositories/shareCollectionRepository';
+import { toast } from '@/services/toastService';
 import {
     ResizableHandle,
     ResizablePanel,
@@ -71,13 +71,15 @@ function FavoritesPage({
         try {
             await shareCollectionRepository.openShareCollectionManage();
         } catch (error) {
-            toast.error(
-                error instanceof Error && error.message
-                    ? error.message
-                    : t(
-                          'view.favorite.share_collection.toast.open_manage_failed'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error && error.message
+                        ? error.message
+                        : t(
+                              'view.favorite.share_collection.toast.open_manage_failed'
+                          )
+            });
         }
     });
     const dismissShareCoachmark = useStableEvent(() => {
@@ -114,11 +116,12 @@ function FavoritesPage({
             const groupItems = itemsByGroup[group.key] || [];
             const { totalWorldIds } = buildShareCollectionWorldIds(groupItems);
             if (totalWorldIds > SHARE_COLLECTION_CLIENT_WORLD_CAP) {
-                toast.error(
-                    t('view.favorite.share_collection.toast.too_many', {
+                toast.add({
+                    type: 'error',
+                    title: t('view.favorite.share_collection.toast.too_many', {
                         cap: SHARE_COLLECTION_CLIENT_WORLD_CAP
                     })
-                );
+                });
                 return;
             }
             setShareCollectionGroup(group);

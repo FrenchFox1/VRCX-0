@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::ownership::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -148,4 +148,27 @@ pub struct ActivityPageView {
     pub built_from_cursor: String,
     pub built_at: String,
     pub stale: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ActivityLocationSpan {
+    pub start_ms: i64,
+    pub end_ms: i64,
+    pub world_id: String,
+    pub world_name: String,
+    pub access_bucket: String,
+    pub inferred: bool,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct ActivityWindowSpans {
+    pub spans: Vec<ActivityLocationSpan>,
+    pub has_open_tail: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct CachedActivityPage {
+    pub view: ActivityPageView,
+    pub built_from_cursor: String,
+    pub payload_version: i64,
 }

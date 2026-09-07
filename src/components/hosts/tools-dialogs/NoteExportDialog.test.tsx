@@ -253,3 +253,7 @@ describe('note export dialog data lifetime', () => {
         }
     );
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

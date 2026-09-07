@@ -1,6 +1,5 @@
-import { toast } from 'sonner';
-
 import { type SavedCredentialRecord } from '@/repositories/authRepository';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { executeSavedCredentialLogin } from './authExecutionService';
@@ -35,6 +34,6 @@ export async function switchToSavedAccount(
             error instanceof Error && error.message
                 ? error.message
                 : i18n.t('view.auth.toast.failed_to_restore_the_saved_account');
-        toast.error(message);
+        toast.add({ type: 'error', title: message });
     }
 }

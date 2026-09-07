@@ -1,7 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
 
 import {
     getEventGroupId,
@@ -20,6 +19,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import { toast } from '@/services/toastService';
 import { vrchatGroupUrl } from '@/shared/constants/vrchatWebUrls';
 import { useDialogStore } from '@/state/dialogStore';
 
@@ -470,14 +470,15 @@ export function GroupDialogTabbedView({
                 )
             );
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t(
                         'host.tools_dialogs.toast.failed_to_update_group_event_follow_state'
                     )
                 )
-            );
+            });
         }
     }
 
@@ -653,13 +654,18 @@ export function GroupDialogTabbedView({
                 groupId: group.id,
                 userId: result.value
             });
-            toast.success(t('dialog.group.success.group_invite_sent'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.group.success.group_invite_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.group.toast.failed_to_send_group_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.group.toast.failed_to_send_group_invite')
+            });
         }
     }
 

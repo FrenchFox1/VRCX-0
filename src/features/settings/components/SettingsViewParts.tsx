@@ -1,9 +1,9 @@
 import { PlusIcon, XIcon } from 'lucide-react';
 import { useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { setTablePageSizesPreference } from '@/services/preferencesService';
+import { toast } from '@/services/toastService';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -119,17 +119,22 @@ export function TablePageSizesDialog({
                 onOpenChange(false);
             }
             if (showToast) {
-                toast.success(t('common.settings_saved'));
+                toast.add({
+                    type: 'success',
+                    title: t('common.settings_saved')
+                });
             }
         } catch (error) {
             if (saveId === latestSaveIdRef.current) {
                 setDraft(committedSizesRef.current);
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.settings.toast.failed_to_save_setting')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.settings.toast.failed_to_save_setting')
+            });
         }
     }
 
@@ -139,9 +144,12 @@ export function TablePageSizesDialog({
     ) {
         const parsed = Number.parseInt(String(value), 10);
         if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1000) {
-            toast.error(
-                t('view.settings.appearance.appearance.table_page_sizes_error')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.settings.appearance.appearance.table_page_sizes_error'
+                )
+            });
             return;
         }
         void persist([...draft, parsed], options);

@@ -670,7 +670,7 @@ export function PreviousInstanceDetailsPanel({
                 <Tabs
                     value={detailsViewMode}
                     onValueChange={setDetailsViewMode}
-                    className="min-h-0 shrink-0 gap-0"
+                    className="min-h-0 flex-1 gap-0"
                 >
                     <div className="flex shrink-0 items-center justify-between gap-3">
                         <TabsList variant="underline">
@@ -693,7 +693,7 @@ export function PreviousInstanceDetailsPanel({
                     {infoData.status === 'error' ? (
                         <DialogErrorState>{infoData.error}</DialogErrorState>
                     ) : (
-                        <div className="relative min-h-0">
+                        <div className="relative flex min-h-0 flex-1 flex-col">
                             {infoData.status === 'running' &&
                             showLoadingIndicator ? (
                                 <div className="bg-popover text-muted-foreground pointer-events-none absolute top-1 right-1 z-10 flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs shadow-sm">
@@ -705,14 +705,14 @@ export function PreviousInstanceDetailsPanel({
                             ) : null}
                             <div
                                 className={cn(
-                                    'min-h-0',
+                                    'flex min-h-0 flex-1 flex-col',
                                     infoData.status === 'running' &&
                                         'pointer-events-none opacity-60'
                                 )}
                             >
                                 <TabsContent
                                     value="players"
-                                    className="max-h-[32vh] min-h-0 overflow-auto pt-2"
+                                    className="min-h-0 overflow-auto pt-2"
                                 >
                                     <div className="app-data-table vrcx-0-data-table min-h-0">
                                         <Table>

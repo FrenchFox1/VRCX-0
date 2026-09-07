@@ -3,6 +3,8 @@
 import { act, cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     getUserMemo: vi.fn(),
     saveUserMemo: vi.fn(),
@@ -11,10 +13,18 @@ const mocks = vi.hoisted(() => ({
     toastSuccess: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        success: mocks.toastSuccess
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -166,7 +176,10 @@ describe('useUserDialogMemoState', () => {
         expect(value().memoDialog.open).toBe(true);
         expect(value().memoDialog.saving).toBe(false);
         expect(mocks.toastError).toHaveBeenCalledWith(
-            'VRChat note save failed'
+            expect.objectContaining({
+                type: 'error',
+                title: 'VRChat note save failed'
+            })
         );
     });
 
@@ -180,7 +193,12 @@ describe('useUserDialogMemoState', () => {
 
         expect(value().memoDialog.open).toBe(true);
         expect(value().memoDialog.saving).toBe(false);
-        expect(mocks.toastError).toHaveBeenCalledWith('Local memo save failed');
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'Local memo save failed'
+            })
+        );
 
         await saveNotes();
 

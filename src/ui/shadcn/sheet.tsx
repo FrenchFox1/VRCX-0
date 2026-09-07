@@ -6,11 +6,28 @@ import { useRender } from '@base-ui/react/use-render';
 import { XIcon } from 'lucide-react';
 import type React from 'react';
 
+import { preserveAppTitleBarOnOpenChange } from '@/lib/overlayTitlebar';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 
-export const Sheet: typeof SheetPrimitive.Root = SheetPrimitive.Root;
+export function Sheet({
+    onOpenChange,
+    ...props
+}: SheetPrimitive.Root.Props): React.ReactElement {
+    return (
+        <SheetPrimitive.Root
+            data-slot="sheet"
+            onOpenChange={(open, eventDetails) => {
+                if (preserveAppTitleBarOnOpenChange(open, eventDetails)) {
+                    return;
+                }
+                onOpenChange?.(open, eventDetails);
+            }}
+            {...props}
+        />
+    );
+}
 
 export const SheetPortal: typeof SheetPrimitive.Portal = SheetPrimitive.Portal;
 

@@ -21,11 +21,8 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: translate })
 }));
 
-vi.mock('sonner', () => ({
-    toast: {
-        error: vi.fn(),
-        success: vi.fn()
-    }
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn() }
 }));
 
 vi.mock('@/repositories/gameLogRepository', () => ({

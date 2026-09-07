@@ -1,3 +1,4 @@
+import type { SortingState } from '@tanstack/react-table';
 import { useEffect, useMemo } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
@@ -14,6 +15,7 @@ import { useFeedTableMeta } from './useFeedTableMeta';
 import { useFeedTableState } from './useFeedTableState';
 
 const EMPTY_SORT_META = { knownUsersById: {}, friendLogNamesById: {} };
+const EMPTY_SORTING: SortingState = [];
 
 export function useFeedPageController({
     routeScopedUserIds
@@ -52,18 +54,19 @@ export function useFeedPageController({
     });
     const columns = useFeedColumns(feedTableMeta);
     const { pagination, setPagination, sorting } = tableModel;
-    const { knownUsersById, friendLogNamesById } = sorting.some(
+    const activeSorting = feedRows.searchMode ? sorting : EMPTY_SORTING;
+    const { knownUsersById, friendLogNamesById } = activeSorting.some(
         ({ id }) => id === 'displayName'
     )
         ? feedTableMeta
         : EMPTY_SORT_META;
     const sortedRows = useMemo(
         () =>
-            sortFeedTableRows(feedRows.rows, sorting, {
+            sortFeedTableRows(feedRows.rows, activeSorting, {
                 knownUsersById,
                 friendLogNamesById
             }),
-        [feedRows.rows, sorting, knownUsersById, friendLogNamesById]
+        [feedRows.rows, activeSorting, knownUsersById, friendLogNamesById]
     );
     const pageRows = useMemo(() => {
         const start = pagination.pageIndex * pagination.pageSize;
@@ -107,6 +110,7 @@ export function useFeedPageController({
         autoResetExpanded: false,
         autoResetPageIndex: false,
         enableColumnResizing: true,
+        enableSorting: feedRows.searchMode,
         columnResizeMode: 'onChange',
         getRowId: (row) => getFeedRowId(row),
         getRowCanExpand: (row) => canExpandFeedRow(row.original),

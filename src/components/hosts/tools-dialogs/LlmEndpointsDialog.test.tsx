@@ -39,12 +39,8 @@ vi.mock('react-i18next', () => ({
     })
 }));
 
-vi.mock('sonner', () => ({
-    toast: {
-        error: vi.fn(),
-        success: vi.fn(),
-        warning: vi.fn()
-    }
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn() }
 }));
 
 vi.mock('@/state/llmEndpointsStore', () => ({

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { useSearchParams } from 'react-router';
-import { toast } from 'sonner';
 
 import type {
     ScreenshotFolderTree,
@@ -15,6 +14,7 @@ import {
     startScreenshotLibraryScan,
     subscribeScreenshotLibraryScanStatus
 } from '@/services/screenshotLibraryScanService';
+import { toast } from '@/services/toastService';
 import type { CapabilityStatus } from '@/state/runtimeStore';
 
 import {
@@ -202,7 +202,7 @@ export function useScreenshotGalleryController({
                         ? error.message
                         : t('dialog.screenshot_metadata.gallery_load_failed');
                 setGalleryTreeError(message);
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
             } finally {
                 setIsGalleryTreeLoading(false);
             }
@@ -248,7 +248,7 @@ export function useScreenshotGalleryController({
                         ? error.message
                         : t('dialog.screenshot_metadata.scan_failed');
                 setGalleryScanError(message);
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
                 await loadGalleryTree({ preferPopulated: force });
             }
         },
@@ -290,7 +290,7 @@ export function useScreenshotGalleryController({
                         ? error.message
                         : t('dialog.screenshot_metadata.scan_failed');
                 setGalleryScanError(message);
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
             });
         return () => {
             active = false;
@@ -360,7 +360,7 @@ export function useScreenshotGalleryController({
                     setGalleryImagesError(message);
                     setGalleryImages([]);
                     setGalleryImagesFolder(requestedFolder);
-                    toast.error(message);
+                    toast.add({ type: 'error', title: message });
                 }
             })
             .finally(() => {

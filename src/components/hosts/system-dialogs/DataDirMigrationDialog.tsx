@@ -3,7 +3,6 @@ import { RadioGroup } from '@base-ui/react/radio-group';
 import { FolderOpenIcon, TriangleAlertIcon } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import {
@@ -18,6 +17,7 @@ import {
     type DataDirMigrationMode
 } from '@/services/dataDirMigrationService';
 import { restartApplication } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { dataDirectoryPathForDisplay } from '@/shared/utils/dataDirectoryPath';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -90,14 +90,18 @@ export function DataDirMigrationDialog() {
             );
             applyStatus(outcome.status);
             if (!outcome.accepted) {
-                toast.error(
-                    outcome.error
+                toast.add({
+                    type: 'error',
+                    title: outcome.error
                         ? t(dataDirMigrationErrorKey(outcome.error.code))
                         : t('data_dir_migration.error.io')
-                );
+                });
             }
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
         } finally {
             setSubmitting(false);
         }
@@ -107,7 +111,10 @@ export function DataDirMigrationDialog() {
         const outcome = await cancelDataDirMigration();
         applyStatus(outcome.status);
         if (!outcome.accepted && outcome.error) {
-            toast.error(t(dataDirMigrationErrorKey(outcome.error.code)));
+            toast.add({
+                type: 'error',
+                title: t(dataDirMigrationErrorKey(outcome.error.code))
+            });
         }
     }
 
@@ -115,7 +122,10 @@ export function DataDirMigrationDialog() {
         try {
             await restartApplication();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
         }
     }
 

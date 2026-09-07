@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import avatarFeedHistoryRepository from '@/repositories/avatarFeedHistoryRepository';
 import configRepository from '@/repositories/configRepository';
@@ -37,6 +36,7 @@ import {
     normalizeAppCjkFontPack,
     normalizeAppFontFamily
 } from '@/services/themeService';
+import { toast } from '@/services/toastService';
 import {
     DEFAULT_MAX_TABLE_SIZE,
     DEFAULT_SEARCH_LIMIT,

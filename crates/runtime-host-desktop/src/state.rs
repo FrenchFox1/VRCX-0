@@ -549,6 +549,7 @@ impl DesktopRuntimeHostState {
             Arc::clone(runtime.desktop_assembly().avatar_cache()),
             Arc::clone(runtime.desktop_assembly().world_cache()),
             Arc::clone(runtime.realtime_runtime()),
+            desktop_services.overlay_activity(),
             runtime.desktop_assembly().favorite_mutations().clone(),
             runtime.desktop_assembly().mutual_graph_fetch().clone(),
         );
@@ -746,6 +747,18 @@ impl DesktopRuntimeHostState {
 
     pub fn is_game_running(&self) -> bool {
         self.game.process_monitor.is_game_running()
+    }
+
+    pub fn current_player_list_snapshot(
+        &self,
+        requested_location: &str,
+    ) -> vrcx_0_application_game::PlayerListSnapshotOutput {
+        let snapshot = if self.is_game_running() {
+            self.desktop.services.game_log_snapshot()
+        } else {
+            Arc::new(vrcx_0_application_game::RuntimeSnapshot::default())
+        };
+        vrcx_0_application_game::player_list_runtime_snapshot(&snapshot, requested_location)
     }
 
     pub fn current_log_location_snapshot(
@@ -2294,9 +2307,9 @@ impl RuntimeHostProfileExtension for DesktopRuntimeProfileExtension {
             tracing::warn!(error = %error, "Discord presence cleanup failed while stopping desktop services");
         }
         self.desktop.vr_overlay_runtime.stop_detached();
+        self.game.game_log_runtime.stop();
         self.game.process_monitor.stop();
         self.game.log_watcher.stop();
-        self.game.game_log_runtime.stop();
         self.game.game_client_runtime.stop();
         self.desktop.integration_api_observer.on_game_running(false);
     }

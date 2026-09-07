@@ -6,11 +6,8 @@ const { navigate, recordRecentToolOpen, recordToolOpen } = vi.hoisted(() => ({
     recordToolOpen: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
-    toast: {
-        error: vi.fn(),
-        success: vi.fn()
-    }
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn() }
 }));
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {}

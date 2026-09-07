@@ -9,11 +9,11 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { collapseAllNested, JsonView } from 'react-json-view-lite';
-import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
+import { toast } from '@/services/toastService';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader } from '@/ui/shadcn/card';
 import {
@@ -226,12 +226,13 @@ function EntityMemoTextarea({
         try {
             await onSave(draft);
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('common.error.failed_to_save_memo')
                 )
-            );
+            });
         } finally {
             setSaving(false);
         }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
-import { toast } from 'sonner';
 
 import { AboutVrcxDialog } from '@/components/about/AboutDialog';
 import { OpenSourceNoticeDialog } from '@/components/hosts/system-dialogs/OpenSourceNoticeDialog';
@@ -22,6 +21,7 @@ import {
     restartApplication
 } from '@/services/shellIntegrationService';
 import { normalizeZoomLevel } from '@/services/themeService';
+import { toast } from '@/services/toastService';
 import {
     restoreNormalWindowModeForIntent,
     runAfterRestoringNormalWindow
@@ -91,11 +91,13 @@ export function MacNativeMenuActionHost() {
             try {
                 await setZoomLevelPreference(nextZoom);
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('app_menu.messages.zoom_failed')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('app_menu.messages.zoom_failed')
+                });
             }
         },
         [t]
@@ -105,11 +107,13 @@ export function MacNativeMenuActionHost() {
         try {
             await restartApplication();
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('app_menu.messages.restart_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('app_menu.messages.restart_failed')
+            });
         }
     }, [t]);
 
@@ -117,11 +121,12 @@ export function MacNativeMenuActionHost() {
         try {
             await startBackgroundModeForCurrentSession();
         } catch {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'component.app_status_bar.toast.failed_to_start_background_mode'
                 )
-            );
+            });
         }
     }, [t]);
 
@@ -129,11 +134,13 @@ export function MacNativeMenuActionHost() {
         try {
             await logoutFromReactShell();
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('app_menu.messages.logout_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('app_menu.messages.logout_failed')
+            });
         }
     }, [t]);
 
@@ -141,11 +148,13 @@ export function MacNativeMenuActionHost() {
         try {
             await commands.appOpenDevtools();
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('app_menu.messages.open_devtools_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('app_menu.messages.open_devtools_failed')
+            });
         }
     }, [t]);
 

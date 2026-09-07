@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { setSidebarAutoHideEnabled } from '@/services/sidebarAutoHideService';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 import { useSidebarAutoHideStore } from '@/state/sidebarAutoHideStore';
@@ -31,7 +31,10 @@ export function SidebarAutoHideSetting() {
         try {
             await setSidebarAutoHideEnabled(checked);
         } catch {
-            toast.error(t('side_panel.settings.auto_hide.save_failed'));
+            toast.add({
+                type: 'error',
+                title: t('side_panel.settings.auto_hide.save_failed')
+            });
         } finally {
             setPending(false);
         }

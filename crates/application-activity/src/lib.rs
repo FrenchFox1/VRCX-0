@@ -1,3 +1,4 @@
+pub mod activity_page;
 mod activity_warmup;
 pub mod notification;
 mod overlay_activity;

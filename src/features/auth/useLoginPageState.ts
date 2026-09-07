@@ -1,12 +1,12 @@
 import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type {
     SavedAuthSnapshot,
     SavedCredentialRecord
 } from '@/repositories/authRepository';
+import { getLoginErrorMessage as getErrorMessage } from '@/services/authErrorDisplayService';
 import {
     executeManualLogin,
     executeSavedCredentialLogin,
@@ -29,13 +29,13 @@ import {
     saveProxySettingsPreferences,
     testProxySettings as testProxySettingsConnectivity
 } from '@/services/proxySettingsService';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 
 import {
-    getLoginErrorMessage as getErrorMessage,
     getLoginUserDisplayName as getUserDisplayName,
     shouldShowLegacyMigrationAction
 } from './loginDisplay';
@@ -127,13 +127,15 @@ export function useLoginPageState() {
                 }
             })
             .catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.auth.toast.failed_to_load_saved_auth_snapshot'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.auth.toast.failed_to_load_saved_auth_snapshot'
+                              )
+                });
             })
             .finally(() => {
                 if (active) {
@@ -151,11 +153,13 @@ export function useLoginPageState() {
         try {
             await setAppLanguagePreference(nextLanguage);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.auth.toast.failed_to_change_language')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.auth.toast.failed_to_change_language')
+            });
         }
     }
 
@@ -165,11 +169,13 @@ export function useLoginPageState() {
             try {
                 await loadPreferenceSnapshot();
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.auth.toast.failed_to_load_proxy_settings')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.auth.toast.failed_to_load_proxy_settings')
+                });
             }
         }
         setProxyEnabledInput(usePreferencesStore.getState().proxyEnabled);
@@ -210,16 +216,19 @@ export function useLoginPageState() {
                 { restart }
             );
             if (!restart) {
-                toast.success(
-                    t('prompt.proxy_settings.saved_restart_required')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('prompt.proxy_settings.saved_restart_required')
+                });
                 setIsProxyDialogOpen(false);
             }
         } catch (error) {
-            toast.error(
-                proxySettingsErrorMessage(error) ||
+            toast.add({
+                type: 'error',
+                title:
+                    proxySettingsErrorMessage(error) ||
                     t('view.auth.toast.failed_to_save_proxy_settings')
-            );
+            });
         } finally {
             isSavingProxySettingsRef.current = false;
             setIsSavingProxySettings(false);
@@ -230,17 +239,19 @@ export function useLoginPageState() {
         setIsTestingProxySettings(true);
         try {
             const result = await testProxySettingsConnectivity(proxyInput);
-            toast.success(
-                t('prompt.proxy_settings.test_success', {
+            toast.add({
+                type: 'success',
+                title: t('prompt.proxy_settings.test_success', {
                     status: result.status
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                t('prompt.proxy_settings.test_failed', {
+            toast.add({
+                type: 'error',
+                title: t('prompt.proxy_settings.test_failed', {
                     message: proxySettingsErrorMessage(error)
                 })
-            );
+            });
         } finally {
             setIsTestingProxySettings(false);
         }
@@ -256,13 +267,18 @@ export function useLoginPageState() {
         try {
             const nextSnapshot = await deleteSavedAuthSnapshot(deleteUserId);
             setSnapshot(nextSnapshot);
-            toast.success(t('message.auth.account_removed'));
+            toast.add({
+                type: 'success',
+                title: t('message.auth.account_removed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.auth.toast.failed_to_remove_saved_account')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.auth.toast.failed_to_remove_saved_account')
+            });
         } finally {
             setIsDeleting(false);
             setDeleteTarget(null);
@@ -287,9 +303,12 @@ export function useLoginPageState() {
         event.preventDefault();
 
         if (!databaseReady) {
-            toast.error(
-                t('common.status.database_initialization_is_still_pending')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'common.status.database_initialization_is_still_pending'
+                )
+            });
             return;
         }
 
@@ -306,21 +325,24 @@ export function useLoginPageState() {
                 saveCredentials: loginForm.saveCredentials
             });
             setSnapshot(nextSnapshot);
-            toast.success(
-                t('common.label.authenticated_and_prepared_the_session')
-            );
+            toast.add({
+                type: 'success',
+                title: t('common.label.authenticated_and_prepared_the_session')
+            });
         } catch (error) {
             const failureSnapshot = getAuthSnapshotFromExecutionError(error);
             if (failureSnapshot) {
                 setSnapshot(failureSnapshot);
             }
-            toast.error(
-                getErrorMessage(
+            toast.add({
+                type: 'error',
+                title: getErrorMessage(
                     error,
                     t('view.auth.toast.failed_to_authenticate')
                 ),
-                { duration: Infinity, closeButton: true }
-            );
+                timeout: 0,
+                data: { closeButton: true }
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -333,9 +355,12 @@ export function useLoginPageState() {
         }
 
         if (!databaseReady) {
-            toast.error(
-                t('common.status.database_initialization_is_still_pending')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'common.status.database_initialization_is_still_pending'
+                )
+            });
             return;
         }
 
@@ -344,24 +369,27 @@ export function useLoginPageState() {
         try {
             const nextSnapshot = await executeSavedCredentialLogin(entry);
             setSnapshot(nextSnapshot);
-            toast.success(
-                t(
+            toast.add({
+                type: 'success',
+                title: t(
                     'view.auth.dynamic.authenticated_and_prepared_the_session_for_value',
                     { value: getUserDisplayName(entry.user) }
                 )
-            );
+            });
         } catch (error) {
             const failureSnapshot = getAuthSnapshotFromExecutionError(error);
             if (failureSnapshot) {
                 setSnapshot(failureSnapshot);
             }
-            toast.error(
-                getErrorMessage(
+            toast.add({
+                type: 'error',
+                title: getErrorMessage(
                     error,
                     t('view.auth.toast.failed_to_restore_the_saved_account')
                 ),
-                { duration: Infinity, closeButton: true }
-            );
+                timeout: 0,
+                data: { closeButton: true }
+            });
         } finally {
             setActiveSavedUserId('');
         }

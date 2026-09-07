@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type { FriendRosterById } from '@/domain/friends/types';
@@ -18,6 +17,7 @@ import { commands, type NoteExportStatus } from '@/platform/tauri/bindings';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
 import { subscribeRuntimeEvent } from '@/services/runtime-event-bridge/subscription';
+import { toast } from '@/services/toastService';
 import { isRecord } from '@/shared/utils/record';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
@@ -150,14 +150,15 @@ export function NoteExportDialog({
             if (requestId !== refreshRequestRef.current) {
                 return;
             }
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t(
                         'host.tools_dialogs.toast.failed_to_load_memo_export_rows'
                     )
                 )
-            );
+            });
         } finally {
             if (requestId === refreshRequestRef.current) {
                 setLoading(false);
@@ -250,7 +251,10 @@ export function NoteExportDialog({
             }
         })().catch((error: unknown) => {
             if (!disposed) {
-                toast.error(userFacingErrorMessage(error));
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(error)
+                });
                 setLoading(false);
             }
         });
@@ -315,7 +319,7 @@ export function NoteExportDialog({
                 applyExportStatus(status);
             }
         } catch (error) {
-            toast.error(userFacingErrorMessage(error));
+            toast.add({ type: 'error', title: userFacingErrorMessage(error) });
         }
     }
 

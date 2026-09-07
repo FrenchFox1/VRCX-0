@@ -10,9 +10,7 @@ type PlayerListContext = PlayerListSnapshotContext;
 type PlayerListPlayer = PlayerListSnapshotPlayer;
 
 interface CurrentInstanceSnapshotInput {
-    currentUserId?: string;
     currentLocation?: string;
-    currentLocationStartedAt?: string;
 }
 
 function comparePlayers(left: PlayerListPlayer, right: PlayerListPlayer) {
@@ -28,14 +26,10 @@ function comparePlayers(left: PlayerListPlayer, right: PlayerListPlayer) {
 }
 
 async function getCurrentInstanceSnapshot({
-    currentUserId = '',
-    currentLocation = '',
-    currentLocationStartedAt = ''
+    currentLocation = ''
 }: CurrentInstanceSnapshotInput = {}): Promise<PlayerListSnapshotOutput> {
     const snapshot = await commands.appPlayerListCurrentSnapshot(
-        normalizeString(currentUserId),
-        normalizeString(currentLocation),
-        normalizeString(currentLocationStartedAt)
+        normalizeString(currentLocation)
     );
 
     return {
@@ -44,10 +38,10 @@ async function getCurrentInstanceSnapshot({
     };
 }
 
-const playerListPersistenceRepository = Object.freeze({
+const currentInstanceRosterRepository = Object.freeze({
     getCurrentInstanceSnapshot
 });
 
 export { getCurrentInstanceSnapshot };
 export type { PlayerListContext, PlayerListPlayer };
-export default playerListPersistenceRepository;
+export default currentInstanceRosterRepository;

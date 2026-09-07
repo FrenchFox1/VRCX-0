@@ -1,7 +1,6 @@
 import { CopyIcon, KeyRoundIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     commands,
@@ -9,6 +8,7 @@ import {
     type McpServerStatus
 } from '@/platform/tauri/bindings';
 import { copyTextToClipboard } from '@/services/clipboardService';
+import { toast } from '@/services/toastService';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import {
@@ -94,7 +94,7 @@ export function McpServerSettingsGroup() {
         try {
             applyMcpStatus(await action());
             if (options.successMessage) {
-                toast.success(options.successMessage);
+                toast.add({ type: 'success', title: options.successMessage });
             }
         } catch (error: unknown) {
             const message = String(error);
@@ -108,7 +108,7 @@ export function McpServerSettingsGroup() {
                 setMcpError(message);
             }
             if (options.toastError) {
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
             }
         } finally {
             setMcpBusy(false);
@@ -142,9 +142,10 @@ export function McpServerSettingsGroup() {
     function applyMcpPort() {
         const port = Number(portInput);
         if (!Number.isInteger(port) || port < 1024 || port > 65535) {
-            toast.error(
-                t('view.settings.integrations.mcp_server.port_invalid')
-            );
+            toast.add({
+                type: 'error',
+                title: t('view.settings.integrations.mcp_server.port_invalid')
+            });
             return;
         }
         void runMcpCommand(() => commands.appMcpServerSetPort(port), {

@@ -115,7 +115,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
         });
     });
 
-    it('hides the current user from a valid same-instance group when the preference is off', () => {
+    it('always includes the current user in their same-instance group', () => {
         const rows = buildFriendsSidebarVirtualRows({
             activeRows: [],
             currentUser: {
@@ -136,9 +136,7 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             openGroups: {
                 sameInstance: true
             },
-            prefs: {
-                isShowCurrentUserInSameInstance: false
-            },
+            prefs: {},
             rowsLength: 1,
             sameInstanceGroups: [
                 {
@@ -154,12 +152,12 @@ describe('friendsSidebarVirtualRowBuilder', () => {
             rows
                 .filter((row) => row.type === 'friend' && row.isCurrentUser)
                 .map((row) => row.key)
-        ).toEqual([]);
+        ).toEqual(['friend:sameInstance:wrld_live:1:0:currentUser:usr_me']);
         expect(rows.map((row) => row.key)).toContain(
             'friend:sameInstance:wrld_live:1:0:usr_same'
         );
         expect(
             rows.find((row) => row.type === 'instance-header')
-        ).toMatchObject({ count: 2 });
+        ).toMatchObject({ count: 3 });
     });
 });

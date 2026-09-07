@@ -79,3 +79,7 @@ describe('ProfileBackupDialog rollback refresh', () => {
         expect(mocks.refreshRollbackState).toHaveBeenCalledTimes(2);
     });
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

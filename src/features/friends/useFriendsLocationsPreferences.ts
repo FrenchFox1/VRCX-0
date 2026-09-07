@@ -20,8 +20,6 @@ export function useFriendsLocationsPreferences() {
     const [preferencesReady, setPreferencesReady] = useState(false);
     const [showSameInstanceInOnline, setShowSameInstanceInOnline] =
         useState(false);
-    const [showCurrentUserInSameInstance, setShowCurrentUserInSameInstance] =
-        useState(true);
     const [density, setDensity] = useState(DEFAULT_FRIENDS_LOCATIONS_DENSITY);
     const [sidebarFavoritePrefs, setSidebarFavoritePrefs] =
         useState<FriendsLocationsSidebarFavoritePrefs>({
@@ -44,7 +42,6 @@ export function useFriendsLocationsPreferences() {
                 DEFAULT_FRIENDS_LOCATIONS_DENSITY
             ),
             configRepository.getBool('FriendLocationShowSameInstance', false),
-            configRepository.getBool('isShowCurrentUserInSameInstance', true),
             configRepository.getBool('isSidebarDivideByFriendGroup', false),
             configRepository.getString('sidebarFavoriteGroups', '[]'),
             configRepository.getString('sidebarFavoriteGroupOrder', '[]'),
@@ -59,7 +56,6 @@ export function useFriendsLocationsPreferences() {
                 ([
                     nextDensity,
                     nextShowSameInstance,
-                    nextShowCurrentUser,
                     nextDivideByGroup,
                     nextSelectedGroups,
                     nextGroupOrder,
@@ -73,7 +69,6 @@ export function useFriendsLocationsPreferences() {
 
                     setDensity(sanitizeFriendsLocationsDensity(nextDensity));
                     setShowSameInstanceInOnline(nextShowSameInstance);
-                    setShowCurrentUserInSameInstance(nextShowCurrentUser);
                     setSidebarFavoritePrefs({
                         isDivideByGroup: nextDivideByGroup,
                         selectedGroups: parseConfigArray(nextSelectedGroups),
@@ -103,7 +98,6 @@ export function useFriendsLocationsPreferences() {
         const unsubscribe = onPreferenceChanged(
             [
                 'isSidebarDivideByFriendGroup',
-                'isShowCurrentUserInSameInstance',
                 'sidebarFavoriteGroups',
                 'sidebarFavoriteGroupOrder',
                 'sidebarSortMethod1',
@@ -114,7 +108,6 @@ export function useFriendsLocationsPreferences() {
                 try {
                     const [
                         nextDivideByGroup,
-                        nextShowCurrentUser,
                         nextSelectedGroups,
                         nextGroupOrder,
                         nextSortMethod1,
@@ -124,10 +117,6 @@ export function useFriendsLocationsPreferences() {
                         configRepository.getBool(
                             'isSidebarDivideByFriendGroup',
                             false
-                        ),
-                        configRepository.getBool(
-                            'isShowCurrentUserInSameInstance',
-                            true
                         ),
                         configRepository.getString(
                             'sidebarFavoriteGroups',
@@ -148,7 +137,6 @@ export function useFriendsLocationsPreferences() {
                         configRepository.getString('sidebarSortMethod3', '')
                     ]);
                     if (active) {
-                        setShowCurrentUserInSameInstance(nextShowCurrentUser);
                         setSidebarFavoritePrefs({
                             isDivideByGroup: nextDivideByGroup,
                             selectedGroups:
@@ -188,7 +176,6 @@ export function useFriendsLocationsPreferences() {
         changeShowSameInstanceInOnline,
         density,
         preferencesReady,
-        showCurrentUserInSameInstance,
         showSameInstanceInOnline,
         sidebarFavoritePrefs,
         sidebarSortMethods

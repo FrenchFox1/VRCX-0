@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RuntimeVrchatAuthFailurePayload } from '@/platform/tauri/bindings';
+import type { AppToastOptions } from '@/services/toastService';
 
 const recoveryMocks = vi.hoisted(() => ({
     toastWarning: vi.fn(),
@@ -11,9 +12,16 @@ const recoveryMocks = vi.hoisted(() => ({
     t: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        warning: recoveryMocks.toastWarning
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'warning':
+                    return recoveryMocks.toastWarning(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 

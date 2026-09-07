@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     groupIdForRow,
@@ -12,6 +11,7 @@ import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { commands } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { moveGroupInOrder, normalizeGroupOrder } from './myGroupsOrder';
@@ -226,12 +226,13 @@ export function useMyGroupsPageState() {
             await commands.appVrchatGroupOrderSet(nextOrder);
         } catch (saveError) {
             setInGameOrder(previousOrder);
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     saveError,
                     t('view.my_groups.order_save_failed')
                 )
-            );
+            });
         } finally {
             setOrderSaving(false);
         }

@@ -40,7 +40,7 @@ function deferred<T>() {
 function snapshot(
     location: string,
     displayName: string,
-    source: 'database' | 'runtime' = 'database'
+    source: 'runtime' = 'runtime'
 ): Snapshot {
     return {
         context: {
@@ -48,12 +48,20 @@ function snapshot(
             groupName: '',
             location,
             playerCount: 1,
+            playerFactsKnown: true,
             source,
             time: 0,
             worldId: 'wrld_test',
             worldName: ''
         },
         players: [
+            {
+                id: 'usr_self',
+                userId: 'usr_self',
+                displayName: 'Current User',
+                joinedAt: '2026-08-01T01:00:00.000Z',
+                joinedAtMs: Date.parse('2026-08-01T01:00:00.000Z')
+            },
             {
                 id: 'usr_player',
                 userId: 'usr_player',
@@ -85,13 +93,13 @@ describe('useCurrentInstanceRoster', () => {
 
     it('loads on mount and fans the reconstructed roster into domain ingestion', async () => {
         const loadedSnapshot = snapshot('wrld_test:1', 'Player One');
-        loadedSnapshot.players.unshift({
+        loadedSnapshot.players[0] = {
             id: 'display:Current User',
             userId: '',
             displayName: 'Current User',
             joinedAt: '2026-08-01T01:00:00.000Z',
             joinedAtMs: Date.parse('2026-08-01T01:00:00.000Z')
-        });
+        };
         mocks.loadCurrentInstanceRoster.mockResolvedValueOnce(loadedSnapshot);
 
         const { result } = renderHook(() =>
@@ -112,9 +120,7 @@ describe('useCurrentInstanceRoster', () => {
             expect.objectContaining({ displayName: 'Player One' })
         ]);
         expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalledWith({
-            currentLocation: 'wrld_test:1',
-            currentLocationStartedAt: '2026-08-01T00:00:00.000Z',
-            currentUserId: 'usr_self'
+            currentLocation: 'wrld_test:1'
         });
         expect(mocks.recordGameRuntimePresence).toHaveBeenCalledWith(
             expect.objectContaining({

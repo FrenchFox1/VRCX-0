@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     initializeSidebarAutoHide,
@@ -8,6 +7,7 @@ import {
     subscribeSidebarAutoHideState,
     syncSidebarAutoHideContext
 } from '@/services/sidebarAutoHideService';
+import { toast } from '@/services/toastService';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
@@ -54,7 +54,9 @@ export function useSidebarAutoHide(): void {
 
     useEffect(() => {
         if (failed) {
-            toast.error(t('side_panel.settings.auto_hide.paused'), {
+            toast.add({
+                type: 'error',
+                title: t('side_panel.settings.auto_hide.paused'),
                 id: 'sidebar-auto-hide-paused'
             });
         }

@@ -13,15 +13,17 @@ export function StatusDot({
     warn?: boolean;
     className?: string;
 }) {
-    if (active && !warn) {
-        return null;
+    let color = 'bg-muted-foreground/40';
+    if (warn) {
+        color = 'bg-[var(--status-active)]';
+    } else if (active) {
+        color = 'bg-[var(--status-online)]';
     }
 
-    const color = warn ? 'bg-[var(--status-active)]' : 'bg-muted-foreground/40';
     return (
         <span
             className={cn(
-                'inline-block size-2 shrink-0 rounded-full',
+                'inline-block size-2 shrink-0 rounded-full transition-colors duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none',
                 color,
                 className
             )}

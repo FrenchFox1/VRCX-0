@@ -116,7 +116,7 @@ export function CurrentUserActionItems({
                 <>
                     <Group>
                         <MenuItem onClick={onOpen}>
-                            {t('common.actions.open')}
+                            {t('common.actions.view_profile')}
                         </MenuItem>
                     </Group>
                     <Separator />
@@ -248,7 +248,9 @@ export function FriendActionItems({
     return (
         <>
             <Group>
-                <MenuItem onClick={onOpen}>{t('common.actions.open')}</MenuItem>
+                <MenuItem onClick={onOpen}>
+                    {t('common.actions.view_profile')}
+                </MenuItem>
             </Group>
             <Separator />
             <LaunchModeContextMenuGroup

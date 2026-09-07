@@ -1,5 +1,6 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
+import type { AppToastOptions } from '@/services/toastService';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import type {
@@ -44,8 +45,7 @@ type DialogRequest = {
 type Translation = (key: string, options?: Record<string, unknown>) => string;
 
 type ToastApi = {
-    error(message: string): void;
-    success(message: string): void;
+    add(options: AppToastOptions): void;
 };
 
 export type GalleryControllerDeps = {

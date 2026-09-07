@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { bootstrapFriendRoster } from '@/services/friendBootstrapService';
 import {
     cancelMutualGraphFetch,
     startMutualGraphFetch
 } from '@/services/mutualGraphFetchService';
+import { toast } from '@/services/toastService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -87,13 +87,15 @@ export function useMutualFriendsGraphFetch({
         if (statusName === 'completed') {
             lastHandledRunRef.current = statusRunId;
             reloadSnapshot('', statusOwnerUserId).catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.charts.toast.failed_to_fetch_mutual_friends_graph'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.charts.toast.failed_to_fetch_mutual_friends_graph'
+                              )
+                });
             });
             return;
         }
@@ -163,11 +165,12 @@ export function useMutualFriendsGraphFetch({
                 }
                 friendIds = readMutualGraphFriendIds(ownerUserId);
                 if (!friendIds.length) {
-                    toast.info(
-                        t(
+                    toast.add({
+                        type: 'info',
+                        title: t(
                             'view.charts.empty.no_friends_are_available_for_mutual_graph_fetching'
                         )
-                    );
+                    });
                     return;
                 }
             }
@@ -179,7 +182,10 @@ export function useMutualFriendsGraphFetch({
                 endpoint: ownerEndpoint,
                 friendIds
             });
-            toast.info(t('view.charts.mutual_friend.prompt.message'));
+            toast.add({
+                type: 'info',
+                title: t('view.charts.mutual_friend.prompt.message')
+            });
         } catch (error) {
             const latestAuth = useRuntimeStore.getState().auth;
             if (
@@ -196,7 +202,7 @@ export function useMutualFriendsGraphFetch({
                           'view.charts.toast.failed_to_fetch_mutual_friends_graph'
                       );
             setDetail(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             if (startRequestScopeRef.current === requestScope) {
                 startRequestScopeRef.current = '';
@@ -209,13 +215,15 @@ export function useMutualFriendsGraphFetch({
             return;
         }
         cancelMutualGraphFetch(currentUserId).catch((error: unknown) => {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.charts.toast.failed_to_fetch_mutual_friends_graph'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.charts.toast.failed_to_fetch_mutual_friends_graph'
+                          )
+            });
         });
     }
 

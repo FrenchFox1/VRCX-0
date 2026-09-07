@@ -15,9 +15,7 @@ export function usePlayerListSourceRows({
     currentUserLocation,
     currentUserSnapshot,
     isGameRunning,
-    playerRows,
-    runtimeRosterAvailable,
-    runtimePlayerRows
+    playerRows
 }: {
     context: PlayerListContext;
     currentLocationStartedAt?: string | null;
@@ -26,8 +24,6 @@ export function usePlayerListSourceRows({
     currentUserSnapshot?: PlayerListCurrentUserSnapshot | null;
     isGameRunning: boolean;
     playerRows?: readonly PlayerListRosterRow[];
-    runtimeRosterAvailable?: boolean;
-    runtimePlayerRows?: readonly PlayerListRosterRow[];
 }): PlayerListSourceRow[] {
     return useMemo(() => {
         return buildPlayerSourceRows({
@@ -37,9 +33,7 @@ export function usePlayerListSourceRows({
             currentUserLocation,
             currentUserSnapshot,
             isGameRunning,
-            playerRows,
-            runtimePlayerRows,
-            runtimeRosterAvailable
+            playerRows
         });
     }, [
         context,
@@ -48,8 +42,6 @@ export function usePlayerListSourceRows({
         currentUserLocation,
         currentUserSnapshot,
         isGameRunning,
-        playerRows,
-        runtimeRosterAvailable,
-        runtimePlayerRows
+        playerRows
     ]);
 }

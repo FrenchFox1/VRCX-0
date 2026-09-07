@@ -1,9 +1,9 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { updateModerationSync } from '@/services/moderationSyncService';
 import { setVrchatUserModeration } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 
 import { normalizeUserId } from './userProfileFields';
 import type {
@@ -112,19 +112,22 @@ export function useUserModerationActions({
                 block: Boolean(savedState.block),
                 mute: Boolean(savedState.mute)
             });
-            toast.success(
-                t('dialog.user.dynamic.value_request_sent', {
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.dynamic.value_request_sent', {
                     value: label
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_value_user', {
-                          value: label.toLowerCase()
-                      })
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_value_user', {
+                              value: label.toLowerCase()
+                          })
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -188,19 +191,22 @@ export function useUserModerationActions({
                 ...current,
                 [type]: enabled
             }));
-            toast.success(
-                t('dialog.user.dynamic.value_request_sent', {
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.dynamic.value_request_sent', {
                     value: label
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_value', {
-                          value: label.toLowerCase()
-                      })
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_value', {
+                              value: label.toLowerCase()
+                          })
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -252,17 +258,22 @@ export function useUserModerationActions({
                 hideAvatar: nextType === 4,
                 showAvatar: nextType === 5
             });
-            toast.success(
-                t('dialog.user.dynamic.value_updated', {
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.dynamic.value_updated', {
                     value: label
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error && !knownAvatarModerationFailure
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_update_avatar_moderation')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error && !knownAvatarModerationFailure
+                        ? error.message
+                        : t(
+                              'dialog.user.toast.failed_to_update_avatar_moderation'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     generateDashboardRowId,
@@ -9,6 +8,7 @@ import {
     type DashboardPanel,
     type DashboardRow
 } from '@/repositories/dashboardRepository';
+import { toast } from '@/services/toastService';
 
 import { cloneDashboardRows } from './dashboardConfig';
 
@@ -191,13 +191,18 @@ export function useDashboardEditorState({
                 rows: editRows
             });
             setIsEditing(false);
-            toast.success(t('view.dashboard.success.dashboard_saved'));
+            toast.add({
+                type: 'success',
+                title: t('view.dashboard.success.dashboard_saved')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.dashboard.toast.failed_to_save_dashboard')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.dashboard.toast.failed_to_save_dashboard')
+            });
         } finally {
             setIsSaving(false);
         }

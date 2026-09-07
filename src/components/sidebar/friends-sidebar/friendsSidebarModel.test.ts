@@ -31,7 +31,7 @@ describe('friendsSidebarModel same-instance groups', () => {
         expect(
             buildSameInstanceGroups(
                 [friendWithCurrentUser, soloElsewhere],
-                { isShowCurrentUserInSameInstance: true },
+                {},
                 { location: currentLocation }
             )
         ).toEqual([
@@ -41,25 +41,6 @@ describe('friendsSidebarModel same-instance groups', () => {
                 isCurrentInstance: true
             }
         ]);
-    });
-
-    it('requires two friends in the current instance when the current user is hidden', () => {
-        const currentLocation = 'wrld_current:123';
-        const friend = {
-            id: 'usr_friend',
-            displayName: 'Friend',
-            state: 'online',
-            location: currentLocation,
-            $location_at: 1
-        };
-
-        expect(
-            buildSameInstanceGroups(
-                [friend],
-                { isShowCurrentUserInSameInstance: false },
-                { location: currentLocation }
-            )
-        ).toEqual([]);
     });
 });
 

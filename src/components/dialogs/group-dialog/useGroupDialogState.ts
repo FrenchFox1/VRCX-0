@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { GroupInstanceRecord } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
@@ -11,6 +10,7 @@ import gameLogRepository from '@/repositories/gameLogRepository';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
 import { recordLocationHintsFromInstances } from '@/services/domainIngestionService';
+import { toast } from '@/services/toastService';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
@@ -346,17 +346,21 @@ export function useGroupDialogState({
                     commitGroupSnapshot(response.json);
                 }
             });
-            toast.success(
-                nextStatus === 'requested'
-                    ? t('message.group.join_request_sent')
-                    : t('message.group.joined')
-            );
+            toast.add({
+                type: 'success',
+                title:
+                    nextStatus === 'requested'
+                        ? t('message.group.join_request_sent')
+                        : t('message.group.joined')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.group.toast.failed_to_join_group')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.group.toast.failed_to_join_group')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -395,13 +399,18 @@ export function useGroupDialogState({
                     commitGroupSnapshot(response.json);
                 }
             });
-            toast.success(t('dialog.group.label.group_left'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.group.label.group_left')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.group.toast.failed_to_leave_group')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.group.toast.failed_to_leave_group')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -423,17 +432,20 @@ export function useGroupDialogState({
                 groupId: normalizedGroupId
             });
             await refreshGroupProfile();
-            toast.success(
-                t('dialog.group.success.group_join_request_cancelled')
-            );
+            toast.add({
+                type: 'success',
+                title: t('dialog.group.success.group_join_request_cancelled')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.group.toast.failed_to_cancel_group_join_request'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.group.toast.failed_to_cancel_group_join_request'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -449,13 +461,18 @@ export function useGroupDialogState({
         setActionStatus('refresh');
         try {
             await refreshGroupProfile();
-            toast.success(t('dialog.group.success.group_refreshed'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.group.success.group_refreshed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.group.toast.failed_to_refresh_group')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.group.toast.failed_to_refresh_group')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -475,19 +492,22 @@ export function useGroupDialogState({
                 isRepresenting: enabled
             });
             await refreshGroupProfile();
-            toast.success(
-                enabled
+            toast.add({
+                type: 'success',
+                title: enabled
                     ? t('dialog.group.toast.group_represented')
                     : t('dialog.group.toast.group_unrepresented')
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.group.toast.failed_to_update_group_representation'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.group.toast.failed_to_update_group_representation'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -515,15 +535,17 @@ export function useGroupDialogState({
                 params
             });
             await refreshGroupProfile();
-            toast.success(label);
+            toast.add({ type: 'success', title: label });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.group.toast.failed_to_update_group_member_settings'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.group.toast.failed_to_update_group_member_settings'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -568,18 +590,20 @@ export function useGroupDialogState({
                 });
             }
             await refreshGroupProfile();
-            toast.success(
-                enabled
+            toast.add({
+                type: 'success',
+                title: enabled
                     ? t('dialog.group.toast.group_blocked')
                     : t('dialog.group.toast.group_unblocked')
-            );
+            });
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('dialog.group.toast.failed_to_update_group_block_state')
                 )
-            );
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');

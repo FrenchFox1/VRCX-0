@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     loadPostUpdateChangelogToastState,
     markPostUpdateChangelogVersionSeen
 } from '@/services/changelogService';
+import { toast } from '@/services/toastService';
 import { formatReleaseDisplayVersion } from '@/shared/utils/releaseVersion';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -55,28 +55,26 @@ export function PostUpdateChangelogToastHost(): null {
                 const displayVersion =
                     formatReleaseDisplayVersion(state.currentVersion) ||
                     state.currentVersion;
-                const toastId = toast.info(
-                    t('dialog.change_log.toast_title', {
+                const toastId = toast.add({
+                    type: 'info',
+                    title: t('dialog.change_log.toast_title', {
                         value: displayVersion
                     }),
-                    {
-                        description: t('dialog.change_log.toast_description'),
-                        duration: Infinity,
-                        position: 'bottom-right',
-                        closeButton: true,
-                        action: {
-                            label: t('dialog.change_log.view_changes'),
-                            onClick: () => {
-                                recordSeen();
-                                toast.dismiss(toastId);
-                                setChangelogTargetVersion(state.currentVersion);
-                                setSystemHostOpen('changelogOpen', true);
-                            }
-                        },
-                        onDismiss: recordSeen,
-                        onAutoClose: recordSeen
-                    }
-                );
+                    description: t('dialog.change_log.toast_description'),
+                    timeout: 0,
+                    position: 'bottom-right',
+                    actionProps: {
+                        children: t('dialog.change_log.view_changes'),
+                        onClick: () => {
+                            recordSeen();
+                            toast.close(toastId);
+                            setChangelogTargetVersion(state.currentVersion);
+                            setSystemHostOpen('changelogOpen', true);
+                        }
+                    },
+                    onClose: recordSeen,
+                    data: { closeButton: true }
+                });
             } catch (error) {
                 console.warn(
                     'Failed to show post-update changelog toast:',

@@ -22,7 +22,6 @@ import { useFriendsSidebarDisplayPreferences } from '@/components/sidebar/useFri
 import { useFriendsSidebarRuntimeSnapshot } from '@/components/sidebar/useFriendsSidebarRuntimeSnapshot';
 import { UserStatusAvatar } from '@/components/UserStatusAvatar';
 import { cn } from '@/lib/utils';
-import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -230,12 +229,6 @@ export function SidePanelSelfHeader() {
                                                     />
                                                 }
                                             >
-                                                <i
-                                                    aria-hidden="true"
-                                                    className={userStatusIndicatorClassName(
-                                                        statusValue
-                                                    )}
-                                                />
                                                 {t(
                                                     resolveCurrentUserStatusLabelKey(
                                                         statusValue

@@ -288,3 +288,7 @@ describe('GroupDialogTabbedView remote loading', () => {
         expect(mocks.getGroupCalendar).toHaveBeenCalledOnce();
     });
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

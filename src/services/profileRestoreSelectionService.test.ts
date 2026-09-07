@@ -1,14 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     error: vi.fn(),
     openFile: vi.fn(),
     validate: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.error
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.error(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -89,7 +98,10 @@ describe('selectProfileBackupToRestore', () => {
 
         expect(useProfileBackupStore.getState().restoreFlow).toBe('idle');
         expect(mocks.error).toHaveBeenCalledWith(
-            'profile_backup.error.invalid_archive'
+            expect.objectContaining({
+                type: 'error',
+                title: 'profile_backup.error.invalid_archive'
+            })
         );
     });
 
@@ -103,7 +115,10 @@ describe('selectProfileBackupToRestore', () => {
 
         expect(mocks.openFile).toHaveBeenCalledTimes(2);
         expect(mocks.error).toHaveBeenCalledWith(
-            'profile_backup.file_selection_failed'
+            expect.objectContaining({
+                type: 'error',
+                title: 'profile_backup.file_selection_failed'
+            })
         );
     });
 });

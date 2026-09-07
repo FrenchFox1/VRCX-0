@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { tauriClient } from '@/platform/tauri/client';
 import { stopLocalCommunityThemePreview } from '@/services/communityThemeService';
+import { toast } from '@/services/toastService';
 
 export function CommunityThemeSafetyHost(): null {
     const { t } = useTranslation();
@@ -15,13 +15,18 @@ export function CommunityThemeSafetyHost(): null {
         async function disableThemeFromTray() {
             try {
                 await stopLocalCommunityThemePreview();
-                toast.success(t('view.community_themes.toast.theme_disabled'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.community_themes.toast.theme_disabled')
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.community_themes.toast.disable_failed')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.community_themes.toast.disable_failed')
+                });
             }
         }
 

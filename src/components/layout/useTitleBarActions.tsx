@@ -19,7 +19,6 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
-import { toast } from 'sonner';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
 import { ShortcutHintPanel } from '@/components/keyboard/ShortcutHintPanel';
@@ -30,6 +29,7 @@ import {
     setThemeModePreference
 } from '@/services/preferencesService';
 import { useResolvedThemeMode } from '@/services/themeService';
+import { toast } from '@/services/toastService';
 import {
     openOrInstallLatestAvailableUpdate,
     shouldShowUpdateUi
@@ -303,13 +303,15 @@ export function useTitleBarActions(
             await markAllVrcNotificationsSeen();
             removeNavNotification('notification');
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_title_bar.toast.failed_to_mark_notifications_as_seen'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_title_bar.toast.failed_to_mark_notifications_as_seen'
+                          )
+            });
         }
     }
 
@@ -333,11 +335,12 @@ export function useTitleBarActions(
                     ? undefined
                     : (event: React.MouseEvent) => {
                           event.preventDefault();
-                          toast.info(
-                              t(
+                          toast.add({
+                              type: 'info',
+                              title: t(
                                   'side_panel.notification_center.no_unseen_notifications'
                               )
-                          );
+                          });
                       }
             }
         >

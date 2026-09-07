@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { UserStatus } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 
 import {
     normalizeSelfStatusInput,
@@ -101,9 +101,12 @@ export function useCurrentUserSocialStatusDialog({
             !nextStatus ||
             (!profile?.$isModerator && nextStatus === 'offline')
         ) {
-            toast.warning(
-                t('dialog.user.label.please_choose_a_valid_social_status')
-            );
+            toast.add({
+                type: 'warning',
+                title: t(
+                    'dialog.user.label.please_choose_a_valid_social_status'
+                )
+            });
             return;
         }
 

@@ -3,6 +3,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     bootstrapFriendRoster: vi.fn(),
     cancelMutualGraphFetch: vi.fn(),
@@ -17,10 +19,18 @@ vi.mock('react-i18next', () => ({
     })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        info: mocks.toastInfo
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'info':
+                    return mocks.toastInfo(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 

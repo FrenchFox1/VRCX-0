@@ -1,3 +1,4 @@
+pub mod activity_page;
 mod avatar;
 pub mod background_image;
 mod community_theme;

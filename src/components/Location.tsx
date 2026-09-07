@@ -1,6 +1,5 @@
 import type { KeyboardEvent, SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { LocationContextMenu } from '@/components/location/LocationContextMenu';
 import { LocationDisplay } from '@/components/location/LocationDisplay';
@@ -10,6 +9,7 @@ import { copyTextToClipboard } from '@/services/clipboardService';
 import { openGroupDialog, openWorldDialog } from '@/services/dialogService';
 import { directAccessParse } from '@/services/directAccessService';
 import { selfInviteToInstance } from '@/services/launchService';
+import { toast } from '@/services/toastService';
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
 import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -186,13 +186,20 @@ export function Location({
                 currentLocation,
                 parsedLocation.shortName || ''
             );
-            toast.success(t('message.invite.self_sent'));
+            toast.add({
+                type: 'success',
+                title: t('message.invite.self_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('component.location.toast.failed_to_send_self_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.location.toast.failed_to_send_self_invite'
+                          )
+            });
         }
     }
 

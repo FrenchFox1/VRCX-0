@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
+import { toast } from '@/services/toastService';
 
 export function useUserDialogAvatarAuthorAction({
     currentAvatarTarget
@@ -26,13 +26,18 @@ export function useUserDialogAvatarAuthorAction({
                 });
                 return;
             }
-            toast.error(t('dialog.user.error.avatar_author_unavailable'));
+            toast.add({
+                type: 'error',
+                title: t('dialog.user.error.avatar_author_unavailable')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_load_avatar_author')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_load_avatar_author')
+            });
         }
     };
 }

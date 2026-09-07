@@ -33,11 +33,22 @@ impl LogLocationSnapshotScanner for NoopLogLocationSnapshotScanner {
     }
 }
 
+struct PendingScan {
+    events: Vec<GameLogEvent>,
+    origin: super::GameLogEventOrigin,
+    cursor: super::GameLogScanCursor,
+    publish: bool,
+    compat_payloads: Vec<String>,
+}
+
 pub(super) struct Inner {
     pub(super) event_buffer: Mutex<Vec<GameLogEvent>>,
     pub(super) compat_event_buffer: Mutex<Vec<String>>,
     pub(super) event_sink: Option<Arc<dyn GameLogEventSink>>,
     pub(super) log_dir: RwLock<Option<PathBuf>>,
+    resume_cursor: Mutex<Option<super::GameLogScanCursor>>,
+    scan_gate: Mutex<()>,
+    pending_scan: Mutex<Option<PendingScan>>,
     pub(super) till_date: Mutex<Option<NaiveDateTime>>,
     pub(super) active: Mutex<bool>,
     pub(super) reset_flag: Mutex<bool>,
@@ -71,6 +82,9 @@ impl LogWatcher {
                 compat_event_buffer: Mutex::new(Vec::new()),
                 event_sink,
                 log_dir: RwLock::new(None),
+                resume_cursor: Mutex::new(None),
+                scan_gate: Mutex::new(()),
+                pending_scan: Mutex::new(None),
                 till_date: Mutex::new(None),
                 active: Mutex::new(false),
                 reset_flag: Mutex::new(false),
@@ -155,7 +169,29 @@ impl LogWatcher {
             .store(enabled, Ordering::Release);
     }
 
+    pub fn resume_from(&self, cursor: super::GameLogScanCursor) {
+        self.set_date_till(&cursor.cutoff);
+        *self.inner.resume_cursor.lock().unwrap() = Some(cursor);
+    }
+
+    pub fn with_paused_scan<T>(
+        &self,
+        action: impl FnOnce() -> crate::Result<T>,
+    ) -> crate::Result<T> {
+        let _guard = self
+            .inner
+            .scan_gate
+            .lock()
+            .map_err(|error| crate::Error::Custom(error.to_string()))?;
+        action()
+    }
+
+    pub fn clear_resume_cursor(&self) {
+        *self.inner.resume_cursor.lock().unwrap() = None;
+    }
+
     pub fn reset(&self) {
+        *self.inner.pending_scan.lock().unwrap() = None;
         *self.inner.reset_flag.lock().unwrap() = true;
         *self.inner.keep_polling_until.lock().unwrap() =
             Some(Instant::now() + INACTIVE_POLL_KEEPALIVE);
@@ -194,17 +230,6 @@ fn thread_loop(inner: Arc<Inner>, log_dir: PathBuf, generation: u64) {
         && inner.generation.load(Ordering::Acquire) == generation
     {
         let active = *inner.active.lock().unwrap();
-
-        {
-            let mut reset = inner.reset_flag.lock().unwrap();
-            if *reset {
-                first_run = true;
-                *reset = false;
-                contexts.clear();
-                inner.event_buffer.lock().unwrap().clear();
-                inner.compat_event_buffer.lock().unwrap().clear();
-            }
-        }
 
         let should_poll = if active {
             let poll_without_process_monitor = *inner.poll_without_process_monitor.lock().unwrap();
@@ -246,6 +271,39 @@ pub(super) fn update(
     contexts: &mut HashMap<String, LogContext>,
     first_run: &mut bool,
 ) -> bool {
+    let _scan_guard = inner.scan_gate.lock().unwrap();
+    if std::mem::take(&mut *inner.reset_flag.lock().unwrap()) {
+        *first_run = true;
+        contexts.clear();
+        inner.event_buffer.lock().unwrap().clear();
+        inner.compat_event_buffer.lock().unwrap().clear();
+    }
+    if let Some(event_sink) = &inner.event_sink {
+        if let Err(error) = event_sink.retry_pending_game_log() {
+            tracing::warn!("GameLog persistence remains pending: {error}");
+            return true;
+        }
+        let mut pending = inner.pending_scan.lock().unwrap();
+        if let Some(scan) = pending.as_ref() {
+            if let Err(error) = event_sink.ingest_game_log_scan(
+                &scan.events,
+                scan.origin,
+                scan.cursor.clone(),
+                scan.publish,
+            ) {
+                tracing::warn!("GameLog scan remains pending: {error}");
+                return true;
+            }
+            let scan = pending.take().expect("pending GameLog scan");
+            *inner.resume_cursor.lock().unwrap() = Some(scan.cursor.clone());
+            contexts.insert(scan.cursor.file_name, scan.cursor.context);
+            inner
+                .compat_event_buffer
+                .lock()
+                .unwrap()
+                .extend(scan.compat_payloads);
+        }
+    }
     let till_date_utc = inner
         .till_date
         .lock()
@@ -274,8 +332,7 @@ pub(super) fn update(
         })
         .collect();
 
-    if *first_run
-        && inner.initial_scan_latest_file_only.load(Ordering::Acquire)
+    if (!*first_run || inner.initial_scan_latest_file_only.load(Ordering::Acquire))
         && entries.len() > 1
     {
         let latest = entries
@@ -284,9 +341,22 @@ pub(super) fn update(
             .expect("multiple GameLog entries");
         entries = vec![latest];
     } else {
-        entries.sort_by_key(|(entry, _, _)| entry.metadata().and_then(|meta| meta.created()).ok());
+        entries.sort_by(|left, right| left.1.cmp(&right.1));
     }
 
+    let latest_name = entries.last().map(|(_, _, name)| name.clone());
+    let resume_cursor = inner
+        .resume_cursor
+        .lock()
+        .unwrap()
+        .clone()
+        .filter(|cursor| {
+            fs::metadata(log_dir.join(&cursor.file_name)).is_ok_and(|metadata| {
+                metadata.is_file()
+                    && metadata.len() >= cursor.context.position
+                    && file_created_at(&metadata) == cursor.file_created_at
+            })
+        });
     let mut sink = queue::WatcherParseSink {
         inner,
         first_run: *first_run,
@@ -294,6 +364,12 @@ pub(super) fn update(
     let mut saw_new_data = false;
     let mut present = HashSet::with_capacity(entries.len());
     for (entry, _, name) in entries {
+        if resume_cursor
+            .as_ref()
+            .is_some_and(|cursor| name < cursor.file_name)
+        {
+            continue;
+        }
         let meta = match entry.metadata() {
             Ok(m) => m,
             Err(_) => continue,
@@ -301,20 +377,114 @@ pub(super) fn update(
 
         if let Ok(last_write) = meta.modified() {
             let lwt: chrono::DateTime<Local> = last_write.into();
-            if lwt.naive_local() < till_date {
+            if lwt.naive_local() < till_date
+                && (inner.event_sink.is_none() || latest_name.as_ref() != Some(&name))
+            {
                 continue;
             }
         }
 
         if !contexts.contains_key(&name) {
-            contexts.insert(name.clone(), LogContext::new());
+            let context = resume_cursor
+                .as_ref()
+                .filter(|cursor| cursor.file_name == name)
+                .map(|cursor| cursor.context.clone())
+                .unwrap_or_else(LogContext::new);
+            contexts.insert(name.clone(), context);
         }
+        let rebuild = resume_cursor
+            .as_ref()
+            .filter(|cursor| cursor.file_name == name)
+            .map(|cursor| cursor.rebuild)
+            .unwrap_or(inner.event_sink.is_some() && latest_name.as_ref() == Some(&name));
+        let read_cutoff = if rebuild {
+            chrono::DateTime::UNIX_EPOCH.naive_utc()
+        } else {
+            till_date
+        };
         let ctx = contexts
             .get_mut(&name)
             .expect("GameLog context was inserted");
 
-        saw_new_data |=
-            game_log_parser::parse_log(reader, &mut sink, &entry.path(), &name, ctx, till_date);
+        let created_at = file_created_at(&meta);
+        if ctx.position > meta.len()
+            || (ctx.file_created_at.is_some() && ctx.file_created_at != created_at)
+        {
+            *ctx = LogContext::new();
+        }
+        ctx.file_created_at = created_at;
+        loop {
+            if inner.stop_requested.load(Ordering::Acquire) {
+                return saw_new_data;
+            }
+            let previous_context = ctx.clone();
+            let compat_len = inner.compat_event_buffer.lock().unwrap().len();
+            let changed = game_log_parser::parse_log(
+                reader,
+                &mut sink,
+                &entry.path(),
+                &name,
+                ctx,
+                read_cutoff,
+            );
+            if ctx.read_failed {
+                *ctx = previous_context;
+                inner.event_buffer.lock().unwrap().clear();
+                inner
+                    .compat_event_buffer
+                    .lock()
+                    .unwrap()
+                    .truncate(compat_len);
+                break;
+            }
+            saw_new_data |= changed;
+            if changed || *first_run {
+                if let Some(event_sink) = &inner.event_sink {
+                    let events = std::mem::take(&mut *inner.event_buffer.lock().unwrap());
+                    let cursor = super::GameLogScanCursor {
+                        file_name: name.clone(),
+                        start_position: previous_context.position,
+                        file_created_at: file_created_at(&meta),
+                        rebuild,
+                        context: ctx.clone(),
+                        cutoff: chrono::DateTime::<Utc>::from_naive_utc_and_offset(
+                            till_date_utc,
+                            Utc,
+                        )
+                        .to_rfc3339(),
+                    };
+                    let origin = if *first_run {
+                        super::GameLogEventOrigin::InitialScan
+                    } else {
+                        super::GameLogEventOrigin::Live
+                    };
+                    let publish = latest_name.as_ref() == Some(&name) && ctx.at_end;
+                    if let Err(error) =
+                        event_sink.ingest_game_log_scan(&events, origin, cursor.clone(), publish)
+                    {
+                        tracing::warn!("failed to process GameLog scan; retrying from the same position: {error}");
+                        *ctx = previous_context;
+                        let compat_payloads = inner
+                            .compat_event_buffer
+                            .lock()
+                            .unwrap()
+                            .split_off(compat_len);
+                        *inner.pending_scan.lock().unwrap() = Some(PendingScan {
+                            events,
+                            origin,
+                            cursor,
+                            publish,
+                            compat_payloads,
+                        });
+                        return true;
+                    }
+                    *inner.resume_cursor.lock().unwrap() = Some(cursor);
+                }
+            }
+            if !changed || ctx.at_end {
+                break;
+            }
+        }
         present.insert(name);
     }
 
@@ -323,4 +493,13 @@ pub(super) fn update(
     queue::flush_game_log_events(inner, *first_run);
     *first_run = false;
     saw_new_data
+}
+
+fn file_created_at(metadata: &fs::Metadata) -> Option<u64> {
+    metadata
+        .created()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| u64::try_from(duration.as_nanos()).ok())
 }

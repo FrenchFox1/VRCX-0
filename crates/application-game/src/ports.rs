@@ -51,16 +51,6 @@ pub trait VideoMetadataPort: Send + Sync {
     async fn youtube_metadata(&self, video_id: &str, api_key: &str) -> Result<Option<Value>>;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PlayerLocationRecord {
-    pub created_at: String,
-    pub location: String,
-    pub world_id: String,
-    pub world_name: String,
-    pub time: i64,
-    pub group_name: String,
-}
-
 pub trait GameStateStore: Send + Sync {
     fn get_bool(&self, key: &str, default: bool) -> Result<bool>;
     fn get_string(&self, key: &str, default: &str) -> Result<String>;
@@ -69,14 +59,6 @@ pub trait GameStateStore: Send + Sync {
     fn set_string(&self, key: &str, value: &str) -> Result<()>;
     fn set_json(&self, key: &str, value: &Value) -> Result<()>;
     fn write_game_log(&self, owner: &OwnerId, batch: &GameLogWriteBatch) -> Result<u64>;
-    fn game_log_location_table_exists(&self) -> Result<bool>;
-    fn last_game_log_location(&self) -> Result<Option<GameLogLocationSnapshot>>;
-    fn join_leave_for_location_unscoped(
-        &self,
-        location: &str,
-        after_date: &str,
-        before_date: &str,
-    ) -> Result<Vec<GameLogJoinLeaveSnapshot>>;
     fn join_leave_for_location(
         &self,
         owner: &OwnerId,
@@ -123,18 +105,6 @@ pub trait GameStateStore: Send + Sync {
         owner: &OwnerId,
         locations: &[String],
     ) -> Result<Vec<SessionPlayerDurationRow>>;
-    fn player_location(
-        &self,
-        owner: &OwnerId,
-        location: String,
-    ) -> Result<Option<PlayerLocationRecord>>;
-    fn latest_player_location(&self, owner: &OwnerId) -> Result<Option<PlayerLocationRecord>>;
-    fn player_join_leave_for_location(
-        &self,
-        owner: &OwnerId,
-        location: &str,
-        started_at: &str,
-    ) -> Result<Vec<GameLogJoinLeaveSnapshot>>;
     fn favorite_friend_group_names_for_users(
         &self,
         owner: &OwnerId,
@@ -164,6 +134,7 @@ struct TestGameState {
 pub(crate) struct TestGameStateStore {
     state: std::sync::Mutex<TestGameState>,
     fail_writes: std::sync::atomic::AtomicBool,
+    fail_reads: std::sync::atomic::AtomicBool,
 }
 
 #[cfg(test)]
@@ -212,6 +183,11 @@ impl TestGameStateStore {
             .tables_exist
     }
 
+    pub(crate) fn set_fail_reads(&self, fail: bool) {
+        self.fail_reads
+            .store(fail, std::sync::atomic::Ordering::Relaxed);
+    }
+
     pub(crate) fn set_fail_writes(&self, fail: bool) {
         self.fail_writes
             .store(fail, std::sync::atomic::Ordering::Relaxed);
@@ -239,6 +215,9 @@ fn location_snapshot(
 #[cfg(test)]
 impl GameStateStore for TestGameStateStore {
     fn get_bool(&self, key: &str, default: bool) -> Result<bool> {
+        if self.fail_reads.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(crate::Error::Custom("temporary config read failure".into()));
+        }
         Ok(self
             .state
             .lock()
@@ -302,6 +281,12 @@ impl GameStateStore for TestGameStateStore {
         }
         let mut state = self.state.lock().expect("test game state lock");
         state.tables_exist = true;
+        if let Some(checkpoint) = &batch.replay_checkpoint {
+            state.config.insert(
+                "gameLogReplayCheckpoint".into(),
+                Value::String(checkpoint.clone()),
+            );
+        }
         let owner = owner.as_str().to_string();
         let mut affected = (batch.locations.len()
             + batch.join_leave.len()
@@ -338,57 +323,6 @@ impl GameStateStore for TestGameStateStore {
                 value,
             }));
         Ok(affected)
-    }
-
-    fn game_log_location_table_exists(&self) -> Result<bool> {
-        Ok(self.tables_exist())
-    }
-
-    fn last_game_log_location(&self) -> Result<Option<GameLogLocationSnapshot>> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test game state lock")
-            .locations
-            .last()
-            .map(|row| location_snapshot(&row.value)))
-    }
-
-    fn join_leave_for_location_unscoped(
-        &self,
-        location: &str,
-        after_date: &str,
-        before_date: &str,
-    ) -> Result<Vec<GameLogJoinLeaveSnapshot>> {
-        self.join_leave_for_location(&OwnerId::new(""), location, after_date, before_date)
-            .map(|rows| {
-                let state = self.state.lock().expect("test game state lock");
-                let mut unscoped = state
-                    .join_leave
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, row)| {
-                        row.value.location == location
-                            && row.value.created_at.as_str() >= after_date
-                            && row.value.created_at.as_str() <= before_date
-                    })
-                    .map(|(index, row)| GameLogJoinLeaveSnapshot {
-                        id: index as i64 + 1,
-                        created_at: row.value.created_at.clone(),
-                        event_type: row.value.event_type.clone(),
-                        display_name: row.value.display_name.clone(),
-                        user_id: row.value.user_id.clone(),
-                        time: row.value.time,
-                    })
-                    .collect::<Vec<_>>();
-                unscoped.sort_by(|left, right| {
-                    left.created_at
-                        .cmp(&right.created_at)
-                        .then_with(|| left.id.cmp(&right.id))
-                });
-                let _ = rows;
-                unscoped
-            })
     }
 
     fn join_leave_for_location(
@@ -660,76 +594,6 @@ impl GameStateStore for TestGameStateStore {
             .collect::<Vec<_>>();
         rows.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(&right.1)));
         Ok(rows.into_iter().map(|(_, _, row)| row).collect())
-    }
-
-    fn player_location(
-        &self,
-        owner: &OwnerId,
-        location: String,
-    ) -> Result<Option<PlayerLocationRecord>> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test game state lock")
-            .locations
-            .iter()
-            .rev()
-            .find(|row| owner_can_read(&row.owner, owner) && row.value.location == location)
-            .map(|row| PlayerLocationRecord {
-                created_at: row.value.created_at.clone(),
-                location: row.value.location.clone(),
-                world_id: row.value.world_id.clone(),
-                world_name: row.value.world_name.clone(),
-                time: row.value.time,
-                group_name: row.value.group_name.clone(),
-            }))
-    }
-
-    fn latest_player_location(&self, owner: &OwnerId) -> Result<Option<PlayerLocationRecord>> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test game state lock")
-            .locations
-            .iter()
-            .rev()
-            .find(|row| owner_can_read(&row.owner, owner))
-            .map(|row| PlayerLocationRecord {
-                created_at: row.value.created_at.clone(),
-                location: row.value.location.clone(),
-                world_id: row.value.world_id.clone(),
-                world_name: row.value.world_name.clone(),
-                time: row.value.time,
-                group_name: row.value.group_name.clone(),
-            }))
-    }
-
-    fn player_join_leave_for_location(
-        &self,
-        owner: &OwnerId,
-        location: &str,
-        started_at: &str,
-    ) -> Result<Vec<GameLogJoinLeaveSnapshot>> {
-        let state = self.state.lock().expect("test game state lock");
-        Ok(state
-            .join_leave
-            .iter()
-            .enumerate()
-            .filter(|(_, row)| {
-                owner_can_read(&row.owner, owner)
-                    && row.value.location.trim() == location.trim()
-                    && (started_at.trim().is_empty()
-                        || row.value.created_at.as_str() >= started_at.trim())
-            })
-            .map(|(index, row)| GameLogJoinLeaveSnapshot {
-                id: index as i64 + 1,
-                created_at: row.value.created_at.clone(),
-                event_type: row.value.event_type.clone(),
-                display_name: row.value.display_name.clone(),
-                user_id: row.value.user_id.clone(),
-                time: row.value.time,
-            })
-            .collect())
     }
 
     fn favorite_friend_group_names_for_users(

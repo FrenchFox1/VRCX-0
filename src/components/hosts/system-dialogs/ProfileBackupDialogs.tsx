@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { formatDateTime } from '@/lib/dateTime';
 import {
@@ -18,6 +17,7 @@ import {
     type ProfileRestoreProgress,
     type ProfileRestoreValidation
 } from '@/services/profileBackupService';
+import { toast } from '@/services/toastService';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 import {
     AlertDialog,
@@ -154,18 +154,21 @@ export function ProfileBackupDialogs() {
             return;
         }
         if (outcome.succeeded) {
-            toast.success(t('profile_backup.backup_saved'), {
+            toast.add({
+                type: 'success',
+                title: t('profile_backup.backup_saved'),
                 description: outcome.fileName || undefined
             });
             return;
         }
-        toast.error(
-            t(
+        toast.add({
+            type: 'error',
+            title: t(
                 outcome.errorCode
                     ? profileBackupErrorKey(outcome.errorCode)
                     : 'profile_backup.error.unknown'
             )
-        );
+        });
     }, [claimOutcomeNotification, status.lastOutcome, t]);
 
     async function confirmRestore() {
@@ -185,18 +188,22 @@ export function ProfileBackupDialogs() {
             if (!outcome.validation) {
                 restoreActionPending.current = false;
                 closeRestoreFlow();
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         outcome.failure
                             ? profileRestoreFailureKey(outcome.failure.code)
                             : 'profile_backup.error.unknown'
                     )
-                );
+                });
             }
         } catch {
             restoreActionPending.current = false;
             closeRestoreFlow();
-            toast.error(t('profile_backup.restore_request_failed'));
+            toast.add({
+                type: 'error',
+                title: t('profile_backup.restore_request_failed')
+            });
         }
     }
 
@@ -208,7 +215,7 @@ export function ProfileBackupDialogs() {
         try {
             await discardStagedProfileRestore();
         } catch {
-            toast.error(t('profile_backup.error.io'));
+            toast.add({ type: 'error', title: t('profile_backup.error.io') });
         } finally {
             restoreActionPending.current = false;
             closeRestoreFlow();

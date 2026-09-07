@@ -1,8 +1,7 @@
-import { toast } from 'sonner';
-
 import { profileRestoreFailureKey } from '@/services/profileBackupI18n';
 import { validateProfileRestore } from '@/services/profileBackupService';
 import { openFileSelectorDialog } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 
 import i18n from './i18nService';
@@ -26,7 +25,10 @@ export async function selectProfileBackupToRestore(
                 `${i18n.t('profile_backup.file_filter')} (*.vrcx0backup)|*.vrcx0backup`
             );
         } catch {
-            toast.error(i18n.t('profile_backup.file_selection_failed'));
+            toast.add({
+                type: 'error',
+                title: i18n.t('profile_backup.file_selection_failed')
+            });
             return false;
         }
 
@@ -38,13 +40,14 @@ export async function selectProfileBackupToRestore(
         try {
             const outcome = await validateProfileRestore(path);
             if (!outcome.validation) {
-                toast.error(
-                    i18n.t(
+                toast.add({
+                    type: 'error',
+                    title: i18n.t(
                         outcome.failure
                             ? profileRestoreFailureKey(outcome.failure.code)
                             : 'profile_backup.error.unknown'
                     )
-                );
+                });
                 useProfileBackupStore.getState().closeRestoreFlow();
                 return false;
             }
@@ -54,7 +57,10 @@ export async function selectProfileBackupToRestore(
             return true;
         } catch {
             useProfileBackupStore.getState().closeRestoreFlow();
-            toast.error(i18n.t('profile_backup.restore_validation_failed'));
+            toast.add({
+                type: 'error',
+                title: i18n.t('profile_backup.restore_validation_failed')
+            });
             return false;
         }
     } finally {

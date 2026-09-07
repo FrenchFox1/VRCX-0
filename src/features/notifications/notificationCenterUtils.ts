@@ -1,5 +1,4 @@
 import type { TFunction } from 'i18next';
-import { toast } from 'sonner';
 
 import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { formatDateTime } from '@/lib/dateTime';
@@ -17,6 +16,7 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import { toast } from '@/services/toastService';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { isRecord } from '@/shared/utils/record';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
@@ -242,10 +242,11 @@ export function openSender(
         return;
     }
     if (!openNotificationLink(notification?.link)) {
-        toast.info(
-            t(
+        toast.add({
+            type: 'info',
+            title: t(
                 'view.notification.description.this_notification_does_not_expose_a_navigable_sender'
             )
-        );
+        });
     }
 }

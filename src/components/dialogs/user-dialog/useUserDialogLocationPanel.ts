@@ -444,16 +444,7 @@ export function useUserDialogLocationPanel({
         }
         const playerSnapshotPromise = currentLocationMatches
             ? loadCurrentInstanceRoster({
-                  currentUserId: normalizedCurrentUserId,
-                  currentLocation: snapshotLocation,
-                  runtime: {
-                      currentLocation: currentGameLocation,
-                      currentLocationStartedAt:
-                          gameState?.currentLocationStartedAt || null,
-                      currentWorldId: gameState?.currentWorldId || '',
-                      currentWorldName: gameState?.currentWorldName || '',
-                      players: gameState?.currentLocationPlayers || []
-                  }
+                  currentLocation: snapshotLocation
               }).catch((): null => null)
             : Promise.resolve(null);
 

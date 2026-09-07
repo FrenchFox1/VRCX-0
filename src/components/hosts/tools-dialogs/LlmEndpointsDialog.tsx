@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
 import {
@@ -15,6 +14,7 @@ import {
     type LlmEndpointDto,
     type LlmModelReasoning
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { mergeModels, useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -169,11 +169,13 @@ export function LlmEndpointsDialog({
         }
         setView('list');
         load().catch((error: unknown) => {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.llm_endpoints.load_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.llm_endpoints.load_failed')
+            });
         });
     }, [open, load, t]);
 
@@ -247,19 +249,22 @@ export function LlmEndpointsDialog({
                       }
                     : current
             );
-            toast.success(
-                result.models.length
+            toast.add({
+                type: 'success',
+                title: result.models.length
                     ? t('view.tools.llm_endpoints.models_detected', {
                           count: result.models.length
                       })
                     : t('view.tools.llm_endpoints.no_models_detected')
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.llm_endpoints.detect_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.llm_endpoints.detect_failed')
+            });
         }
     }
 
@@ -300,17 +305,25 @@ export function LlmEndpointsDialog({
                 modelReasoning
             });
             if (models.length) {
-                toast.success(t('view.tools.llm_endpoints.saved'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.tools.llm_endpoints.saved')
+                });
             } else {
-                toast.warning(t('view.tools.llm_endpoints.saved_unusable'));
+                toast.add({
+                    type: 'warning',
+                    title: t('view.tools.llm_endpoints.saved_unusable')
+                });
             }
             setView('list');
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.llm_endpoints.save_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.llm_endpoints.save_failed')
+            });
         } finally {
             setSaving(false);
         }
@@ -336,24 +349,31 @@ export function LlmEndpointsDialog({
             apiKey: null,
             persist: true
         }).catch((error: unknown) => {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.llm_endpoints.detect_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.llm_endpoints.detect_failed')
+            });
         });
     }
 
     async function deleteEndpointWithFeedback(endpoint: LlmEndpointDto) {
         try {
             await deleteEndpoint(endpoint.id);
-            toast.success(t('view.tools.llm_endpoints.deleted'));
+            toast.add({
+                type: 'success',
+                title: t('view.tools.llm_endpoints.deleted')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.llm_endpoints.delete_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.llm_endpoints.delete_failed')
+            });
         }
     }
 

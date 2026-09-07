@@ -12,7 +12,6 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog';
 import type { GroupInstanceRecord } from '@/domain/entities/group';
@@ -25,6 +24,7 @@ import {
     type LaunchDialogDetails,
     selfInviteToInstance
 } from '@/services/launchService';
+import { toast } from '@/services/toastService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import { checkCanInvite } from '@/shared/utils/invite';
 import { parseLocation, translateAccessType } from '@/shared/utils/location';
@@ -306,13 +306,15 @@ export function LaunchDialogHost() {
                         tag: launchDialog.tag,
                         location: launchDialog.tag
                     });
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t(
-                                  'host.launch_dialog.toast.failed_to_resolve_launch_details'
-                              )
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t(
+                                      'host.launch_dialog.toast.failed_to_resolve_launch_details'
+                                  )
+                    });
                 }
             })
             .finally(() => {
@@ -355,11 +357,13 @@ export function LaunchDialogHost() {
                 setLaunchDialogOpen(false);
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('host.launch_dialog.toast.launch_action_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('host.launch_dialog.toast.launch_action_failed')
+            });
         } finally {
             setBusy('');
         }

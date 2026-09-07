@@ -3,6 +3,8 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mediaMocks = vi.hoisted(() => ({
     equipProfileDecoration: vi.fn(),
     collectInventoryItems: vi.fn(),
@@ -48,8 +50,19 @@ vi.mock('react-i18next', () => ({
         t: (key: string) => key
     })
 }));
-vi.mock('sonner', () => ({
-    toast: toastMocks
+vi.mock('@/services/toastService', () => ({
+    toast: {
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return toastMocks.error(options);
+                case 'success':
+                    return toastMocks.success(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
+    }
 }));
 
 import { useUserDialogProfileDecorations } from './useUserDialogProfileDecorations';
@@ -157,7 +170,10 @@ describe('useUserDialogProfileDecorations', () => {
             expectedWebsocket: 'wss://pipeline.vrchat.cloud'
         });
         expect(toastMocks.success).toHaveBeenCalledWith(
-            'dialog.inventory.equipped_success'
+            expect.objectContaining({
+                type: 'success',
+                title: 'dialog.inventory.equipped_success'
+            })
         );
     });
 
@@ -222,7 +238,10 @@ describe('useUserDialogProfileDecorations', () => {
         );
         await waitFor(() => expect(onProfileUpdated).toHaveBeenCalledOnce());
         expect(toastMocks.success).toHaveBeenCalledWith(
-            'dialog.inventory.profile_background_updated'
+            expect.objectContaining({
+                type: 'success',
+                title: 'dialog.inventory.profile_background_updated'
+            })
         );
     });
 
@@ -339,7 +358,9 @@ describe('useUserDialogProfileDecorations', () => {
         );
         expect(result.current.itemsBySlot.iconFrame[1]?.equipSlot).toBe('');
         expect(result.current.appearanceOverrides.iconFrame).toBeUndefined();
-        expect(toastMocks.error).toHaveBeenCalledWith('equip failed');
+        expect(toastMocks.error).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error', title: 'equip failed' })
+        );
     });
 
     it('optimistically unequips the current decoration', async () => {

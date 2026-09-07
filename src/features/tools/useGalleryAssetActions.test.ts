@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 import type { GalleryUploadTarget } from './galleryConstants';
 import type { GalleryAssetActionDeps } from './galleryTypes';
 import { createGalleryAssetActions } from './useGalleryAssetActions';
@@ -13,7 +15,18 @@ function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
     };
     const toast = {
         error: vi.fn(),
-        success: vi.fn()
+        success: vi.fn(),
+        add(options: AppToastOptions) {
+            if (options.type === 'error') {
+                toast.error(options);
+                return '';
+            }
+            if (options.type === 'success') {
+                toast.success(options);
+                return '';
+            }
+            throw new Error('Unhandled toast type: ' + options.type);
+        }
     };
     const actions = createGalleryAssetActions({
         FILE_TABS: {},
@@ -146,7 +159,10 @@ describe('createGalleryAssetActions', () => {
 
             expect(uploadInputRef.current.click).not.toHaveBeenCalled();
             expect(toast.error).toHaveBeenCalledWith(
-                'message.vrcplus.required'
+                expect.objectContaining({
+                    type: 'error',
+                    title: 'message.vrcplus.required'
+                })
             );
         }
     );

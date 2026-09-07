@@ -1,6 +1,8 @@
+import type { TFunction } from 'i18next';
 import { isValidElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { PlatformFileAnalysis } from '@/domain/entities/world';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
@@ -20,20 +22,33 @@ import { AvatarDialogTagList } from './AvatarDialogTagList';
 
 const EMPTY_VALUE = '\u2014';
 
-function getPlatformSummary(platformInfo: AvatarPlatformInfo): string {
-    return [
-        platformInfo?.pc?.platform
-            ? `PC ${platformInfo.pc.performanceRating || ''}`
-            : '',
-        platformInfo?.android?.platform
-            ? `Android ${platformInfo.android.performanceRating || ''}`
-            : '',
-        platformInfo?.ios?.platform
-            ? `iOS ${platformInfo.ios.performanceRating || ''}`
-            : ''
-    ]
+const PLATFORM_ROWS = [
+    { key: 'pc', label: 'pc_performance', analysisKey: 'standalonewindows' },
+    { key: 'android', label: 'android_performance', analysisKey: 'android' },
+    { key: 'ios', label: 'ios_performance', analysisKey: 'ios' }
+] as const;
+
+function getAttributes(
+    avatar: AvatarViewRecord,
+    hasImposter: boolean,
+    imposterVersion: string,
+    t: TFunction
+): string[] {
+    const styles = [avatar.styles?.primary, avatar.styles?.secondary]
         .filter(Boolean)
-        .join(', ');
+        .join(' / ');
+    return [
+        hasImposter
+            ? `${t('dialog.avatar.tags.impostor')}${imposterVersion ? ` v${imposterVersion}` : ''}`
+            : '',
+        styles ? `${t('view.favorite.avatars.styles')} ${styles}` : '',
+        avatar.unityPackageUrl || avatar.unityPackage?.url
+            ? t('dialog.avatar.tags.future_proofing')
+            : '',
+        avatar.tags.some((tag) => /quest/i.test(tag))
+            ? t('dialog.avatar.tags.fallback')
+            : ''
+    ].filter(Boolean);
 }
 
 export function AvatarDialogInfoTab({
@@ -42,6 +57,9 @@ export function AvatarDialogInfoTab({
     detail,
     tags,
     platformInfo,
+    fileAnalysis,
+    hasImposter,
+    imposterVersion,
     onOpenAuthor,
     onSaveMemo
 }: {
@@ -50,13 +68,16 @@ export function AvatarDialogInfoTab({
     detail: ReactNode;
     tags: AvatarTagGroups;
     platformInfo: AvatarPlatformInfo;
+    fileAnalysis: PlatformFileAnalysis;
+    hasImposter: boolean;
+    imposterVersion: string;
     onOpenAuthor(): void;
     onSaveMemo(value: string): void | Promise<void>;
 }) {
     const { t } = useTranslation();
 
     const { localTags, contentTags, authorTags, otherTags } = tags;
-    const platformSummary = getPlatformSummary(platformInfo);
+    const attributes = getAttributes(avatar, hasImposter, imposterVersion, t);
 
     return (
         <EntityDialogTabContent value="info" forceMount>
@@ -123,11 +144,38 @@ export function AvatarDialogInfoTab({
                             : EMPTY_VALUE
                     }
                 />
-                <EntityInfoBlock label={t('dialog.avatar.info.platform')} full>
-                    <span className="block text-xs whitespace-normal">
-                        {platformSummary || EMPTY_VALUE}
-                    </span>
-                </EntityInfoBlock>
+                {PLATFORM_ROWS.filter(
+                    ({ key }) => platformInfo?.[key]?.platform
+                ).map(({ key, label, analysisKey }) => {
+                    const rating = platformInfo[key].performanceRating;
+                    return (
+                        <EntityInfoBlock
+                            key={key}
+                            label={t(`dialog.avatar.info.${label}`)}
+                            value={
+                                [
+                                    rating
+                                        ? t(
+                                              `dialog.avatar.performance.ranks.${rating}`,
+                                              { defaultValue: rating }
+                                          )
+                                        : '',
+                                    fileAnalysis[analysisKey]?._fileSize
+                                ]
+                                    .filter(Boolean)
+                                    .join(' · ') || EMPTY_VALUE
+                            }
+                        />
+                    );
+                })}
+                {attributes.length ? (
+                    <EntityInfoBlock
+                        label={t('dialog.avatar.info.attributes')}
+                        full
+                    >
+                        <AvatarDialogTagList tags={attributes} />
+                    </EntityInfoBlock>
+                ) : null}
                 {localTags.length ? (
                     <EntityInfoBlock
                         label={t('dialog.avatar.label.local_tags')}

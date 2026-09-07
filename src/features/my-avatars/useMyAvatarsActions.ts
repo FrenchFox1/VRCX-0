@@ -1,12 +1,12 @@
 import type { ChangeEvent, Dispatch, RefObject, SetStateAction } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { AvatarUpdateRequest } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { selectAvatar as selectCurrentAvatar } from '@/services/avatarSelectionService';
+import { toast } from '@/services/toastService';
 import {
     readFileAsBase64,
     validateImageUploadFile,
@@ -192,7 +192,7 @@ export function useMyAvatarsActions({
             }
             applyAvatarUpdate(nextAvatar);
             setDetail(successMessage);
-            toast.success(successMessage);
+            toast.add({ type: 'success', title: successMessage });
         } catch (error) {
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
@@ -202,7 +202,7 @@ export function useMyAvatarsActions({
                     ? error.message
                     : t('view.my_avatars.toast.failed_to_update_avatar');
             setDetail(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             setUpdatingAvatarId((current) =>
                 current === avatarId ? '' : current
@@ -229,7 +229,10 @@ export function useMyAvatarsActions({
                 return;
             }
             setDetail('');
-            toast.success(t('view.my_avatars.success.avatar_selected'));
+            toast.add({
+                type: 'success',
+                title: t('view.my_avatars.success.avatar_selected')
+            });
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
                 const message =
@@ -237,7 +240,7 @@ export function useMyAvatarsActions({
                         ? error.message
                         : t('view.my_avatars.toast.failed_to_select_avatar');
                 setDetail(message);
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
             }
         } finally {
             setUpdatingAvatarId((current) =>
@@ -321,9 +324,10 @@ export function useMyAvatarsActions({
                 return;
             }
             setDetail(t('view.my_avatars.label.impostor_queued_for_creation'));
-            toast.success(
-                t('view.my_avatars.label.impostor_queued_for_creation')
-            );
+            toast.add({
+                type: 'success',
+                title: t('view.my_avatars.label.impostor_queued_for_creation')
+            });
         } catch (error) {
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
@@ -333,7 +337,7 @@ export function useMyAvatarsActions({
                     ? error.message
                     : t('view.my_avatars.toast.failed_to_create_impostor');
             setDetail(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             setUpdatingAvatarId((current) =>
                 current === avatarId ? '' : current
@@ -390,11 +394,15 @@ export function useMyAvatarsActions({
 
     function showImageValidationError(validation: { reason?: string }) {
         if (validation.reason === 'too_large') {
-            toast.error(t('view.my_avatars.error.selected_image_is_too_large'));
+            toast.add({
+                type: 'error',
+                title: t('view.my_avatars.error.selected_image_is_too_large')
+            });
         } else if (validation.reason === 'not_image') {
-            toast.error(
-                t('view.my_avatars.error.selected_file_is_not_an_image')
-            );
+            toast.add({
+                type: 'error',
+                title: t('view.my_avatars.error.selected_file_is_not_an_image')
+            });
         }
     }
 
@@ -470,7 +478,10 @@ export function useMyAvatarsActions({
                     value: avatar?.name || avatarId
                 })
             );
-            toast.success(t('view.my_avatars.success.avatar_image_updated'));
+            toast.add({
+                type: 'success',
+                title: t('view.my_avatars.success.avatar_image_updated')
+            });
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
                 const message =
@@ -480,7 +491,7 @@ export function useMyAvatarsActions({
                               'view.my_avatars.toast.failed_to_upload_avatar_image'
                           );
                 setDetail(message);
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
             }
         } finally {
             imageUploadAvatarRef.current = null;

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 import { useGalleryInventoryActions } from './useGalleryInventoryActions';
 
 describe('useGalleryInventoryActions', () => {
@@ -13,7 +15,18 @@ describe('useGalleryInventoryActions', () => {
         const setAuthBootstrap = vi.fn();
         const toast = {
             error: vi.fn(),
-            success: vi.fn()
+            success: vi.fn(),
+            add(options: AppToastOptions) {
+                if (options.type === 'error') {
+                    toast.error(options);
+                    return '';
+                }
+                if (options.type === 'success') {
+                    toast.success(options);
+                    return '';
+                }
+                throw new Error('Unhandled toast type: ' + options.type);
+            }
         };
         const currentUserSnapshot = {
             id: 'usr_self',
@@ -71,7 +84,10 @@ describe('useGalleryInventoryActions', () => {
         });
         expect(toast.error).not.toHaveBeenCalled();
         expect(toast.success).toHaveBeenCalledWith(
-            'message.gallery.profile_icon_changed'
+            expect.objectContaining({
+                type: 'success',
+                title: 'message.gallery.profile_icon_changed'
+            })
         );
 
         await actions.setProfileField('profilePicOverride', 'file_banner');
@@ -84,7 +100,10 @@ describe('useGalleryInventoryActions', () => {
             }
         });
         expect(toast.success).toHaveBeenLastCalledWith(
-            'message.gallery.profile_pic_changed'
+            expect.objectContaining({
+                type: 'success',
+                title: 'message.gallery.profile_pic_changed'
+            })
         );
     });
 });

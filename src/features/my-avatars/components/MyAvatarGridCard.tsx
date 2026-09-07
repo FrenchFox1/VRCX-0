@@ -15,10 +15,10 @@ import {
 import type { CSSProperties, ElementType, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { AvatarPlatformDots } from '@/components/avatars/AvatarPlatformDots';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
-import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -198,14 +198,11 @@ export function MyAvatarGridCard({
     const currentAvatarId = currentUserSnapshot?.currentAvatar || '';
 
     const isActive = avatar?.id === currentAvatarId;
-    const platforms = getAvailablePlatforms(avatar?.unityPackages);
     const disabled = resolveMyAvatarActionDisabled(avatar, isUpdating);
     const canWear = !disabled && !isActive;
     const tags: MyAvatarTag[] = avatar?.$tags || [];
     const visibleTags = tags.slice(0, 2);
     const hiddenTagCount = Math.max(0, tags.length - visibleTags.length);
-    const platformDotClassName =
-        'size-2.5 -ml-1 rounded-full border border-background/80 opacity-80 shadow-sm first:ml-0';
     const avatarName =
         avatar?.name || t('view.my_avatars.label.untitled_avatar');
     const overlayStyle: CSSProperties = {
@@ -349,34 +346,10 @@ export function MyAvatarGridCard({
                                         </div>
                                     ) : null}
                                 </div>
-                                {platforms?.isQuest || platforms?.isIos ? (
-                                    <div className="absolute top-1 right-1 flex">
-                                        {platforms?.isPC ? (
-                                            <span
-                                                className={cn(
-                                                    platformDotClassName,
-                                                    'bg-platform-pc'
-                                                )}
-                                            />
-                                        ) : null}
-                                        {platforms?.isQuest ? (
-                                            <span
-                                                className={cn(
-                                                    platformDotClassName,
-                                                    'bg-platform-quest'
-                                                )}
-                                            />
-                                        ) : null}
-                                        {platforms?.isIos ? (
-                                            <span
-                                                className={cn(
-                                                    platformDotClassName,
-                                                    'bg-platform-ios'
-                                                )}
-                                            />
-                                        ) : null}
-                                    </div>
-                                ) : null}
+                                <AvatarPlatformDots
+                                    unityPackages={avatar?.unityPackages}
+                                    className="absolute top-1 right-1"
+                                />
                                 <div
                                     className="absolute right-0 bottom-0 left-0 flex min-w-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent"
                                     style={overlayStyle}

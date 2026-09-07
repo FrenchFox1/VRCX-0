@@ -1,9 +1,9 @@
 import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { directAccessParse } from '@/services/directAccessService';
 import { getClipboardText } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 
 export function useDirectAccessAction() {
@@ -13,16 +13,17 @@ export function useDirectAccessAction() {
 
     const tryOpenDirectAccess = useCallback(
         async (input: unknown) => {
-            const toastId = toast.loading(
-                t('prompt.direct_access_omni.message.opening')
-            );
+            const toastId = toast.add({
+                type: 'loading',
+                title: t('prompt.direct_access_omni.message.opening')
+            });
             try {
                 return await directAccessParse(input);
             } catch (error) {
                 console.warn('Direct access failed:', error);
                 return false;
             } finally {
-                toast.dismiss(toastId);
+                toast.close(toastId);
             }
         },
         [t]
@@ -65,9 +66,10 @@ export function useDirectAccessAction() {
 
         busyRef.current = true;
         try {
-            const toastId = toast.loading(
-                t('prompt.direct_access_omni.message.opening')
-            );
+            const toastId = toast.add({
+                type: 'loading',
+                title: t('prompt.direct_access_omni.message.opening')
+            });
             const input = (await getClipboardText()).trim();
             try {
                 if (input && (await directAccessParse(input))) {
@@ -76,7 +78,7 @@ export function useDirectAccessAction() {
             } catch (error) {
                 console.warn('Direct access failed:', error);
             } finally {
-                toast.dismiss(toastId);
+                toast.close(toastId);
             }
 
             await openPrompt(

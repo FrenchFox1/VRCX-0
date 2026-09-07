@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     appRuntimeGroupInstancesRefresh: vi.fn(),
     getInstanceJoinHistory: vi.fn(),
-    restoreRuntimeGameLogProjectionFromPersistence: vi.fn(),
+    hydrateRuntimeGameLogProjection: vi.fn(),
     syncStartupServicesTask: vi.fn()
 }));
 
@@ -20,8 +20,7 @@ vi.mock('@/repositories/gameLogPersistenceRepository', () => ({
 }));
 
 vi.mock('./gameLogIngestService', () => ({
-    restoreRuntimeGameLogProjectionFromPersistence:
-        mocks.restoreRuntimeGameLogProjectionFromPersistence
+    hydrateRuntimeGameLogProjection: mocks.hydrateRuntimeGameLogProjection
 }));
 
 vi.mock('./startupServicesStatus', () => ({
@@ -53,15 +52,11 @@ describe('sessionBootstrapService', () => {
         mocks.getInstanceJoinHistory.mockResolvedValue(
             new Map([['wrld_test:123', 123456]])
         );
-        mocks.restoreRuntimeGameLogProjectionFromPersistence.mockResolvedValue(
-            false
-        );
+        mocks.hydrateRuntimeGameLogProjection.mockResolvedValue(false);
     });
 
     it('restores the persisted GameLog roster after the session becomes ready', async () => {
-        mocks.restoreRuntimeGameLogProjectionFromPersistence.mockResolvedValue(
-            true
-        );
+        mocks.hydrateRuntimeGameLogProjection.mockResolvedValue(true);
         const { beginAuthAttempt } = await import('./authAttempt');
         const { bootstrapAuthenticatedSession } =
             await import('./sessionBootstrapService');
@@ -72,9 +67,9 @@ describe('sessionBootstrapService', () => {
         );
 
         await vi.waitFor(() => {
-            expect(
-                mocks.restoreRuntimeGameLogProjectionFromPersistence
-            ).toHaveBeenCalledTimes(1);
+            expect(mocks.hydrateRuntimeGameLogProjection).toHaveBeenCalledTimes(
+                1
+            );
         });
     });
 
@@ -184,9 +179,7 @@ describe('sessionBootstrapService', () => {
         await oldBootstrap.catch(() => undefined);
         await Promise.resolve();
         expect(mocks.getInstanceJoinHistory).not.toHaveBeenCalled();
-        expect(
-            mocks.restoreRuntimeGameLogProjectionFromPersistence
-        ).not.toHaveBeenCalled();
+        expect(mocks.hydrateRuntimeGameLogProjection).not.toHaveBeenCalled();
         expect(useSessionStore.getState().isLoggedIn).toBe(false);
         expect(useSessionStore.getState().sessionPhase).toBe('authenticating');
     });

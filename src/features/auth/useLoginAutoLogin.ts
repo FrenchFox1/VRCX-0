@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { SavedAuthSnapshot } from '@/repositories/authRepository';
 import { executeReactAutoLogin } from '@/services/authAutoLoginService';
+import { getLoginErrorMessage as getErrorMessage } from '@/services/authErrorDisplayService';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
-
-import { getLoginErrorMessage as getErrorMessage } from './loginDisplay';
 
 type LoginAutoLoginOptions = {
     activeSavedUserId: string;
@@ -131,13 +130,15 @@ export function useLoginAutoLogin({
                     autoLoginInFlightKeyRef.current = '';
                 }
                 autoLoginSuppressedKeyRef.current = autoLoginSnapshotKey;
-                toast.error(
-                    getErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: getErrorMessage(
                         error,
                         t('view.auth.toast.automatic_login_failed_unexpectedly')
                     ),
-                    { duration: Infinity, closeButton: true }
-                );
+                    timeout: 0,
+                    data: { closeButton: true }
+                });
             });
 
         return () => {

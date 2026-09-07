@@ -1,7 +1,6 @@
-import { toast } from 'sonner';
-
 import { commands } from '@/platform/tauri/bindings';
 import type { FriendProfileLoadStatusPayload } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import {
     type FriendProfileLoadState,
     useRuntimeStore
@@ -118,9 +117,12 @@ export async function startFriendProfileLoad(): Promise<void> {
         payload.loaded === 0 &&
         payload.failed === 0
     ) {
-        toast.success(
-            i18n.t('view.friend_list.label.friend_details_are_already_loaded')
-        );
+        toast.add({
+            type: 'success',
+            title: i18n.t(
+                'view.friend_list.label.friend_details_are_already_loaded'
+            )
+        });
     }
 }
 

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS } from '@/repositories/avatarSearchProviderRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import type { AvatarSearchProviderConfig } from '@/repositories/avatarSearchProviderRepository';
+import { toast } from '@/services/toastService';
 import { onPreferenceChanged } from '@/shared/events/preferenceEvents';
 import {
     type LanguageOption,
@@ -99,11 +99,15 @@ export function useSearchConfig() {
                 applyAvatarProviderConfig(config);
             })
             .catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.search.toast.failed_to_load_avatar_providers')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.search.toast.failed_to_load_avatar_providers'
+                              )
+                });
             });
 
         return () => {
@@ -118,11 +122,15 @@ export function useSearchConfig() {
         avatarSearchProviderRepository
             .saveSelectedProvider(nextProvider)
             .catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.search.toast.failed_to_save_avatar_provider')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.search.toast.failed_to_save_avatar_provider'
+                              )
+                });
             });
     }
 

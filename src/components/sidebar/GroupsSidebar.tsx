@@ -1,7 +1,6 @@
 import { ChevronDownIcon, UsersIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
@@ -26,6 +25,7 @@ import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
+import { toast } from '@/services/toastService';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
@@ -309,15 +309,20 @@ function GroupInstanceRow({
         }
         try {
             await selfInviteToInstance(location, parsedLocation.shortName);
-            toast.success(t('message.invite.self_sent'));
+            toast.add({
+                type: 'success',
+                title: t('message.invite.self_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.groups_sidebar.toast.failed_to_send_self_invite'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.groups_sidebar.toast.failed_to_send_self_invite'
+                          )
+            });
         }
     }
 
@@ -387,9 +392,10 @@ function GroupInstanceRow({
                     </div>
                 }
             />
-            <ContextMenuContent className="w-52">
+            <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-52">
                 <LaunchModeContextMenuGroup
                     disabled={!canUseInstanceAction}
+                    instanceClosed={Boolean(instanceRef?.closedAt)}
                     errorMessage={t(
                         'component.groups_sidebar.toast.failed_to_launch_instance'
                     )}

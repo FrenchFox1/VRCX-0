@@ -105,7 +105,7 @@ export function usePlayerListViewData({
     const isPlayerListSourceUnavailable = Boolean(
         isGameRunning &&
         loadStatus === 'ready' &&
-        context.source !== 'database' &&
+        !context.playerFactsKnown &&
         playerSourceRows.length === 0 &&
         !parsedLocation.isTraveling &&
         !parsedLocation.isOffline

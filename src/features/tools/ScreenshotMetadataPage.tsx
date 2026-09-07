@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
-import { toast } from 'sonner';
 
 import { PageScaffold } from '@/components/layout/PageScaffold';
 import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import mediaRepository from '@/repositories/mediaRepository';
+import { toast } from '@/services/toastService';
 import { withUploadTimeout } from '@/shared/utils/imageUpload';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -225,7 +225,7 @@ export function ScreenshotMetadataPage() {
                     setMetadata(null);
                     setImageUrl('');
                     setMetadataError(message);
-                    toast.error(message);
+                    toast.add({ type: 'error', title: message });
                     return;
                 }
 
@@ -265,7 +265,7 @@ export function ScreenshotMetadataPage() {
                         ? error.message
                         : 'Failed to load screenshot metadata.';
                 setMetadataError(message);
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
             } finally {
                 if (metadataRequestRef.current === requestId) {
                     setIsMetadataLoading(false);
@@ -335,11 +335,13 @@ export function ScreenshotMetadataPage() {
                 false
             );
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.toast.failed_to_open_folder')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.toast.failed_to_open_folder')
+            });
         }
     }
 
@@ -350,13 +352,18 @@ export function ScreenshotMetadataPage() {
 
         try {
             await mediaRepository.copyImageToClipboard(metadata.filePath);
-            toast.success(t('message.image.copied_to_clipboard'));
+            toast.add({
+                type: 'success',
+                title: t('message.image.copied_to_clipboard')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.toast.failed_to_copy_image')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.toast.failed_to_copy_image')
+            });
         }
     }
 
@@ -383,18 +390,26 @@ export function ScreenshotMetadataPage() {
             const deleted =
                 await mediaRepository.deleteScreenshotMetadata(filePath);
             if (!deleted) {
-                toast.error(t('message.screenshot_metadata.delete_failed'));
+                toast.add({
+                    type: 'error',
+                    title: t('message.screenshot_metadata.delete_failed')
+                });
                 return;
             }
 
-            toast.success(t('message.screenshot_metadata.deleted'));
+            toast.add({
+                type: 'success',
+                title: t('message.screenshot_metadata.deleted')
+            });
             await loadScreenshot(filePath, true);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('message.screenshot_metadata.delete_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('message.screenshot_metadata.delete_failed')
+            });
         } finally {
             setIsDeletingMetadata(false);
         }
@@ -424,18 +439,23 @@ export function ScreenshotMetadataPage() {
 
         try {
             await mediaRepository.deleteScreenshotFile(filePath);
-            toast.success(t('message.screenshot_metadata.file_deleted'));
+            toast.add({
+                type: 'success',
+                title: t('message.screenshot_metadata.file_deleted')
+            });
             if (nextTarget) {
                 updateRoutePath(nextTarget.filePath, nextTarget.folderPath);
                 return;
             }
             openGalleryRoute();
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('message.screenshot_metadata.file_delete_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('message.screenshot_metadata.file_delete_failed')
+            });
         } finally {
             setIsDeletingFile(false);
         }
@@ -446,11 +466,11 @@ export function ScreenshotMetadataPage() {
             return;
         }
         if (!isVrcPlusSupporter) {
-            toast.error(t('message.vrcplus.required'));
+            toast.add({ type: 'error', title: t('message.vrcplus.required') });
             return;
         }
         if (metadata.fileSizeBytes > 10_000_000) {
-            toast.error(t('message.file.too_large'));
+            toast.add({ type: 'error', title: t('message.file.too_large') });
             return;
         }
 
@@ -462,13 +482,18 @@ export function ScreenshotMetadataPage() {
             await withUploadTimeout(
                 mediaRepository.uploadGalleryImage(base64Body)
             );
-            toast.success(t('message.gallery.uploaded'));
+            toast.add({
+                type: 'success',
+                title: t('message.gallery.uploaded')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('message.gallery.failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('message.gallery.failed')
+            });
         } finally {
             setIsUploadingScreenshot(false);
         }
@@ -537,7 +562,7 @@ export function ScreenshotMetadataPage() {
                     : 'Failed to search screenshot metadata.';
             setSearchResults({ rows: [], images: [] });
             setMetadataError(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             if (searchRequestRef.current === requestId) {
                 setIsSearchLoading(false);
@@ -564,9 +589,12 @@ export function ScreenshotMetadataPage() {
         event.preventDefault();
         const filePath = getDroppedScreenshotPath(event);
         if (!filePath) {
-            toast.error(
-                t('view.tools.error.dropped_screenshot_path_is_not_available')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.tools.error.dropped_screenshot_path_is_not_available'
+                )
+            });
             return;
         }
         resetSearchContext({ clearQuery: true });

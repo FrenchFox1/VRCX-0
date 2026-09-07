@@ -1,6 +1,5 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     readWorldCacheInfo,
@@ -14,6 +13,7 @@ import currentUserProfileService from '@/services/currentUserProfileService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { persistFavoriteWorldDetails } from '@/services/favoriteWorldCacheService';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import type { WorldWorldSideData } from './useWorldDialogData';
@@ -108,16 +108,21 @@ export function useWorldActions({
             }
             persistFavoriteWorldDetails(nextWorld);
             setWorld(nextWorld);
-            toast.success(t('dialog.world.success.world_refreshed'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.world.success.world_refreshed')
+            });
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_refresh_world')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.world.toast.failed_to_refresh_world')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -137,20 +142,28 @@ export function useWorldActions({
                 worldDialogShortName
             );
             if (opened) {
-                toast.success(
-                    t('dialog.world.success.vrchat_launch_request_sent')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('dialog.world.success.vrchat_launch_request_sent')
+                });
                 return;
             }
-            toast.error(
-                t('dialog.world.error.unable_to_open_this_instance_in_vrchat')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'dialog.world.error.unable_to_open_this_instance_in_vrchat'
+                )
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_launch_vrchat_instance')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.world.toast.failed_to_launch_vrchat_instance'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -204,17 +217,20 @@ export function useWorldActions({
                     currentUserSnapshot: nextUser
                 });
             }
-            toast.success(
-                isHomeWorld
+            toast.add({
+                type: 'success',
+                title: isHomeWorld
                     ? t('dialog.world.toast.home_world_reset')
                     : t('message.world.home_updated')
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_update_home_world')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.world.toast.failed_to_update_home_world')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -243,11 +259,12 @@ export function useWorldActions({
             }
             const nextMemo = String(nextEntry.memo || '');
             setMemo(nextMemo);
-            toast.success(
-                nextMemo
+            toast.add({
+                type: 'success',
+                title: nextMemo
                     ? t('dialog.world.toast.memo_saved')
                     : t('dialog.world.toast.memo_cleared')
-            );
+            });
         } catch (error) {
             if (
                 activeWorldTargetRef.current.worldId !== targetWorldId ||
@@ -256,11 +273,13 @@ export function useWorldActions({
             ) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_save_memo')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.world.toast.failed_to_save_memo')
+            });
         }
     }
 
@@ -272,11 +291,15 @@ export function useWorldActions({
         try {
             await openFolderAndSelectItem(cachePath, true);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_open_world_cache_folder')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.world.toast.failed_to_open_world_cache_folder'
+                          )
+            });
         }
     }
 
@@ -295,9 +318,12 @@ export function useWorldActions({
                 sdkUnityVersion
             );
             if (!args) {
-                toast.error(
-                    t('dialog.world.error.world_cache_location_unavailable')
-                );
+                toast.add({
+                    type: 'error',
+                    title: t(
+                        'dialog.world.error.world_cache_location_unavailable'
+                    )
+                });
                 return;
             }
             await assetBundleRepository.deleteCache(
@@ -314,16 +340,21 @@ export function useWorldActions({
                 return;
             }
             setWorldSideData((current) => ({ ...current, cache }));
-            toast.success(t('dialog.world.success.world_cache_deleted'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.world.success.world_cache_deleted')
+            });
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_delete_world_cache')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.world.toast.failed_to_delete_world_cache')
+            });
         } finally {
             if (actionStatusRef.current === 'cache') {
                 actionStatusRef.current = 'idle';

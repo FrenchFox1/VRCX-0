@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import { clearEntityQueryCache } from '@/lib/entityQueryCache';
 import {
     type AuthenticatedRuntimeSession,
@@ -11,6 +9,7 @@ import authRepository, {
     type SavedCredentialRecord
 } from '@/repositories/authRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import { toast } from '@/services/toastService';
 import { clearUserDialogCaches } from '@/services/userDialogSessionCacheService';
 import { isRecord } from '@/shared/utils/record';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
@@ -323,7 +322,10 @@ async function completeTwoFactorChallenge(
             throw loginSessionFailureError(next);
         }
         if (next.error) {
-            toast.error(await getTwoFactorInputErrorMessage(mode));
+            toast.add({
+                type: 'error',
+                title: await getTwoFactorInputErrorMessage(mode)
+            });
             continue;
         }
         challengeAttemptId = next.attemptId;
@@ -458,11 +460,12 @@ export async function logoutFromReactShell() {
     runtimeStore.setStartupTask('auth', 'completed', 'Signed out from VRCX-0.');
 
     if (currentUserDisplayName) {
-        toast.success(
-            await i18n.t('message.auth.logout_greeting', {
+        toast.add({
+            type: 'success',
+            title: await i18n.t('message.auth.logout_greeting', {
                 name: currentUserDisplayName
             })
-        );
+        });
     }
 
     return true;

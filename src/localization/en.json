@@ -400,6 +400,7 @@
             "reset": "Reset",
             "back": "Back",
             "view_details": "View Details",
+            "view_profile": "View Profile",
             "configure": "Configure",
             "refresh": "Refresh",
             "close": "Close",
@@ -817,7 +818,6 @@
             "group_by_instance": "Group by Instance",
             "split_favorite_friends": "Show Favorite Groups",
             "show_grouped_friends": "Show Grouped Friends",
-            "show_current_user_in_same_instance": "Show yourself in the same instance",
             "same_instance_above_favorites": "Prioritize Same Instance",
             "sort_secondary": "Then by",
             "sort_tertiary": "Then by",
@@ -3085,6 +3085,12 @@
                 "failed_to_load_proxy_settings": "Failed to load proxy settings",
                 "failed_to_save_proxy_settings": "Failed to save proxy settings",
                 "failed_to_remove_saved_account": "Failed to remove saved account",
+                "invalid_credentials": "Invalid username, email, or password.",
+                "missing_credentials": "Missing valid login credentials. Please sign in again.",
+                "session_verification_required": "This session requires additional verification. Please sign in manually.",
+                "two_factor_unavailable": "This account requires two-factor authentication, but no supported verification method is available.",
+                "saved_credentials_invalid": "Saved login credentials are no longer valid. The saved account has been removed. Please sign in again.",
+                "new_location_login": "It looks like you're logging in from somewhere new! Check your email for a message from VRChat.",
                 "failed_to_authenticate": "Failed to authenticate",
                 "failed_to_restore_the_saved_account": "Failed to restore the saved account"
             },
@@ -4208,7 +4214,8 @@
                 "delete_impostor": "Delete Impostor",
                 "regenerate_impostor": "Regenerate Impostor",
                 "create_impostor": "Create Impostor",
-                "manage_tags": "Manage Tags"
+                "manage_tags": "Manage Tags",
+                "open_cache": "Open Cache"
             },
             "info": {
                 "header": "Info",
@@ -4235,7 +4242,8 @@
                 "memo": "Local Note",
                 "memo_placeholder": "Click to add a local note",
                 "listings": "Listings",
-                "gallery": "Gallery"
+                "gallery": "Gallery",
+                "attributes": "Attributes"
             },
             "performance": {
                 "header": "Performance",
@@ -4244,6 +4252,15 @@
                 "uncompressed_size": "Uncompressed size",
                 "texture_memory": "Texture memory",
                 "analysis_loading": "Loading detailed performance analysis…",
+                "ranks": {
+                    "Excellent": "Excellent",
+                    "Good": "Good",
+                    "Medium": "Medium",
+                    "Poor": "Poor",
+                    "VeryPoor": "Very Poor"
+                },
+                "pc_rules": "PC performance rules",
+                "mobile_rules": "Android / iOS performance rules",
                 "analysis_pending": "Detailed performance analysis is not ready yet. Refresh the avatar to try again.",
                 "analysis_unavailable": "Detailed performance analysis is unavailable for this platform.",
                 "yes": "Yes",
@@ -4263,27 +4280,27 @@
                     "blend_shapes": "Blend shapes",
                     "bounds": "Bounds",
                     "physbone_components": "PhysBone components",
-                    "affected_transforms": "PhysBone affected transforms",
+                    "affected_transforms": "PhysBone transforms",
                     "physbone_colliders": "PhysBone colliders",
-                    "collision_checks": "PhysBone collision checks",
-                    "contacts": "Contacts",
+                    "collision_checks": "PhysBone collision check count",
+                    "contacts": "Contact count",
                     "constraints": "Constraints",
                     "constraint_depth": "Constraint depth",
                     "animators": "Animators",
                     "particle_systems": "Particle systems",
-                    "max_particles": "Total particles active",
+                    "max_particles": "Total max particles",
                     "mesh_particle_triangles": "Mesh particle triangles",
                     "lights": "Lights",
                     "audio_sources": "Audio sources",
                     "raycasts": "Raycasts",
-                    "cloths": "Cloths",
-                    "cloth_vertices": "Cloth vertices",
+                    "cloths": "Cloth meshes",
+                    "cloth_vertices": "Cloth max vertices",
                     "trail_renderers": "Trail renderers",
                     "line_renderers": "Line renderers",
-                    "physics_colliders": "Physics colliders",
-                    "rigidbodies": "Physics rigidbodies",
-                    "particle_trails": "Particle trails enabled",
-                    "particle_collision": "Particle collision enabled"
+                    "physics_colliders": "Collider count",
+                    "rigidbodies": "Rigidbodies",
+                    "particle_trails": "Particle trails",
+                    "particle_collision": "Particle collisions"
                 }
             },
             "json": {

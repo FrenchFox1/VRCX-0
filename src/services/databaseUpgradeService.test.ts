@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     toastWarning: vi.fn(),
     appDatabaseUpgradePreflight: vi.fn(),
@@ -20,9 +22,16 @@ const mocks = vi.hoisted(() => ({
     showSQLiteErrorDialog: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        warning: mocks.toastWarning
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'warning':
+                    return mocks.toastWarning(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 

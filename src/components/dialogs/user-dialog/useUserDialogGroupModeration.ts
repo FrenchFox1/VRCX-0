@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -13,6 +12,7 @@ import {
     runGroupQuickModerationAction,
     type GroupQuickModerationAction
 } from '@/repositories/groupQuickModerationRepository';
+import { toast } from '@/services/toastService';
 
 import {
     createDelayedVisibleController,
@@ -166,14 +166,21 @@ export function useUserDialogGroupModeration({
                     current && availableBanGroupIds.has(current) ? current : ''
                 );
                 if (output.stale) {
-                    toast.info(t('dialog.user.group_moderation.stale'));
+                    toast.add({
+                        type: 'info',
+                        title: t('dialog.user.group_moderation.stale')
+                    });
                 }
                 if (output.membershipErrorCount > 0) {
-                    toast.warning(
-                        t('dialog.user.group_moderation.membership_partial', {
-                            count: output.membershipErrorCount
-                        })
-                    );
+                    toast.add({
+                        type: 'warning',
+                        title: t(
+                            'dialog.user.group_moderation.membership_partial',
+                            {
+                                count: output.membershipErrorCount
+                            }
+                        )
+                    });
                 }
             })
             .catch((error: unknown) => {
@@ -229,18 +236,20 @@ export function useUserDialogGroupModeration({
                 )
             }));
             setPendingKickGroupId('');
-            toast.success(
-                t('dialog.user.group_moderation.kick_success', {
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.group_moderation.kick_success', {
                     value: group.name || group.groupId
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('dialog.user.group_moderation.kick_failed')
                 )
-            );
+            });
         } finally {
             setKickBusyGroupId('');
         }
@@ -255,18 +264,20 @@ export function useUserDialogGroupModeration({
         try {
             await runAction(selectedBanGroupId, 'ban');
             setPendingBanGroupId('');
-            toast.success(
-                t('dialog.user.group_moderation.ban_success', {
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.group_moderation.ban_success', {
                     value: group?.name || selectedBanGroupId || targetUserId
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('dialog.user.group_moderation.ban_failed')
                 )
-            );
+            });
         } finally {
             setBanBusy(false);
         }

@@ -10,9 +10,9 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import mediaRepository from '@/repositories/mediaRepository';
+import { toast } from '@/services/toastService';
 import { Button } from '@/ui/shadcn/button';
 import { Dialog, DialogContent, DialogTitle } from '@/ui/shadcn/dialog';
 import { Separator } from '@/ui/shadcn/separator';
@@ -82,12 +82,18 @@ export function FullscreenImageViewer({
         }
 
         setCopying(true);
-        const toastId = toast.info(t('message.image.downloading'));
+        const toastId = toast.add({
+            type: 'info',
+            title: t('message.image.downloading')
+        });
 
         try {
             if (sourcePath) {
                 await mediaRepository.copyImageToClipboard(sourcePath);
-                toast.success(t('message.image.copied_to_clipboard'));
+                toast.add({
+                    type: 'success',
+                    title: t('message.image.copied_to_clipboard')
+                });
                 return;
             }
 
@@ -102,13 +108,16 @@ export function FullscreenImageViewer({
                     [mimeType]: blob
                 })
             ]);
-            toast.success(t('message.image.copied_to_clipboard'));
+            toast.add({
+                type: 'success',
+                title: t('message.image.copied_to_clipboard')
+            });
         } catch (error) {
             console.error('Failed to copy image:', error);
-            toast.error(t('message.image.copy_failed'));
+            toast.add({ type: 'error', title: t('message.image.copy_failed') });
         } finally {
             setCopying(false);
-            toast.dismiss(toastId);
+            toast.close(toastId);
         }
     }
 
@@ -118,7 +127,10 @@ export function FullscreenImageViewer({
         }
 
         setDownloading(true);
-        const toastId = toast.info(t('message.image.downloading'));
+        const toastId = toast.add({
+            type: 'info',
+            title: t('message.image.downloading')
+        });
 
         try {
             const base64Data = await getDownloadImageBase64({
@@ -130,14 +142,20 @@ export function FullscreenImageViewer({
                 base64Data
             );
             if (savedPath) {
-                toast.success(t('message.image.downloaded'));
+                toast.add({
+                    type: 'success',
+                    title: t('message.image.downloaded')
+                });
             }
         } catch (error) {
             console.error('Failed to download image:', error);
-            toast.error(t('message.image.download_failed'));
+            toast.add({
+                type: 'error',
+                title: t('message.image.download_failed')
+            });
         } finally {
             setDownloading(false);
-            toast.dismiss(toastId);
+            toast.close(toastId);
         }
     }
 

@@ -1,7 +1,6 @@
-import { toast } from 'sonner';
-
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
+import { toast } from '@/services/toastService';
 
 import type {
     AvatarImposterAction,
@@ -99,16 +98,20 @@ export function createAvatarModerationActions({
             } catch {
                 refreshFailed = true;
             }
-            toast.success(
-                refreshFailed
+            toast.add({
+                type: 'success',
+                title: refreshFailed
                     ? t(
                           'dialog.avatar.toast.value_avatar_state_refresh_failed',
                           { value: label.success }
                       )
                     : label.success
-            );
+            });
         } catch (error) {
-            toast.error(userFacingErrorMessage(error, label.error));
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(error, label.error)
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -156,19 +159,22 @@ export function createAvatarModerationActions({
             }
             moderationRevisionRef.current += 1;
             setAvatarBlocked(enabled);
-            toast.success(
-                enabled
+            toast.add({
+                type: 'success',
+                title: enabled
                     ? t('message.avatar.blocked')
                     : t('dialog.avatar.toast.avatar_unblocked')
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.avatar.toast.failed_to_update_avatar_moderation'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.avatar.toast.failed_to_update_avatar_moderation'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');

@@ -6,6 +6,8 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 import type { InstanceHistoryEntryRow } from './instance-activity/instanceActivityTypes';
 
 const mocks = vi.hoisted(() => ({
@@ -38,10 +40,18 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: translate })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        success: mocks.toastSuccess
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -390,7 +400,10 @@ describe('InstanceHistoryPage', () => {
         await waitFor(() => expect(mocks.confirm).toHaveBeenCalledTimes(1));
         expect(mocks.deleteGameLogInstance).not.toHaveBeenCalled();
         expect(mocks.toastError).toHaveBeenCalledWith(
-            'dialog.previous_instances.error.this_user_instance_row_cannot_be_deleted_without_event_ids'
+            expect.objectContaining({
+                type: 'error',
+                title: 'dialog.previous_instances.error.this_user_instance_row_cannot_be_deleted_without_event_ids'
+            })
         );
         expect(screen.getByText('wrld_without_events:1')).not.toBeNull();
     });
@@ -443,7 +456,12 @@ describe('InstanceHistoryPage', () => {
         );
 
         await waitFor(() =>
-            expect(mocks.toastError).toHaveBeenCalledWith('delete failed')
+            expect(mocks.toastError).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'error',
+                    title: 'delete failed'
+                })
+            )
         );
         expect(screen.getByText('wrld_keep:1')).not.toBeNull();
     });

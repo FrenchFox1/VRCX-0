@@ -64,7 +64,7 @@ export function applyRuntimeGameLogProjection(projection: GameLogProjection) {
     });
 }
 
-export async function restoreRuntimeGameLogProjectionFromPersistence(): Promise<boolean> {
+export async function hydrateRuntimeGameLogProjection(): Promise<boolean> {
     const initialState = useRuntimeStore.getState();
     const currentUserId = normalizeString(initialState.auth.currentUserId);
     if (
@@ -74,34 +74,26 @@ export async function restoreRuntimeGameLogProjectionFromPersistence(): Promise<
         return false;
     }
 
-    const currentLocation = normalizeLocationValue(
-        initialState.gameState.currentLocation
-    );
-    const requestedLocation = parseLocation(currentLocation).isRealInstance
-        ? currentLocation
-        : '';
-    const snapshot = await loadCurrentInstanceRoster({
-        currentUserId,
-        currentLocation: requestedLocation,
-        currentLocationStartedAt:
-            initialState.gameState.currentLocationStartedAt || ''
-    });
+    const snapshot = await loadCurrentInstanceRoster({ currentLocation: '' });
     const snapshotLocation = normalizeLocationValue(snapshot.context.location);
     const parsedSnapshotLocation = parseLocation(snapshotLocation);
-    if (!parsedSnapshotLocation.isRealInstance) {
+    if (
+        snapshot.context.source !== 'runtime' ||
+        !parsedSnapshotLocation.isRealInstance
+    ) {
         return false;
     }
 
+    const stillRunning = await commands.appIsGameRunning().catch(() => false);
     const latestState = useRuntimeStore.getState();
-    const latestLocation = parseLocation(latestState.gameState.currentLocation);
     if (
         normalizeString(latestState.auth.currentUserId) !== currentUserId ||
-        latestState.gameState.currentLocationPlayers.length > 0 ||
-        (latestLocation.isRealInstance &&
-            (latestLocation.worldId !== parsedSnapshotLocation.worldId ||
-                latestLocation.instanceId !==
-                    parsedSnapshotLocation.instanceId)) ||
-        !(await commands.appIsGameRunning().catch(() => false))
+        latestState.auth.currentUserEndpoint !==
+            initialState.auth.currentUserEndpoint ||
+        latestState.gameState !== initialState.gameState ||
+        latestState.runtimeEvents.gameLogProjection?.count !==
+            initialState.runtimeEvents.gameLogProjection?.count ||
+        !stillRunning
     ) {
         return false;
     }

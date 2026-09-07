@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
+import { toast } from '@/services/toastService';
 import { getNotificationLifecycleBucket } from '@/shared/utils/notificationLifecycle';
 import {
     isNotificationExpired,
@@ -83,11 +83,15 @@ export function useNotificationRows({
             if (!active) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.notifications.toast.failed_to_load_notifications')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.notifications.toast.failed_to_load_notifications'
+                          )
+            });
         });
         return () => {
             active = false;

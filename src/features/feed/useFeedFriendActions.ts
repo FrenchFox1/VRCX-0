@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     canRequestInviteFromFeedFriend,
@@ -23,6 +22,7 @@ import {
     addFeedHiddenUserPreference,
     removeFeedHiddenUserPreference
 } from '@/services/preferencesService';
+import { toast } from '@/services/toastService';
 import { checkCanInvite, checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -105,11 +105,13 @@ export function useFeedFriendActions(): FeedFriendActions {
             try {
                 await addFeedHiddenUserPreference(userId);
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.settings.toast.failed_to_save_setting')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.settings.toast.failed_to_save_setting')
+                });
             }
         },
         [t]
@@ -120,11 +122,13 @@ export function useFeedFriendActions(): FeedFriendActions {
             try {
                 await removeFeedHiddenUserPreference(userId);
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.settings.toast.failed_to_save_setting')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.settings.toast.failed_to_save_setting')
+                });
             }
         },
         [t]
@@ -166,13 +170,18 @@ export function useFeedFriendActions(): FeedFriendActions {
                     normalizedLocation,
                     parsedLocation.shortName || ''
                 );
-                toast.success(t('message.invite.self_sent'));
+                toast.add({
+                    type: 'success',
+                    title: t('message.invite.self_sent')
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.feed.toast.failed_to_send_self_invite')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.feed.toast.failed_to_send_self_invite')
+                });
             }
         },
         [t]
@@ -185,28 +194,31 @@ export function useFeedFriendActions(): FeedFriendActions {
                 return;
             }
             if (!currentInviteLocation) {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         'view.feed.error.cannot_invite_no_current_vrchat_location_is_available'
                     )
-                );
+                });
                 return;
             }
             if (!canInviteFromCurrentLocation) {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         'view.feed.error.cannot_invite_from_the_current_instance_type'
                     )
-                );
+                });
                 return;
             }
             const parsedLocation = parseLocation(currentInviteLocation);
             if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         'view.feed.error.cannot_invite_current_location_is_not_a_concrete_instance'
                     )
-                );
+                });
                 return;
             }
             const result = await confirm({
@@ -230,13 +242,15 @@ export function useFeedFriendActions(): FeedFriendActions {
                     worldId: parsedLocation.worldId,
                     rsvp: true
                 });
-                toast.success(t('message.invite.sent'));
+                toast.add({ type: 'success', title: t('message.invite.sent') });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.feed.toast.failed_to_send_invite')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.feed.toast.failed_to_send_invite')
+                });
             }
         },
         [
@@ -255,11 +269,12 @@ export function useFeedFriendActions(): FeedFriendActions {
                 return;
             }
             if (!canRequestInviteFromFeedFriend(friend, currentUserSnapshot)) {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         'view.feed.error.cannot_request_invite_friend_is_not_online'
                     )
-                );
+                });
                 return;
             }
             const result = await confirm({
@@ -278,13 +293,18 @@ export function useFeedFriendActions(): FeedFriendActions {
                 await sendRequestInviteToUser({
                     receiverUserId: friendId
                 });
-                toast.success(t('view.feed.success.invite_request_sent'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.feed.success.invite_request_sent')
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.feed.toast.failed_to_request_invite')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.feed.toast.failed_to_request_invite')
+                });
             }
         },
         [confirm, currentUserSnapshot, normalizedCurrentUserId, t]
@@ -309,13 +329,18 @@ export function useFeedFriendActions(): FeedFriendActions {
                     userId: friendId,
                     emojiId: normalizeId(result.value)
                 });
-                toast.success(t('view.feed.success.boop_sent'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.feed.success.boop_sent')
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.feed.toast.failed_to_send_boop')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.feed.toast.failed_to_send_boop')
+                });
             }
         },
         [boopPrompt, normalizedCurrentUserId, t]

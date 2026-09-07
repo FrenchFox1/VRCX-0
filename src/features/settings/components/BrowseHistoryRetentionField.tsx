@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { browseHistoryRepository } from '@/repositories/browseHistoryRepository';
+import { toast } from '@/services/toastService';
 import {
     Select,
     SelectContent,
@@ -61,7 +61,10 @@ export function BrowseHistoryRetentionField() {
         setRetentionDays(next);
         void browseHistoryRepository.setRetentionDays(next).catch(() => {
             setRetentionDays(previous);
-            toast.error(t('browse_history.retention.update_failed'));
+            toast.add({
+                type: 'error',
+                title: t('browse_history.retention.update_failed')
+            });
         });
     }
 

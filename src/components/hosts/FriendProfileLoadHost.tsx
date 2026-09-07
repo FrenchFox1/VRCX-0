@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { FriendListUserLoadDialog } from '@/components/dialogs/FriendListUserLoadDialog';
 import {
     cancelFriendProfileLoad,
     minimizeFriendProfileLoadDialog
 } from '@/services/friendProfileLoadService';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 export function FriendProfileLoadHost() {
@@ -38,19 +38,26 @@ export function FriendProfileLoadHost() {
         if (status === 'completed') {
             notifiedRunRef.current = runId;
             if (loadedFriends > 0) {
-                toast.success(
-                    t('view.friends.dynamic.loaded_value_friend_profiles', {
-                        value: loadedFriends
-                    })
-                );
+                toast.add({
+                    type: 'success',
+                    title: t(
+                        'view.friends.dynamic.loaded_value_friend_profiles',
+                        {
+                            value: loadedFriends
+                        }
+                    )
+                });
             }
             return;
         }
         if (status === 'cancelled') {
             notifiedRunRef.current = runId;
-            toast.warning(
-                t('view.friend_list.success.friend_detail_loading_cancelled')
-            );
+            toast.add({
+                type: 'warning',
+                title: t(
+                    'view.friend_list.success.friend_detail_loading_cancelled'
+                )
+            });
             return;
         }
     }, [loadedFriends, runId, status, t]);

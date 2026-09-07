@@ -36,9 +36,9 @@ impl LocalActivityPageWarmupStore {
 
 impl ActivityPageWarmupStore for LocalActivityPageWarmupStore {
     fn warm_activity_page(&self, owner_user_id: OwnerId, range_days: i64) -> Result<()> {
-        vrcx_0_persistence::activity_page::activity_page_view_build(
-            self.db.as_ref(),
-            vrcx_0_persistence::activity_page::ActivityPageBuildInput {
+        vrcx_0_application_activity::activity_page::activity_page_view_build(
+            &crate::LocalActivityPageStore::new(self.db.as_ref()),
+            vrcx_0_application_activity::activity_page::ActivityPageBuildInput {
                 owner_user_id,
                 range_days,
                 utc_offset_minutes: local_utc_offset_minutes(),
@@ -46,8 +46,7 @@ impl ActivityPageWarmupStore for LocalActivityPageWarmupStore {
                 companion_order: Default::default(),
                 force_refresh: false,
             },
-        )
-        .map_err(map_persistence_error)?;
+        )?;
         Ok(())
     }
 }

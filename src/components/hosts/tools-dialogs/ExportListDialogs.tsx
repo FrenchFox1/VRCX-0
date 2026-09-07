@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { FriendRosterById } from '@/domain/friends/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
+import { toast } from '@/services/toastService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import {
     Dialog,
@@ -125,14 +125,15 @@ export function ExportFriendsListDialog({
                 setJson(JSON.stringify({ friends: friendsList }, null, 4));
             })
             .catch((error: unknown) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(
                             'host.tools_dialogs.toast.failed_to_export_friends_list'
                         )
                     )
-                )
+                })
             );
         return () => {
             active = false;
@@ -209,14 +210,15 @@ export function ExportAvatarsListDialog({
                 setContent(lines.join('\n'));
             })
             .catch((error: unknown) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(
                             'host.tools_dialogs.toast.failed_to_export_avatar_list'
                         )
                     )
-                )
+                })
             )
             .finally(() => {
                 if (active) {

@@ -89,3 +89,7 @@ describe('SettingsSystemTab updater policy', () => {
         );
     });
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

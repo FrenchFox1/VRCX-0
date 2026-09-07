@@ -414,3 +414,42 @@ async fn stream_sends_initial_state_delta_resync_and_bye_before_releasing_port()
     assert_eq!(read_server_message(&mut stream).await["type"], "bye");
     assert!(std::net::TcpListener::bind(("127.0.0.1", port)).is_ok());
 }
+
+fn crowded_room(index: usize) -> RoomState {
+    RoomState {
+        location: format!("wrld_a:{index}"),
+        world_id: "wrld_a".into(),
+        world_name: "Crowded".into(),
+        members: (0..4_000)
+            .map(|index| crate::RoomMemberState {
+                user_id: format!("usr_{index:08}"),
+                display_name: "x".repeat(64),
+                note: "y".repeat(128),
+                ..crate::RoomMemberState::default()
+            })
+            .collect(),
+        ..RoomState::default()
+    }
+}
+
+#[tokio::test]
+async fn stopping_the_service_drops_a_client_that_stopped_reading() {
+    let config = Arc::new(MemoryConfig::default());
+    let port = unused_port();
+    config
+        .set_string(INTEGRATION_API_PORT_CONFIG_KEY, &port.to_string())
+        .unwrap();
+    let controller = controller(config);
+    controller.set_game_running(true).await.unwrap();
+    let status = controller.set_enabled(true).await.unwrap();
+    let mut stream = connect_stream(port, &status.token).await;
+    assert_eq!(read_server_message(&mut stream).await["type"], "hello");
+    assert_eq!(controller.active_connections.load(Ordering::Acquire), 1);
+
+    for index in 0..4 {
+        controller.publish(Some(crowded_room(index))).await;
+    }
+
+    controller.set_enabled(false).await.unwrap();
+    assert_eq!(controller.active_connections.load(Ordering::Acquire), 0);
+}

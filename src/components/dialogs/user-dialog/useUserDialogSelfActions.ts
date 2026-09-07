@@ -6,13 +6,13 @@ import {
     type SetStateAction
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { EntityRecord } from '@/domain/entities/shared';
 import type { UserBadgeRecord } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import currentUserProfileService from '@/services/currentUserProfileService';
+import { toast } from '@/services/toastService';
 import { mergeCurrentUserPresenceFields } from '@/shared/utils/currentUserPresence';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -266,10 +266,13 @@ export function useUserDialogSelfActions({
                 params: patch
             });
             applyCurrentUserSnapshot(nextUser);
-            toast.success(successMessage);
+            toast.add({ type: 'success', title: successMessage });
             return true;
         } catch (error) {
-            toast.error(userFacingErrorMessage(error, errorMessage));
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(error, errorMessage)
+            });
             return false;
         } finally {
             setSelfActionStatus(actionStatusRef, setActionStatus, 'idle');
@@ -296,13 +299,17 @@ export function useUserDialogSelfActions({
             const result = await task();
             onSuccess?.(result);
             if (successMessage) {
-                toast.success(successMessage);
+                toast.add({ type: 'success', title: successMessage });
             }
             return result;
         } catch (error) {
-            toast.error(
-                error instanceof Error ? error.message : fallbackErrorMessage
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : fallbackErrorMessage
+            });
             return null;
         } finally {
             setSelfActionStatus(actionStatusRef, setActionStatus, 'idle');
@@ -402,15 +409,19 @@ export function useUserDialogSelfActions({
                 applyCurrentUserSnapshot(nextProfile);
             }
 
-            toast.success(t('dialog.user.success.profile_details_updated'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.success.profile_details_updated')
+            });
             setProfileDetailsDialogOpen(false);
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('dialog.user.toast.failed_to_update_profile_details')
                 )
-            );
+            });
         } finally {
             setSelfActionStatus(actionStatusRef, setActionStatus, 'idle');
         }

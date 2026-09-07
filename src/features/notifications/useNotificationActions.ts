@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { InviteMessageType } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository, {
@@ -25,6 +24,7 @@ import {
     sendInviteResponseNotification,
     sendNotificationButtonResponse
 } from '@/services/notificationActionService';
+import { toast } from '@/services/toastService';
 import { withUploadTimeout } from '@/shared/utils/imageUpload';
 import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
@@ -171,13 +171,15 @@ export function useNotificationActions({
             try {
                 await markNotificationSeen(notification);
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.notifications.toast.failed_to_mark_notification_as_seen'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.notifications.toast.failed_to_mark_notification_as_seen'
+                              )
+                });
             }
         },
         [markNotificationSeen, t]
@@ -187,13 +189,15 @@ export function useNotificationActions({
         try {
             await markAllNotificationsSeen();
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'host.vrc_notification_center.toast.failed_to_mark_notifications_as_seen'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'host.vrc_notification_center.toast.failed_to_mark_notifications_as_seen'
+                          )
+            });
         }
     }, [markAllNotificationsSeen, t]);
 
@@ -229,19 +233,22 @@ export function useNotificationActions({
                     userId: currentUserId
                 });
                 await reload();
-                toast.success(
-                    t(
+                toast.add({
+                    type: 'success',
+                    title: t(
                         'view.notification.success.notification_log_entry_deleted'
                     )
-                );
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.notifications.toast.failed_to_delete_notification'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.notifications.toast.failed_to_delete_notification'
+                              )
+                });
             }
         },
         [confirm, currentUserId, notificationTypeLabel, reload, t]
@@ -271,24 +278,30 @@ export function useNotificationActions({
                 }
                 signalFriendLogChanged();
                 if (acceptResult.outcome.status === 'remoteOkLocalFailed') {
-                    toast.warning(
-                        t(
+                    toast.add({
+                        type: 'warning',
+                        title: t(
                             'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
                         )
-                    );
+                    });
                 } else {
-                    toast.success(
-                        t('view.notification.success.friend_request_accepted')
-                    );
+                    toast.add({
+                        type: 'success',
+                        title: t(
+                            'view.notification.success.friend_request_accepted'
+                        )
+                    });
                 }
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.notifications.toast.failed_to_accept_friend_request'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.notifications.toast.failed_to_accept_friend_request'
+                              )
+                });
             }
         },
         [confirm, reload, t]
@@ -323,17 +336,20 @@ export function useNotificationActions({
                     notification
                 });
                 await reload();
-                toast.success(
-                    t('view.notification.success.notification_declined')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('view.notification.success.notification_declined')
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.notifications.toast.failed_to_decline_notification'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.notifications.toast.failed_to_decline_notification'
+                              )
+                });
             }
         },
         [confirm, currentUserId, notificationTypeLabel, reload, t]
@@ -343,28 +359,31 @@ export function useNotificationActions({
         async (notification: NotificationRow) => {
             try {
                 if (!currentInviteLocation) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             'view.notification.error.cannot_invite_no_current_vrchat_location_is_available'
                         )
-                    );
+                    });
                     return;
                 }
                 if (!canInviteFromCurrentLocation) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             'view.notification.error.cannot_invite_from_the_current_instance_type'
                         )
-                    );
+                    });
                     return;
                 }
                 const parsedLocation = parseLocation(currentInviteLocation);
                 if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             'view.notification.error.cannot_invite_current_location_is_not_a_concrete_instance'
                         )
-                    );
+                    });
                     return;
                 }
                 const result = await confirm({
@@ -386,13 +405,17 @@ export function useNotificationActions({
                     worldId: parsedLocation.worldId
                 });
                 await reload();
-                toast.success(t('message.invite.sent'));
+                toast.add({ type: 'success', title: t('message.invite.sent') });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.notifications.toast.failed_to_send_invite')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.notifications.toast.failed_to_send_invite'
+                              )
+                });
             }
         },
         [
@@ -408,11 +431,12 @@ export function useNotificationActions({
     const sendInviteResponseWithMessage = useCallback(
         (notification: NotificationRow, messageType: InviteMessageType) => {
             if (!currentUserId) {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         'view.notification.error.cannot_send_invite_response_no_current_user_session_is_available'
                     )
-                );
+                });
                 return;
             }
             setInviteResponseRequest({
@@ -438,11 +462,12 @@ export function useNotificationActions({
                 withUploadTimeout
             });
             await reload();
-            toast.success(
-                result.sentPhoto
+            toast.add({
+                type: 'success',
+                title: result.sentPhoto
                     ? t('view.notifications.toast.invite_response_photo_sent')
                     : t('view.notifications.toast.invite_response_sent')
-            );
+            });
         },
         [currentUserId, reload, t]
     );
@@ -458,7 +483,10 @@ export function useNotificationActions({
                 notification
             });
             await reload();
-            toast.success(t('view.notification.success.boop_sent'));
+            toast.add({
+                type: 'success',
+                title: t('view.notification.success.boop_sent')
+            });
         },
         [currentUserId, reload, t]
     );
@@ -483,18 +511,23 @@ export function useNotificationActions({
                     response
                 });
                 await reload();
-                toast.success(
-                    t('view.notification.success.notification_response_sent')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t(
+                        'view.notification.success.notification_response_sent'
+                    )
+                });
             } catch (error) {
                 await reload();
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.notifications.toast.failed_to_send_notification_response'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.notifications.toast.failed_to_send_notification_response'
+                              )
+                });
             }
         },
         [currentUserId, openNotificationLink, reload, setBoopReplyRequest, t]

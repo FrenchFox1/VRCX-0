@@ -16,6 +16,7 @@ import {
     type TrustColorMap
 } from '@/shared/utils/trustColors';
 import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
+import { useShellStore } from '@/state/shellStore';
 import { buttonVariants } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -29,6 +30,11 @@ import {
     ContextMenuSubTrigger,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger
+} from '@/ui/shadcn/dropdown-menu';
 
 import { AccountSwitcherPopover } from './AccountSwitcherPopover';
 import {
@@ -133,6 +139,9 @@ export function FriendRow({
     appearance
 }: FriendRowProps) {
     const { t } = useTranslation();
+    const sidebarWindowMode = useShellStore(
+        (state) => state.windowDisplayMode === 'sidebar'
+    );
     const {
         isCurrentUser,
         isGroupByInstance = false,
@@ -219,7 +228,7 @@ export function FriendRow({
                 className:
                     'h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal'
             })}
-            onClick={onOpen}
+            onClick={sidebarWindowMode ? undefined : onOpen}
         >
             <UserDetailContent
                 imageUrl={imageUrl}
@@ -260,13 +269,60 @@ export function FriendRow({
         </button>
     );
 
+    const menuItems = isCurrentUser ? (
+        <CurrentUserActionItems
+            friend={friend}
+            onOpen={onOpen}
+            onChangeStatus={onChangeStatus}
+            onSetStatusDescription={onSetStatusDescription}
+            onEditSocialStatus={onEditSocialStatus}
+            onApplyStatusPreset={onApplyStatusPreset}
+            MenuItem={ContextMenuItem}
+            CheckboxItem={ContextMenuCheckboxItem}
+            Group={ContextMenuGroup}
+            Separator={ContextMenuSeparator}
+            Sub={ContextMenuSub}
+            SubTrigger={ContextMenuSubTrigger}
+            SubContent={ContextMenuSubContent}
+            statusPresets={statusPresets}
+        />
+    ) : (
+        <FriendActionItems
+            friend={friend}
+            friendLocation={friendLocation}
+            canUseFriendLocation={canUseFriendLocation}
+            canSendInvite={canSendInvite}
+            canRequestInvite={canRequestInvite}
+            canBoop={canBoop}
+            onOpen={onOpen}
+            onSelfInvite={onSelfInvite}
+            onInvite={onInvite}
+            onRequestInvite={onRequestInvite}
+            onBoop={onBoop}
+            MenuItem={ContextMenuItem}
+            Group={ContextMenuGroup}
+            Separator={ContextMenuSeparator}
+            recentActionVersion={recentActionVersion}
+        />
+    );
+    const rowButton = sidebarWindowMode ? (
+        <DropdownMenu>
+            <DropdownMenuTrigger render={podButton} />
+            <DropdownMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
+                {menuItems}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    ) : (
+        podButton
+    );
+
     return (
         <ContextMenu>
             {isCurrentUser ? (
                 <ContextMenuTrigger
                     render={
                         <div className="group flex w-full min-w-0 items-center gap-0.5">
-                            <div className="min-w-0 flex-1">{podButton}</div>
+                            <div className="min-w-0 flex-1">{rowButton}</div>
                             <AccountSwitcherPopover />
                         </div>
                     }
@@ -277,46 +333,19 @@ export function FriendRow({
                     seed={friend}
                     disabled={isCurrentUser}
                 >
-                    <ContextMenuTrigger render={podButton} />
+                    <ContextMenuTrigger
+                        render={
+                            sidebarWindowMode ? (
+                                <div>{rowButton}</div>
+                            ) : (
+                                podButton
+                            )
+                        }
+                    />
                 </UserHoverCard>
             )}
-            <ContextMenuContent className="w-56">
-                {isCurrentUser ? (
-                    <CurrentUserActionItems
-                        friend={friend}
-                        onOpen={onOpen}
-                        onChangeStatus={onChangeStatus}
-                        onSetStatusDescription={onSetStatusDescription}
-                        onEditSocialStatus={onEditSocialStatus}
-                        onApplyStatusPreset={onApplyStatusPreset}
-                        MenuItem={ContextMenuItem}
-                        CheckboxItem={ContextMenuCheckboxItem}
-                        Group={ContextMenuGroup}
-                        Separator={ContextMenuSeparator}
-                        Sub={ContextMenuSub}
-                        SubTrigger={ContextMenuSubTrigger}
-                        SubContent={ContextMenuSubContent}
-                        statusPresets={statusPresets}
-                    />
-                ) : (
-                    <FriendActionItems
-                        friend={friend}
-                        friendLocation={friendLocation}
-                        canUseFriendLocation={canUseFriendLocation}
-                        canSendInvite={canSendInvite}
-                        canRequestInvite={canRequestInvite}
-                        canBoop={canBoop}
-                        onOpen={onOpen}
-                        onSelfInvite={onSelfInvite}
-                        onInvite={onInvite}
-                        onRequestInvite={onRequestInvite}
-                        onBoop={onBoop}
-                        MenuItem={ContextMenuItem}
-                        Group={ContextMenuGroup}
-                        Separator={ContextMenuSeparator}
-                        recentActionVersion={recentActionVersion}
-                    />
-                )}
+            <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
+                {menuItems}
             </ContextMenuContent>
         </ContextMenu>
     );

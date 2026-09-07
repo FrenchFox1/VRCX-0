@@ -10,6 +10,8 @@ import {
 import { StrictMode, type ComponentProps, type PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
@@ -22,10 +24,18 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: mocks.translate })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        success: mocks.toastSuccess
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 

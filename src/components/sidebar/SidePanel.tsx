@@ -1,12 +1,12 @@
 import { EyeOffIcon, PlusIcon, SlidersHorizontalIcon } from 'lucide-react';
 import { forwardRef, useEffect, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { getNavIconComponent } from '@/components/layout/navIconRegistry';
 import { cn } from '@/lib/utils';
 import configRepository from '@/repositories/configRepository';
 import { refreshFriendAndFavoriteSnapshots } from '@/services/backgroundMaintenanceService';
+import { toast } from '@/services/toastService';
 import { restoreNormalWindowModeForIntent } from '@/services/windowModeService';
 import { SECOND_MS } from '@/shared/constants/time';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -45,7 +45,6 @@ import { useSidePanelTabData } from './useSidePanelTabData';
 
 const defaultPrefs: SidePanelPreferences = {
     sidebarGroupByInstance: true,
-    isShowCurrentUserInSameInstance: true,
     isHideFriendsInSameInstance: false,
     isSameInstanceAboveFavorites: false,
     isSidebarDivideByFriendGroup: false,
@@ -126,10 +125,6 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             let active = true;
             Promise.all([
                 configRepository.getBool('sidebarGroupByInstance', true),
-                configRepository.getBool(
-                    'isShowCurrentUserInSameInstance',
-                    true
-                ),
                 configRepository.getBool('isHideFriendsInSameInstance', false),
                 configRepository.getBool('isSameInstanceAboveFavorites', false),
                 configRepository.getBool('isSidebarDivideByFriendGroup', false),
@@ -149,7 +144,6 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 .then(
                     ([
                         sidebarGroupByInstance,
-                        isShowCurrentUserInSameInstance,
                         isHideFriendsInSameInstance,
                         isSameInstanceAboveFavorites,
                         isSidebarDivideByFriendGroup,
@@ -166,9 +160,6 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                         setPrefs({
                             sidebarGroupByInstance: Boolean(
                                 sidebarGroupByInstance
-                            ),
-                            isShowCurrentUserInSameInstance: Boolean(
-                                isShowCurrentUserInSameInstance
                             ),
                             isHideFriendsInSameInstance: Boolean(
                                 isHideFriendsInSameInstance
@@ -247,23 +238,25 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             }
             const cooldownRemainingMs = friendRefreshCooldownUntil - Date.now();
             if (cooldownRemainingMs > 0) {
-                toast.info(
-                    t('side_panel.refresh_available_in_seconds', {
+                toast.add({
+                    type: 'info',
+                    title: t('side_panel.refresh_available_in_seconds', {
                         count: Math.max(
                             1,
                             Math.ceil(cooldownRemainingMs / SECOND_MS)
                         )
                     })
-                );
+                });
                 return;
             }
             const auth = useRuntimeStore.getState().auth;
             if (!auth.currentUserId || !auth.currentUserSnapshot) {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         'side_panel.empty.no_authenticated_user_snapshot_is_available'
                     )
-                );
+                });
                 return;
             }
             setIsRefreshing(true);
@@ -272,19 +265,22 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 setFriendRefreshCooldownUntil(
                     Date.now() + FRIEND_REFRESH_COOLDOWN_MS
                 );
-                toast.success(
-                    t(
+                toast.add({
+                    type: 'success',
+                    title: t(
                         'side_panel.success.friend_and_favorite_snapshots_refreshed'
                     )
-                );
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.side_panel.toast.failed_to_refresh_friends'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'component.side_panel.toast.failed_to_refresh_friends'
+                              )
+                });
             } finally {
                 setIsRefreshing(false);
             }
@@ -416,9 +412,12 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                                             ? ''
                                                             : undefined
                                                     }
-                                                    className="h-auto w-full flex-col justify-center gap-0.5 px-0 py-1.5 data-active:bg-(--vrcx-0-toolbar-item-selected-surface)"
+                                                    className="h-auto w-full flex-col justify-center gap-0.5 px-0 py-1.5 data-active:bg-(--vrcx-0-toolbar-item-selected-surface) sm:h-auto"
                                                 >
-                                                    <Icon data-icon="icon" />
+                                                    <Icon
+                                                        className="size-4.5"
+                                                        data-icon="icon"
+                                                    />
                                                     <span className="sr-only">
                                                         {item.label}
                                                     </span>

@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { openDiscordProfile as openShellDiscordProfile } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 
 export function useUserDialogClipboardActions() {
     const { t } = useTranslation();
@@ -23,11 +23,13 @@ export function useUserDialogClipboardActions() {
             }
             await openShellDiscordProfile(normalizedDiscordId);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_open_discord_profile')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_open_discord_profile')
+            });
         }
     }
 

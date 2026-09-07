@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     authorTagsCsv,
@@ -14,6 +13,7 @@ import avatarProfileRepository, {
     type AvatarProfileRecord,
     type AvatarStyleRecord
 } from '@/repositories/avatarProfileRepository';
+import { toast } from '@/services/toastService';
 import { normalizeString } from '@/shared/utils/string';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -162,13 +162,15 @@ export function AvatarDetailsDialog({
                 if (active) {
                     setStyles([]);
                     setLoadStatus('error');
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t(
-                                  'dialog.avatar.toast.failed_to_load_avatar_styles'
-                              )
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t(
+                                      'dialog.avatar.toast.failed_to_load_avatar_styles'
+                                  )
+                    });
                 }
             });
 
@@ -247,14 +249,21 @@ export function AvatarDetailsDialog({
                     ? response.json
                     : fallbackAvatar
             );
-            toast.success(t('dialog.avatar.success.avatar_details_updated'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.avatar.success.avatar_details_updated')
+            });
             onOpenChange(false);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.avatar.toast.failed_to_update_avatar_details')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.avatar.toast.failed_to_update_avatar_details'
+                          )
+            });
         } finally {
             setSaving(false);
         }

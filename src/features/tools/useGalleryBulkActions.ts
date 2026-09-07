@@ -1,9 +1,9 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import mediaRepository from '@/repositories/vrchatMediaRepository';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 
@@ -106,28 +106,34 @@ export function useGalleryBulkActions({
             });
 
         if (cancelled) {
-            toast.warning(
-                t('view.tools.gallery_selection.delete_cancelled_toast', {
-                    count: deleted
-                })
-            );
+            toast.add({
+                type: 'warning',
+                title: t(
+                    'view.tools.gallery_selection.delete_cancelled_toast',
+                    {
+                        count: deleted
+                    }
+                )
+            });
             return;
         }
         if (failed > 0) {
-            toast.error(
-                t('view.tools.gallery_selection.delete_partial_toast', {
+            toast.add({
+                type: 'error',
+                title: t('view.tools.gallery_selection.delete_partial_toast', {
                     failed,
                     succeeded: deleted,
                     reason: lastError
                 })
-            );
+            });
             return;
         }
-        toast.success(
-            t('view.tools.gallery_selection.deleted_toast', {
+        toast.add({
+            type: 'success',
+            title: t('view.tools.gallery_selection.deleted_toast', {
                 count: deleted
             })
-        );
+        });
     }
 
     async function setFavoriteSelection({
@@ -150,28 +156,35 @@ export function useGalleryBulkActions({
                 .getState()
                 .hydratePrintFavorites(result.state);
             if (result.skipped > 0) {
-                toast.warning(
-                    t('view.tools.gallery_selection.favorite_skipped_toast', {
-                        count: result.skipped,
-                        max: result.state.maxFavorites
-                    })
-                );
+                toast.add({
+                    type: 'warning',
+                    title: t(
+                        'view.tools.gallery_selection.favorite_skipped_toast',
+                        {
+                            count: result.skipped,
+                            max: result.state.maxFavorites
+                        }
+                    )
+                });
                 return;
             }
-            toast.success(
-                t(
+            toast.add({
+                type: 'success',
+                title: t(
                     favorite
                         ? 'view.tools.gallery_selection.favorited_toast'
                         : 'view.tools.gallery_selection.unfavorited_toast',
                     { count: result.applied }
                 )
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.toast.failed_to_update_print_favorite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.toast.failed_to_update_print_favorite')
+            });
         } finally {
             setBulkRunning(false);
         }

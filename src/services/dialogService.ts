@@ -1,10 +1,9 @@
-import { toast } from 'sonner';
-
 import {
     browseHistoryRepository,
     type BrowseHistoryEntityKind
 } from '@/repositories/browseHistoryRepository';
 import i18n from '@/services/i18nService';
+import { toast } from '@/services/toastService';
 import { recordUserProfile } from '@/services/userFactAccessService';
 import { restoreNormalWindowModeForIntent } from '@/services/windowModeService';
 import { isRecord } from '@/shared/utils/record';
@@ -315,11 +314,12 @@ function openEntityDialog({
             return;
         }
         if (kind === 'user') {
-            toast.info(
-                i18n.t('dialog.user.toast.already_viewing_user', {
+            toast.add({
+                type: 'info',
+                title: i18n.t('dialog.user.toast.already_viewing_user', {
                     defaultValue: 'Already viewing this user'
                 })
-            );
+            });
         }
         return;
     }

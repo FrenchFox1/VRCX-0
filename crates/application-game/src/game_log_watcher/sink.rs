@@ -7,6 +7,20 @@ pub enum GameLogEventOrigin {
 }
 
 pub trait GameLogEventSink: Send + Sync {
+    fn retry_pending_game_log(&self) -> crate::Result<()> {
+        Ok(())
+    }
+
+    fn ingest_game_log_scan(
+        &self,
+        events: &[GameLogEvent],
+        origin: GameLogEventOrigin,
+        _cursor: super::GameLogScanCursor,
+        _publish: bool,
+    ) -> crate::Result<()> {
+        self.ingest_game_log_events_with_origin(events, origin)
+    }
+
     fn ingest_game_log_event(&self, event: &GameLogEvent) -> crate::Result<()>;
 
     fn ingest_game_log_events(&self, events: &[GameLogEvent]) -> crate::Result<()> {

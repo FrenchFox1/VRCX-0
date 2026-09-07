@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     type PreviousInstanceRow,
@@ -28,6 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -224,11 +224,12 @@ export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
         }
 
         if (!Array.isArray(row.events) || row.events.length === 0) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.previous_instances.error.this_user_instance_row_cannot_be_deleted_without_event_ids'
                 )
-            );
+            });
             return;
         }
 
@@ -241,17 +242,22 @@ export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
             setRows(nextRows);
             onRowsChange?.(nextRows);
             setDetailRow((current) => (current === row ? null : current));
-            toast.success(
-                t('dialog.previous_instances.success.instance_record_deleted')
-            );
+            toast.add({
+                type: 'success',
+                title: t(
+                    'dialog.previous_instances.success.instance_record_deleted'
+                )
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.previous_instances_table.toast.failed_to_delete_instance_record'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.previous_instances_table.toast.failed_to_delete_instance_record'
+                          )
+            });
         }
     }
 

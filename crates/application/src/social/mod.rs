@@ -10,6 +10,7 @@ mod mutual_graph_fetch;
 mod note_export;
 mod prints;
 mod quick_search_catalog;
+mod saved_group_favorites;
 mod social_baseline_refresh;
 mod social_maintenance;
 mod social_mutation;
@@ -143,6 +144,7 @@ pub use quick_search_catalog::{
     QuickSearchQueryOutput, QuickSearchQueryStatus, QuickSearchRemoteRequests,
     QuickSearchRemoteSource, QuickSearchResult, QuickSearchRuntime, QuickSearchSources,
 };
+pub use saved_group_favorites::{SavedGroupFavoritesPort, SavedGroupFavoritesRuntime};
 pub use social_baseline_refresh::{
     refresh_social_baseline, SocialBaselineFavoritesRefresh, SocialBaselineRefreshCore,
     SocialBaselineRefreshOutput,

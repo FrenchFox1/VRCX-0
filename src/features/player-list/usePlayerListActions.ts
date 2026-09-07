@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { openUserDialog } from '@/services/dialogService';
+import { toast } from '@/services/toastService';
 import { resolveUserByDisplayName } from '@/services/userIdentityService';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
@@ -61,19 +61,22 @@ export function usePlayerListActions({
                     });
                     return;
                 }
-                toast.info(
-                    t(
+                toast.add({
+                    type: 'info',
+                    title: t(
                         'view.player_list.empty.no_user_id_was_found_for_this_player_row'
                     )
-                );
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.player_list.toast.failed_to_look_up_this_player'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.player_list.toast.failed_to_look_up_this_player'
+                              )
+                });
             }
         },
         [currentUserEndpoint, t]

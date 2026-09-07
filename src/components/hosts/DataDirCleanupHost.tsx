@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     dataDirMigrationWarningKey,
@@ -13,6 +12,7 @@ import {
     type DataDirCleanupPending
 } from '@/services/dataDirMigrationService';
 import { getAppDataDirState } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -59,7 +59,9 @@ export function DataDirCleanupHost() {
                 if (!report) {
                     return;
                 }
-                toast.success(t('data_dir_migration.cleanup.completed'), {
+                toast.add({
+                    type: 'success',
+                    title: t('data_dir_migration.cleanup.completed'),
                     description: t(
                         report.skipped.length > 0
                             ? 'data_dir_migration.cleanup.completed_with_skipped'
@@ -74,9 +76,11 @@ export function DataDirCleanupHost() {
                     )
                 });
             } catch (error) {
-                toast.error(
-                    error instanceof Error ? error.message : String(error)
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error ? error.message : String(error)
+                });
             }
         }
 
@@ -92,20 +96,23 @@ export function DataDirCleanupHost() {
                 }
             );
             if (result?.status === 'databaseOpenFailed') {
-                toast.error(t('data_dir_migration.result.failed_title'), {
+                toast.add({
+                    type: 'error',
+                    title: t('data_dir_migration.result.failed_title'),
                     description: t(
                         'data_dir_migration.result.database_open_failed'
                     )
                 });
             } else if (result?.status === 'interrupted') {
-                toast.warning(
-                    t('data_dir_migration.result.interrupted_title'),
-                    {
-                        description: t('data_dir_migration.result.interrupted')
-                    }
-                );
+                toast.add({
+                    type: 'warning',
+                    title: t('data_dir_migration.result.interrupted_title'),
+                    description: t('data_dir_migration.result.interrupted')
+                });
             } else if (result?.status === 'succeeded') {
-                toast.success(t('data_dir_migration.result.succeeded'), {
+                toast.add({
+                    type: 'success',
+                    title: t('data_dir_migration.result.succeeded'),
                     description:
                         result.warnings.length > 0
                             ? result.warnings
@@ -131,16 +138,17 @@ export function DataDirCleanupHost() {
             ) {
                 return;
             }
-            toast.success(t('data_dir_migration.cleanup.ready_title'), {
+            toast.add({
+                type: 'success',
+                title: t('data_dir_migration.cleanup.ready_title'),
                 id: CLEANUP_TOAST_ID,
                 description: t('data_dir_migration.cleanup.ready_description', {
                     path: pending.oldDir
                 }),
-                duration: Infinity,
+                timeout: 0,
                 position: 'bottom-right',
-                closeButton: true,
-                action: {
-                    label: t('data_dir_migration.cleanup.action_with_size', {
+                actionProps: {
+                    children: t('data_dir_migration.cleanup.action_with_size', {
                         size: formatDataDirMigrationBytes(
                             pending.bytes,
                             i18n.language
@@ -150,7 +158,8 @@ export function DataDirCleanupHost() {
                         event.preventDefault();
                         void confirmAndCleanup(pending);
                     }
-                }
+                },
+                data: { closeButton: true }
             });
             void markDataDirCleanupPrompted(new Date().toISOString()).catch(
                 (error: unknown) => {

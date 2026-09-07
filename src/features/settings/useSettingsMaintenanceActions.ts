@@ -16,6 +16,7 @@ import {
     openFolderSelectorDialog,
     restartApplication
 } from '@/services/shellIntegrationService';
+import type { AppToastOptions } from '@/services/toastService';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { normalizeBackgroundModeDelayMinutes } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -54,9 +55,7 @@ type SettingsPromptOptions = SettingsConfirmOptions & {
     errorMessage?: string;
 };
 type SettingsToast = {
-    error(message: string): void;
-    success(message: string): void;
-    warning(message: string, options?: { duration?: number }): void;
+    add(options: AppToastOptions): void;
 };
 type SettingsMaintenanceActionsDeps = {
     alert: (options: SettingsConfirmOptions) => Promise<SettingsDialogResult>;
@@ -178,7 +177,10 @@ export function createSettingsMaintenanceActions({
             return;
         }
         await deleteAllScreenshotMetadataFromShell();
-        toast.success(t('view.settings.success.screenshot_metadata_removed'));
+        toast.add({
+            type: 'success',
+            title: t('view.settings.success.screenshot_metadata_removed')
+        });
     }
     async function refreshAppDataDirState() {
         try {
@@ -186,7 +188,10 @@ export function createSettingsMaintenanceActions({
             setAppDataDirState(state);
             return state;
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
             return null;
         }
     }
@@ -196,15 +201,21 @@ export function createSettingsMaintenanceActions({
             return;
         }
         if (state?.cliOverride) {
-            toast.error(
-                t('view.settings.advanced.advanced.data_directory.cli_override')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.settings.advanced.advanced.data_directory.cli_override'
+                )
+            });
             return;
         }
         const selectedPath = await openFolderSelectorDialog(
             state?.persistedDir || state?.currentDir || state?.defaultDir || ''
         ).catch((error: unknown) => {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
             return '';
         });
         if (!selectedPath) {
@@ -214,7 +225,10 @@ export function createSettingsMaintenanceActions({
             const plan = await planDataDirMigration(selectedPath);
             useDataDirMigrationStore.getState().openDialog(plan);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
         }
     }
     async function resetAppDataDir() {
@@ -223,16 +237,22 @@ export function createSettingsMaintenanceActions({
             return;
         }
         if (state?.cliOverride) {
-            toast.error(
-                t('view.settings.advanced.advanced.data_directory.cli_override')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.settings.advanced.advanced.data_directory.cli_override'
+                )
+            });
             return;
         }
         try {
             const plan = await planDataDirMigration(state.defaultDir);
             useDataDirMigrationStore.getState().openDialog(plan);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
         }
     }
     async function cleanupAppDataDir() {
@@ -260,18 +280,30 @@ export function createSettingsMaintenanceActions({
         try {
             await cleanupMigratedDataDir();
             await refreshAppDataDirState();
-            toast.success(t('data_dir_migration.cleanup.completed'));
+            toast.add({
+                type: 'success',
+                title: t('data_dir_migration.cleanup.completed')
+            });
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
         }
     }
     async function dismissAppDataDirCleanup() {
         try {
             await dismissDataDirCleanup();
             await refreshAppDataDirState();
-            toast.success(t('data_dir_migration.cleanup.dismissed'));
+            toast.add({
+                type: 'success',
+                title: t('data_dir_migration.cleanup.dismissed')
+            });
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
         }
     }
     async function promptAutoLoginDelaySeconds() {
@@ -359,26 +391,29 @@ export function createSettingsMaintenanceActions({
                 );
             setPurgeDialogOpen(false);
             if (outcome.status === 'optimizationFailed') {
-                toast.warning(
-                    t(
+                toast.add({
+                    type: 'warning',
+                    title: t(
                         'view.settings.advanced.advanced.database_cleanup.purge_optimization_failed',
                         { error: outcome.optimizationError ?? '' }
                     )
-                );
+                });
                 return;
             }
-            toast.success(
-                t(
+            toast.add({
+                type: 'success',
+                title: t(
                     'view.settings.advanced.advanced.database_cleanup.purge_complete'
                 )
-            );
+            });
             await new Promise<void>((resolve) =>
                 window.setTimeout(resolve, 1500)
             );
             await restartApplication();
         } catch (error) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.settings.advanced.advanced.database_cleanup.purge_failed',
                     {
                         error:
@@ -387,7 +422,7 @@ export function createSettingsMaintenanceActions({
                                 : String(error)
                     }
                 )
-            );
+            });
         } finally {
             useRuntimeStore.getState().setDatabaseMaintenanceActive(false);
             setPurgeInProgress(false);
@@ -400,7 +435,10 @@ export function createSettingsMaintenanceActions({
         const selectedPath = await openFolderSelectorDialog(
             prefs.userGeneratedContentPath || ''
         ).catch((error: unknown) => {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
             return '';
         });
         if (!selectedPath) {
@@ -428,7 +466,10 @@ export function createSettingsMaintenanceActions({
             prefs.userGeneratedContentPath
         );
         await mediaRepository.cropAllPrints(ugcFolderPath);
-        toast.success(t('view.settings.label.existing_saved_prints_cropped'));
+        toast.add({
+            type: 'success',
+            title: t('view.settings.label.existing_saved_prints_cropped')
+        });
     }
     async function handleCropInstancePrintsChange(enabled: boolean) {
         const saved = await commit(
@@ -447,19 +488,24 @@ export function createSettingsMaintenanceActions({
         );
         if (saved && enabled) {
             await promptCropExistingPrints().catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.settings.toast.failed_to_crop_existing_prints'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.settings.toast.failed_to_crop_existing_prints'
+                              )
+                });
             });
         }
     }
     async function handleGameLogDisabledChange(disabled: boolean) {
         if (gameState.isGameRunning) {
-            toast.error(t('message.gamelog.vrchat_must_be_closed'));
+            toast.add({
+                type: 'error',
+                title: t('message.gamelog.vrchat_must_be_closed')
+            });
             return;
         }
         if (disabled) {

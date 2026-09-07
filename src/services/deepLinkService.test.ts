@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SharedCollectionImportStatus } from '@/platform/tauri/bindings';
+import type { AppToastOptions } from '@/services/toastService';
 
 const mocks = vi.hoisted(() => ({
     appDrainPendingDeepLinks:
@@ -76,10 +77,18 @@ vi.mock('@/state/modalStore', () => ({
     }
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        success: mocks.toastSuccess,
-        error: mocks.toastError
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -246,7 +255,10 @@ describe('deepLinkService', () => {
         await vi.waitFor(() => {
             expect(mocks.toastSuccess).toHaveBeenCalled();
             expect(mocks.toastError).toHaveBeenCalledWith(
-                'deep_link.import_collection.toast.import_partial_failed:{"count":1}'
+                expect.objectContaining({
+                    type: 'error',
+                    title: 'deep_link.import_collection.toast.import_partial_failed:{"count":1}'
+                })
             );
         });
         unbind();
@@ -295,7 +307,10 @@ describe('deepLinkService', () => {
             });
         });
         expect(mocks.toastError).toHaveBeenCalledWith(
-            'deep_link.import_collection.prompt.name_already_exists:{"name":"Scenic picks"}'
+            expect.objectContaining({
+                type: 'error',
+                title: 'deep_link.import_collection.prompt.name_already_exists:{"name":"Scenic picks"}'
+            })
         );
         expect(mocks.appFavoriteLocalSnapshot).toHaveBeenCalledTimes(2);
         expect(mocks.prompt).toHaveBeenNthCalledWith(
@@ -325,7 +340,10 @@ describe('deepLinkService', () => {
 
         await vi.waitFor(() => {
             expect(mocks.toastError).toHaveBeenCalledWith(
-                'group lookup failed'
+                expect.objectContaining({
+                    type: 'error',
+                    title: 'group lookup failed'
+                })
             );
         });
         expect(mocks.appSharedCollectionImportStart).not.toHaveBeenCalled();

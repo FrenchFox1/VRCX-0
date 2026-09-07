@@ -32,6 +32,6 @@ pub use sessions_view::{
     GameLogSessionPlayerDurationRowDto, GameLogSessionsQueryInput,
 };
 pub use snapshot::{
-    player_list_current_snapshot, PlayerListSnapshotContext, PlayerListSnapshotOutput,
+    player_list_runtime_snapshot, PlayerListSnapshotContext, PlayerListSnapshotOutput,
     PlayerListSnapshotPlayer, PlayerListSnapshotSource,
 };

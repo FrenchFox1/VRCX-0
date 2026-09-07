@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { resolveProfileDecorationMutation } from '@/domain/entities/inventory';
 import mediaRepository, {
@@ -10,6 +9,7 @@ import userProfileRepository, {
     type ProfileBackgroundUpdate
 } from '@/repositories/userProfileRepository';
 import { refreshCurrentUser } from '@/services/backgroundMaintenanceSessionService';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -178,11 +178,13 @@ export function useUserDialogProfileDecorations({
             setLoadedKey(targetKey);
         } catch (error) {
             if (authTargetKey(authTargetRef.current) === targetKey) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : tRef.current('dialog.inventory.failed_to_load')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : tRef.current('dialog.inventory.failed_to_load')
+                });
             }
         } finally {
             if (authTargetKey(authTargetRef.current) === targetKey) {
@@ -243,7 +245,10 @@ export function useUserDialogProfileDecorations({
                     expectedUserId: target.userId,
                     params: mutation.params
                 });
-                toast.success(t('dialog.inventory.profile_background_updated'));
+                toast.add({
+                    type: 'success',
+                    title: t('dialog.inventory.profile_background_updated')
+                });
                 onProfileUpdatedRef.current?.();
                 await refreshCurrentUser({
                     expectedUserId: target.userId,
@@ -266,13 +271,14 @@ export function useUserDialogProfileDecorations({
                     equipSlot: mutation.equipSlot
                 });
             }
-            toast.success(
-                t(
+            toast.add({
+                type: 'success',
+                title: t(
                     isUnequip
                         ? 'dialog.inventory.unequipped_success'
                         : 'dialog.inventory.equipped_success'
                 )
-            );
+            });
             await refreshCurrentUser({
                 expectedUserId: target.userId,
                 expectedEndpoint: target.endpoint,
@@ -299,15 +305,17 @@ export function useUserDialogProfileDecorations({
                 }
                 setAppearanceOverrides(targetKey, nextOverrides);
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          mutation.action === 'background'
-                              ? 'dialog.inventory.failed_to_update_profile_background'
-                              : 'dialog.inventory.failed_to_update_profile_decoration'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              mutation.action === 'background'
+                                  ? 'dialog.inventory.failed_to_update_profile_background'
+                                  : 'dialog.inventory.failed_to_update_profile_decoration'
+                          )
+            });
         } finally {
             pendingRef.current = false;
             setPendingKey('');

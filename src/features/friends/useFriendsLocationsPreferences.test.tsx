@@ -45,20 +45,22 @@ describe('useFriendsLocationsPreferences', () => {
         mocks.setString.mockReset().mockResolvedValue(undefined);
     });
 
-    it('tracks the sidebar current-user visibility preference', async () => {
-        mocks.boolValues.set('isShowCurrentUserInSameInstance', true);
+    it('ignores the removed current-user visibility preference', async () => {
+        mocks.boolValues.set('isShowCurrentUserInSameInstance', false);
         const { result } = renderHook(() => useFriendsLocationsPreferences());
 
         await waitFor(() => expect(result.current.preferencesReady).toBe(true));
-        expect(result.current.showCurrentUserInSameInstance).toBe(true);
+        expect(mocks.getBool).not.toHaveBeenCalledWith(
+            'isShowCurrentUserInSameInstance',
+            expect.anything()
+        );
+        mocks.getBool.mockClear();
 
         mocks.boolValues.set('isShowCurrentUserInSameInstance', false);
         act(() => {
             publishPreferenceChanged('isShowCurrentUserInSameInstance', false);
         });
 
-        await waitFor(() =>
-            expect(result.current.showCurrentUserInSameInstance).toBe(false)
-        );
+        expect(mocks.getBool).not.toHaveBeenCalled();
     });
 });

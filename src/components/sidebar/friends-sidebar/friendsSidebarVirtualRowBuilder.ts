@@ -293,18 +293,16 @@ export function buildFriendsSidebarVirtualRows({
         }
         const instanceEntries = sameInstanceGroups.map((group, index) => {
             const sectionKey = `sameInstance:${group.location}:${index}`;
-            const currentUserRows =
-                group.isCurrentInstance &&
-                prefs.isShowCurrentUserInSameInstance !== false
-                    ? buildCurrentUserRows({
-                          currentUser,
-                          currentUserId,
-                          gameState,
-                          sectionKey: `${sectionKey}:currentUser`,
-                          isGroupByInstance: true,
-                          showSkeleton: false
-                      })
-                    : [];
+            const currentUserRows = group.isCurrentInstance
+                ? buildCurrentUserRows({
+                      currentUser,
+                      currentUserId,
+                      gameState,
+                      sectionKey: `${sectionKey}:currentUser`,
+                      isGroupByInstance: true,
+                      showSkeleton: false
+                  })
+                : [];
             return {
                 group,
                 sectionKey,

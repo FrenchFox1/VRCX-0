@@ -3,6 +3,8 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mediaMocks = vi.hoisted(() => ({
     equipProfileDecoration: vi.fn(),
     getFileList: vi.fn(),
@@ -58,8 +60,19 @@ vi.mock('react-i18next', () => ({
         t: (key: string) => key
     })
 }));
-vi.mock('sonner', () => ({
-    toast: toastMocks
+vi.mock('@/services/toastService', () => ({
+    toast: {
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return toastMocks.error(options);
+                case 'success':
+                    return toastMocks.success(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
+    }
 }));
 
 import { useInventoryPageState } from './useInventoryPageState';
@@ -128,7 +141,10 @@ describe('useInventoryPageState', () => {
             expectedWebsocket: 'wss://pipeline.vrchat.cloud'
         });
         expect(toastMocks.success).toHaveBeenCalledWith(
-            'dialog.inventory.equipped_success'
+            expect.objectContaining({
+                type: 'success',
+                title: 'dialog.inventory.equipped_success'
+            })
         );
     });
 
@@ -152,7 +168,10 @@ describe('useInventoryPageState', () => {
         });
         expect(mediaMocks.equipProfileDecoration).not.toHaveBeenCalled();
         expect(toastMocks.success).toHaveBeenCalledWith(
-            'dialog.inventory.unequipped_success'
+            expect.objectContaining({
+                type: 'success',
+                title: 'dialog.inventory.unequipped_success'
+            })
         );
     });
 
@@ -336,7 +355,10 @@ describe('useInventoryPageState', () => {
         });
 
         expect(toastMocks.success).toHaveBeenCalledWith(
-            'dialog.inventory.equipped_success'
+            expect.objectContaining({
+                type: 'success',
+                title: 'dialog.inventory.equipped_success'
+            })
         );
         expect(toastMocks.error).not.toHaveBeenCalled();
     });

@@ -10,9 +10,6 @@ export function usePlayerListRuntime() {
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
-    const gameLogLocation = useRuntimeStore(
-        (state) => state.gameState.currentLocation || ''
-    );
     const currentUserLocation = useRuntimeStore((state) => {
         return (
             state.gameState.currentLocation ||
@@ -33,13 +30,10 @@ export function usePlayerListRuntime() {
         (state) => state.gameState.isGameRunning === true
     );
     const addGameLogEventCount = useRuntimeStore(
-        (state) => state.runtimeEvents.addGameLogEvent.count
+        (state) => state.runtimeEvents.gameLogProjection.count
     );
     const gameLogTailSyncedAt = useRuntimeStore(
         (state) => state.updateLoop.lastGameLogSyncAt
-    );
-    const runtimePlayerRows = useRuntimeStore(
-        (state) => state.gameState.currentLocationPlayers
     );
 
     return {
@@ -50,9 +44,7 @@ export function usePlayerListRuntime() {
         currentUserLocation,
         currentUserSnapshot,
         currentUserWorldId,
-        gameLogLocation,
         gameLogTailSyncedAt,
-        isGameRunning,
-        runtimePlayerRows
+        isGameRunning
     };
 }

@@ -1,16 +1,10 @@
 use serde::Serialize;
 
-use super::roster::fold_roster;
-use super::runtime_state::{parse_event_time_ms, world_id_from_location};
-use crate::Result;
-use vrcx_0_core::OwnerId;
-
-const ROSTER_RANGE_END: &str = "9999-12-31T23:59:59Z";
+use super::runtime_state::world_id_from_location;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum PlayerListSnapshotSource {
-    Database,
     None,
     Runtime,
 }
@@ -50,38 +44,6 @@ pub struct PlayerListSnapshotOutput {
     pub players: Vec<PlayerListSnapshotPlayer>,
 }
 
-struct RosterRebuild {
-    players: Vec<PlayerListSnapshotPlayer>,
-    observed_player_event_count: i64,
-}
-
-fn parse_date_ms(value: &str) -> i64 {
-    parse_event_time_ms(value.trim()).unwrap_or(0)
-}
-
-fn is_live_location(location: &str) -> bool {
-    let normalized = location.trim();
-    !normalized.is_empty()
-        && normalized != "offline"
-        && normalized != "private"
-        && normalized != "traveling"
-}
-
-fn context_from_row(row: crate::PlayerLocationRecord) -> PlayerListSnapshotContext {
-    PlayerListSnapshotContext {
-        created_at: row.created_at,
-        location: row.location,
-        world_id: row.world_id,
-        world_name: row.world_name,
-        time: row.time,
-        group_name: row.group_name,
-        source: PlayerListSnapshotSource::Database,
-        player_count: None,
-        observed_player_event_count: None,
-        player_facts_known: None,
-    }
-}
-
 fn empty_context(location: String, source: PlayerListSnapshotSource) -> PlayerListSnapshotContext {
     PlayerListSnapshotContext {
         created_at: String::new(),
@@ -97,159 +59,55 @@ fn empty_context(location: String, source: PlayerListSnapshotSource) -> PlayerLi
     }
 }
 
-fn resolve_location_context(
-    store: &dyn crate::GameStateStore,
-    owner_user_id: &OwnerId,
-    current_location: &str,
-) -> Result<PlayerListSnapshotContext> {
-    let normalized = current_location.trim().to_string();
-
-    if is_live_location(&normalized) {
-        if let Some(row) = store.player_location(owner_user_id, normalized.clone())? {
-            return Ok(context_from_row(row));
-        }
-        let world_id = world_id_from_location(&normalized);
-        let world_name = if world_id.is_empty() {
-            normalized.clone()
+pub fn player_list_runtime_snapshot(
+    snapshot: &super::RuntimeSnapshot,
+    requested_location: &str,
+) -> PlayerListSnapshotOutput {
+    let location_matches =
+        if requested_location.is_empty() || requested_location == snapshot.location {
+            true
         } else {
-            world_id.clone()
+            let requested = vrcx_0_core::location::parse_location(requested_location);
+            let current = vrcx_0_core::location::parse_location(&snapshot.location);
+            !requested.world_id.is_empty()
+                && !requested.instance_id.is_empty()
+                && requested.world_id == current.world_id
+                && requested.instance_id == current.instance_id
         };
-        let mut context = empty_context(normalized, PlayerListSnapshotSource::Runtime);
-        context.world_id = world_id;
-        context.world_name = world_name;
-        return Ok(context);
-    }
-
-    if !normalized.is_empty() {
-        return Ok(empty_context(normalized, PlayerListSnapshotSource::Runtime));
-    }
-
-    if let Some(row) = store.latest_player_location(owner_user_id)? {
-        return Ok(context_from_row(row));
-    }
-
-    Ok(empty_context(String::new(), PlayerListSnapshotSource::None))
-}
-
-fn rebuild_roster(
-    store: &dyn crate::GameStateStore,
-    owner_user_id: &OwnerId,
-    location: &str,
-    started_at: &str,
-    current_user_id: &str,
-) -> Result<RosterRebuild> {
-    let started_at = started_at.trim();
-    let started_at_ms = parse_date_ms(started_at);
-    let range_start = if started_at_ms > 0 { started_at } else { "" };
-    let entries = store.join_leave_for_location(
-        owner_user_id,
-        location.trim(),
-        range_start,
-        ROSTER_RANGE_END,
-    )?;
-    let entries = entries
-        .into_iter()
-        .filter(|entry| {
-            if started_at_ms <= 0 {
-                return true;
-            }
-            parse_event_time_ms(&entry.created_at).is_some_and(|event_ms| event_ms >= started_at_ms)
-        })
-        .collect::<Vec<_>>();
-    let observed_player_event_count = entries.len() as i64;
-
-    let mut players = fold_roster(&entries)
-        .into_iter()
-        .filter(|(_, player)| {
-            current_user_id.is_empty() || player.user_id.trim() != current_user_id
-        })
-        .map(|(key, player)| {
-            let display_name = if !player.display_name.is_empty() {
-                player.display_name.clone()
-            } else if !player.user_id.is_empty() {
-                player.user_id.clone()
-            } else {
-                key.clone()
-            };
-            PlayerListSnapshotPlayer {
-                id: key,
-                user_id: player.user_id,
-                display_name,
-                joined_at: player.joined_at,
-                joined_at_ms: player.joined_at_ms.unwrap_or(0),
-            }
-        })
-        .collect::<Vec<_>>();
-    players.sort_by(|left, right| {
-        left.joined_at_ms
-            .cmp(&right.joined_at_ms)
-            .then_with(|| left.display_name.cmp(&right.display_name))
-    });
-
-    Ok(RosterRebuild {
-        players,
-        observed_player_event_count,
-    })
-}
-
-pub fn player_list_current_snapshot(
-    store: &dyn crate::GameStateStore,
-    owner_user_id: &OwnerId,
-    current_user_id: &str,
-    current_location: &str,
-    current_location_started_at: &str,
-) -> Result<PlayerListSnapshotOutput> {
-    let location_context = resolve_location_context(store, owner_user_id, current_location)?;
-
-    let runtime_started_at = current_location_started_at.trim();
-    let mut context = location_context.clone();
-    if parse_date_ms(runtime_started_at) > parse_date_ms(&location_context.created_at) {
-        context.created_at = runtime_started_at.to_string();
-    }
-
-    if !is_live_location(&context.location) {
-        return Ok(PlayerListSnapshotOutput {
+    let ready = snapshot.ready && location_matches;
+    if !ready {
+        let mut context = empty_context(
+            requested_location.to_string(),
+            PlayerListSnapshotSource::None,
+        );
+        context.player_facts_known = Some(false);
+        return PlayerListSnapshotOutput {
             context,
             players: Vec::new(),
-        });
+        };
     }
-
-    let current_user_id = current_user_id.trim();
-    let mut roster = rebuild_roster(
-        store,
-        owner_user_id,
-        &context.location,
-        &context.created_at,
-        current_user_id,
-    )?;
-    let mut effective_context = context.clone();
-
-    let db_started_at_ms = parse_date_ms(&location_context.created_at);
-    if roster.players.is_empty()
-        && db_started_at_ms > 0
-        && db_started_at_ms < parse_date_ms(&context.created_at)
-    {
-        let db_roster = rebuild_roster(
-            store,
-            owner_user_id,
-            &location_context.location,
-            &location_context.created_at,
-            current_user_id,
-        )?;
-        if !db_roster.players.is_empty() {
-            roster = db_roster;
-            effective_context = location_context;
-        }
-    }
-
-    effective_context.player_count = Some(roster.players.len() as i64);
-    effective_context.observed_player_event_count = Some(roster.observed_player_event_count);
-    effective_context.player_facts_known = Some(roster.observed_player_event_count > 0);
-
-    Ok(PlayerListSnapshotOutput {
-        context: effective_context,
-        players: roster.players,
-    })
+    let mut context = empty_context(snapshot.location.clone(), PlayerListSnapshotSource::Runtime);
+    context.created_at = snapshot.started_at.clone();
+    context.world_id = world_id_from_location(&snapshot.location);
+    context.world_name = snapshot.world_name.clone();
+    context.player_facts_known = Some(snapshot.has_player_events);
+    let players: Vec<_> = snapshot
+        .players
+        .iter()
+        .map(|player| PlayerListSnapshotPlayer {
+            id: super::runtime_state::player_key(&player.user_id, &player.display_name),
+            user_id: player.user_id.clone(),
+            display_name: player.display_name.clone(),
+            joined_at: player
+                .join_time_ms
+                .and_then(chrono::DateTime::from_timestamp_millis)
+                .map(|time| time.to_rfc3339_opts(chrono::SecondsFormat::Millis, true))
+                .unwrap_or_default(),
+            joined_at_ms: player.join_time_ms.unwrap_or(0),
+        })
+        .collect();
+    context.player_count = Some(players.len() as i64);
+    PlayerListSnapshotOutput { context, players }
 }
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
-import { toast } from 'sonner';
 
 import { openUserDialog } from '@/services/dialogService';
+import { toast } from '@/services/toastService';
 import { resolveUserByDisplayName } from '@/services/userIdentityService';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 
@@ -41,18 +41,21 @@ export async function openGameLogUser(
             return;
         }
 
-        toast.info(
-            t('view.game_log.dynamic.no_user_id_was_found_for_value', {
+        toast.add({
+            type: 'info',
+            title: t('view.game_log.dynamic.no_user_id_was_found_for_value', {
                 value: displayName
             })
-        );
+        });
     } catch (error) {
-        toast.error(
-            error instanceof Error
-                ? error.message
-                : t('view.game_log.toast.failed_to_look_up_value', {
-                      value: displayName
-                  })
-        );
+        toast.add({
+            type: 'error',
+            title:
+                error instanceof Error
+                    ? error.message
+                    : t('view.game_log.toast.failed_to_look_up_value', {
+                          value: displayName
+                      })
+        });
     }
 }

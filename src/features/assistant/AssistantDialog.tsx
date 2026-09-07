@@ -2,7 +2,6 @@ import { PanelRightIcon, Settings2Icon, XIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
 
 import {
     getEffectiveReasoningEffort,
@@ -17,6 +16,7 @@ import {
     type PlaybookMode,
     type Session
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import { Button } from '@/ui/shadcn/button';
@@ -236,7 +236,7 @@ export function AssistantDialog() {
             );
             setRuntimeSelection(selectionFromSession(session));
         } catch (error) {
-            toast.error(errorMessage(error));
+            toast.add({ type: 'error', title: errorMessage(error) });
         }
     }
 
@@ -263,7 +263,7 @@ export function AssistantDialog() {
             await commands.appAssistantSetReasoningEffort(effort);
         } catch (error) {
             setAssistantReasoningEffort(previous);
-            toast.error(errorMessage(error));
+            toast.add({ type: 'error', title: errorMessage(error) });
         }
     }
 
@@ -282,10 +282,13 @@ export function AssistantDialog() {
                     endpointId: null,
                     model: null
                 }));
-                toast.error(t('assistant.not_configured'));
+                toast.add({
+                    type: 'error',
+                    title: t('assistant.not_configured')
+                });
                 return;
             }
-            toast.error(errorMessage(error));
+            toast.add({ type: 'error', title: errorMessage(error) });
         }
     }
 

@@ -3,6 +3,8 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const commandMocks = vi.hoisted(() => ({
     appVrchatGroupOrderGet: vi.fn(),
     appVrchatGroupOrderSet: vi.fn()
@@ -50,8 +52,17 @@ vi.mock('react-i18next', () => ({
         t: translationMocks.t
     })
 }));
-vi.mock('sonner', () => ({
-    toast: toastMocks
+vi.mock('@/services/toastService', () => ({
+    toast: {
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return toastMocks.error(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
+    }
 }));
 
 import { groupIdForRow } from '@/components/dialogs/user-dialog/userDialogGroupRows';

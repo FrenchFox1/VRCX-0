@@ -1,7 +1,6 @@
-import { toast } from 'sonner';
-
 import type { RealtimeInstanceQueueProjection } from '@/platform/tauri/bindings';
 import i18n from '@/services/i18nService';
+import { toast } from '@/services/toastService';
 import { displayLocation, parseLocation } from '@/shared/utils/location';
 import {
     locationHintKey,
@@ -59,13 +58,14 @@ export function handleRealtimeInstanceQueueProjection(
         ) {
             runtimeStore.clearInstanceQueueState();
         }
-        toast.success(
-            translated(
+        toast.add({
+            type: 'success',
+            title: translated(
                 'status_bar.instance_queue_ready_to_join',
                 { location: label },
                 `Instance ready to join ${label}`
             )
-        );
+        });
         return;
     }
 

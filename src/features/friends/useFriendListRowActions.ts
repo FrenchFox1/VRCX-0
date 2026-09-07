@@ -6,7 +6,6 @@ import {
     type SetStateAction
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import mutualGraphPersistenceRepository from '@/repositories/mutualGraphPersistenceRepository';
 import { openUserDialog } from '@/services/dialogService';
@@ -16,6 +15,7 @@ import {
 } from '@/services/friendProfileLoadService';
 import friendRelationshipService from '@/services/friendRelationshipService';
 import { startMutualGraphFetch } from '@/services/mutualGraphFetchService';
+import { toast } from '@/services/toastService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
@@ -278,17 +278,19 @@ export function useFriendListRowActions({
                         return next;
                     });
                     if (result.localError) {
-                        toast.warning(
-                            t(
+                        toast.add({
+                            type: 'warning',
+                            title: t(
                                 'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
                             )
-                        );
+                        });
                     } else {
-                        toast.success(
-                            t('view.friends.dynamic.unfriended_value', {
+                        toast.add({
+                            type: 'success',
+                            title: t('view.friends.dynamic.unfriended_value', {
                                 value: friend.displayName || normalizedUserId
                             })
-                        );
+                        });
                     }
                 }
                 return {
@@ -308,13 +310,15 @@ export function useFriendListRowActions({
                         deleted: false
                     };
                 }
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.friends.toast.failed_to_unfriend_value', {
-                              value: friend.displayName || normalizedUserId
-                          })
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.friends.toast.failed_to_unfriend_value', {
+                                  value: friend.displayName || normalizedUserId
+                              })
+                });
                 return {
                     stale: false,
                     deleted: false
@@ -417,21 +421,24 @@ export function useFriendListRowActions({
                 ) {
                     removedIds.add(item.userId);
                     if (item.state === 'remoteOkLocalFailed') {
-                        toast.warning(
-                            t(
+                        toast.add({
+                            type: 'warning',
+                            title: t(
                                 'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
                             )
-                        );
+                        });
                     }
                     continue;
                 }
                 const friend = rowsById.get(item.userId);
-                toast.error(
-                    item.message ||
+                toast.add({
+                    type: 'error',
+                    title:
+                        item.message ||
                         t('view.friends.toast.failed_to_unfriend_value', {
                             value: friend?.displayName || item.userId
                         })
-                );
+                });
             }
             if (removedIds.size) {
                 setSelectedFriendIds((current) => {
@@ -441,11 +448,12 @@ export function useFriendListRowActions({
                     }
                     return next;
                 });
-                toast.success(
-                    t('view.friends.dynamic.unfriended_value_friends', {
+                toast.add({
+                    type: 'success',
+                    title: t('view.friends.dynamic.unfriended_value_friends', {
                         value: removedIds.size
                     })
-                );
+                });
             }
         } catch (error) {
             const auth = useRuntimeStore.getState().auth;
@@ -458,13 +466,15 @@ export function useFriendListRowActions({
             ) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.friends.toast.failed_to_unfriend_value', {
-                          value: selectedRows.length
-                      })
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.friends.toast.failed_to_unfriend_value', {
+                              value: selectedRows.length
+                          })
+            });
         } finally {
             if (bulkUnfriendRunRef.current === runId) {
                 setDeletingFriendIds((current) => {
@@ -489,9 +499,10 @@ export function useFriendListRowActions({
                 '[FriendListPage] Failed to start friend profile loading',
                 error
             );
-            toast.error(
-                t('view.friend_list.error.failed_to_load_friend_details')
-            );
+            toast.add({
+                type: 'error',
+                title: t('view.friend_list.error.failed_to_load_friend_details')
+            });
         });
     }
 
@@ -500,22 +511,24 @@ export function useFriendListRowActions({
             return;
         }
         if (currentUserSnapshot?.hasSharedConnectionsOptOut) {
-            toast.warning(
-                t(
+            toast.add({
+                type: 'warning',
+                title: t(
                     'view.friend_list.label.shared_connections_are_opted_out_for_the_current_account'
                 )
-            );
+            });
             return;
         }
         const friendSnapshot = rosterRows.filter((friend) =>
             normalizeId(friend?.id)
         );
         if (!friendSnapshot.length) {
-            toast.info(
-                t(
+            toast.add({
+                type: 'info',
+                title: t(
                     'view.friend_list.empty.no_friends_are_available_for_mutual_friends_loading'
                 )
-            );
+            });
             return;
         }
         setMutualProgress({
@@ -530,15 +543,20 @@ export function useFriendListRowActions({
                     normalizeId(friend?.id)
                 )
             });
-            toast.info(t('view.charts.mutual_friend.prompt.message'));
+            toast.add({
+                type: 'info',
+                title: t('view.charts.mutual_friend.prompt.message')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.charts.toast.failed_to_fetch_mutual_friends_graph'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.charts.toast.failed_to_fetch_mutual_friends_graph'
+                          )
+            });
         }
     }
 

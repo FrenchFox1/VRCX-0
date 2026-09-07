@@ -1,13 +1,13 @@
 import { PlusIcon, UserIcon, UsersIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { userImage } from '@/services/entityMediaService';
 import { sendInvitesToLocation } from '@/services/inviteDeliveryService';
+import { toast } from '@/services/toastService';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -245,17 +245,21 @@ export function InstanceInviteDialog({
             .map(normalizeId)
             .filter(Boolean);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.invite.error.cannot_invite_location_is_not_a_concrete_instance'
                 )
-            );
+            });
             return;
         }
         if (!normalizedUserIds.length) {
-            toast.error(
-                t('dialog.invite.action.select_at_least_one_user_to_invite')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'dialog.invite.action.select_at_least_one_user_to_invite'
+                )
+            });
             return;
         }
 
@@ -295,35 +299,46 @@ export function InstanceInviteDialog({
             const successCount = batch.succeeded;
 
             if (successCount) {
-                toast.success(
-                    successCount === 1
-                        ? t('message.invite.sent')
-                        : t('dialog.instance_invite.toast.sent_value_invites', {
-                              value: successCount
-                          })
-                );
+                toast.add({
+                    type: 'success',
+                    title:
+                        successCount === 1
+                            ? t('message.invite.sent')
+                            : t(
+                                  'dialog.instance_invite.toast.sent_value_invites',
+                                  {
+                                      value: successCount
+                                  }
+                              )
+                });
             }
             if (failures.length) {
                 setSelectedUserIds((current) =>
                     current.filter((userId) => failedUserIds.has(userId))
                 );
-                toast.error(
-                    failures.length === 1
-                        ? failures[0]
-                        : t(
-                              'dialog.instance_invite.toast.failed_to_send_value_invites',
-                              { value: failures.length }
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        failures.length === 1
+                            ? failures[0]
+                            : t(
+                                  'dialog.instance_invite.toast.failed_to_send_value_invites',
+                                  { value: failures.length }
+                              )
+                });
             } else {
                 onOpenChange?.(false);
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.instance_invite.toast.failed_to_send_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.instance_invite.toast.failed_to_send_invite'
+                          )
+            });
         } finally {
             setSending(false);
         }

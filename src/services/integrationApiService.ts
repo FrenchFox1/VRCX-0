@@ -1,9 +1,8 @@
-import { toast } from 'sonner';
-
 import type {
     IntegrationApiStartFailedPayload,
     IntegrationApiStatus
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 
 import i18n from './i18nService';
 
@@ -63,9 +62,13 @@ function presentStartFailure(failure: IntegrationApiStartFailedPayload): void {
             ? 'view.settings.integrations.integration_api.port_in_use'
             : 'view.settings.integrations.integration_api.bind_failed';
     const reason = i18n.t(reasonKey, { port: failure.port });
-    toast.error(
-        i18n.t('view.settings.integrations.integration_api.start_failed', {
-            reason
-        })
-    );
+    toast.add({
+        type: 'error',
+        title: i18n.t(
+            'view.settings.integrations.integration_api.start_failed',
+            {
+                reason
+            }
+        )
+    });
 }

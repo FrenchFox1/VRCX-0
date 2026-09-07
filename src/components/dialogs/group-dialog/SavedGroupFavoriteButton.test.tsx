@@ -139,3 +139,7 @@ describe('SavedGroupFavoriteButton', () => {
         });
     });
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

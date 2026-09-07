@@ -8,6 +8,7 @@ import {
 import type { ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { markAppTitleBarWindowAction } from '@/lib/overlayTitlebar';
 import { cn } from '@/lib/utils';
 import {
     closeWindow,
@@ -43,6 +44,7 @@ function TitleBarWindowButton({
             )}
             onPointerDown={(event: React.PointerEvent) => {
                 if (event.button === 0) {
+                    markAppTitleBarWindowAction();
                     onAction();
                 }
             }}
@@ -95,7 +97,7 @@ export function AppTitleBar() {
                     data-tauri-drag-region
                     className="flex h-full min-w-0 flex-1 items-center gap-2 pr-3"
                 >
-                    {isSessionReady && !sidebarWindowMode ? (
+                    {isSessionReady ? (
                         <div
                             role="presentation"
                             data-titlebar-interactive="true"
@@ -107,7 +109,7 @@ export function AppTitleBar() {
                                 event.stopPropagation();
                             }}
                         >
-                            <AppMenuBar />
+                            <AppMenuBar showHelp={!sidebarWindowMode} />
                         </div>
                     ) : null}
                     <div

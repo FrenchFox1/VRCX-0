@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
+import { toast } from '@/services/toastService';
 import {
     UPDATE_AVAILABLE_TOAST_ID,
     openOrInstallLatestAvailableUpdate,
@@ -58,24 +58,18 @@ export function showUpdateAvailableToast({
     t: (key: string, values?: Record<string, unknown>) => string;
     onUpdate: () => void;
 }) {
-    toast.info(
-        t('service.background_maintenance.label.vrcx_update_available'),
-        {
-            id: UPDATE_AVAILABLE_TOAST_ID,
-            icon: null,
-            description: formatUpdateVersion(
-                getLatestUpdaterDisplayVersion(latestUpdaterRelease)
-            ),
-            duration: Infinity,
-            position: 'bottom-right',
-            closeButton: true,
-            dismissible: true,
-            action: {
-                label: t('nav_menu.update'),
-                onClick: onUpdate
-            }
-        }
-    );
+    toast.add({
+        type: 'info',
+        title: t('service.background_maintenance.label.vrcx_update_available'),
+        id: UPDATE_AVAILABLE_TOAST_ID,
+        description: formatUpdateVersion(
+            getLatestUpdaterDisplayVersion(latestUpdaterRelease)
+        ),
+        timeout: 0,
+        position: 'bottom-right',
+        actionProps: { children: t('nav_menu.update'), onClick: onUpdate },
+        data: { icon: null, closeButton: true }
+    });
 }
 
 export function showUpdateReadyToast({
@@ -90,23 +84,21 @@ export function showUpdateReadyToast({
     const version = formatUpdateVersion(
         getLatestUpdaterDisplayVersion(latestUpdaterRelease)
     );
-    toast.success(
-        t('dialog.vrcx_updater.ready_for_update', {
+    toast.add({
+        type: 'success',
+        title: t('dialog.vrcx_updater.ready_for_update', {
             value: version
         }),
-        {
-            id: UPDATE_AVAILABLE_TOAST_ID,
-            description: undefined,
-            duration: Infinity,
-            position: 'bottom-right',
-            closeButton: true,
-            dismissible: true,
-            action: {
-                label: t('nav_menu.update_downloaded'),
-                onClick: onUpdate
-            }
-        }
-    );
+        id: UPDATE_AVAILABLE_TOAST_ID,
+        description: undefined,
+        timeout: 0,
+        position: 'bottom-right',
+        actionProps: {
+            children: t('nav_menu.update_downloaded'),
+            onClick: onUpdate
+        },
+        data: { closeButton: true }
+    });
 }
 
 export function UpdateAvailableToastHost(): null {
@@ -126,7 +118,7 @@ export function UpdateAvailableToastHost(): null {
 
     useEffect(() => {
         if (!showUpdateUi || !latestUpdaterRelease) {
-            toast.dismiss(UPDATE_AVAILABLE_TOAST_ID);
+            toast.close(UPDATE_AVAILABLE_TOAST_ID);
             return undefined;
         }
 

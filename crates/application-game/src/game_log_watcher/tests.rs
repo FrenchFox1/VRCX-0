@@ -11,6 +11,7 @@ use super::watcher::{update, LogWatcher};
 #[derive(Default)]
 struct RecordingSink {
     origins: Mutex<Vec<GameLogEventOrigin>>,
+    events: Mutex<Vec<GameLogEvent>>,
 }
 
 impl GameLogEventSink for RecordingSink {
@@ -20,10 +21,11 @@ impl GameLogEventSink for RecordingSink {
 
     fn ingest_game_log_events_with_origin(
         &self,
-        _events: &[GameLogEvent],
+        events: &[GameLogEvent],
         origin: GameLogEventOrigin,
     ) -> crate::Result<()> {
         self.origins.lock().unwrap().push(origin);
+        self.events.lock().unwrap().extend_from_slice(events);
         Ok(())
     }
 }
@@ -210,5 +212,244 @@ fn parse_sink_emits_compat_payloads_only_for_live_events() {
     assert_eq!(
         serde_json::from_str::<Vec<String>>(&payloads[0]).unwrap(),
         expected
+    );
+}
+#[test]
+fn latest_only_replay_does_not_ingest_older_files_on_later_polls() {
+    use chrono::{Duration, Local, Utc};
+    struct Seen(Mutex<Vec<(String, GameLogEventOrigin)>>);
+    impl GameLogEventSink for Seen {
+        fn ingest_game_log_event(&self, _: &GameLogEvent) -> crate::Result<()> {
+            Ok(())
+        }
+        fn ingest_game_log_events_with_origin(
+            &self,
+            events: &[GameLogEvent],
+            origin: GameLogEventOrigin,
+        ) -> crate::Result<()> {
+            let mut seen = self.0.lock().unwrap();
+            for event in events {
+                if let GameLogEventKind::Location { location, .. } = &event.kind {
+                    seen.push((location.clone(), origin));
+                }
+            }
+            Ok(())
+        }
+    }
+    let dir = TestDir::new("analysis-latest-only");
+    let older = Local::now() - Duration::minutes(5);
+    let latest = older + Duration::minutes(1);
+    for (name, time, location) in [
+        ("output_log_01.txt", older, "wrld_old:1"),
+        ("output_log_02.txt", latest, "wrld_current:2"),
+    ] {
+        std::fs::write(
+            dir.path().join(name),
+            format!(
+                "{} Debug      -  [Behaviour] Joining {location}\n",
+                time.format("%Y.%m.%d %H:%M:%S")
+            ),
+        )
+        .unwrap();
+    }
+    let seen = Arc::new(Seen(Mutex::new(Vec::new())));
+    let watcher = LogWatcher::new(Some(seen.clone()));
+    watcher.set_initial_scan_latest_file_only(true);
+    watcher.set_date_till(
+        &(older - Duration::minutes(1))
+            .with_timezone(&Utc)
+            .to_rfc3339(),
+    );
+    let mut reader = LogReader::new();
+    let mut contexts = HashMap::new();
+    let mut first = true;
+    update(
+        &watcher.inner,
+        dir.path(),
+        &mut reader,
+        &mut contexts,
+        &mut first,
+    );
+    assert_eq!(
+        *seen.0.lock().unwrap(),
+        vec![("wrld_current:2".into(), GameLogEventOrigin::InitialScan)]
+    );
+    update(
+        &watcher.inner,
+        dir.path(),
+        &mut reader,
+        &mut contexts,
+        &mut first,
+    );
+    let result = seen.0.lock().unwrap();
+
+    assert_eq!(
+        *result,
+        vec![("wrld_current:2".into(), GameLogEventOrigin::InitialScan)]
+    );
+}
+
+#[test]
+fn truncated_current_log_is_read_again_from_its_new_beginning() {
+    let dir = TestDir::new("truncate-current");
+    let path = dir.path().join("output_log_current.txt");
+    let old = "2020.01.01 00:00:00 Log        -  [Behaviour] Joining wrld_old:1\n";
+    std::fs::write(&path, old.repeat(2)).unwrap();
+    let sink = Arc::new(RecordingSink::default());
+    let watcher = LogWatcher::new(Some(sink.clone()));
+    let mut reader = LogReader::new();
+    let mut contexts = HashMap::new();
+    let mut first = true;
+    update(
+        &watcher.inner,
+        dir.path(),
+        &mut reader,
+        &mut contexts,
+        &mut first,
+    );
+    std::fs::write(
+        &path,
+        "2020.01.01 00:00:01 Log        -  [Behaviour] Joining wrld_new:2\n",
+    )
+    .unwrap();
+    update(
+        &watcher.inner,
+        dir.path(),
+        &mut reader,
+        &mut contexts,
+        &mut first,
+    );
+    let events = sink.events.lock().unwrap();
+    assert!(
+        matches!(&events.last().unwrap().kind, GameLogEventKind::Location { location, .. } if location == "wrld_new:2")
+    );
+}
+
+#[test]
+fn regression_failed_scan_retains_cursor_and_initial_origin() {
+    struct RetrySink(Mutex<Vec<super::GameLogScanCursor>>);
+    impl GameLogEventSink for RetrySink {
+        fn ingest_game_log_event(&self, _: &GameLogEvent) -> crate::Result<()> {
+            Ok(())
+        }
+        fn ingest_game_log_scan(
+            &self,
+            _: &[GameLogEvent],
+            origin: GameLogEventOrigin,
+            cursor: super::GameLogScanCursor,
+            _: bool,
+        ) -> crate::Result<()> {
+            assert_eq!(origin, GameLogEventOrigin::InitialScan);
+            let mut seen = self.0.lock().unwrap();
+            seen.push(cursor);
+            if seen.len() == 1 {
+                Err(crate::Error::Custom("temporary failure".into()))
+            } else {
+                Ok(())
+            }
+        }
+    }
+    let dir = TestDir::new("scan-retry");
+    std::fs::write(
+        dir.path().join("output_log_current.txt"),
+        "2020.01.01 00:00:00 Log        -  [Behaviour] Joining wrld_retry:1\n",
+    )
+    .unwrap();
+    let sink = Arc::new(RetrySink(Mutex::new(Vec::new())));
+    let watcher = LogWatcher::new(Some(sink.clone()));
+    let mut reader = LogReader::new();
+    let mut contexts = HashMap::new();
+    let mut first = true;
+    update(
+        &watcher.inner,
+        dir.path(),
+        &mut reader,
+        &mut contexts,
+        &mut first,
+    );
+    assert!(first);
+    assert_eq!(contexts["output_log_current.txt"].position, 0);
+    use std::io::Write;
+    writeln!(
+        std::fs::OpenOptions::new()
+            .append(true)
+            .open(dir.path().join("output_log_current.txt"))
+            .unwrap(),
+        "2020.01.01 00:00:01 Log        -  [Behaviour] Joining wrld_next:2"
+    )
+    .unwrap();
+    update(
+        &watcher.inner,
+        dir.path(),
+        &mut reader,
+        &mut contexts,
+        &mut first,
+    );
+    assert!(!first);
+    let seen = sink.0.lock().unwrap();
+    assert_eq!(seen.len(), 3);
+    assert_eq!(seen[0].context.position, seen[1].context.position);
+    assert!(seen[2].context.position > seen[1].context.position);
+}
+
+#[test]
+fn retry_in_later_file_does_not_revisit_completed_earlier_files() {
+    struct Sink(Mutex<Vec<String>>);
+    impl GameLogEventSink for Sink {
+        fn ingest_game_log_event(&self, _: &GameLogEvent) -> crate::Result<()> {
+            Ok(())
+        }
+        fn ingest_game_log_scan(
+            &self,
+            _: &[GameLogEvent],
+            _: GameLogEventOrigin,
+            cursor: super::GameLogScanCursor,
+            _: bool,
+        ) -> crate::Result<()> {
+            let mut seen = self.0.lock().unwrap();
+            seen.push(cursor.file_name);
+            if seen.len() == 2 {
+                Err(crate::Error::Custom("write unavailable".into()))
+            } else {
+                Ok(())
+            }
+        }
+    }
+    let dir = TestDir::new("retry-multiple-files");
+    for name in ["output_log_01.txt", "output_log_02.txt"] {
+        std::fs::write(
+            dir.path().join(name),
+            "2020.01.01 00:00:00 Log        -  [Behaviour] Joining wrld_retry:1\n",
+        )
+        .unwrap();
+    }
+    let sink = Arc::new(Sink(Mutex::new(Vec::new())));
+    let watcher = LogWatcher::new(Some(sink.clone()));
+    let mut reader = LogReader::new();
+    let mut contexts = HashMap::new();
+    let mut first = true;
+    update(
+        &watcher.inner,
+        dir.path(),
+        &mut reader,
+        &mut contexts,
+        &mut first,
+    );
+    update(
+        &watcher.inner,
+        dir.path(),
+        &mut reader,
+        &mut contexts,
+        &mut first,
+    );
+    assert!(!first);
+    assert_eq!(
+        sink.0
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|name| name.as_str() == "output_log_01.txt")
+            .count(),
+        1
     );
 }

@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { profileRestoreRollbackErrorKey } from '@/services/profileBackupI18n';
 import {
@@ -8,6 +7,7 @@ import {
     getProfileRestoreRollbackState,
     type ProfileRestoreRollbackState
 } from '@/services/profileBackupService';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 
@@ -78,21 +78,28 @@ export function useProfileRestoreRollback() {
                 const outcome = await clearProfileRestoreRollback();
                 setRollbackState(outcome.state);
                 if (!outcome.accepted) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             outcome.error
                                 ? profileRestoreRollbackErrorKey(
                                       outcome.error.code
                                   )
                                 : 'profile_backup.rollback_error.io'
                         )
-                    );
+                    });
                     return;
                 }
-                toast.dismiss(PROFILE_RESTORE_ROLLBACK_TOAST_ID);
-                toast.success(t('profile_backup.rollback_cleanup_succeeded'));
+                toast.close(PROFILE_RESTORE_ROLLBACK_TOAST_ID);
+                toast.add({
+                    type: 'success',
+                    title: t('profile_backup.rollback_cleanup_succeeded')
+                });
             } catch {
-                toast.error(t('profile_backup.rollback_error.io'));
+                toast.add({
+                    type: 'error',
+                    title: t('profile_backup.rollback_error.io')
+                });
             }
         } finally {
             finishCleanup();

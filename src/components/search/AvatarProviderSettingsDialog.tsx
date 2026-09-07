@@ -1,10 +1,10 @@
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { AvatarSearchProviderConfig } from '@/repositories/avatarSearchProviderRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
+import { toast } from '@/services/toastService';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -78,13 +78,15 @@ export function AvatarProviderSettingsDialog({
             );
             onConfigSaved?.(savedConfig);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.avatar_provider_settings.toast.failed_to_save_avatar_providers'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.avatar_provider_settings.toast.failed_to_save_avatar_providers'
+                          )
+            });
         } finally {
             if (inFlightProviderListKeyRef.current === nextProviderListKey) {
                 inFlightProviderListKeyRef.current = '';

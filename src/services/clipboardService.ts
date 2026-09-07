@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { toast } from '@/services/toastService';
 
 export type CopyTextToClipboardOptions = {
     successMessage?: string;
@@ -15,16 +15,16 @@ export async function copyTextToClipboard(
         if (typeof options.errorMessage === 'function') {
             const message = options.errorMessage(error);
             if (message) {
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
             }
         } else if (options.errorMessage) {
-            toast.error(options.errorMessage);
+            toast.add({ type: 'error', title: options.errorMessage });
         }
         return false;
     }
 
     if (options.successMessage) {
-        toast.success(options.successMessage);
+        toast.add({ type: 'success', title: options.successMessage });
     }
     return true;
 }

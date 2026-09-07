@@ -312,7 +312,9 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
             location: "wrld_replay:1".into(),
             ..Default::default()
         },
-        1,
+        chrono::DateTime::parse_from_rfc3339("2026-05-14T05:11:00Z")
+            .unwrap()
+            .timestamp_millis(),
     );
     processor.deps.instance_roster_observer = Some(timers.clone());
     store.set_bool("gameLogDisabled", true)?;
@@ -357,6 +359,173 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
         .snapshot()
         .entries
         .is_empty());
+    Ok(())
+}
+
+#[test]
+fn entering_a_friends_instance_keeps_dwell_without_rewriting_log_join_time() -> Result<()> {
+    for batched in [false, true] {
+        let (_dir, _store, mut processor) = test_processor("runtime-gamelog-arrival-dwell")?;
+        let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+        let started_at = chrono::DateTime::parse_from_rfc3339("2026-09-06T10:00:00Z")
+            .unwrap()
+            .timestamp_millis();
+        timers.observe_friend_record(
+            "usr_friend",
+            &vrcx_0_core::friends::FriendRecord {
+                id: "usr_friend".into(),
+                state: "online".into(),
+                location: "wrld_local:1".into(),
+                ..Default::default()
+            },
+            started_at,
+        );
+        processor.deps.instance_roster_observer = Some(timers.clone());
+        let location = GameLogWorkerJob::Event(event(
+            "2026-09-06T10:30:00Z",
+            GameLogEventKind::Location {
+                location: "wrld_local:1".into(),
+                world_name: "Local".into(),
+            },
+        ));
+        let joined = GameLogWorkerJob::Event(event(
+            "2026-09-06T10:30:12Z",
+            GameLogEventKind::PlayerJoined {
+                display_name: "Friend".into(),
+                user_id: "usr_friend".into(),
+            },
+        ));
+        if batched {
+            processor.handle_jobs(vec![location, joined])?;
+        } else {
+            processor.handle_jobs(vec![location])?;
+            processor.handle_jobs(vec![joined])?;
+        }
+
+        assert_eq!(timers.snapshot()[0].since_ms, Some(started_at));
+        assert_eq!(
+            timers.snapshot()[0].source,
+            vrcx_0_application_core::FriendLocationTimeSource::GameLog
+        );
+        assert_eq!(
+            processor.deps.snapshot.snapshot().players[0].join_time_ms,
+            Some(started_at + 30 * 60_000 + 12_000)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn room_exit_cleanup_preserves_the_dwell_of_friends_staying_in_the_old_instance() -> Result<()> {
+    for batched in [false, true] {
+        for origin in [
+            crate::GameLogEventOrigin::Live,
+            crate::GameLogEventOrigin::InitialScan,
+        ] {
+            let (_dir, _store, mut processor) = test_processor("gamelog-exit-cleanup-timers")?;
+            let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+            let mut initial = vec![event(
+                "1970-01-01T00:30:00Z",
+                GameLogEventKind::Location {
+                    location: "wrld_old:1".into(),
+                    world_name: "Old".into(),
+                },
+            )];
+            for (user_id, since_ms) in [("usr_a", 1_000), ("usr_b", 2_000)] {
+                timers.observe_friend_record(
+                    user_id,
+                    &vrcx_0_core::friends::FriendRecord {
+                        id: user_id.into(),
+                        state: "online".into(),
+                        location: "wrld_old:1".into(),
+                        ..Default::default()
+                    },
+                    since_ms,
+                );
+                initial.push(event(
+                    "1970-01-01T00:30:25Z",
+                    GameLogEventKind::PlayerJoined {
+                        display_name: user_id.into(),
+                        user_id: user_id.into(),
+                    },
+                ));
+            }
+            processor.deps.instance_roster_observer = Some(timers.clone());
+            processor.handle_jobs(vec![GameLogWorkerJob::Events {
+                events: initial,
+                origin,
+            }])?;
+            assert_eq!(timers.snapshot()[0].since_ms, Some(1_000));
+            assert_eq!(timers.snapshot()[1].since_ms, Some(2_000));
+
+            let events = [
+                event(
+                    "1970-01-01T00:31:01Z",
+                    GameLogEventKind::LocationDestination {
+                        location: "wrld_next:2".into(),
+                    },
+                ),
+                event(
+                    "1970-01-01T00:31:01Z",
+                    GameLogEventKind::PlayerLeft {
+                        display_name: "usr_a".into(),
+                        user_id: "usr_a".into(),
+                    },
+                ),
+                event(
+                    "1970-01-01T00:31:02Z",
+                    GameLogEventKind::PlayerLeft {
+                        display_name: "usr_b".into(),
+                        user_id: "usr_b".into(),
+                    },
+                ),
+                event(
+                    "1970-01-01T00:31:03Z",
+                    GameLogEventKind::Location {
+                        location: "wrld_next:2".into(),
+                        world_name: "Next".into(),
+                    },
+                ),
+            ];
+            for chunk in events.chunks(if batched { events.len() } else { 1 }) {
+                processor.handle_jobs(vec![GameLogWorkerJob::Events {
+                    events: chunk.to_vec(),
+                    origin,
+                }])?;
+                let times = timers.snapshot();
+                assert_eq!(times.len(), 2);
+                for (time, since_ms) in times.iter().zip([1_000, 2_000]) {
+                    assert_eq!(time.since_ms, Some(since_ms));
+                    assert_eq!(time.location, "wrld_old:1");
+                    assert_eq!(
+                        time.source,
+                        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+                    );
+                }
+            }
+
+            processor.handle_jobs(vec![GameLogWorkerJob::Events {
+                events: vec![
+                    event(
+                        "1970-01-01T00:32:00Z",
+                        GameLogEventKind::Location {
+                            location: "wrld_old:1".into(),
+                            world_name: "Old".into(),
+                        },
+                    ),
+                    event(
+                        "1970-01-01T00:32:10Z",
+                        GameLogEventKind::PlayerJoined {
+                            display_name: "usr_a".into(),
+                            user_id: "usr_a".into(),
+                        },
+                    ),
+                ],
+                origin,
+            }])?;
+            assert_eq!(timers.snapshot()[0].since_ms, Some(1_000));
+        }
+    }
     Ok(())
 }
 
@@ -432,7 +601,7 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
             .iter()
             .find(|entry| entry.user_id == "usr_local")
             .unwrap();
-        assert_eq!(local.since_ms, Some(5_000));
+        assert_eq!(local.since_ms, Some(500));
         assert_eq!(
             local.source,
             vrcx_0_application_core::FriendLocationTimeSource::GameLog
@@ -532,7 +701,7 @@ fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()
         )),
         GameLogWorkerJob::InitialEvent(event("1970-01-01T00:00:02Z", joined.clone())),
     ])?;
-    assert_eq!(timers.snapshot()[0].since_ms, Some(2_000));
+    assert_eq!(timers.snapshot()[0].since_ms, Some(500));
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event("1970-01-01T00:00:03Z", left.clone())),
@@ -600,7 +769,7 @@ fn local_mode_player_leave_is_not_lost_when_own_exit_is_in_the_same_batch() -> R
             },
         )),
     ])?;
-    assert_eq!(timers.snapshot()[0].since_ms, Some(2_000));
+    assert_eq!(timers.snapshot()[0].since_ms, Some(500));
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -743,19 +912,25 @@ fn enabled_write_failure_emits_fallback_and_skips_persisted_outputs() -> Result<
     let (_dir, store, processor) = test_processor("runtime-gamelog-write-failure")?;
     store.set_fail_writes(true);
 
-    processor.handle_jobs(vec![
-        GameLogWorkerJob::Event(event(
-            "2026-05-14T06:10:00.000Z",
-            GameLogEventKind::Location {
-                location: "wrld_failure:1".into(),
-                world_name: "Failure".into(),
-            },
-        )),
-        GameLogWorkerJob::Event(event(
-            "2026-05-14T06:10:01.000Z",
-            GameLogEventKind::DesktopMode,
-        )),
-    ])?;
+    let writing = processor.clone();
+    let worker = std::thread::spawn(move || {
+        writing.handle_jobs(vec![
+            GameLogWorkerJob::Event(event(
+                "2026-05-14T06:10:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_failure:1".into(),
+                    world_name: "Failure".into(),
+                },
+            )),
+            GameLogWorkerJob::Event(event(
+                "2026-05-14T06:10:01.000Z",
+                GameLogEventKind::DesktopMode,
+            )),
+        ])
+    });
+    std::thread::sleep(std::time::Duration::from_millis(600));
+    processor.request_stop();
+    assert!(worker.join().unwrap().is_err());
 
     assert!(store.get_bool("isGameNoVR", false)?);
     assert!(processor
@@ -772,8 +947,8 @@ fn enabled_write_failure_emits_fallback_and_skips_persisted_outputs() -> Result<
         (event.name == "backendRuntimeTelemetry"
             && event.payload.get("kind").and_then(|kind| kind.as_str()) == Some("gameLogPersisted"))
             || event.name == "runtimeGameLogEvent"
-            || event.name == "gameLogProjection"
     }));
+    assert!(events.iter().any(|event| event.name == "gameLogProjection"));
     Ok(())
 }
 
@@ -836,45 +1011,6 @@ fn suppresses_initial_current_instance_join_overlay_notifications() -> Result<()
             },
         )),
     ])?;
-
-    let join_leave = store.join_leave(&OwnerId::new(""));
-    assert_eq!(join_leave.len(), 1);
-    assert!(processor
-        .deps
-        .overlay_activity
-        .snapshot()
-        .entries
-        .is_empty());
-    Ok(())
-}
-
-#[test]
-fn suppresses_seeded_location_join_overlay_notifications() -> Result<()> {
-    let _dir = TestDir::new("runtime-gamelog-seeded-join-suppress");
-    let store = Arc::new(TestGameStateStore::default());
-    store.write_game_log(
-        &OwnerId::new(""),
-        &GameLogWriteBatch {
-            locations: vec![GameLogLocationEntry {
-                created_at: "2026-05-14T08:05:00.000Z".into(),
-                location: "wrld_seeded:123".into(),
-                world_id: "wrld_seeded".into(),
-                world_name: "Seeded World".into(),
-                time: 0,
-                group_name: String::new(),
-            }],
-            ..GameLogWriteBatch::default()
-        },
-    )?;
-    let processor = build_test_processor(Arc::clone(&store))?;
-
-    processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
-        "2026-05-14T08:05:10.000Z",
-        GameLogEventKind::PlayerJoined {
-            display_name: "Seeded Existing Player".into(),
-            user_id: "usr_seeded_existing".into(),
-        },
-    ))])?;
 
     let join_leave = store.join_leave(&OwnerId::new(""));
     assert_eq!(join_leave.len(), 1);
@@ -1079,5 +1215,755 @@ fn suppresses_current_user_join_leave_overlay_notifications() -> Result<()> {
         .snapshot()
         .entries
         .is_empty());
+    Ok(())
+}
+
+#[test]
+fn failed_write_recovers_before_later_records_advance_history() -> Result<()> {
+    let (_dir, store, processor) = test_processor("recover-write-gap")?;
+    processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
+        "2026-05-14T04:00:00.000Z",
+        GameLogEventKind::Location {
+            location: "wrld_recovery:1".into(),
+            world_name: "Recovery".into(),
+        },
+    ))])?;
+    store.set_fail_writes(true);
+    let writing = processor.clone();
+    let worker = std::thread::spawn(move || {
+        writing.handle_jobs(vec![GameLogWorkerJob::Event(event(
+            "2026-05-14T04:00:10.000Z",
+            GameLogEventKind::PlayerJoined {
+                user_id: "usr_other".into(),
+                display_name: "Other".into(),
+            },
+        ))])
+    });
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    while processor.deps.snapshot.snapshot().players.is_empty()
+        && std::time::Instant::now() < deadline
+    {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    std::thread::sleep(std::time::Duration::from_millis(450));
+    let events = processor.deps.event_bus.take_events_for_test();
+    store.set_fail_writes(false);
+    assert!(worker.join().unwrap().is_err());
+    processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
+        "2026-05-14T04:00:10.000Z",
+        GameLogEventKind::PlayerJoined {
+            user_id: "usr_self".into(),
+            display_name: "Self".into(),
+        },
+    ))])?;
+    let rows = store.join_leave(&OwnerId::new(""));
+    assert_eq!(
+        rows.len(),
+        2,
+        "the failed join must be saved before later records"
+    );
+    assert_eq!(rows[0].user_id, "usr_other");
+    assert!(events.iter().any(|event| event.name == "gameLogProjection"
+        && event.payload["currentLocationPlayers"]
+            .as_array()
+            .is_some_and(|players| players.len() == 1)));
+    Ok(())
+}
+
+fn scan_job(
+    file_name: &str,
+    position: u64,
+    events: Vec<GameLogEvent>,
+    publish: bool,
+) -> GameLogWorkerJob {
+    let mut context = crate::game_log_parser::LogContext::new();
+    context.position = position;
+    GameLogWorkerJob::Scan {
+        events,
+        origin: crate::GameLogEventOrigin::InitialScan,
+        cursor: Box::new(crate::GameLogScanCursor {
+            file_created_at: None,
+            start_position: position.saturating_sub(100),
+            rebuild: false,
+            file_name: file_name.into(),
+            context,
+            cutoff: "2026-05-14T00:00:00Z".into(),
+        }),
+        publish,
+        completed: None,
+    }
+}
+
+#[test]
+fn checkpoint_recovers_same_second_tail_without_replaying_committed_joins() -> Result<()> {
+    let (_dir, store, processor) = test_processor("checkpoint-same-second")?;
+    processor.handle_jobs(vec![scan_job(
+        "output_log_01.txt",
+        100,
+        vec![
+            event(
+                "2026-05-14T04:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_checkpoint:1".into(),
+                    world_name: "Checkpoint".into(),
+                },
+            ),
+            event(
+                "2026-05-14T04:00:10.000Z",
+                GameLogEventKind::PlayerJoined {
+                    user_id: "usr_first".into(),
+                    display_name: "First".into(),
+                },
+            ),
+        ],
+        false,
+    )])?;
+    assert!(!processor.deps.snapshot.snapshot().ready);
+    store.set_fail_writes(true);
+    let writing = processor.clone();
+    let tail = event(
+        "2026-05-14T04:00:10.000Z",
+        GameLogEventKind::PlayerJoined {
+            user_id: "usr_second".into(),
+            display_name: "Second".into(),
+        },
+    );
+    let failed_tail = tail.clone();
+    let worker = std::thread::spawn(move || {
+        writing.handle_jobs(vec![scan_job(
+            "output_log_01.txt",
+            200,
+            vec![failed_tail],
+            true,
+        )])
+    });
+    std::thread::sleep(std::time::Duration::from_millis(600));
+    processor.request_stop();
+    assert!(worker.join().unwrap().is_err());
+    store.set_fail_writes(false);
+    let restored = build_test_processor(store.clone())?;
+    assert_eq!(restored.replay_cursor().unwrap().context.position, 100);
+    assert!(!restored.deps.snapshot.snapshot().ready);
+    restored.handle_jobs(vec![scan_job("output_log_01.txt", 200, vec![tail], true)])?;
+    let snapshot = restored.deps.snapshot.snapshot();
+    assert!(snapshot.ready);
+    assert_eq!(snapshot.players.len(), 2);
+    assert_eq!(store.join_leave(&OwnerId::new("")).len(), 2);
+    assert!(snapshot.players.iter().all(
+        |player| player.join_time_ms == crate::parse_event_time_ms("2026-05-14T04:00:10.000Z")
+    ));
+    Ok(())
+}
+
+#[test]
+fn a_new_log_file_cannot_publish_the_previous_games_roster() -> Result<()> {
+    let (_dir, _store, processor) = test_processor("new-game-log")?;
+    processor.handle_jobs(vec![scan_job(
+        "output_log_01.txt",
+        100,
+        vec![
+            event(
+                "2026-05-14T04:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_old:1".into(),
+                    world_name: "Old".into(),
+                },
+            ),
+            event(
+                "2026-05-14T04:00:10.000Z",
+                GameLogEventKind::PlayerJoined {
+                    user_id: "usr_old".into(),
+                    display_name: "Old".into(),
+                },
+            ),
+        ],
+        true,
+    )])?;
+    processor.handle_jobs(vec![scan_job("output_log_02.txt", 0, Vec::new(), true)])?;
+    let snapshot = processor.deps.snapshot.snapshot();
+    assert!(snapshot.players.is_empty());
+    assert!(snapshot.location.is_empty());
+    Ok(())
+}
+
+#[test]
+fn current_file_replay_restores_members_without_backfilling_history() -> Result<()> {
+    let (_dir, store, processor) = test_processor("current-file-private-replay")?;
+    let mut scan = scan_job(
+        "output_log_current.txt",
+        100,
+        vec![
+            event(
+                "2026-05-14T04:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_current:1".into(),
+                    world_name: "Current".into(),
+                },
+            ),
+            event(
+                "2026-05-14T04:00:10.000Z",
+                GameLogEventKind::PlayerJoined {
+                    user_id: "usr_self".into(),
+                    display_name: "Self".into(),
+                },
+            ),
+            event(
+                "2026-05-14T04:00:10.000Z",
+                GameLogEventKind::PlayerJoined {
+                    user_id: "usr_other".into(),
+                    display_name: "Other".into(),
+                },
+            ),
+        ],
+        true,
+    );
+    if let GameLogWorkerJob::Scan { cursor, .. } = &mut scan {
+        cursor.cutoff = "2026-05-14T05:00:00Z".into();
+        cursor.rebuild = true;
+    }
+    processor.handle_jobs(vec![scan])?;
+    let snapshot = processor.deps.snapshot.snapshot();
+    assert!(snapshot.ready);
+    assert_eq!(snapshot.players.len(), 2);
+    assert!(store.join_leave(&OwnerId::new("")).is_empty());
+    assert!(store.locations(&OwnerId::new("")).is_empty());
+    assert!(processor
+        .deps
+        .overlay_activity
+        .snapshot()
+        .entries
+        .is_empty());
+    let displayed = crate::player_list_runtime_snapshot(&snapshot, "wrld_current:1");
+    assert_eq!(displayed.players.len(), 2);
+    assert!(displayed
+        .players
+        .iter()
+        .any(|player| player.user_id == "usr_self"));
+    Ok(())
+}
+
+#[test]
+fn replay_cutoff_applies_to_old_records_after_a_newer_timestamp() -> Result<()> {
+    let (_dir, store, processor) = test_processor("out-of-order-cutoff")?;
+    let mut scan = scan_job(
+        "output_log_current.txt",
+        100,
+        vec![
+            event(
+                "2026-05-14T04:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_current:1".into(),
+                    world_name: "Current".into(),
+                },
+            ),
+            event(
+                "2026-05-14T04:02:00.000Z",
+                GameLogEventKind::PlayerJoined {
+                    user_id: "usr_new".into(),
+                    display_name: "New".into(),
+                },
+            ),
+            event(
+                "2026-05-14T04:00:10.000Z",
+                GameLogEventKind::PlayerJoined {
+                    user_id: "usr_old".into(),
+                    display_name: "Old".into(),
+                },
+            ),
+        ],
+        true,
+    );
+    if let GameLogWorkerJob::Scan { cursor, .. } = &mut scan {
+        cursor.cutoff = "2026-05-14T04:01:00Z".into();
+        cursor.rebuild = true;
+    }
+    processor.handle_jobs(vec![scan])?;
+    let rows = store.join_leave(&OwnerId::new(""));
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].user_id, "usr_new");
+    assert_eq!(processor.deps.snapshot.snapshot().players.len(), 2);
+    Ok(())
+}
+
+#[test]
+fn live_chunks_use_current_engine_for_join_suppression() -> Result<()> {
+    for publish_join_chunk in [false, true] {
+        let (_dir, _store, processor) = test_processor("review-live-chunk")?;
+        let mut first = scan_job(
+            "output_log_current.txt",
+            100,
+            vec![event(
+                "2026-05-14T04:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_new:1".into(),
+                    world_name: "New World".into(),
+                },
+            )],
+            false,
+        );
+        if let GameLogWorkerJob::Scan { origin, .. } = &mut first {
+            *origin = crate::GameLogEventOrigin::Live;
+        }
+        processor.handle_jobs(vec![first])?;
+        let mut joined = scan_job(
+            "output_log_current.txt",
+            200,
+            vec![event(
+                "2026-05-14T04:00:10.000Z",
+                GameLogEventKind::PlayerJoined {
+                    user_id: "usr_existing".into(),
+                    display_name: "Already Here".into(),
+                },
+            )],
+            publish_join_chunk,
+        );
+        if let GameLogWorkerJob::Scan { origin, .. } = &mut joined {
+            *origin = crate::GameLogEventOrigin::Live;
+        }
+        processor.handle_jobs(vec![joined])?;
+        let count = processor.deps.overlay_activity.snapshot().entries.len();
+        assert_eq!(count, 0);
+    }
+    Ok(())
+}
+
+#[test]
+fn new_file_does_not_forward_previous_replayed_departures() -> Result<()> {
+    struct Capture(Arc<Mutex<Vec<vrcx_0_application_core::InstanceRosterSnapshot>>>);
+    impl vrcx_0_application_core::InstanceRosterObserver for Capture {
+        fn on_instance_roster(&self, value: vrcx_0_application_core::InstanceRosterSnapshot) {
+            self.0.lock().unwrap().push(value);
+        }
+        fn on_game_running(&self, _: bool) {}
+    }
+    let (_dir, _store, mut processor) = test_processor("review-cross-file")?;
+    let captured = Arc::new(Mutex::new(Vec::new()));
+    processor.deps.instance_roster_observer = Some(Arc::new(Capture(captured.clone())));
+    processor.handle_jobs(vec![scan_job(
+        "output_log_old.txt",
+        100,
+        vec![event(
+            "2026-05-14T04:00:00.000Z",
+            GameLogEventKind::PlayerLeft {
+                user_id: "usr_from_previous_game".into(),
+                display_name: "Old".into(),
+            },
+        )],
+        false,
+    )])?;
+    processor.handle_jobs(vec![scan_job(
+        "output_log_new.txt",
+        100,
+        vec![event(
+            "2026-05-14T05:00:00.000Z",
+            GameLogEventKind::Location {
+                location: "wrld_new:2".into(),
+                world_name: "New".into(),
+            },
+        )],
+        true,
+    )])?;
+    let output = captured.lock().unwrap();
+    let last = output.last().unwrap();
+    assert!(last.replayed_departed_user_ids.is_empty());
+    Ok(())
+}
+
+#[test]
+fn process_events_do_not_close_unverified_database_roster() -> Result<()> {
+    let store = Arc::new(TestGameStateStore::default());
+    store.write_game_log(
+        &OwnerId::new(""),
+        &GameLogWriteBatch {
+            locations: vec![GameLogLocationEntry {
+                created_at: "2026-05-14T04:00:00.000Z".into(),
+                location: "wrld_old:1".into(),
+                world_id: "wrld_old".into(),
+                world_name: "Old".into(),
+                time: 0,
+                group_name: String::new(),
+            }],
+            join_leave: vec![vrcx_0_contracts::game_log::GameLogJoinLeaveEntry {
+                created_at: "2026-05-14T04:00:10.000Z".into(),
+                event_type: "OnPlayerJoined".into(),
+                user_id: "usr_old".into(),
+                display_name: "Old".into(),
+                location: "wrld_old:1".into(),
+                world_name: "Old".into(),
+                time: 0,
+            }],
+            ..Default::default()
+        },
+    )?;
+    let processor = build_test_processor(store.clone())?;
+    for (running, time) in [
+        (true, "2026-05-14T05:00:00.000Z"),
+        (false, "2026-05-14T05:01:00.000Z"),
+    ] {
+        processor.handle_jobs(vec![GameLogWorkerJob::Process(GameLogProcessEvent {
+            process: GameProcessEvent {
+                is_game_running: running,
+                is_steamvr_running: false,
+                game_changed: true,
+            },
+            changed_at: time.into(),
+        })])?;
+    }
+    let rows = store.join_leave(&OwnerId::new(""));
+    let last = rows.last().unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(last.event_type, "OnPlayerJoined");
+    Ok(())
+}
+
+#[test]
+fn regression_failed_scan_returns_and_retries_once_with_process_closure() -> Result<()> {
+    let (_dir, store, processor) = test_processor("bounded-scan-retry")?;
+    processor.handle_jobs(vec![scan_job(
+        "output_log_current.txt",
+        100,
+        vec![event(
+            "2026-05-14T04:00:00Z",
+            GameLogEventKind::Location {
+                location: "wrld_retry:1".into(),
+                world_name: "Retry".into(),
+            },
+        )],
+        true,
+    )])?;
+    store.set_fail_writes(true);
+    let scan = scan_job(
+        "output_log_current.txt",
+        200,
+        vec![event(
+            "2026-05-14T04:00:10Z",
+            GameLogEventKind::PlayerJoined {
+                user_id: "usr_other".into(),
+                display_name: "Other".into(),
+            },
+        )],
+        true,
+    );
+    let writing = processor.clone();
+    let retry = scan.clone();
+    let (sent, received) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        let _ = sent.send(writing.handle_jobs(vec![scan]).is_err());
+    });
+    let result = received.recv_timeout(std::time::Duration::from_secs(2));
+    if result.is_err() {
+        processor.request_stop();
+    }
+    worker.join().unwrap();
+    assert_eq!(
+        result.ok(),
+        Some(true),
+        "a failed write must return without stopping the runtime"
+    );
+    assert!(processor
+        .handle_jobs(vec![GameLogWorkerJob::Process(GameLogProcessEvent {
+            process: GameProcessEvent {
+                is_game_running: false,
+                is_steamvr_running: false,
+                game_changed: true
+            },
+            changed_at: "2026-05-14T04:01:00Z".into()
+        })])
+        .is_err());
+    store.set_fail_writes(false);
+    processor.handle_jobs(vec![retry])?;
+    let rows = store.join_leave(&OwnerId::new(""));
+    assert_eq!(rows.len(), 2);
+    assert_eq!(rows[1].event_type, "OnPlayerLeft");
+    assert_eq!(rows[1].time, 50_000);
+    assert!(processor.deps.snapshot.snapshot().players.is_empty());
+    Ok(())
+}
+
+#[test]
+fn regression_runtime_acknowledges_failure_and_continues_after_config_recovers() -> Result<()> {
+    let (_dir, store, processor) = test_processor("runtime-read-recovery")?;
+    let deps = processor.deps;
+    let runtime = crate::GameLogRuntime::new(crate::GameLogRuntimeDeps::new(
+        deps.store,
+        deps.instance_media,
+        deps.video_metadata,
+        deps.event_bus,
+        deps.backend_status,
+        deps.side_effect_sink,
+        deps.tasks,
+        deps.sync,
+        deps.auth_scope,
+        crate::HostSessionRuntime::new(),
+        deps.snapshot.clone(),
+        deps.host_actions,
+        deps.overlay_activity,
+        deps.world_cache,
+        None,
+    ));
+    let GameLogWorkerJob::Scan {
+        events,
+        origin,
+        cursor,
+        publish,
+        ..
+    } = scan_job(
+        "output_log_current.txt",
+        100,
+        vec![event(
+            "2026-05-14T04:00:00Z",
+            GameLogEventKind::Location {
+                location: "wrld_recovered:1".into(),
+                world_name: "Recovered".into(),
+            },
+        )],
+        true,
+    )
+    else {
+        unreachable!()
+    };
+    store.set_fail_reads(true);
+    assert!(runtime
+        .ingest_game_log_scan(&events, origin, (*cursor).clone(), publish)
+        .is_err());
+    store.set_fail_reads(false);
+    runtime.ingest_game_log_scan(&events, origin, *cursor, publish)?;
+    assert_eq!(deps.snapshot.snapshot().location, "wrld_recovered:1");
+    runtime.reset_replay()?;
+    runtime.stop();
+    Ok(())
+}
+
+#[test]
+fn unchanged_log_publishes_snapshot_after_each_restart() -> Result<()> {
+    let (_dir, store, processor) = test_processor("unchanged-log-restarts")?;
+    processor.handle_jobs(vec![scan_job(
+        "output_log_current.txt",
+        100,
+        vec![
+            event(
+                "2026-05-14T04:00:00Z",
+                GameLogEventKind::Location {
+                    location: "wrld_restored:1".into(),
+                    world_name: "Restored".into(),
+                },
+            ),
+            event(
+                "2026-05-14T04:00:10Z",
+                GameLogEventKind::PlayerJoined {
+                    user_id: "usr_other".into(),
+                    display_name: "Other".into(),
+                },
+            ),
+        ],
+        true,
+    )])?;
+    for restart in 1..=3 {
+        let restored = build_test_processor(store.clone())?;
+        assert!(!restored.deps.snapshot.snapshot().ready);
+        let mut cursor = restored.replay_cursor().unwrap();
+        let scanned_position = cursor.context.position;
+        cursor.start_position = scanned_position;
+        let scan = GameLogWorkerJob::Scan {
+            events: Vec::new(),
+            origin: crate::GameLogEventOrigin::InitialScan,
+            cursor: Box::new(cursor),
+            publish: true,
+            completed: None,
+        };
+        restored.handle_jobs(vec![scan.clone()])?;
+        let snapshot = restored.deps.snapshot.snapshot();
+        assert!(
+            snapshot.ready,
+            "restart {restart} must publish even without new log lines"
+        );
+        assert_eq!(snapshot.location, "wrld_restored:1");
+        assert_eq!(snapshot.players.len(), 1);
+        assert_eq!(
+            snapshot.players[0].join_time_ms,
+            crate::parse_event_time_ms("2026-05-14T04:00:10Z")
+        );
+        let checkpoint: super::ReplayCheckpoint =
+            serde_json::from_str(&store.get_string("gameLogReplayCheckpoint", "")?)?;
+        assert_eq!(checkpoint.cursor.context.position, scanned_position);
+        let events = restored.deps.event_bus.take_events_for_test();
+        assert_eq!(
+            events
+                .iter()
+                .filter(|event| event.name == "gameLogProjection")
+                .count(),
+            1
+        );
+        assert!(!events
+            .iter()
+            .any(|event| event.name == "runtimeGameLogEvent"));
+        restored.handle_jobs(vec![scan])?;
+        assert!(!restored
+            .deps
+            .event_bus
+            .take_events_for_test()
+            .iter()
+            .any(|event| event.name == "gameLogProjection"));
+    }
+    assert_eq!(store.locations(&OwnerId::new("")).len(), 1);
+    assert_eq!(store.join_leave(&OwnerId::new("")).len(), 1);
+    Ok(())
+}
+
+#[test]
+fn duplicate_scan_can_publish_without_replaying_rows_or_side_effects() -> Result<()> {
+    let (_dir, store, processor) = test_processor("duplicate-scan-publication")?;
+    let mut scan = scan_job(
+        "output_log_current.txt",
+        100,
+        vec![
+            event(
+                "2026-05-14T04:00:00Z",
+                GameLogEventKind::Location {
+                    location: "wrld_once:1".into(),
+                    world_name: "Once".into(),
+                },
+            ),
+            event("2026-05-14T04:00:10Z", GameLogEventKind::DesktopMode),
+        ],
+        false,
+    );
+    processor.handle_jobs(vec![scan.clone()])?;
+    assert!(!processor.deps.snapshot.snapshot().ready);
+    assert!(store.get_bool("isGameNoVR", false)?);
+    store.set_bool("isGameNoVR", false)?;
+    processor.deps.event_bus.take_events_for_test();
+    if let GameLogWorkerJob::Scan { publish, .. } = &mut scan {
+        *publish = true;
+    }
+    processor.handle_jobs(vec![scan])?;
+    assert!(processor.deps.snapshot.snapshot().ready);
+    assert_eq!(processor.deps.snapshot.snapshot().location, "wrld_once:1");
+    assert!(
+        !store.get_bool("isGameNoVR", false)?,
+        "the already handled DesktopMode event must not run again"
+    );
+    assert_eq!(store.locations(&OwnerId::new("")).len(), 1);
+    assert!(!processor
+        .deps
+        .event_bus
+        .take_events_for_test()
+        .iter()
+        .any(|event| event.name == "runtimeGameLogEvent"));
+    Ok(())
+}
+
+#[test]
+fn a_scan_without_events_keeps_the_persisted_checkpoint_and_the_database_idle() -> Result<()> {
+    let (_dir, store, processor) = test_processor("eventless-scan-checkpoint")?;
+    processor.handle_jobs(vec![scan_job(
+        "output_log_current.txt",
+        200,
+        vec![event(
+            "2026-05-14T04:00:00Z",
+            GameLogEventKind::Location {
+                location: "wrld_eventless:1".into(),
+                world_name: "Eventless".into(),
+            },
+        )],
+        true,
+    )])?;
+    let persisted = store.get_string("gameLogReplayCheckpoint", "")?;
+    assert!(!persisted.is_empty());
+    processor.deps.event_bus.take_events_for_test();
+
+    processor.handle_jobs(vec![scan_job(
+        "output_log_current.txt",
+        400,
+        Vec::new(),
+        true,
+    )])?;
+
+    assert_eq!(
+        store.get_string("gameLogReplayCheckpoint", "")?,
+        persisted,
+        "a poll over log lines that parse to nothing must not rewrite the checkpoint"
+    );
+    assert!(!processor
+        .deps
+        .event_bus
+        .take_events_for_test()
+        .iter()
+        .any(|event| event.name == "backendRuntimeTelemetry"
+            && event.payload.get("kind").and_then(|kind| kind.as_str())
+                == Some("gameLogPersisted")));
+    Ok(())
+}
+
+#[test]
+fn side_effect_events_without_history_rows_still_advance_the_restart_position() -> Result<()> {
+    let (_dir, store, processor) = test_processor("side-effect-restart-position")?;
+    let location = event(
+        "2026-05-14T04:00:00Z",
+        GameLogEventKind::Location {
+            location: "wrld_sync:1".into(),
+            world_name: "Sync".into(),
+        },
+    );
+    let video_sync = event(
+        "2026-05-14T04:00:20Z",
+        GameLogEventKind::VideoSync {
+            timestamp: "1000".into(),
+        },
+    );
+    let side_effects = |processor: &GameLogProcessor| {
+        processor
+            .deps
+            .event_bus
+            .take_events_for_test()
+            .iter()
+            .filter(|event| event.name == "gameLogSideEffect")
+            .count()
+    };
+
+    processor.handle_jobs(vec![scan_job(
+        "output_log_current.txt",
+        200,
+        vec![location.clone()],
+        true,
+    )])?;
+    processor.handle_jobs(vec![scan_job(
+        "output_log_current.txt",
+        300,
+        vec![video_sync.clone()],
+        true,
+    )])?;
+    assert_eq!(side_effects(&processor), 1);
+
+    let restored = build_test_processor(store.clone())?;
+    let resume_position = restored.replay_cursor().unwrap().context.position;
+    let mut replayed = Vec::new();
+    if resume_position <= 100 {
+        replayed.push(location);
+    }
+    if resume_position <= 200 {
+        replayed.push(video_sync);
+    }
+    let mut context = crate::game_log_parser::LogContext::new();
+    context.position = 300;
+    restored.handle_jobs(vec![GameLogWorkerJob::Scan {
+        events: replayed,
+        origin: crate::GameLogEventOrigin::InitialScan,
+        cursor: Box::new(crate::GameLogScanCursor {
+            file_created_at: None,
+            start_position: resume_position,
+            rebuild: false,
+            file_name: "output_log_current.txt".into(),
+            context,
+            cutoff: "2026-05-14T04:00:00Z".into(),
+        }),
+        publish: true,
+        completed: None,
+    }])?;
+    assert_eq!(
+        side_effects(&restored),
+        0,
+        "an already consumed side effect must not run again after a restart"
+    );
     Ok(())
 }

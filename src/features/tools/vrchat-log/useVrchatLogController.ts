@@ -7,7 +7,6 @@ import {
     useState
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
 import type {
@@ -16,6 +15,7 @@ import type {
     VrchatLogFileOutput
 } from '@/platform/tauri/bindings';
 import { copyTextToClipboard } from '@/services/clipboardService';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -270,7 +270,7 @@ export function useVrchatLogController() {
                         ? loadError.message
                         : t('view.tools.vrchat_log.error_load_files');
                 setError(message);
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
                 return '';
             } finally {
                 if (mountedRef.current) {
@@ -395,7 +395,7 @@ export function useVrchatLogController() {
                         ? loadError.message
                         : t('view.tools.vrchat_log.error_load_entries');
                 setError(message);
-                toast.error(message);
+                toast.add({ type: 'error', title: message });
                 loadFiles('').catch(() => {});
             } finally {
                 if (mountedRef.current && requestRef.current === requestId) {

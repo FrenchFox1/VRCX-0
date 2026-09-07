@@ -13,6 +13,7 @@ pub struct InstanceRosterSnapshot {
     pub entered_at: String,
     pub members: Vec<InstanceRosterMember>,
     pub departed_user_ids: Vec<String>,
+    pub replayed_departed_user_ids: Vec<String>,
 }
 
 pub trait InstanceRosterObserver: Send + Sync {

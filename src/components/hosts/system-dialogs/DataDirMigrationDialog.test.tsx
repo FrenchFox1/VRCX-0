@@ -11,6 +11,8 @@ import {
 import type { ComponentProps, PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     cancelMigration: vi.fn(),
     requestMigration: vi.fn(),
@@ -26,8 +28,17 @@ vi.mock('react-i18next', () => ({
     })
 }));
 
-vi.mock('sonner', () => ({
-    toast: { error: mocks.toastError }
+vi.mock('@/services/toastService', () => ({
+    toast: {
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
+    }
 }));
 
 vi.mock('@/services/dataDirMigrationService', () => ({

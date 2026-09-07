@@ -8,7 +8,7 @@ import {
     isAuthAttemptSupersededError,
     type AuthAttempt
 } from './authAttempt';
-import { restoreRuntimeGameLogProjectionFromPersistence } from './gameLogIngestService';
+import { hydrateRuntimeGameLogProjection } from './gameLogIngestService';
 import { requestGroupInstancesRefresh } from './runtime-event-bridge/auxiliaryEventHandlers';
 import { syncStartupServicesTask } from './startupServicesStatus';
 
@@ -51,14 +51,12 @@ async function hydratePostReadySession(
     await requestGroupInstancesRefresh('session bootstrap');
     ensureCurrentAuthAttempt(attempt);
     await loadInstanceJoinHistory(userId, attempt);
-    await restoreRuntimeGameLogProjectionFromPersistence().catch(
-        (error: unknown) => {
-            console.warn(
-                'Current GameLog roster restore failed during session bootstrap:',
-                error
-            );
-        }
-    );
+    await hydrateRuntimeGameLogProjection().catch((error: unknown) => {
+        console.warn(
+            'Current GameLog roster restore failed during session bootstrap:',
+            error
+        );
+    });
 }
 
 function startPostReadySessionHydration(

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     proxySettingsErrorMessage,
     saveProxySettingsPreferences,
     testProxySettings
 } from '@/services/proxySettingsService';
+import { toast } from '@/services/toastService';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import {
     Dialog,
@@ -53,16 +53,19 @@ export function ProxySettingsDialog({
                 { restart }
             );
             if (!restart) {
-                toast.success(
-                    t('prompt.proxy_settings.saved_restart_required')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('prompt.proxy_settings.saved_restart_required')
+                });
                 onOpenChange(false);
             }
         } catch (error) {
-            toast.error(
-                proxySettingsErrorMessage(error) ||
+            toast.add({
+                type: 'error',
+                title:
+                    proxySettingsErrorMessage(error) ||
                     t('view.settings.toast.failed_to_save_proxy_settings')
-            );
+            });
         } finally {
             setSaving(false);
         }
@@ -72,17 +75,19 @@ export function ProxySettingsDialog({
         setTesting(true);
         try {
             const result = await testProxySettings(draftServer);
-            toast.success(
-                t('prompt.proxy_settings.test_success', {
+            toast.add({
+                type: 'success',
+                title: t('prompt.proxy_settings.test_success', {
                     status: result.status
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                t('prompt.proxy_settings.test_failed', {
+            toast.add({
+                type: 'error',
+                title: t('prompt.proxy_settings.test_failed', {
                     message: proxySettingsErrorMessage(error)
                 })
-            );
+            });
         } finally {
             setTesting(false);
         }

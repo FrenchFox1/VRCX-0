@@ -1,7 +1,13 @@
 use std::collections::HashSet;
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub(crate) struct LogContext {
-    pub(super) position: u64,
+    pub(crate) position: u64,
+    pub(crate) file_created_at: Option<u64>,
+    #[serde(skip)]
+    pub(crate) at_end: bool,
+    #[serde(skip)]
+    pub(crate) read_failed: bool,
     pub(super) recent_world_name: String,
     pub(super) location_destination: String,
     pub(super) video_errors: HashSet<String>,
@@ -14,6 +20,9 @@ impl LogContext {
     pub(crate) fn new() -> Self {
         Self {
             position: 0,
+            file_created_at: None,
+            at_end: true,
+            read_failed: false,
             recent_world_name: String::new(),
             location_destination: String::new(),
             video_errors: HashSet::with_capacity(50),

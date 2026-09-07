@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import { act, type ReactNode } from 'react';
+import { fireEvent } from '@testing-library/react';
+import { act, type ReactNode, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -103,6 +104,25 @@ function overlay(kind: OverlayKind, open: boolean): ReactNode {
     }
 }
 
+function TitleBarSheetHarness() {
+    const [open, setOpen] = useState(true);
+
+    return (
+        <>
+            <header data-app-titlebar="true">
+                <button type="button">Maximize window</button>
+            </header>
+            <Sheet open={open} modal="trap-focus" onOpenChange={setOpen}>
+                <SheetContent side="right" variant="inset">
+                    <SheetHeader>
+                        <SheetTitle>Notifications</SheetTitle>
+                    </SheetHeader>
+                </SheetContent>
+            </Sheet>
+        </>
+    );
+}
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -155,4 +175,20 @@ describe('auto-hide with real application overlays', () => {
             }
         }
     );
+
+    it('keeps a sheet open when a title bar control is pressed', async () => {
+        await act(async () => root.render(<TitleBarSheetHarness />));
+
+        const button = container.querySelector('button');
+        expect(button).not.toBeNull();
+        await act(async () => {
+            fireEvent.pointerDown(button!);
+            fireEvent.pointerUp(button!);
+            fireEvent.click(button!);
+        });
+
+        expect(
+            document.querySelector('[data-slot="sheet-popup"]')
+        ).not.toBeNull();
+    });
 });

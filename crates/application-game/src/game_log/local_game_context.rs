@@ -16,8 +16,12 @@ impl GameLogLocalGameContextSource {
 impl LocalGameContextSource for GameLogLocalGameContextSource {
     fn snapshot(&self) -> LocalGameContextSnapshot {
         let game_log = self.snapshot.snapshot();
+        let is_game_running = self.session.snapshot().is_game_running;
+        if !game_log.ready && is_game_running {
+            return LocalGameContextSnapshot::Unavailable;
+        }
         LocalGameContextSnapshot::Available {
-            is_game_running: self.session.snapshot().is_game_running,
+            is_game_running,
             location: game_log.location.clone(),
             destination: game_log.destination.clone(),
             world_name: game_log.world_name.clone(),
@@ -47,6 +51,7 @@ mod tests {
         });
         let snapshot = RuntimeSnapshotStore::default();
         snapshot.replace(RuntimeSnapshot {
+            ready: true,
             location: "wrld_test:123".into(),
             destination: "wrld_next:456".into(),
             world_name: "Test World".into(),
@@ -77,4 +82,23 @@ mod tests {
             }
         );
     }
+}
+
+#[cfg(test)]
+#[test]
+fn regression_no_logs_still_reports_known_stopped_game() {
+    let source = GameLogLocalGameContextSource::new(
+        HostSessionRuntime::new(),
+        RuntimeSnapshotStore::default(),
+    );
+    assert_eq!(
+        source.snapshot(),
+        LocalGameContextSnapshot::Available {
+            is_game_running: false,
+            location: String::new(),
+            destination: String::new(),
+            world_name: String::new(),
+            player_user_ids: Vec::new()
+        }
+    );
 }

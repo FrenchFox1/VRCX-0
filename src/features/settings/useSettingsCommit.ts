@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+
+import { toast } from '@/services/toastService';
 
 type SettingsCommitAction = () => void;
 type SettingsRollback = () => void;
@@ -20,11 +21,13 @@ export function useSettingsCommit(): SettingsCommit {
             return true;
         } catch (error) {
             rollback?.();
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.settings.toast.failed_to_save_setting')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.settings.toast.failed_to_save_setting')
+            });
             return false;
         }
     };

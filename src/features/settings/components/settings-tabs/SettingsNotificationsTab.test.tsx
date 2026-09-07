@@ -264,3 +264,7 @@ describe('SettingsNotificationsTab', () => {
         expect(screen.getByRole('button', { name: playLabel })).toBeTruthy();
     });
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

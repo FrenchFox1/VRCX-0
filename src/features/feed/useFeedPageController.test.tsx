@@ -262,6 +262,35 @@ describe('useFeedPageController', () => {
         );
     });
 
+    it('ignores retained sorting in the default feed mode', () => {
+        mocks.searchMode = false;
+        mocks.rows = [
+            {
+                rowId: 1,
+                type: 'Status',
+                created_at: '2026-08-31T00:00:00Z'
+            },
+            { rowId: 2, type: 'GPS', created_at: '2026-08-30T00:00:00Z' }
+        ];
+        const { result } = renderHook(() =>
+            useFeedPageController({ routeScopedUserIds: [] })
+        );
+
+        act(() => {
+            result.current.table.setSorting([
+                { id: 'created_at', desc: false }
+            ]);
+        });
+
+        expect(result.current.tableModel.sorting).toEqual([
+            { id: 'created_at', desc: false }
+        ]);
+        expect(result.current.table.getColumn('created_at')?.getCanSort()).toBe(
+            false
+        );
+        expect(result.current.listRows).toBe(mocks.rows);
+    });
+
     it('keeps expansion when a row leaves the current page and returns', () => {
         mocks.rows = Array.from({ length: 25 }, (_, index) => ({
             rowId: index + 1,

@@ -242,8 +242,6 @@ export function WorldDialogTabbedView({
         currentLocationStartedAt,
         currentUserId,
         currentUserSnapshot,
-        currentWorldId,
-        currentWorldName,
         friendsById,
         openImagePreview,
         screenshotCacheStatus
@@ -334,9 +332,7 @@ export function WorldDialogTabbedView({
             currentLocationPlayers,
             currentLocationStartedAt,
             currentUserId,
-            currentUserSnapshot,
-            currentWorldId,
-            currentWorldName
+            currentUserSnapshot
         },
         worldName: world?.name
     });

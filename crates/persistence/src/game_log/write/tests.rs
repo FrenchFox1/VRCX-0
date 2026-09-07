@@ -754,3 +754,40 @@ fn get_last_location_returns_latest_by_id() -> Result<(), Error> {
     );
     Ok(())
 }
+
+#[test]
+fn replay_checkpoint_commits_atomically_with_its_rows() -> Result<(), Error> {
+    let ctx = test_db("checkpoint-transaction")?;
+    let first = GameLogWriteBatch {
+        replay_checkpoint: Some("first".into()),
+        ..Default::default()
+    };
+    write_batch(&ctx.db, &OwnerId::new(""), &first)?;
+    ctx.db.execute_non_query("CREATE TRIGGER fail_join BEFORE INSERT ON gamelog_join_leave BEGIN SELECT RAISE(ABORT, 'forced failure'); END", &Default::default())?;
+    let second = GameLogWriteBatch {
+        replay_checkpoint: Some("second".into()),
+        join_leave: vec![GameLogJoinLeaveEntry {
+            created_at: "2026-05-14T04:00:10.000Z".into(),
+            event_type: "OnPlayerJoined".into(),
+            display_name: "Player".into(),
+            location: "wrld_test:1".into(),
+            user_id: "usr_test".into(),
+            world_name: "Test".into(),
+            time: 0,
+        }],
+        ..Default::default()
+    };
+    assert!(write_batch(&ctx.db, &OwnerId::new(""), &second).is_err());
+    assert_eq!(
+        crate::config::get_string(&ctx.db, "gameLogReplayCheckpoint", "")?,
+        "first"
+    );
+    ctx.db
+        .execute_non_query("DROP TRIGGER fail_join", &Default::default())?;
+    write_batch(&ctx.db, &OwnerId::new(""), &second)?;
+    assert_eq!(
+        crate::config::get_string(&ctx.db, "gameLogReplayCheckpoint", "")?,
+        "second"
+    );
+    Ok(())
+}

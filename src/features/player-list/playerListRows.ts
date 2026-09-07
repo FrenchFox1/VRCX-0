@@ -113,27 +113,24 @@ export function buildFavoriteIdSet(
 
 export function buildPlayerSourceRows({
     playerRows,
-    runtimePlayerRows,
     currentUserId,
     currentUserSnapshot,
     isGameRunning,
     context,
     currentUserLocation,
-    currentLocationStartedAt,
-    runtimeRosterAvailable = false
+    currentLocationStartedAt
 }: {
     playerRows?: readonly PlayerListRosterRow[];
-    runtimePlayerRows?: readonly PlayerListRosterRow[];
     currentUserId?: string | null;
     currentUserSnapshot?: PlayerListCurrentUserSnapshot | null;
     isGameRunning?: boolean;
     context: PlayerListContext;
     currentUserLocation?: string | null;
     currentLocationStartedAt?: string | null;
-    runtimeRosterAvailable?: boolean;
 }): PlayerListSourceRow[] {
     const rows: PlayerListSourceRow[] = [];
     const knownKeys = new Set<string>();
+    let observedCurrentUser = false;
 
     const currentUserKey = normalizeString(currentUserId);
     const currentUserDisplayName = normalizeString(
@@ -148,10 +145,14 @@ export function buildPlayerSourceRows({
         const rowUserId = normalizeString(row.userId);
         const rowDisplayName = normalizeString(row.displayName).toLowerCase();
         if (
-            (currentUserKey && rowUserId === currentUserKey) ||
-            (currentUserDisplayName &&
-                rowDisplayName === currentUserDisplayName)
+            currentUserSnapshot &&
+            currentUserKey &&
+            context.playerFactsKnown === true &&
+            currentUserDisplayName &&
+            ((currentUserKey && rowUserId === currentUserKey) ||
+                (!rowUserId && rowDisplayName === currentUserDisplayName))
         ) {
+            observedCurrentUser = true;
             return;
         }
 
@@ -169,18 +170,17 @@ export function buildPlayerSourceRows({
     };
 
     if (canUseLiveRows) {
-        const sourceRows =
-            runtimeRosterAvailable && !context?.playerFactsKnown
-                ? runtimePlayerRows
-                : playerRows;
+        const sourceRows = playerRows;
         for (const row of Array.isArray(sourceRows) ? sourceRows : []) {
             addRow(row);
         }
     }
 
     if (
+        observedCurrentUser &&
         currentUserKey &&
         currentUserSnapshot &&
+        context.playerFactsKnown === true &&
         canUseLiveRows &&
         !knownKeys.has(currentUserKey)
     ) {

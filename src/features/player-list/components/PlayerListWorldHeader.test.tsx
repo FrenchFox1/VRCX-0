@@ -165,7 +165,7 @@ describe('PlayerListWorldHeader', () => {
                     location:
                         'wrld_test:12345~group(grp_test)~groupAccessType(plus)',
                     playerCount: 99,
-                    source: 'database',
+                    source: 'runtime',
                     time: 0,
                     worldId: 'wrld_test',
                     worldName: 'Test World'

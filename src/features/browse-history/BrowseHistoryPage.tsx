@@ -15,7 +15,6 @@ import {
     useState
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     DateTimeRangePicker,
@@ -49,6 +48,7 @@ import {
     type BrowseHistoryEntityKind,
     type BrowseHistoryItemOutput
 } from '@/repositories/browseHistoryRepository';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
@@ -209,7 +209,10 @@ export function BrowseHistoryPage() {
             .catch(() => {
                 if (requestVersion === requestVersionRef.current) {
                     setCursor(null);
-                    toast.error(t('browse_history.load_error'));
+                    toast.add({
+                        type: 'error',
+                        title: t('browse_history.load_error')
+                    });
                 }
             })
             .finally(() => {
@@ -288,7 +291,10 @@ export function BrowseHistoryPage() {
                     return true;
                 })
                 .catch(() => {
-                    toast.error(t('browse_history.remove_failed'));
+                    toast.add({
+                        type: 'error',
+                        title: t('browse_history.remove_failed')
+                    });
                     return false;
                 });
         },
@@ -314,7 +320,10 @@ export function BrowseHistoryPage() {
             setItems([]);
             setCursor(null);
         } catch {
-            toast.error(t('browse_history.clear_failed'));
+            toast.add({
+                type: 'error',
+                title: t('browse_history.clear_failed')
+            });
         }
     }, [confirm, entityKind, items.length, ownerUserId, t]);
 

@@ -7,6 +7,7 @@ import type {
     ProfileBackupActionOutcome,
     ProfileBackupSettings
 } from '@/services/profileBackupService';
+import type { AppToastOptions } from '@/services/toastService';
 
 const mocks = vi.hoisted(() => ({
     getSettings: vi.fn(),
@@ -23,11 +24,17 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: mocks.translate })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        dismiss: vi.fn(),
-        error: mocks.toastError,
-        loading: vi.fn()
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        },
+        close: vi.fn()
     }
 }));
 

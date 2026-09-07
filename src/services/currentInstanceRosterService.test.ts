@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
     getCurrentInstanceSnapshot: vi.fn()
 }));
 
-vi.mock('@/repositories/playerListPersistenceRepository', () => ({
+vi.mock('@/repositories/currentInstanceRosterRepository', () => ({
     default: {
         getCurrentInstanceSnapshot: mocks.getCurrentInstanceSnapshot
     }
@@ -24,27 +24,29 @@ const runtimePlayer = {
 
 const worldId = 'wrld_00000000-0000-0000-0000-000000000000';
 
-function runtime(players = [runtimePlayer]) {
-    return {
-        currentLocation: `${worldId}:1~region(jp)`,
-        currentLocationStartedAt: '2026-08-01T01:00:00.000Z',
-        currentWorldId: worldId,
-        currentWorldName: 'Runtime World',
-        players
-    };
-}
-
 describe('currentInstanceRosterService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('prefers the matching live runtime mirror for current-instance dialogs', async () => {
+    it('reads the authoritative backend roster for current-instance dialogs', async () => {
+        mocks.getCurrentInstanceSnapshot.mockResolvedValueOnce({
+            context: {
+                createdAt: '2026-08-01T01:00:00.000Z',
+                groupName: '',
+                location: `${worldId}:1~region(jp)`,
+                playerCount: 1,
+                playerFactsKnown: true,
+                source: 'runtime',
+                time: 0,
+                worldId,
+                worldName: 'Runtime World'
+            },
+            players: [runtimePlayer]
+        });
         await expect(
             loadCurrentInstanceRoster({
-                currentLocation: `${worldId}:1~region(jp)`,
-                currentUserId: 'usr_self',
-                runtime: runtime()
+                currentLocation: `${worldId}:1~region(jp)`
             })
         ).resolves.toEqual({
             context: {
@@ -60,17 +62,17 @@ describe('currentInstanceRosterService', () => {
             },
             players: [runtimePlayer]
         });
-        expect(mocks.getCurrentInstanceSnapshot).not.toHaveBeenCalled();
+        expect(mocks.getCurrentInstanceSnapshot).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the persistence fallback when the runtime mirror is empty', async () => {
+    it('preserves the backend response without inventing another roster', async () => {
         mocks.getCurrentInstanceSnapshot.mockResolvedValueOnce({
             context: {
                 createdAt: '2026-08-01T00:00:00.000Z',
                 groupName: '',
                 location: `${worldId}:1~region(jp)`,
                 playerCount: 1,
-                source: 'database',
+                source: 'runtime',
                 time: 0,
                 worldId,
                 worldName: 'Recovered World'
@@ -87,18 +89,13 @@ describe('currentInstanceRosterService', () => {
         });
 
         const result = await loadCurrentInstanceRoster({
-            currentLocation: `${worldId}:1~region(jp)`,
-            currentLocationStartedAt: '2026-08-01T01:00:00.000Z',
-            currentUserId: 'usr_self',
-            runtime: runtime([])
+            currentLocation: `${worldId}:1~region(jp)`
         });
 
-        expect(result.context.source).toBe('database');
+        expect(result.context.source).toBe('runtime');
         expect(result.players[0]?.displayName).toBe('Recovered Player');
         expect(mocks.getCurrentInstanceSnapshot).toHaveBeenCalledWith({
-            currentLocation: `${worldId}:1~region(jp)`,
-            currentLocationStartedAt: '2026-08-01T01:00:00.000Z',
-            currentUserId: 'usr_self'
+            currentLocation: `${worldId}:1~region(jp)`
         });
     });
 });

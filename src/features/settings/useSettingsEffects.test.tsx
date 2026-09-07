@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
-vi.mock('sonner', () => ({ toast: { error: vi.fn() } }));
+vi.mock('@/services/toastService', () => ({ toast: { add: vi.fn() } }));
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: { appHostTtsVoices: mocks.appHostTtsVoices }
 }));

@@ -45,11 +45,7 @@ export function usePlayerListPageController() {
         currentUserLocation: playerListLocation,
         currentUserSnapshot: runtime.currentUserSnapshot,
         isGameRunning: runtime.isGameRunning,
-        playerRows: rowsState.playerRows,
-        runtimeRosterAvailable:
-            Boolean(runtime.gameLogLocation) &&
-            runtime.gameLogLocation === playerListLocation,
-        runtimePlayerRows: runtime.runtimePlayerRows
+        playerRows: rowsState.playerRows
     });
     const profileData = usePlayerListProfileData({
         currentUserEndpoint: runtime.currentUserEndpoint,

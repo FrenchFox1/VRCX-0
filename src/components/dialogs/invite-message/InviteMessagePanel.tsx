@@ -8,7 +8,6 @@ import {
     type MouseEvent
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     DATA_TABLE_CONTROL_CELL_CLASS_NAME,
@@ -21,6 +20,7 @@ import {
 } from '@/components/data-table/DataTableView';
 import type { InviteMessageType } from '@/platform/tauri/bindings';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import { toast } from '@/services/toastService';
 import {
     IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
@@ -210,11 +210,12 @@ export function InviteMessagePanel({
             return;
         }
         if (isInviteMessageOnCooldown(row, nowMs)) {
-            toast.warning(
-                t(
+            toast.add({
+                type: 'warning',
+                title: t(
                     'dialog.invite_message.error.this_message_template_is_on_cooldown_and_cannot_be_edited_yet'
                 )
-            );
+            });
             return;
         }
         setConfirmRow(null);
@@ -252,7 +253,10 @@ export function InviteMessagePanel({
             await saveMessage(editingRow, editMessage);
             setEditingRow(null);
             await loadRows();
-            toast.success(t('message.invite.message_updated'));
+            toast.add({
+                type: 'success',
+                title: t('message.invite.message_updated')
+            });
         } catch (nextError) {
             setError(
                 nextError instanceof Error

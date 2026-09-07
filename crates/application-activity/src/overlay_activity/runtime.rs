@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -146,6 +147,7 @@ pub struct OverlayActivityRuntime {
 pub(super) struct OverlayActivityRuntimeInner {
     pub(super) state: Mutex<OverlayActivityState>,
     sink: Mutex<Option<Arc<dyn OverlayActivitySink>>>,
+    group_notification_inputs_revision: AtomicU64,
 }
 
 pub trait OverlayActivitySink: Send + Sync {
@@ -209,6 +211,7 @@ impl OverlayActivityRuntime {
             inner: Arc::new(OverlayActivityRuntimeInner {
                 state: Mutex::new(OverlayActivityState::default()),
                 sink: Mutex::new(None),
+                group_notification_inputs_revision: AtomicU64::new(0),
             }),
         }
     }
@@ -247,7 +250,20 @@ impl OverlayActivityRuntime {
             state.joined_delivery_coverage.clear();
             snapshot_from_state(&state)
         };
+        self.invalidate_group_notification_inputs();
         self.emit_snapshot(snapshot);
+    }
+
+    pub fn group_notification_inputs_revision(&self) -> u64 {
+        self.inner
+            .group_notification_inputs_revision
+            .load(Ordering::Acquire)
+    }
+
+    pub fn invalidate_group_notification_inputs(&self) {
+        self.inner
+            .group_notification_inputs_revision
+            .fetch_add(1, Ordering::AcqRel);
     }
 
     pub fn set_sink<S>(&self, sink: S)
@@ -356,6 +372,7 @@ impl OverlayActivityRuntime {
             state.live_since = None;
             snapshot_from_state(&state)
         };
+        self.invalidate_group_notification_inputs();
         self.emit_snapshot(snapshot);
     }
 

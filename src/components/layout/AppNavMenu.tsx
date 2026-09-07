@@ -2,7 +2,6 @@ import { PanelLeftIcon, PanelLeftOpenIcon, SettingsIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
-import { toast } from 'sonner';
 
 import {
     ShortcutHintPanel,
@@ -10,6 +9,7 @@ import {
 } from '@/components/keyboard/ShortcutHintPanel';
 import type { Dashboard } from '@/repositories/dashboardRepository';
 import { setNavbarCollapsedPreference } from '@/services/preferencesService';
+import { toast } from '@/services/toastService';
 import { triggerToolByKey } from '@/services/toolActionService';
 import { DASHBOARD_NAV_KEY_PREFIX } from '@/shared/constants/dashboard';
 import { useDashboardStore } from '@/state/dashboardStore';
@@ -218,13 +218,15 @@ function useAppNavNotifications({
             await markAllVrcNotificationsSeen();
             removeNavNotification('notification');
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_nav_menu.toast.failed_to_mark_notifications_as_seen'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_nav_menu.toast.failed_to_mark_notifications_as_seen'
+                          )
+            });
         }
     }
 
@@ -260,13 +262,15 @@ function useAppNavDashboardActions({
             setEditingDashboardId(dashboard.id);
             navigate(`/dashboard/${dashboard.id}`);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_nav_menu.toast.failed_to_create_dashboard'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_nav_menu.toast.failed_to_create_dashboard'
+                          )
+            });
         } finally {
             setIsCreatingDashboard(false);
         }
@@ -314,13 +318,15 @@ function useAppNavDashboardActions({
                 navigate('/feed', { replace: true });
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_nav_menu.toast.failed_to_delete_dashboard'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_nav_menu.toast.failed_to_delete_dashboard'
+                          )
+            });
         }
     }
 
@@ -353,15 +359,20 @@ function useAppNavToolActions({
                 removeNavKeyFromLayout(navLayout, navKey),
                 navHiddenKeys
             );
-            toast.success(t('nav_menu.custom_nav.unpinned'));
+            toast.add({
+                type: 'success',
+                title: t('nav_menu.custom_nav.unpinned')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_nav_menu.toast.failed_to_unpin_tool_from_navigation'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_nav_menu.toast.failed_to_unpin_tool_from_navigation'
+                          )
+            });
         }
     }
 
@@ -533,15 +544,17 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
         try {
             await saveAndApplyNavLayout(nextLayout, nextHiddenKeys);
             setCustomNavDialogOpen(false);
-            toast.success(t('message.update_success'));
+            toast.add({ type: 'success', title: t('message.update_success') });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_nav_menu.toast.failed_to_save_custom_navigation'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_nav_menu.toast.failed_to_save_custom_navigation'
+                          )
+            });
         }
     }
 
@@ -556,13 +569,15 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
             setEditingDashboardId(dashboardId);
             navigate(`/dashboard/${dashboardId}`);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_nav_menu.toast.failed_to_save_dashboard_navigation'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_nav_menu.toast.failed_to_save_dashboard_navigation'
+                          )
+            });
         }
     }
 

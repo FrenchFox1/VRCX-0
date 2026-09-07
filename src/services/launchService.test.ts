@@ -7,11 +7,8 @@ const mocks = vi.hoisted(() => ({
     sendSelfInviteToInstance: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
-    toast: {
-        success: vi.fn(),
-        warning: vi.fn()
-    }
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn() }
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({

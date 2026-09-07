@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { EntityRecord } from '@/domain/entities/shared';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -8,6 +7,7 @@ import {
     commands,
     type GroupModerationBatchAction
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -196,29 +196,35 @@ export function useGroupModerationBatchController({
                     continue;
                 }
                 const row = rowsByUserId.get(item.userId);
-                toast.error(
-                    `${moderationRowLabel(row || item.userId)}: ${userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: `${moderationRowLabel(row || item.userId)}: ${userFacingErrorMessage(
                         item.message,
                         t('dialog.group.toast.value_failed', { value: label })
                     )}`
-                );
+                });
             }
             if (batchResult.succeeded) {
-                toast.success(
-                    t('dialog.group_member_moderation.bulk_action_completed', {
-                        count: batchResult.succeeded,
-                        value: label
-                    })
-                );
+                toast.add({
+                    type: 'success',
+                    title: t(
+                        'dialog.group_member_moderation.bulk_action_completed',
+                        {
+                            count: batchResult.succeeded,
+                            value: label
+                        }
+                    )
+                });
             }
         } catch (actionError) {
             if (isCurrentBatchRun()) {
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         actionError,
                         t('dialog.group.toast.value_failed', { value: label })
                     )
-                );
+                });
             }
         } finally {
             if (bulkRunSequenceRef.current === batchRunSequence) {

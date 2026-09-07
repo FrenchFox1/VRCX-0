@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import { PROFILE_DECORATION_ITEM_TYPES } from '@/domain/entities/inventory';
 import type {
     EmojiUploadParams,
@@ -7,6 +5,7 @@ import type {
     MediaFileTag
 } from '@/platform/tauri/bindings';
 import type { MediaFileRecord } from '@/repositories/mediaRepository';
+import { toast } from '@/services/toastService';
 import {
     emojiAnimationStyleNames,
     type EmojiAnimationStyleName
@@ -358,11 +357,13 @@ export function validateImageFile(file: Blob, t: (key: string) => string) {
         maxSize: MAX_IMAGE_UPLOAD_BYTES
     });
     if (!validation.ok) {
-        toast.error(
-            validation.reason === 'too_large'
-                ? t('message.file.too_large')
-                : t('message.file.not_image')
-        );
+        toast.add({
+            type: 'error',
+            title:
+                validation.reason === 'too_large'
+                    ? t('message.file.too_large')
+                    : t('message.file.not_image')
+        });
         return false;
     }
     return true;

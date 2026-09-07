@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import { commands } from '@/platform/tauri/bindings';
 import type { HostCapabilities } from '@/platform/tauri/bindings';
 import {
@@ -9,6 +7,7 @@ import {
 } from '@/services/hostCapabilityService';
 import i18n from '@/services/i18nService';
 import { recordToolOpen } from '@/services/telemetry/telemetryToolUsage';
+import { toast } from '@/services/toastService';
 import { recordRecentToolOpen } from '@/services/toolRecentService';
 import {
     toolDefinitionMap,
@@ -122,17 +121,21 @@ export async function triggerToolByKey(
     const tool = toolDefinitionMap.get(resolvedToolKey);
     const action = tool?.action;
     if (!action) {
-        toast.error(
-            i18n.t(
+        toast.add({
+            type: 'error',
+            title: i18n.t(
                 'service.tool_action_service.dynamic.unknown_tool_action_value',
                 { value: toolKey }
             )
-        );
+        });
         return;
     }
 
     if (!isToolCapabilityAvailable(tool)) {
-        toast.error(getToolCapabilityUnavailableReason(tool));
+        toast.add({
+            type: 'error',
+            title: getToolCapabilityUnavailableReason(tool)
+        });
         return;
     }
 
@@ -147,15 +150,20 @@ export async function triggerToolByKey(
     if (action.type === 'app-api') {
         try {
             const result = await toolAppApiCommands[action.method]();
-            toast[result ? 'success' : 'error'](
-                t(result ? action.successMessageKey : action.errorMessageKey)
-            );
+            toast.add({
+                type: result ? 'success' : 'error',
+                title: t(
+                    result ? action.successMessageKey : action.errorMessageKey
+                )
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(action.errorMessageKey)
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(action.errorMessageKey)
+            });
         }
         return;
     }
@@ -192,10 +200,11 @@ export async function triggerToolByKey(
         return;
     }
 
-    toast.error(
-        i18n.t(
+    toast.add({
+        type: 'error',
+        title: i18n.t(
             'service.tool_action_service.dynamic.unsupported_tool_action_value',
             { value: toolKey }
         )
-    );
+    });
 }

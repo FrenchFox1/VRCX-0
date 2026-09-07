@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     DATA_TABLE_CONTROL_CELL_CLASS_NAME,
@@ -30,6 +29,7 @@ import {
     getCurrentAppLauncherSnapshot,
     subscribeAppLauncherSnapshot
 } from '@/services/appLauncherSnapshotService';
+import { toast } from '@/services/toastService';
 import { publishToolsStatusUpdated } from '@/shared/constants/tools';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
@@ -242,12 +242,13 @@ export function AppLauncherDialog({
                 }
             })
             .catch((error) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t('dialog.app_launcher.toast.load_failed')
                     )
-                )
+                })
             )
             .finally(() => {
                 if (active) {
@@ -283,12 +284,13 @@ export function AppLauncherDialog({
             publishToolsStatusUpdated();
             return next;
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('dialog.app_launcher.toast.save_failed')
                 )
-            );
+            });
             return null;
         } finally {
             setSaving(false);
@@ -301,12 +303,13 @@ export function AppLauncherDialog({
             updateSnapshot(await appLauncherRepository.setEnabled(enabled));
             publishToolsStatusUpdated();
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('dialog.app_launcher.toast.save_failed')
                 )
-            );
+            });
         } finally {
             setSaving(false);
         }
@@ -334,12 +337,13 @@ export function AppLauncherDialog({
                 next.entries.find((item) => item.id === entry.id) ?? entry;
             setEditing({ ...savedEntry, args: savedEntry.args ?? '' });
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('dialog.app_launcher.toast.pick_failed')
                 )
-            );
+            });
         } finally {
             setSaving(false);
         }
@@ -357,12 +361,13 @@ export function AppLauncherDialog({
             }
             setEditing(applyPickedTarget(editing, picked));
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('dialog.app_launcher.toast.pick_failed')
                 )
-            );
+            });
         } finally {
             setSaving(false);
         }
@@ -374,7 +379,10 @@ export function AppLauncherDialog({
         }
         const normalized = normalizeEntry(editing);
         if (!normalized.name || !normalized.target) {
-            toast.error(t('dialog.app_launcher.toast.name_target_required'));
+            toast.add({
+                type: 'error',
+                title: t('dialog.app_launcher.toast.name_target_required')
+            });
             return;
         }
         const next = await saveEntries(

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     buildInstanceActionTarget,
@@ -15,6 +14,7 @@ import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { recordLocationHintsFromInstances } from '@/services/domainIngestionService';
 import { selfInviteToInstance } from '@/services/launchService';
+import { toast } from '@/services/toastService';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { useInstanceJoinHistoryStore } from '@/state/instanceJoinHistoryStore';
 import { useLaunchStore } from '@/state/launchStore';
@@ -234,24 +234,30 @@ export function useInstanceActionBarController({
                     actionTarget.shortName
             );
             if (opened) {
-                toast.success(
-                    t('dialog.instance.success.vrchat_launch_request_sent')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t(
+                        'dialog.instance.success.vrchat_launch_request_sent'
+                    )
+                });
                 return;
             }
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.instance.error.unable_to_open_this_instance_in_vrchat'
                 )
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.instance_action_bar.toast.failed_to_launch_instance'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.instance_action_bar.toast.failed_to_launch_instance'
+                          )
+            });
         } finally {
             setBusy('');
         }
@@ -268,15 +274,20 @@ export function useInstanceActionBarController({
                 actionTarget.parsedInviteLocation.shortName ||
                     actionTarget.shortName
             );
-            toast.success(t('message.invite.self_sent'));
+            toast.add({
+                type: 'success',
+                title: t('message.invite.self_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.instance_action_bar.toast.failed_to_send_self_invite'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.instance_action_bar.toast.failed_to_send_self_invite'
+                          )
+            });
         } finally {
             setBusy('');
         }
@@ -322,15 +333,20 @@ export function useInstanceActionBarController({
                     instances: [response.json]
                 });
             }
-            toast.success(t('dialog.instance.success.instance_refreshed'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.instance.success.instance_refreshed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.instance_action_bar.toast.failed_to_refresh_instance'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.instance_action_bar.toast.failed_to_refresh_instance'
+                          )
+            });
         } finally {
             setBusy('');
         }
@@ -370,15 +386,20 @@ export function useInstanceActionBarController({
                     instances: [response.json]
                 });
             }
-            toast.success(t('dialog.instance.label.instance_closed'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.instance.label.instance_closed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.instance_action_bar.toast.failed_to_close_instance'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.instance_action_bar.toast.failed_to_close_instance'
+                          )
+            });
         } finally {
             setBusy('');
         }

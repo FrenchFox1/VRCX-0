@@ -40,7 +40,7 @@ pub use game_event_bus::{
 };
 pub use game_log::{
     duration_ms, game_log_sessions_query, instance_history_query, parse_event_time_ms, player_key,
-    player_list_current_snapshot, world_id_from_location, GameLogHostActions, GameLogIngestEngine,
+    player_list_runtime_snapshot, world_id_from_location, GameLogHostActions, GameLogIngestEngine,
     GameLogIngestOptions, GameLogIngestOutput, GameLogLocalGameContextSource, GameLogProcessEvent,
     GameLogProjection, GameLogRuntime, GameLogRuntimeDeps, GameLogRuntimeState, GameLogSessionDto,
     GameLogSessionEventDto, GameLogSessionMemberDto, GameLogSessionPlayerDurationRowDto,
@@ -51,13 +51,11 @@ pub use game_log::{
 };
 pub use game_log_parser::GameLogEvent;
 pub use game_log_watcher::{
-    GameLogEventOrigin, GameLogEventSink, LogLocationSnapshot, LogLocationSnapshotScanner,
-    LogWatcher, NoopLogLocationSnapshotScanner,
+    GameLogEventOrigin, GameLogEventSink, GameLogScanCursor, LogLocationSnapshot,
+    LogLocationSnapshotScanner, LogWatcher, NoopLogLocationSnapshotScanner,
 };
 pub use overlay_activity::OverlayActivityGameIngestExt;
-pub use ports::{
-    BackgroundRemoteApi, GameStateStore, InstanceMediaPort, PlayerLocationRecord, VideoMetadataPort,
-};
+pub use ports::{BackgroundRemoteApi, GameStateStore, InstanceMediaPort, VideoMetadataPort};
 pub use process_monitor::{GameProcessMonitorActions, GameProcessStatus, ProcessMonitor};
 pub use registry_backup::{
     registry_backup_create, registry_backup_delete, registry_backup_foreground_followup,

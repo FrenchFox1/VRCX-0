@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { commands } from '@/platform/tauri/bindings';
 
-import { getCurrentInstanceSnapshot } from './playerListPersistenceRepository';
+import { getCurrentInstanceSnapshot } from './currentInstanceRosterRepository';
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
@@ -10,7 +10,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
     }
 }));
 
-describe('playerListPersistenceRepository', () => {
+describe('currentInstanceRosterRepository', () => {
     beforeEach(() => {
         vi.mocked(commands.appPlayerListCurrentSnapshot).mockReset();
     });
@@ -30,15 +30,11 @@ describe('playerListPersistenceRepository', () => {
         });
 
         await getCurrentInstanceSnapshot({
-            currentUserId: ' usr_me ',
-            currentLocation: ' wrld_live:123 ',
-            currentLocationStartedAt: undefined
+            currentLocation: ' wrld_live:123 '
         });
 
         expect(commands.appPlayerListCurrentSnapshot).toHaveBeenCalledWith(
-            'usr_me',
-            'wrld_live:123',
-            ''
+            'wrld_live:123'
         );
     });
 
@@ -51,7 +47,7 @@ describe('playerListPersistenceRepository', () => {
                 worldName: 'Live World',
                 time: 0,
                 groupName: '',
-                source: 'database',
+                source: 'runtime',
                 playerCount: 3,
                 observedPlayerEventCount: 3,
                 playerFactsKnown: true

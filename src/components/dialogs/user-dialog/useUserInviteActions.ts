@@ -1,6 +1,5 @@
 import { useLayoutEffect, useState, type MutableRefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { InviteMessageUsePayload } from '@/components/dialogs/invite-message/InviteMessagePanel';
 import {
@@ -8,6 +7,7 @@ import {
     sendRequestInviteToUser
 } from '@/services/inviteDeliveryService';
 import { recordRecentAction } from '@/services/recentActionService';
+import { toast } from '@/services/toastService';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 
@@ -121,38 +121,42 @@ export function useUserInviteActions({
         }
 
         if (requireCurrentUser && !normalizedCurrentUserId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.user.error.cannot_load_message_templates_no_current_user_session_is_available'
                 )
-            );
+            });
             return null;
         }
 
         if (!currentInviteLocation) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.user.error.cannot_invite_no_current_vrchat_location_is_available'
                 )
-            );
+            });
             return null;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.user.error.cannot_invite_from_the_current_instance_type'
                 )
-            );
+            });
             return null;
         }
 
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.user.error.cannot_invite_current_location_is_not_a_concrete_instance'
                 )
-            );
+            });
             return null;
         }
 
@@ -180,11 +184,12 @@ export function useUserInviteActions({
         }
 
         if (requireCurrentUser && !normalizedCurrentUserId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.user.error.cannot_load_message_templates_no_current_user_session_is_available'
                 )
-            );
+            });
             return null;
         }
 
@@ -224,18 +229,22 @@ export function useUserInviteActions({
                 context.rosterUserId,
                 messageSlot !== null ? 'Invite Message' : 'Invite'
             );
-            toast.success(
-                messageSlot !== null
-                    ? t('dialog.user.toast.invite_message_sent')
-                    : t('message.invite.sent')
-            );
+            toast.add({
+                type: 'success',
+                title:
+                    messageSlot !== null
+                        ? t('dialog.user.toast.invite_message_sent')
+                        : t('message.invite.sent')
+            });
             return true;
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_send_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_send_invite')
+            });
             return false;
         } finally {
             actionStatusRef.current = 'idle';
@@ -303,18 +312,22 @@ export function useUserInviteActions({
                     ? 'Request Invite Message'
                     : 'Request Invite'
             );
-            toast.success(
-                requestSlot !== null
-                    ? t('dialog.user.toast.invite_request_message_sent')
-                    : t('dialog.user.toast.invite_request_sent')
-            );
+            toast.add({
+                type: 'success',
+                title:
+                    requestSlot !== null
+                        ? t('dialog.user.toast.invite_request_message_sent')
+                        : t('dialog.user.toast.invite_request_sent')
+            });
             return true;
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_request_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_request_invite')
+            });
             return false;
         } finally {
             actionStatusRef.current = 'idle';
@@ -363,9 +376,12 @@ export function useUserInviteActions({
     }: InviteMessageUsePayload) {
         const slot = inviteMessageSlot(row);
         if (!Number.isFinite(slot)) {
-            toast.error(
-                t('dialog.user.action.invite_message_slot_must_be_a_number')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'dialog.user.action.invite_message_slot_must_be_a_number'
+                )
+            });
             return false;
         }
 

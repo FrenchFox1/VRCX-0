@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     collectRuntimeRosterPlayers,
-    includeCurrentUserInRoster,
+    decorateCurrentUserInRoster,
     type CurrentInstanceRosterPlayer
 } from './currentInstanceRoster';
 
@@ -45,7 +45,7 @@ describe('collectRuntimeRosterPlayers', () => {
     });
 });
 
-describe('includeCurrentUserInRoster', () => {
+describe('decorateCurrentUserInRoster', () => {
     const otherPlayer: CurrentInstanceRosterPlayer = {
         id: 'usr_2',
         userId: 'usr_2',
@@ -54,17 +54,15 @@ describe('includeCurrentUserInRoster', () => {
         joinedAtMs: 1_735_689_600_000
     };
 
-    it('adds the local user to the top of the roster when they are not already tracked from a GameLog event', () => {
-        const result = includeCurrentUserInRoster({
+    it('does not add a local user who is absent from the observed roster', () => {
+        const result = decorateCurrentUserInRoster({
             currentUserId: 'usr_self',
             currentUserDisplayName: 'Me',
             joinedAt: '2026-02-01T00:00:00.000Z',
             players: [otherPlayer]
         });
 
-        expect(result).toHaveLength(2);
-        expect(result[0].userId).toBe('usr_self');
-        expect(result[1]).toBe(otherPlayer);
+        expect(result).toEqual([otherPlayer]);
     });
 
     it('merges into the existing GameLog-observed entry for the current user by user id, without creating a duplicate row', () => {
@@ -77,7 +75,7 @@ describe('includeCurrentUserInRoster', () => {
             lastDurationMs: 500
         };
 
-        const result = includeCurrentUserInRoster({
+        const result = decorateCurrentUserInRoster({
             currentUserId: 'usr_self',
             currentUserDisplayName: 'Me',
             joinedAt: '2026-02-01T00:00:00.000Z',
@@ -101,7 +99,7 @@ describe('includeCurrentUserInRoster', () => {
             joinedAtMs: 1_736_035_200_000
         };
 
-        const result = includeCurrentUserInRoster({
+        const result = decorateCurrentUserInRoster({
             currentUserId: 'usr_self',
             currentUserDisplayName: 'Me',
             joinedAt: '2026-02-01T00:00:00.000Z',
@@ -114,7 +112,7 @@ describe('includeCurrentUserInRoster', () => {
     });
 
     it('leaves the roster untouched when the current user identity is not yet known, avoiding a bogus self-entry', () => {
-        const result = includeCurrentUserInRoster({
+        const result = decorateCurrentUserInRoster({
             currentUserId: '',
             currentUserDisplayName: '',
             joinedAt: '2026-02-01T00:00:00.000Z',
@@ -123,4 +121,22 @@ describe('includeCurrentUserInRoster', () => {
 
         expect(result).toEqual([otherPlayer]);
     });
+});
+
+it('does not relabel a different known user as self when names match', () => {
+    const row = {
+        id: 'usr_other',
+        userId: 'usr_other',
+        displayName: 'Me',
+        joinedAt: '',
+        joinedAtMs: 0
+    };
+    expect(
+        decorateCurrentUserInRoster({
+            currentUserId: 'usr_self',
+            currentUserDisplayName: 'Me',
+            joinedAt: '',
+            players: [row]
+        })
+    ).toEqual([row]);
 });

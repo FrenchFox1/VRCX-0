@@ -1,6 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
 import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
@@ -17,6 +16,7 @@ import {
     sendRequestInviteToUser
 } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
+import { toast } from '@/services/toastService';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
@@ -90,11 +90,15 @@ export function useFavoritesItemActions({
             );
             setAvatarHistory(rows);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_refresh_avatar_history')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_refresh_avatar_history'
+                          )
+            });
         } finally {
             setAvatarHistoryLoading(false);
         }
@@ -117,13 +121,20 @@ export function useFavoritesItemActions({
             if (selectedSource === 'history') {
                 setSelectedGroupKey('');
             }
-            toast.success(t('view.favorite.success.avatar_history_cleared'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.success.avatar_history_cleared')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_clear_avatar_history')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_clear_avatar_history'
+                          )
+            });
         }
     }
 
@@ -162,20 +173,26 @@ export function useFavoritesItemActions({
                 parsedLocation.shortName || ''
             );
             if (opened) {
-                toast.success(
-                    t('view.favorite.success.vrchat_launch_request_sent')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('view.favorite.success.vrchat_launch_request_sent')
+                });
                 return;
             }
-            toast.error(
-                t('view.favorite.error.unable_to_open_this_instance_in_vrchat')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.favorite.error.unable_to_open_this_instance_in_vrchat'
+                )
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_launch_instance')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.favorites.toast.failed_to_launch_instance')
+            });
         }
     }
 
@@ -197,9 +214,12 @@ export function useFavoritesItemActions({
                 friends: friendsMap
             })
         ) {
-            toast.error(
-                t('view.favorite.error.cannot_self_invite_to_this_instance')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.favorite.error.cannot_self_invite_to_this_instance'
+                )
+            });
             return;
         }
         try {
@@ -207,13 +227,18 @@ export function useFavoritesItemActions({
                 location,
                 parsedLocation.shortName || ''
             );
-            toast.success(t('message.invite.self_sent'));
+            toast.add({
+                type: 'success',
+                title: t('message.invite.self_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_send_self_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.favorites.toast.failed_to_send_self_invite')
+            });
         }
     }
 
@@ -224,28 +249,31 @@ export function useFavoritesItemActions({
             return;
         }
         if (!currentInviteLocation) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.favorite.error.cannot_invite_no_current_vrchat_location_is_available'
                 )
-            );
+            });
             return;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.favorite.error.cannot_invite_from_the_current_instance_type'
                 )
-            );
+            });
             return;
         }
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.favorite.error.cannot_invite_current_location_is_not_a_concrete_instance'
                 )
-            );
+            });
             return;
         }
         const result = await confirm({
@@ -266,13 +294,15 @@ export function useFavoritesItemActions({
                 worldId: parsedLocation.worldId,
                 rsvp: true
             });
-            toast.success(t('message.invite.sent'));
+            toast.add({ type: 'success', title: t('message.invite.sent') });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_send_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.favorites.toast.failed_to_send_invite')
+            });
         }
     }
 
@@ -297,13 +327,18 @@ export function useFavoritesItemActions({
             await sendRequestInviteToUser({
                 receiverUserId: friendId
             });
-            toast.success(t('view.favorite.success.invite_request_sent'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.success.invite_request_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_request_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.favorites.toast.failed_to_request_invite')
+            });
         }
     }
 
@@ -327,13 +362,18 @@ export function useFavoritesItemActions({
                 userId: friendId,
                 emojiId: result.value
             });
-            toast.success(t('view.favorite.success.boop_sent'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.success.boop_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_send_boop')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.favorites.toast.failed_to_send_boop')
+            });
         }
     }
 
@@ -361,13 +401,18 @@ export function useFavoritesItemActions({
             if (!result.applied) {
                 return;
             }
-            toast.success(t('view.favorite.success.avatar_selected'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.success.avatar_selected')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_select_avatar')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.favorites.toast.failed_to_select_avatar')
+            });
         }
     }
 
@@ -382,11 +427,15 @@ export function useFavoritesItemActions({
             return;
         }
         if (localGroups.some((group) => group.key === nextName)) {
-            toast.error(
-                t('view.favorites.dynamic.local_group_value_already_exists', {
-                    value: nextName
-                })
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.favorites.dynamic.local_group_value_already_exists',
+                    {
+                        value: nextName
+                    }
+                )
+            });
             return;
         }
         try {
@@ -399,13 +448,15 @@ export function useFavoritesItemActions({
             setCreatingLocalGroup(false);
             setNewLocalGroupName('');
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_create_local_favorite_group'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_create_local_favorite_group'
+                          )
+            });
         }
     }
 

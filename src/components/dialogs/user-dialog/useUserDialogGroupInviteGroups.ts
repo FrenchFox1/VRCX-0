@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { UserGroupsOverviewGroup } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
+import { toast } from '@/services/toastService';
 
 import { groupsForInvitePicker } from './userDialogGroupInviteGroups';
 
@@ -63,7 +63,10 @@ export function useUserDialogGroupInviteGroups({
             })
             .catch(() => {
                 if (active) {
-                    toast.error(t('dialog.user.group_invite.load_failed'));
+                    toast.add({
+                        type: 'error',
+                        title: t('dialog.user.group_invite.load_failed')
+                    });
                 }
             })
             .finally(() => {

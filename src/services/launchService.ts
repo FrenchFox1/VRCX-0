@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
@@ -10,6 +8,7 @@ import {
     joinInstanceWithFallback,
     sendSelfInviteToInstance
 } from '@/services/instanceActionService';
+import { toast } from '@/services/toastService';
 import { getLaunchURL, isRealInstance } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
@@ -119,12 +118,16 @@ export async function attachRunningVrchat(
         return;
     }
     if (outcome.status === 'selfInvited') {
-        toast.warning(
-            i18n.t(
+        toast.add({
+            type: 'warning',
+            title: i18n.t(
                 'common.error.failed_open_instance_in_vrchat_falling_back_to_self_invite'
             )
-        );
-        toast.success(i18n.t('message.invite.self_sent'));
+        });
+        toast.add({
+            type: 'success',
+            title: i18n.t('message.invite.self_sent')
+        });
         return;
     }
     throw new Error(outcome.reason);
@@ -186,5 +189,8 @@ export async function launchVrchat(
                 : 'Failed to find VRChat. Configure a custom launch path in launch options.'
         );
     }
-    toast.success(i18n.t('common.label.vrchat_launched'));
+    toast.add({
+        type: 'success',
+        title: i18n.t('common.label.vrchat_launched')
+    });
 }

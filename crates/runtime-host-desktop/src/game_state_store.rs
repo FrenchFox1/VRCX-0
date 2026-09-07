@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use serde_json::Value;
-use vrcx_0_application_game::{GameStateStore, PlayerLocationRecord};
+use vrcx_0_application_game::GameStateStore;
 use vrcx_0_contracts::game_log::{
     GameLogJoinLeaveSnapshot, GameLogLocationSnapshot, GameLogWriteBatch, PreviousInstanceEventRow,
     SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
 };
 use vrcx_0_core::OwnerId;
-use vrcx_0_persistence::{config, game_log, player_list, DatabaseService};
+use vrcx_0_persistence::{config, game_log, DatabaseService};
 
 pub(crate) struct PersistenceGameStateStore {
     db: Arc<DatabaseService>,
@@ -50,42 +50,6 @@ impl GameStateStore for PersistenceGameStateStore {
         batch: &GameLogWriteBatch,
     ) -> vrcx_0_application_core::Result<u64> {
         Ok(game_log::write_batch(self.db.as_ref(), owner, batch)?)
-    }
-
-    fn game_log_location_table_exists(&self) -> vrcx_0_application_core::Result<bool> {
-        Ok(game_log::game_log_location_table_exists(self.db.as_ref())?)
-    }
-
-    fn last_game_log_location(
-        &self,
-    ) -> vrcx_0_application_core::Result<Option<GameLogLocationSnapshot>> {
-        Ok(
-            game_log::get_last_game_log_location(self.db.as_ref())?.map(|row| {
-                GameLogLocationSnapshot {
-                    created_at: row.created_at,
-                    location: row.location,
-                    world_id: row.world_id,
-                    world_name: row.world_name,
-                    group_name: row.group_name,
-                }
-            }),
-        )
-    }
-
-    fn join_leave_for_location_unscoped(
-        &self,
-        location: &str,
-        after_date: &str,
-        before_date: &str,
-    ) -> vrcx_0_application_core::Result<Vec<GameLogJoinLeaveSnapshot>> {
-        Ok(
-            game_log::get_join_leave_entries_for_location_range_unscoped(
-                self.db.as_ref(),
-                location,
-                after_date,
-                before_date,
-            )?,
-        )
     }
 
     fn join_leave_for_location(
@@ -204,67 +168,6 @@ impl GameStateStore for PersistenceGameStateStore {
             owner,
             locations,
         )?)
-    }
-
-    fn player_location(
-        &self,
-        owner: &OwnerId,
-        location: String,
-    ) -> vrcx_0_application_core::Result<Option<PlayerLocationRecord>> {
-        Ok(
-            player_list::player_list_location_get(self.db.as_ref(), owner, location)?.map(|row| {
-                PlayerLocationRecord {
-                    created_at: row.created_at,
-                    location: row.location,
-                    world_id: row.world_id,
-                    world_name: row.world_name,
-                    time: row.time,
-                    group_name: row.group_name,
-                }
-            }),
-        )
-    }
-
-    fn latest_player_location(
-        &self,
-        owner: &OwnerId,
-    ) -> vrcx_0_application_core::Result<Option<PlayerLocationRecord>> {
-        Ok(
-            player_list::player_list_latest_location_get(self.db.as_ref(), owner)?.map(|row| {
-                PlayerLocationRecord {
-                    created_at: row.created_at,
-                    location: row.location,
-                    world_id: row.world_id,
-                    world_name: row.world_name,
-                    time: row.time,
-                    group_name: row.group_name,
-                }
-            }),
-        )
-    }
-
-    fn player_join_leave_for_location(
-        &self,
-        owner: &OwnerId,
-        location: &str,
-        started_at: &str,
-    ) -> vrcx_0_application_core::Result<Vec<GameLogJoinLeaveSnapshot>> {
-        Ok(player_list::player_list_join_leave_rows(
-            self.db.as_ref(),
-            owner,
-            location.to_string(),
-            started_at.to_string(),
-        )?
-        .into_iter()
-        .map(|row| GameLogJoinLeaveSnapshot {
-            id: row.id,
-            created_at: row.created_at,
-            event_type: row.r#type,
-            display_name: row.display_name,
-            user_id: row.user_id,
-            time: row.time,
-        })
-        .collect())
     }
 
     fn favorite_friend_group_names_for_users(

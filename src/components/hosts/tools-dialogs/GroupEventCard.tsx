@@ -9,7 +9,6 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
@@ -26,6 +25,7 @@ import {
     openCalendarFile,
     saveCalendarFile
 } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { vrchatGroupCalendarUrl } from '@/shared/constants/vrchatWebUrls';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
@@ -48,21 +48,23 @@ async function getCalendarIcs(event: GroupCalendarEventRecord, t: TFunction) {
             .replace(/^\uFEFF/, '')
             .trimStart();
         if (!normalizedContent.startsWith('BEGIN:VCALENDAR')) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.tools.error.failed_to_download_ics_file_invalid_icalendar_content'
                 )
-            );
+            });
             return '';
         }
         return normalizedContent;
     } catch (error) {
-        toast.error(
-            userFacingErrorMessage(
+        toast.add({
+            type: 'error',
+            title: userFacingErrorMessage(
                 error,
                 t('host.tools_dialogs.toast.failed_to_download_ics_file')
             )
-        );
+        });
         return '';
     }
 }
@@ -87,12 +89,13 @@ async function downloadEventIcs(event: GroupCalendarEventRecord, t: TFunction) {
     try {
         await saveCalendarFile(fileName, content);
     } catch (error) {
-        toast.error(
-            userFacingErrorMessage(
+        toast.add({
+            type: 'error',
+            title: userFacingErrorMessage(
                 error,
                 t('host.tools_dialogs.toast.failed_to_save_ics_file')
             )
-        );
+        });
     }
 }
 

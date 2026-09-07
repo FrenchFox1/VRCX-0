@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { profileBackupErrorKey } from '@/services/profileBackupI18n';
 import {
@@ -14,6 +13,7 @@ import {
     openFolderSelectorDialog,
     saveFileSelectorDialog
 } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { publishToolsStatusUpdated } from '@/shared/constants/tools';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 
@@ -90,7 +90,10 @@ export function useProfileBackupSettings(enabled: boolean) {
                     active &&
                     requestRevision === settingsRequestRevisionRef.current
                 ) {
-                    toast.error(t('profile_backup.settings_load_failed'));
+                    toast.add({
+                        type: 'error',
+                        title: t('profile_backup.settings_load_failed')
+                    });
                 }
             })
             .finally(() => {
@@ -136,7 +139,10 @@ export function useProfileBackupSettings(enabled: boolean) {
                     active &&
                     requestRevision === settingsRequestRevisionRef.current
                 ) {
-                    toast.error(t('profile_backup.settings_load_failed'));
+                    toast.add({
+                        type: 'error',
+                        title: t('profile_backup.settings_load_failed')
+                    });
                 }
             });
 
@@ -157,7 +163,10 @@ export function useProfileBackupSettings(enabled: boolean) {
             return true;
         } catch {
             setSettings(previous);
-            toast.error(t('profile_backup.settings_save_failed'));
+            toast.add({
+                type: 'error',
+                title: t('profile_backup.settings_save_failed')
+            });
             return false;
         } finally {
             setSaving(false);
@@ -211,7 +220,10 @@ export function useProfileBackupSettings(enabled: boolean) {
         try {
             return await openFolderSelectorDialog(defaultPath);
         } catch {
-            toast.error(t('profile_backup.folder_selection_failed'));
+            toast.add({
+                type: 'error',
+                title: t('profile_backup.folder_selection_failed')
+            });
             return '';
         }
     }
@@ -275,16 +287,20 @@ export function useProfileBackupSettings(enabled: boolean) {
             const outcome = await runManualProfileBackup(targetPath);
             applyStatus(outcome.status);
             if (!outcome.accepted) {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         outcome.error
                             ? profileBackupErrorKey(outcome.error.code)
                             : 'profile_backup.error.unknown'
                     )
-                );
+                });
             }
         } catch {
-            toast.error(t('profile_backup.backup_start_failed'));
+            toast.add({
+                type: 'error',
+                title: t('profile_backup.backup_start_failed')
+            });
         } finally {
             manualBackupRunningRef.current = false;
             setStartingManualBackup(false);

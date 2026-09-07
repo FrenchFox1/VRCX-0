@@ -5,6 +5,7 @@ use std::time::Duration;
 use axum::extract::ws::{CloseFrame, Message, WebSocket};
 use serde::Serialize;
 use tokio::sync::broadcast;
+use tokio_util::sync::CancellationToken;
 
 use crate::state::RoomChange;
 use crate::transport::{now_iso, IntegrationApiRouterState, ServerEvent};
@@ -14,15 +15,19 @@ use crate::wire::{
 };
 
 const MAX_ACTIVE_CONNECTIONS: u32 = 8;
+const SEND_TIMEOUT: Duration = Duration::from_secs(10);
+const CLOSE_TIMEOUT: Duration = Duration::from_secs(1);
 
 pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRouterState) {
     let Some(_guard) = ActiveConnectionGuard::try_new(Arc::clone(&state.active_connections)) else {
-        let _ = socket
-            .send(Message::Close(Some(CloseFrame {
+        let _ = tokio::time::timeout(
+            CLOSE_TIMEOUT,
+            socket.send(Message::Close(Some(CloseFrame {
                 code: 1008,
                 reason: "too many connections".into(),
-            })))
-            .await;
+            }))),
+        )
+        .await;
         return;
     };
 
@@ -31,6 +36,7 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
     let mut seq = 0_u64;
     if !send_message(
         &mut socket,
+        &state.session_cancel,
         &ServerMessage::Hello {
             seq,
             protocol: PROTOCOL_VERSION,
@@ -47,6 +53,7 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
     seq = seq.saturating_add(1);
     if !send_snapshot(
         &mut socket,
+        &state.session_cancel,
         seq,
         initial_snapshot.room.as_deref(),
         now_iso(),
@@ -61,7 +68,7 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
     loop {
         tokio::select! {
             _ = state.session_cancel.cancelled() => {
-                let _ = socket.send(Message::Close(None)).await;
+                let _ = tokio::time::timeout(CLOSE_TIMEOUT, socket.send(Message::Close(None))).await;
                 break;
             }
             incoming = socket.recv() => {
@@ -109,7 +116,13 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
                             room_revision = revision;
                             continue;
                         }
-                        if !send_snapshot(&mut socket, seq, room.as_deref(), at).await {
+                        if !send_snapshot(
+                            &mut socket,
+                            &state.session_cancel,
+                            seq,
+                            room.as_deref(),
+                            at,
+                        ).await {
                             break;
                         }
                         room_revision = revision;
@@ -130,14 +143,25 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
                         }
                         for change in &changes {
                             seq = seq.saturating_add(1);
-                            if !send_change(&mut socket, change, seq, &at).await {
+                            if !send_change(
+                                &mut socket,
+                                &state.session_cancel,
+                                change,
+                                seq,
+                                &at,
+                            ).await {
                                 return;
                             }
                         }
                         room_revision = revision;
                     }
                     Ok(ServerEvent::Bye(reason)) => {
-                        let _ = send_message(&mut socket, &ServerMessage::Bye { reason }).await;
+                        let _ = send_message(
+                            &mut socket,
+                            &state.session_cancel,
+                            &ServerMessage::Bye { reason },
+                        )
+                        .await;
                         break;
                     }
                     Err(broadcast::error::RecvError::Lagged(_)) => {
@@ -157,6 +181,7 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
                 let at = now_iso();
                 if !send_message(
                     &mut socket,
+                    &state.session_cancel,
                     &ServerMessage::Ping { seq, at: &at },
                 ).await {
                     break;
@@ -166,11 +191,18 @@ pub(crate) async fn run_session(mut socket: WebSocket, state: IntegrationApiRout
     }
 }
 
-async fn send_change(socket: &mut WebSocket, change: &RoomChange, seq: u64, at: &str) -> bool {
+async fn send_change(
+    socket: &mut WebSocket,
+    cancel: &CancellationToken,
+    change: &RoomChange,
+    seq: u64,
+    at: &str,
+) -> bool {
     match change {
         RoomChange::Snapshot(room) => {
             send_message(
                 socket,
+                cancel,
                 &ServerMessage::Snapshot {
                     seq,
                     at,
@@ -182,6 +214,7 @@ async fn send_change(socket: &mut WebSocket, change: &RoomChange, seq: u64, at: 
         RoomChange::Joined(members) => {
             send_message(
                 socket,
+                cancel,
                 &ServerMessage::Joined {
                     seq,
                     at,
@@ -191,19 +224,21 @@ async fn send_change(socket: &mut WebSocket, change: &RoomChange, seq: u64, at: 
             .await
         }
         RoomChange::Left(user_ids) => {
-            send_message(socket, &ServerMessage::Left { seq, at, user_ids }).await
+            send_message(socket, cancel, &ServerMessage::Left { seq, at, user_ids }).await
         }
     }
 }
 
 async fn send_snapshot(
     socket: &mut WebSocket,
+    cancel: &CancellationToken,
     seq: u64,
     room: Option<&crate::state::RoomState>,
     at: String,
 ) -> bool {
     send_message(
         socket,
+        cancel,
         &ServerMessage::Snapshot {
             seq,
             at: &at,
@@ -219,16 +254,31 @@ async fn send_latest_snapshot(
     state: &IntegrationApiRouterState,
 ) -> Option<u64> {
     let snapshot = state.hub.snapshot();
-    send_snapshot(socket, seq, snapshot.room.as_deref(), now_iso())
-        .await
-        .then_some(snapshot.revision)
+    send_snapshot(
+        socket,
+        &state.session_cancel,
+        seq,
+        snapshot.room.as_deref(),
+        now_iso(),
+    )
+    .await
+    .then_some(snapshot.revision)
 }
 
-async fn send_message<T: Serialize + ?Sized>(socket: &mut WebSocket, message: &T) -> bool {
+async fn send_message<T: Serialize + ?Sized>(
+    socket: &mut WebSocket,
+    cancel: &CancellationToken,
+    message: &T,
+) -> bool {
     let Ok(payload) = serde_json::to_string(message) else {
         return false;
     };
-    socket.send(Message::Text(payload.into())).await.is_ok()
+    let send = socket.send(Message::Text(payload.into()));
+    tokio::select! {
+        biased;
+        _ = cancel.cancelled() => false,
+        sent = tokio::time::timeout(SEND_TIMEOUT, send) => matches!(sent, Ok(Ok(()))),
+    }
 }
 
 struct ActiveConnectionGuard {

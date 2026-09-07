@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { toast } from 'sonner';
 
 import configRepository from '@/repositories/configRepository';
+import { toast } from '@/services/toastService';
 import { userActivityViewService } from '@/services/userActivityViewService';
 
 import {
@@ -171,7 +171,7 @@ export function useUserActivityPanelController({
                 nextError instanceof Error
                     ? nextError.message
                     : failedToLoadMessage;
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             finishOverlapLoading(requestId);
         }
@@ -255,7 +255,7 @@ export function useUserActivityPanelController({
                     ? nextError.message
                     : failedToLoadMessage;
             setError(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             if (requestId === activityRequestIdRef.current) {
                 setLoading(false);

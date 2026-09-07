@@ -15,7 +15,6 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
 
 import {
     loadNavMenuModel,
@@ -24,6 +23,7 @@ import {
     type NavLayoutEntry
 } from '@/components/layout/navMenuModel';
 import configRepository from '@/repositories/configRepository';
+import { toast } from '@/services/toastService';
 import {
     isToolCapabilityAvailable,
     triggerToolByKey
@@ -349,9 +349,12 @@ export function useToolsPageState() {
     function addQuickAccessToolByKeyWithFeedback(toolKey: string) {
         const normalizedToolKey = normalizePinnedToolKey(toolKey);
         if (quickAccessKeySet.has(normalizedToolKey)) {
-            toast.info(
-                translateWithFallback('view.tools.quick_access.already_added')
-            );
+            toast.add({
+                type: 'info',
+                title: translateWithFallback(
+                    'view.tools.quick_access.already_added'
+                )
+            });
             return;
         }
         addQuickAccessToolByKey(normalizedToolKey);
@@ -440,13 +443,18 @@ export function useToolsPageState() {
             });
             setNavLayout(model.layout);
             setNavHiddenKeys(model.hiddenKeys);
-            toast.success(translateWithFallback('nav_menu.custom_nav.pinned'));
+            toast.add({
+                type: 'success',
+                title: translateWithFallback('nav_menu.custom_nav.pinned')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.toast.failed_to_pin_tool_to_navigation')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.toast.failed_to_pin_tool_to_navigation')
+            });
         }
     }
 
@@ -465,15 +473,20 @@ export function useToolsPageState() {
             });
             setNavLayout(model.layout);
             setNavHiddenKeys(model.hiddenKeys);
-            toast.success(
-                translateWithFallback('nav_menu.custom_nav.unpinned')
-            );
+            toast.add({
+                type: 'success',
+                title: translateWithFallback('nav_menu.custom_nav.unpinned')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.toast.failed_to_unpin_tool_from_navigation')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.tools.toast.failed_to_unpin_tool_from_navigation'
+                          )
+            });
         }
     }
 

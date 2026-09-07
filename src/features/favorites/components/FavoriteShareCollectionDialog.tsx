@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import shareCollectionRepository, {
@@ -16,6 +15,7 @@ import shareCollectionRepository, {
 } from '@/repositories/shareCollectionRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { openExternalLink } from '@/services/entityMediaService';
+import { toast } from '@/services/toastService';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -361,7 +361,10 @@ export function FavoriteShareCollectionDialog({
             return;
         }
         if (!shareWorlds.worldIds.length) {
-            toast.error(t('view.favorite.share_collection.toast.no_worlds'));
+            toast.add({
+                type: 'error',
+                title: t('view.favorite.share_collection.toast.no_worlds')
+            });
             return;
         }
         const submittedWorldCount = shareWorlds.worldIds.length;
@@ -380,12 +383,13 @@ export function FavoriteShareCollectionDialog({
             );
             setResult(nextResult);
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('view.favorite.share_collection.toast.create_failed')
                 )
-            );
+            });
         } finally {
             setSharing(false);
         }

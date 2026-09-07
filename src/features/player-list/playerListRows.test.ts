@@ -59,6 +59,7 @@ describe('playerListRows', () => {
                 },
                 isGameRunning: true,
                 context: {
+                    playerFactsKnown: true,
                     location: 'wrld_live:123',
                     createdAt: '2026-01-02T03:04:05.000Z'
                 },
@@ -87,13 +88,16 @@ describe('playerListRows', () => {
     it('uses the current runtime location start time for the current user row', () => {
         expect(
             buildPlayerSourceRows({
-                playerRows: [],
+                playerRows: [
+                    { userId: 'usr_self', displayName: 'Self Username' }
+                ],
                 currentUserId: 'usr_self',
                 currentUserSnapshot: {
                     username: 'Self Username'
                 },
                 isGameRunning: true,
                 context: {
+                    playerFactsKnown: true,
                     location: 'wrld_live:123',
                     createdAt: '2026-01-02T03:04:05.000Z'
                 },
@@ -108,38 +112,6 @@ describe('playerListRows', () => {
         });
     });
 
-    it('uses reconstructed game-log rows over stale runtime rows once player facts are known', () => {
-        expect(
-            buildPlayerSourceRows({
-                playerRows: [],
-                runtimePlayerRows: [
-                    {
-                        userId: 'usr_left',
-                        displayName: 'Left Player'
-                    }
-                ],
-                runtimeRosterAvailable: true,
-                currentUserId: 'usr_self',
-                currentUserSnapshot: {
-                    displayName: 'Current User'
-                },
-                isGameRunning: true,
-                context: {
-                    location: 'wrld_live:123',
-                    createdAt: '2026-01-02T03:04:05.000Z',
-                    playerFactsKnown: true
-                },
-                currentUserLocation: '',
-                currentLocationStartedAt: ''
-            })
-        ).toEqual([
-            expect.objectContaining({
-                id: 'usr_self',
-                userId: 'usr_self'
-            })
-        ]);
-    });
-
     it('does not add another current user row when the source already identifies them by row id', () => {
         expect(
             buildPlayerSourceRows({
@@ -152,6 +124,7 @@ describe('playerListRows', () => {
                 },
                 isGameRunning: true,
                 context: {
+                    playerFactsKnown: true,
                     location: 'wrld_live:123',
                     createdAt: '2026-01-02T03:04:05.000Z'
                 },
@@ -169,6 +142,7 @@ describe('playerListRows', () => {
                 currentUserSnapshot: { displayName: 'Current User' },
                 isGameRunning: true,
                 context: {
+                    playerFactsKnown: true,
                     location: 'private',
                     createdAt: '2026-01-02T03:04:05.000Z'
                 },
@@ -184,6 +158,7 @@ describe('playerListRows', () => {
                 currentUserSnapshot: { displayName: 'Current User' },
                 isGameRunning: false,
                 context: {
+                    playerFactsKnown: true,
                     location: 'wrld_live:123',
                     createdAt: '2026-01-02T03:04:05.000Z'
                 },
@@ -217,4 +192,56 @@ describe('playerListRows', () => {
             userId: 'usr_player'
         });
     });
+});
+
+it('does not synthesize self while the backend roster is unavailable', () => {
+    expect(
+        buildPlayerSourceRows({
+            playerRows: [],
+            currentUserId: 'usr_self',
+            currentUserSnapshot: { displayName: 'Self' },
+            isGameRunning: true,
+            currentUserLocation: 'wrld_current:1',
+            context: {
+                location: 'wrld_current:1',
+                source: 'none',
+                playerFactsKnown: false
+            }
+        })
+    ).toEqual([]);
+});
+
+it('does not invent self in a confirmed empty roster', () => {
+    expect(
+        buildPlayerSourceRows({
+            playerRows: [],
+            currentUserId: 'usr_self',
+            currentUserSnapshot: { displayName: 'Self' },
+            isGameRunning: true,
+            currentUserLocation: 'wrld_current:1',
+            context: {
+                location: 'wrld_current:1',
+                source: 'runtime',
+                playerFactsKnown: true
+            }
+        })
+    ).toEqual([]);
+});
+
+it('keeps an observed self row while the current profile is unavailable', () => {
+    const row = { userId: 'usr_self', displayName: 'From log' };
+    expect(
+        buildPlayerSourceRows({
+            playerRows: [row],
+            currentUserId: 'usr_self',
+            currentUserSnapshot: null,
+            isGameRunning: true,
+            currentUserLocation: 'wrld_current:1',
+            context: {
+                location: 'wrld_current:1',
+                source: 'runtime',
+                playerFactsKnown: true
+            }
+        })
+    ).toEqual([row]);
 });

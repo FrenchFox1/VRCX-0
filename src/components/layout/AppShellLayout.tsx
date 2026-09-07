@@ -205,9 +205,7 @@ export function AppShellLayout() {
                         </>
                     ) : null}
                 </div>
-                <AppStatusBar
-                    className={sidebarWindowMode ? 'hidden' : undefined}
-                />
+                <AppStatusBar sidebarWindowMode={sidebarWindowMode} />
             </div>
         </AppSidebar>
     );

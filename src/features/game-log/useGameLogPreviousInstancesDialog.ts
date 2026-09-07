@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import gameLogRepository from '@/repositories/gameLogRepository';
+import { toast } from '@/services/toastService';
 
 import {
     getGameLogRowKey,
@@ -50,13 +50,15 @@ export function useGameLogPreviousInstancesDialog() {
                 setTitle(`Instance History - ${row?.worldName || 'World'}`);
                 setOpen(true);
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.game_log.toast.failed_to_load_instance_history'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.game_log.toast.failed_to_load_instance_history'
+                              )
+                });
             } finally {
                 setLoadingKey('');
             }

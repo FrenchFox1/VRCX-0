@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import mediaRepository from '@/repositories/mediaRepository';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 
 import { runGalleryBulkDelete } from './galleryBulkDelete';
@@ -86,26 +86,34 @@ export function useScreenshotBulkDelete({
         }
 
         if (cancelled) {
-            toast.warning(
-                t('view.tools.gallery_selection.delete_cancelled_toast', {
-                    count: deleted
-                })
-            );
+            toast.add({
+                type: 'warning',
+                title: t(
+                    'view.tools.gallery_selection.delete_cancelled_toast',
+                    {
+                        count: deleted
+                    }
+                )
+            });
             return;
         }
         if (failed > 0) {
-            toast.error(
-                t('view.tools.gallery_selection.delete_partial_toast', {
+            toast.add({
+                type: 'error',
+                title: t('view.tools.gallery_selection.delete_partial_toast', {
                     failed,
                     succeeded: deleted,
                     reason: lastError
                 })
-            );
+            });
             return;
         }
-        toast.success(
-            t('view.tools.gallery_selection.deleted_toast', { count: deleted })
-        );
+        toast.add({
+            type: 'success',
+            title: t('view.tools.gallery_selection.deleted_toast', {
+                count: deleted
+            })
+        });
     }
 
     return {

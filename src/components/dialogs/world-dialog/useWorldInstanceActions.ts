@@ -6,7 +6,6 @@ import {
     type SetStateAction
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
 import configRepository from '@/repositories/configRepository';
@@ -14,6 +13,7 @@ import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { selfInviteToInstance } from '@/services/launchService';
+import { toast } from '@/services/toastService';
 import { parseLocation } from '@/shared/utils/location';
 import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import type { LaunchStoreState } from '@/state/launchStore';
@@ -187,13 +187,15 @@ export function useWorldInstanceActions({
                 defaults
             });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.world.toast.failed_to_load_new_instance_settings'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.world.toast.failed_to_load_new_instance_settings'
+                          )
+            });
         }
     }
 
@@ -286,9 +288,12 @@ export function useWorldInstanceActions({
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
         if (form.accessType === 'group' && !normalizeEntityId(form.groupId)) {
-            toast.error(
-                t('dialog.world.error.group_id_is_required_for_group_instances')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'dialog.world.error.group_id_is_required_for_group_instances'
+                )
+            });
             return;
         }
 
@@ -374,7 +379,10 @@ export function useWorldInstanceActions({
                 }
             );
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
-                toast.success(t('dialog.world.success.instance_created'));
+                toast.add({
+                    type: 'success',
+                    title: t('dialog.world.success.instance_created')
+                });
                 return;
             }
             setNewInstanceRequest(null);
@@ -382,11 +390,12 @@ export function useWorldInstanceActions({
             if (shouldSelfInvite) {
                 const parsedLocation = parseLocation(location);
                 if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             'dialog.world.label.instance_created_but_the_new_instance_location_is_not_inviteable'
                         )
-                    );
+                    });
                     launchCreatedInstance(created);
                 } else {
                     try {
@@ -394,22 +403,25 @@ export function useWorldInstanceActions({
                             location,
                             created.shortName || created.secureOrShortName || ''
                         );
-                        toast.success(
-                            t(
+                        toast.add({
+                            type: 'success',
+                            title: t(
                                 'dialog.world.success.instance_created_and_self_invite_sent'
                             )
-                        );
+                        });
                     } catch (error) {
-                        toast.error(
-                            error instanceof Error
-                                ? t(
-                                      'dialog.world.toast.instance_created_but_self_invite_failed_value',
-                                      { value: error.message }
-                                  )
-                                : t(
-                                      'dialog.world.toast.instance_created_but_self_invite_failed'
-                                  )
-                        );
+                        toast.add({
+                            type: 'error',
+                            title:
+                                error instanceof Error
+                                    ? t(
+                                          'dialog.world.toast.instance_created_but_self_invite_failed_value',
+                                          { value: error.message }
+                                      )
+                                    : t(
+                                          'dialog.world.toast.instance_created_but_self_invite_failed'
+                                      )
+                        });
                         launchCreatedInstance(created);
                     }
                 }
@@ -417,25 +429,32 @@ export function useWorldInstanceActions({
                 try {
                     await openCreatedInstanceInGameRequest(created);
                 } catch (error) {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t(
-                                  'dialog.world.toast.failed_to_open_instance_in_vrchat'
-                              )
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t(
+                                      'dialog.world.toast.failed_to_open_instance_in_vrchat'
+                                  )
+                    });
                     launchCreatedInstance(created);
                 }
             } else {
-                toast.success(t('dialog.world.success.instance_created'));
+                toast.add({
+                    type: 'success',
+                    title: t('dialog.world.success.instance_created')
+                });
                 launchCreatedInstance(created);
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('message.instance.create_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('message.instance.create_failed')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -454,15 +473,22 @@ export function useWorldInstanceActions({
                 created.location,
                 created.shortName || created.secureOrShortName || ''
             );
-            toast.warning(
-                t(
+            toast.add({
+                type: 'warning',
+                title: t(
                     'dialog.world.error.failed_open_instance_in_vrchat_falling_back_to_self_invite'
                 )
-            );
-            toast.success(t('message.invite.self_sent'));
+            });
+            toast.add({
+                type: 'success',
+                title: t('message.invite.self_sent')
+            });
             return;
         }
-        toast.success(t('dialog.world.success.vrchat_launch_request_sent'));
+        toast.add({
+            type: 'success',
+            title: t('dialog.world.success.vrchat_launch_request_sent')
+        });
     }
 
     async function copyCreatedInstance(created: CreatedWorldInstance) {
@@ -477,11 +503,12 @@ export function useWorldInstanceActions({
     async function selfInviteCreatedInstance(created: CreatedWorldInstance) {
         const parsedLocation = parseLocation(created?.location || '');
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.world.error.cannot_self_invite_location_is_not_a_concrete_instance'
                 )
-            );
+            });
             return;
         }
         actionStatusRef.current = 'new-instance';
@@ -491,13 +518,18 @@ export function useWorldInstanceActions({
                 created.location,
                 created.shortName || created.secureOrShortName || ''
             );
-            toast.success(t('message.invite.self_sent'));
+            toast.add({
+                type: 'success',
+                title: t('message.invite.self_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_send_self_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.world.toast.failed_to_send_self_invite')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -536,11 +568,12 @@ export function useWorldInstanceActions({
         }
         const parsedLocation = parseLocation(created.location);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'dialog.world.error.cannot_open_in_vrchat_location_is_not_a_concrete_instance'
                 )
-            );
+            });
             return;
         }
         actionStatusRef.current = 'new-instance';
@@ -548,11 +581,15 @@ export function useWorldInstanceActions({
         try {
             await openCreatedInstanceInGameRequest(created);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_open_instance_in_vrchat')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.world.toast.failed_to_open_instance_in_vrchat'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');

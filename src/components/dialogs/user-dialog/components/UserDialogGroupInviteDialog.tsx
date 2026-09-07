@@ -1,11 +1,11 @@
 import { AlertTriangleIcon, LoaderCircleIcon, UsersIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { isVrchatRequestError } from '@/repositories/vrchatRequest';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { toast } from '@/services/toastService';
 import { Alert, AlertAction, AlertDescription } from '@/ui/shadcn/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
@@ -95,16 +95,20 @@ export function UserDialogGroupInviteDialog({
                 groupId: selectedGroupId,
                 userId: targetUserId
             });
-            toast.success(t('dialog.user.success.group_invite_sent'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.success.group_invite_sent')
+            });
             onOpenChange(false);
         } catch (error) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     isAlreadyGroupMemberError(error)
                         ? 'dialog.user.toast.user_already_group_member'
                         : 'dialog.user.toast.failed_to_send_group_invite'
                 )
-            );
+            });
         } finally {
             setSending(false);
         }

@@ -626,6 +626,7 @@ impl RuntimeHostStateBuilder {
                     &background_group_instances_refresh_running,
                 ),
                 group_order_source: Arc::clone(&group_order_source),
+                group_notification_group_ids: Mutex::new(None),
             }),
             self.runtime_context.background_jobs.clone(),
             self.runtime_context.tasks.clone(),

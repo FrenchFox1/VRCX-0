@@ -4,6 +4,8 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { StrictMode, type ComponentProps, type PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     takeLastResult: vi.fn(),
     getRollbackState: vi.fn(),
@@ -38,11 +40,19 @@ vi.mock('react-i18next', () => ({
     })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        success: mocks.toastSuccess,
-        error: mocks.toastError,
-        dismiss: mocks.toastDismiss
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        },
+        close: mocks.toastDismiss
     }
 }));
 
@@ -157,19 +167,19 @@ describe('ProfileRestoreResultHost', () => {
         await waitFor(() => {
             expect(mocks.toastSuccess).toHaveBeenCalledTimes(1);
         });
-        const [title, options] = mocks.toastSuccess.mock.calls[0];
-        expect(title).toBe('Restore complete');
+        const [options] = mocks.toastSuccess.mock.calls[0];
+        expect(options.title).toBe('Restore complete');
         expect(options).toMatchObject({
             id: 'profile-restore-rollback-retained',
             description: 'Pre-restore data retained.',
-            duration: Infinity,
+            timeout: 0,
             position: 'bottom-right',
-            closeButton: true,
-            action: { label: 'Clear rollback data' }
+            data: { closeButton: true },
+            actionProps: { children: 'Clear rollback data' }
         });
 
         const preventDefault = vi.fn();
-        options.action.onClick({ preventDefault });
+        options.actionProps.onClick({ preventDefault });
         expect(preventDefault).toHaveBeenCalledTimes(1);
         expect(mocks.clearRollback).not.toHaveBeenCalled();
 
@@ -190,8 +200,11 @@ describe('ProfileRestoreResultHost', () => {
 
         await waitFor(() => {
             expect(mocks.toastSuccess).toHaveBeenCalledWith(
-                'Data restored from backup',
-                { description: 'backup.vrcx0backup' }
+                expect.objectContaining({
+                    type: 'success',
+                    title: 'Data restored from backup',
+                    description: 'backup.vrcx0backup'
+                })
             );
         });
     });
@@ -212,8 +225,11 @@ describe('ProfileRestoreResultHost', () => {
 
         await waitFor(() => {
             expect(mocks.toastSuccess).toHaveBeenCalledWith(
-                'Data restored from backup',
-                { description: 'backup.vrcx0backup' }
+                expect.objectContaining({
+                    type: 'success',
+                    title: 'Data restored from backup',
+                    description: 'backup.vrcx0backup'
+                })
             );
         });
     });

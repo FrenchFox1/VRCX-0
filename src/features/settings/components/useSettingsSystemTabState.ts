@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 
 import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from '@/services/changelogService';
 import { restartApplication } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { isUpdateCheckDisabledBuild } from '@/shared/buildLabel';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -81,21 +81,19 @@ export function useSettingsSystemTabState() {
                 () => setSystemWindowFramePreference(enabled)
             );
             if (saved) {
-                toast(
-                    t(
+                toast.add({
+                    title: t(
                         'view.settings.general.application.system_window_frame_saved'
                     ),
-                    {
-                        action: {
-                            label: t(
-                                'view.settings.general.application.system_window_frame_restart_now'
-                            ),
-                            onClick: () => {
-                                void restartApplication();
-                            }
+                    actionProps: {
+                        children: t(
+                            'view.settings.general.application.system_window_frame_restart_now'
+                        ),
+                        onClick: () => {
+                            void restartApplication();
                         }
                     }
-                );
+                });
             }
         },
         onCloseToTrayChange: (enabled: boolean) => {
@@ -151,9 +149,10 @@ export function useSettingsSystemTabState() {
                 () => setProxyEnabledPreference(enabled)
             );
             if (saved) {
-                toast.success(
-                    t('prompt.proxy_settings.saved_restart_required')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('prompt.proxy_settings.saved_restart_required')
+                });
             }
         },
         onProxySettings: () => {

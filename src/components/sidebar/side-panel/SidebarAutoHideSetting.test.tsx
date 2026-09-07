@@ -74,3 +74,7 @@ describe('sidebar auto-hide setting', () => {
         expect(container.textContent).toBe('');
     });
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

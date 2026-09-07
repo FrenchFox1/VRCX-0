@@ -1,9 +1,9 @@
 import { FolderOpenIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
 import { dataDirectoryPathForDisplay } from '@/shared/utils/dataDirectoryPath';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -86,20 +86,25 @@ function DeepLinkRegistrationField() {
             const status = await commands.appDeepLinkRegistrationRepair();
             setRegistered(status);
             if (status) {
-                toast.success(
-                    t(
+                toast.add({
+                    type: 'success',
+                    title: t(
                         'view.settings.advanced.advanced_ui.behavior.deep_link_repair_success'
                     )
-                );
+                });
             } else {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         'view.settings.advanced.advanced_ui.behavior.deep_link_repair_failed'
                     )
-                );
+                });
             }
         } catch (error: unknown) {
-            toast.error(error instanceof Error ? error.message : String(error));
+            toast.add({
+                type: 'error',
+                title: error instanceof Error ? error.message : String(error)
+            });
         } finally {
             setRepairing(false);
         }

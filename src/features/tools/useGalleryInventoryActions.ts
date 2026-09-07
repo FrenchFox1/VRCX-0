@@ -92,15 +92,20 @@ export function useGalleryInventoryActions({
                         favoriteError
                     );
                 }
-                toast.success(t('view.tools.success.print_deleted'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.tools.success.print_deleted')
+                });
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_delete_print')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_delete_print')
+                });
             }
         } finally {
             setMutatingKey((current) =>
@@ -113,7 +118,10 @@ export function useGalleryInventoryActions({
         fileId: string
     ) {
         if (!currentUserId) {
-            toast.error(t('view.tools.empty.no_current_user_is_available'));
+            toast.add({
+                type: 'error',
+                title: t('view.tools.empty.no_current_user_is_available')
+            });
             return;
         }
         const normalizedFileId = fileId.trim();
@@ -151,18 +159,24 @@ export function useGalleryInventoryActions({
                     normalizeString(mergedUser.id) ||
                     currentUserId
             });
-            toast.success(
-                fieldName === 'userIcon'
-                    ? t('message.gallery.profile_icon_changed')
-                    : t('message.gallery.profile_pic_changed')
-            );
+            toast.add({
+                type: 'success',
+                title:
+                    fieldName === 'userIcon'
+                        ? t('message.gallery.profile_icon_changed')
+                        : t('message.gallery.profile_pic_changed')
+            });
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_update_profile_media')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.tools.toast.failed_to_update_profile_media'
+                              )
+                });
             }
         } finally {
             setMutatingKey((current) =>
@@ -192,17 +206,22 @@ export function useGalleryInventoryActions({
                     )
                 }));
                 await refreshInventory();
-                toast.success(t('view.tools.label.inventory_bundle_consumed'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.tools.label.inventory_bundle_consumed')
+                });
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.tools.toast.failed_to_consume_inventory_bundle'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.tools.toast.failed_to_consume_inventory_bundle'
+                              )
+                });
             }
         } finally {
             setMutatingKey((current) =>
@@ -229,16 +248,21 @@ export function useGalleryInventoryActions({
         try {
             await mediaRepository.redeemReward(code);
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.success(t('prompt.redeem.success'));
+                toast.add({
+                    type: 'success',
+                    title: t('prompt.redeem.success')
+                });
                 await refreshInventory();
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_redeem_reward')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_redeem_reward')
+                });
             }
         } finally {
             setMutatingKey((current) =>

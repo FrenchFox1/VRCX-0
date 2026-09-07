@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 
 import { languageCodes } from '@/localization/index';
@@ -12,6 +11,7 @@ import {
     setTranslationApiConfigPreference,
     setYoutubeApiKeyPreference
 } from '@/services/preferencesService';
+import { toast } from '@/services/toastService';
 import { isRecord } from '@/shared/utils/record';
 import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import {
@@ -317,18 +317,21 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                 ...current,
                 youtubeAPIKey: apiKey
             }));
-            toast.success(
-                apiKey
+            toast.add({
+                type: 'success',
+                title: apiKey
                     ? t('dialog.youtube_api.msg_settings_saved')
                     : t('dialog.youtube_api.msg_removed')
-            );
+            });
             setYoutubeApiDialogOpen(false);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.youtube_api.msg_test_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.youtube_api.msg_test_failed')
+            });
         } finally {
             setIntegrationStatus((current) => ({
                 ...current,
@@ -355,7 +358,10 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             ? translationDraft.bioLanguage
             : 'en';
         if (nextType === 'openai' && (!nextEndpointId || !nextModel)) {
-            toast.warning(t('dialog.translation_api.msg_fill_endpoint_model'));
+            toast.add({
+                type: 'warning',
+                title: t('dialog.translation_api.msg_fill_endpoint_model')
+            });
             return;
         }
 
@@ -386,16 +392,21 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                 ...current,
                 translationAPIKey: savedConfig.translationAPIKey
             }));
-            toast.success(t('dialog.translation_api.msg_settings_saved'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.translation_api.msg_settings_saved')
+            });
             setTranslationApiDialogOpen(false);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.settings.toast.failed_to_save_translation_settings'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.settings.toast.failed_to_save_translation_settings'
+                          )
+            });
         } finally {
             setIntegrationStatus((current) => ({
                 ...current,
@@ -455,13 +466,15 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
                 }
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.settings.toast.failed_to_fetch_translation_models'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.settings.toast.failed_to_fetch_translation_models'
+                          )
+            });
         } finally {
             fetchingModelsRef.current.delete(endpointId);
             if (fetchingModelsRef.current.size === 0) {
@@ -479,11 +492,17 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
         );
         const apiKey = translationDraft.translationAPIKey.trim();
         if (provider === 'google' && !apiKey) {
-            toast.warning(t('dialog.translation_api.description'));
+            toast.add({
+                type: 'warning',
+                title: t('dialog.translation_api.description')
+            });
             return;
         }
         if (provider === 'deepl' && !apiKey) {
-            toast.warning(t('dialog.translation_api.deepl.api_key'));
+            toast.add({
+                type: 'warning',
+                title: t('dialog.translation_api.deepl.api_key')
+            });
             return;
         }
         const endpointId = translationDraft.translationEndpointId.trim();
@@ -492,9 +511,10 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             DEFAULT_TRANSLATION_MODEL;
         if (provider === 'openai') {
             if (!endpointId || !model) {
-                toast.warning(
-                    t('dialog.translation_api.msg_fill_endpoint_model')
-                );
+                toast.add({
+                    type: 'warning',
+                    title: t('dialog.translation_api.msg_fill_endpoint_model')
+                });
                 return;
             }
         }
@@ -526,13 +546,18 @@ export function useSettingsIntegrations({ commit }: SettingsIntegrationsDeps) {
             if (!result.text.trim()) {
                 throw new Error(t('dialog.translation_api.msg_test_failed'));
             }
-            toast.success(t('dialog.translation_api.msg_test_success'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.translation_api.msg_test_success')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.translation_api.msg_test_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.translation_api.msg_test_failed')
+            });
         } finally {
             setIntegrationStatus((current) => ({
                 ...current,

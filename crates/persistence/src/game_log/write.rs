@@ -290,6 +290,9 @@ pub fn write_batch(
     }
 
     super::tables::ensure_game_log_tables(db)?;
+    if batch.replay_checkpoint.is_some() {
+        crate::config::ensure_config_table(db)?;
+    }
     let owner_id = owner_id_get_or_insert(db, owner_user_id)?;
     db.write_transaction(|tx| {
         ensure_game_log_tables_on(tx)?;
@@ -322,6 +325,15 @@ pub fn write_batch(
         }
         for entry in &batch.externals {
             affected = affected.saturating_add(insert_external_on(tx, owner_id, entry)?);
+        }
+        if let Some(checkpoint) = &batch.replay_checkpoint {
+            tx.execute_non_query(
+                "INSERT INTO configs (key, value) VALUES (@key, @checkpoint) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                &ParamsBuilder::new()
+                    .set("key", crate::config::resolve_config_key("gameLogReplayCheckpoint"))
+                    .set("checkpoint", checkpoint.as_str())
+                    .build(),
+            )?;
         }
         Ok(affected)
     })

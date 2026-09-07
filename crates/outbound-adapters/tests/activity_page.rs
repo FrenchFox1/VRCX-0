@@ -2,14 +2,24 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use chrono::{DateTime, Duration, SecondsFormat};
-use vrcx_0_core::OwnerId;
-use vrcx_0_persistence::activity_page::{
-    activity_page_view_build, ActivityCompanionOrder, ActivityPageBuildInput, ActivitySeriesBucket,
+use vrcx_0_application_activity::activity_page::{
+    ActivityCompanionOrder, ActivityPageBuildInput, ActivitySeriesBucket,
 };
+use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::game_log::{
     write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogWriteBatch,
 };
 use vrcx_0_persistence::DatabaseService;
+
+fn activity_page_view_build(
+    db: &DatabaseService,
+    input: ActivityPageBuildInput,
+) -> vrcx_0_application_core::Result<vrcx_0_application_activity::activity_page::ActivityPageView> {
+    vrcx_0_application_activity::activity_page::activity_page_view_build(
+        &vrcx_0_outbound_adapters::LocalActivityPageStore::new(db),
+        input,
+    )
+}
 
 const USER_ID: &str = "usr_page";
 const HOUR_MS: i64 = 3_600_000;

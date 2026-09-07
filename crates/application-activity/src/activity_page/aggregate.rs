@@ -3,12 +3,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use chrono::{DateTime, Datelike, Duration, NaiveDate, Utc};
 use vrcx_0_core::activity_sessions::{merge_sessions_with_gap, ActivitySession};
 
-use super::spans::LocationSpan;
-use super::types::{
+use super::activity_iso_from_ms;
+use vrcx_0_contracts::activity_page::ActivityLocationSpan as LocationSpan;
+use vrcx_0_contracts::activity_page::{
     ActivityPageAccessSlice, ActivityPagePreviousSummary, ActivityPageSeries, ActivityPageSummary,
     ActivityPageWorldRow, ActivityPageWorlds, ActivitySeriesBucket, ActivitySeriesPoint,
 };
-use crate::activity::activity_iso_from_ms;
 
 pub(super) const WEEK_BUCKET_MIN_RANGE_DAYS: i64 = 180;
 const DAY_MS: i64 = 86_400_000;
@@ -71,7 +71,7 @@ fn session_covers_inferred_span(session: &ActivitySession, spans: &[LocationSpan
 pub(super) fn access_split(spans: &[LocationSpan]) -> Vec<ActivityPageAccessSlice> {
     let mut totals: BTreeMap<String, i64> = BTreeMap::new();
     for span in spans {
-        *totals.entry(span.access_bucket.clone()).or_insert(0) += span.duration_ms();
+        *totals.entry(span.access_bucket.clone()).or_insert(0) += span.end_ms - span.start_ms;
     }
     let mut slices: Vec<ActivityPageAccessSlice> = totals
         .into_iter()
@@ -139,7 +139,7 @@ pub(super) fn worlds(
                 first_seen_ms: span.start_ms,
                 last_seen_ms: span.start_ms,
             });
-        entry.millis += span.duration_ms();
+        entry.millis += span.end_ms - span.start_ms;
         entry.visit_count += 1;
         entry.first_seen_ms = entry.first_seen_ms.min(span.start_ms);
         entry.last_seen_ms = entry.last_seen_ms.max(span.start_ms);

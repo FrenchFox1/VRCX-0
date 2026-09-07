@@ -1,14 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const toastMocks = vi.hoisted(() => ({
     error: vi.fn(),
     success: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: toastMocks.error,
-        success: toastMocks.success
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return toastMocks.error(options);
+                case 'success':
+                    return toastMocks.success(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -39,7 +49,12 @@ describe('copyTextToClipboard', () => {
 
         expect(copied).toBe(true);
         expect(writeText).toHaveBeenCalledWith('wrld_123');
-        expect(toastMocks.success).toHaveBeenCalledWith('World ID copied');
+        expect(toastMocks.success).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'success',
+                title: 'World ID copied'
+            })
+        );
         expect(toastMocks.error).not.toHaveBeenCalled();
     });
 
@@ -71,7 +86,9 @@ describe('copyTextToClipboard', () => {
 
         expect(copied).toBe(false);
         expect(toastMocks.success).not.toHaveBeenCalled();
-        expect(toastMocks.error).toHaveBeenCalledWith('Copy failed');
+        expect(toastMocks.error).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error', title: 'Copy failed' })
+        );
     });
 
     it('shows a resolved error toast when the clipboard write fails', async () => {
@@ -84,6 +101,11 @@ describe('copyTextToClipboard', () => {
 
         expect(copied).toBe(false);
         expect(toastMocks.success).not.toHaveBeenCalled();
-        expect(toastMocks.error).toHaveBeenCalledWith('permission denied');
+        expect(toastMocks.error).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'permission denied'
+            })
+        );
     });
 });

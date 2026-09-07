@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
+import { toast } from '@/services/toastService';
 import { publishToolsStatusUpdated } from '@/shared/constants/tools';
 import {
     Dialog,
@@ -95,12 +95,13 @@ export function PresenceScheduleDialog({
                 setTimeRules(result.map(normalizeTimeRule));
             })
             .catch((error: unknown) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(`${I18N_ROOT}.failed_to_load_schedule_rules`)
                     )
-                )
+                })
             )
             .finally(() => {
                 if (active) {
@@ -129,12 +130,13 @@ export function PresenceScheduleDialog({
                 );
             },
             (error) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(`${I18N_ROOT}.failed_to_save_schedule_rules`)
                     )
-                )
+                })
         );
     }
 
@@ -192,12 +194,13 @@ export function PresenceRoomRulesDialog({
                 setContextRules(result.map(normalizeContextRule));
             })
             .catch((error: unknown) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(`${I18N_ROOT}.failed_to_load_room_rules`)
                     )
-                )
+                })
             )
             .finally(() => {
                 if (active) {
@@ -227,12 +230,13 @@ export function PresenceRoomRulesDialog({
                 );
             },
             (error) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(`${I18N_ROOT}.failed_to_save_room_rules`)
                     )
-                )
+                })
         );
     }
 
@@ -297,12 +301,13 @@ export function PresenceInviteRequestsDialog({
                 });
             })
             .catch((error: unknown) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(`${I18N_ROOT}.failed_to_load_invite_settings`)
                     )
-                )
+                })
             )
             .finally(() => {
                 if (active) {
@@ -325,12 +330,13 @@ export function PresenceInviteRequestsDialog({
             key,
             () => saveConfigValue(key, value),
             (error) =>
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(`${I18N_ROOT}.failed_to_save_invite_settings`)
                     )
-                )
+                })
         );
     }
 

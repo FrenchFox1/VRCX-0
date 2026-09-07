@@ -4,10 +4,8 @@ const { recordBrowseHistory } = vi.hoisted(() => ({
     recordBrowseHistory: vi.fn().mockResolvedValue(null)
 }));
 
-vi.mock('sonner', () => ({
-    toast: {
-        info: vi.fn()
-    }
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn() }
 }));
 
 vi.mock('@/services/i18nService', () => ({

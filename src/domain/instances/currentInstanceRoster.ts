@@ -1,8 +1,4 @@
-import { parseLocation } from '@/shared/utils/location';
-
-import { isSameInstanceLocation } from './instanceRoster';
-
-export type CurrentInstanceRosterSource = 'database' | 'none' | 'runtime';
+export type CurrentInstanceRosterSource = 'none' | 'runtime';
 
 export interface CurrentInstanceRosterContext {
     createdAt: string;
@@ -32,21 +28,13 @@ export interface CurrentInstanceRosterSnapshot {
     players: CurrentInstanceRosterPlayer[];
 }
 
-export interface CurrentInstanceRuntimeRoster {
-    currentLocation: string;
-    currentLocationStartedAt: string | null;
-    currentWorldId: string;
-    currentWorldName: string;
-    players: readonly CurrentInstanceRosterPlayer[];
-}
-
 export interface GameLogRosterProjectionPlayer {
     userId: string;
     displayName: string;
     joinTimeMs: number | null;
 }
 
-export function includeCurrentUserInRoster({
+export function decorateCurrentUserInRoster({
     currentUserDisplayName,
     currentUserId,
     joinedAt,
@@ -64,8 +52,12 @@ export function includeCurrentUserInRoster({
     const normalizedDisplayName = currentUserDisplayName.toLowerCase();
     const isCurrentUser = (player: CurrentInstanceRosterPlayer) =>
         player.userId === currentUserId ||
-        player.displayName.toLowerCase() === normalizedDisplayName;
+        (!player.userId &&
+            player.displayName.toLowerCase() === normalizedDisplayName);
     const existingCurrentUser = players.find(isCurrentUser);
+    if (!existingCurrentUser) {
+        return [...players];
+    }
     const joinedAtMs = Date.parse(joinedAt);
     return [
         {
@@ -113,38 +105,5 @@ export function collectRuntimeRosterPlayers(
             new Set(players.map((player) => player.userId).filter(Boolean))
         ),
         players
-    };
-}
-
-export function resolveRuntimeCurrentInstanceRoster({
-    requestedLocation,
-    runtime
-}: {
-    requestedLocation: string;
-    runtime: CurrentInstanceRuntimeRoster;
-}): CurrentInstanceRosterSnapshot | null {
-    if (
-        runtime.players.length === 0 ||
-        !isSameInstanceLocation(requestedLocation, runtime.currentLocation)
-    ) {
-        return null;
-    }
-
-    return {
-        context: {
-            createdAt: runtime.currentLocationStartedAt || '',
-            groupName: '',
-            location: runtime.currentLocation,
-            playerCount: runtime.players.length,
-            playerFactsKnown: true,
-            source: 'runtime',
-            time: 0,
-            worldId:
-                runtime.currentWorldId ||
-                parseLocation(runtime.currentLocation).worldId ||
-                '',
-            worldName: runtime.currentWorldName
-        },
-        players: [...runtime.players]
     };
 }

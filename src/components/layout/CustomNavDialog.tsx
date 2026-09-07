@@ -8,8 +8,8 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
+import { toast } from '@/services/toastService';
 import {
     DASHBOARD_NAV_KEY_PREFIX,
     DEFAULT_DASHBOARD_ICON
@@ -550,11 +550,15 @@ export function CustomNavDialog({
                 ...localHiddenKeys
             ]);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('component.custom_nav.toast.failed_to_create_dashboard')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.custom_nav.toast.failed_to_create_dashboard'
+                          )
+            });
         }
     }
 
@@ -583,13 +587,17 @@ export function CustomNavDialog({
                     DEFAULT_DASHBOARD_ICON
                 )
             });
-            toast.success(t('message.update_success'));
+            toast.add({ type: 'success', title: t('message.update_success') });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('component.custom_nav.toast.failed_to_update_dashboard')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.custom_nav.toast.failed_to_update_dashboard'
+                          )
+            });
         }
     }
 
@@ -609,11 +617,15 @@ export function CustomNavDialog({
                 (current) => removeKeyFromLayout(current, key).layout
             );
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('component.custom_nav.toast.failed_to_delete_dashboard')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.custom_nav.toast.failed_to_delete_dashboard'
+                          )
+            });
         }
     }
 

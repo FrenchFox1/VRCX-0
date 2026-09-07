@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import {
@@ -7,6 +5,7 @@ import {
     selectFallbackAvatar as selectCurrentFallbackAvatar
 } from '@/services/avatarSelectionService';
 import { refreshCurrentUser } from '@/services/backgroundMaintenanceService';
+import { toast } from '@/services/toastService';
 import { useDialogStore } from '@/state/dialogStore';
 
 import type {
@@ -73,13 +72,18 @@ export function createAvatarDialogActions({
                 allowLocalFallback: false
             });
             applyCurrentAvatarUpdate(nextAvatar);
-            toast.success(t('dialog.avatar.success.avatar_refreshed'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.avatar.success.avatar_refreshed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.avatar.toast.failed_to_refresh_avatar')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.avatar.toast.failed_to_refresh_avatar')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -99,13 +103,18 @@ export function createAvatarDialogActions({
             if (!result.applied) {
                 return;
             }
-            toast.success(t('dialog.avatar.success.avatar_selected'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.avatar.success.avatar_selected')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.avatar.toast.failed_to_select_avatar')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.avatar.toast.failed_to_select_avatar')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -140,13 +149,20 @@ export function createAvatarDialogActions({
             if (!selection.applied) {
                 return;
             }
-            toast.success(t('dialog.avatar.empty.fallback_avatar_updated'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.avatar.empty.fallback_avatar_updated')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.avatar.toast.failed_to_select_fallback_avatar')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.avatar.toast.failed_to_select_fallback_avatar'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -192,19 +208,22 @@ export function createAvatarDialogActions({
                     ? response.json
                     : { ...avatar, releaseStatus: nextStatus }
             );
-            toast.success(
-                isPublic
+            toast.add({
+                type: 'success',
+                title: isPublic
                     ? t('dialog.avatar.toast.avatar_made_public')
                     : t('dialog.avatar.toast.avatar_made_private')
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.avatar.toast.failed_to_update_avatar_release_status'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.avatar.toast.failed_to_update_avatar_release_status'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -253,13 +272,14 @@ export function createAvatarDialogActions({
             } catch {
                 refreshFailed = true;
             }
-            toast.success(
-                refreshFailed
+            toast.add({
+                type: 'success',
+                title: refreshFailed
                     ? t(
                           'dialog.avatar.toast.avatar_deleted_but_current_user_snapshot_refresh'
                       )
                     : t('message.avatar.deleted')
-            );
+            });
             const dialogState = useDialogStore.getState();
             if (dialogState.breadcrumbs.length > 1) {
                 dialogState.popToBreadcrumb(dialogState.breadcrumbs.length - 2);
@@ -267,11 +287,13 @@ export function createAvatarDialogActions({
                 closeDialog();
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.avatar.toast.failed_to_delete_avatar')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.avatar.toast.failed_to_delete_avatar')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -316,11 +338,12 @@ export function createAvatarDialogActions({
                 }
                 return { ...currentAvatar, $memo: nextMemo };
             });
-            toast.success(
-                nextMemo
+            toast.add({
+                type: 'success',
+                title: nextMemo
                     ? t('dialog.avatar.toast.memo_saved')
                     : t('dialog.avatar.toast.memo_cleared')
-            );
+            });
         } catch (error) {
             if (
                 activeAvatarTargetRef.current.avatarId !== targetAvatarId ||
@@ -329,11 +352,13 @@ export function createAvatarDialogActions({
             ) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.avatar.toast.failed_to_save_memo')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.avatar.toast.failed_to_save_memo')
+            });
         }
     }
 

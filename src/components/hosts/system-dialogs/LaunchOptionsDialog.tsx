@@ -1,7 +1,6 @@
 import { ExternalLinkIcon, FolderOpenIcon, SaveIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import configRepository from '@/repositories/configRepository';
@@ -9,6 +8,7 @@ import {
     openExternalLink,
     openFileSelectorDialog
 } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { links } from '@/shared/constants/link';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -66,14 +66,15 @@ export function LaunchOptionsDialog({
                 }
             })
             .catch((error: unknown) => {
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         error,
                         t(
                             'host.system_dialogs.toast.failed_to_load_launch_options'
                         )
                     )
-                );
+                });
             })
             .finally(() => {
                 if (active) {
@@ -95,7 +96,10 @@ export function LaunchOptionsDialog({
             vrcLaunchPathOverride.endsWith('.exe') &&
             !vrcLaunchPathOverride.endsWith('launch.exe')
         ) {
-            toast.error(t('message.launch.invalid_path'));
+            toast.add({
+                type: 'error',
+                title: t('message.launch.invalid_path')
+            });
             return;
         }
 
@@ -112,15 +116,19 @@ export function LaunchOptionsDialog({
                 )
             ]);
             setLaunchArguments(normalizedArguments);
-            toast.success(t('dialog.system.success.updated_launch_options'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.system.success.updated_launch_options')
+            });
             onOpenChange(false);
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('host.system_dialogs.toast.failed_to_save_launch_options')
                 )
-            );
+            });
         } finally {
             setLoading(false);
         }
@@ -137,12 +145,13 @@ export function LaunchOptionsDialog({
                 setVrcLaunchPathOverride(selected);
             }
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('host.system_dialogs.toast.failed_to_load_launch_options')
                 )
-            );
+            });
         }
     }
 

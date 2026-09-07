@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
 
 import type {
     Dashboard,
     DashboardPanel
 } from '@/repositories/dashboardRepository';
+import { toast } from '@/services/toastService';
 import { useDashboardStore } from '@/state/dashboardStore';
 import { useModalStore } from '@/state/modalStore';
 
@@ -50,11 +50,15 @@ export function useDashboardActions({
         try {
             await updateDashboard(dashboard.id, { rows });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.dashboard.toast.failed_to_update_dashboard_panel')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.dashboard.toast.failed_to_update_dashboard_panel'
+                          )
+            });
         }
     }
 
@@ -86,11 +90,13 @@ export function useDashboardActions({
                 navigate('/feed', { replace: true });
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.dashboard.toast.failed_to_delete_dashboard')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.dashboard.toast.failed_to_delete_dashboard')
+            });
         }
     }
 
@@ -102,11 +108,13 @@ export function useDashboardActions({
             setEditingDashboardId(nextDashboard.id);
             navigate(`/dashboard/${nextDashboard.id}`);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.dashboard.toast.failed_to_create_dashboard')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.dashboard.toast.failed_to_create_dashboard')
+            });
         }
     }
 

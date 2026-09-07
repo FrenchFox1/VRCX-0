@@ -1,7 +1,6 @@
 import { ImageIcon, XIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     EmptyState,
@@ -17,6 +16,7 @@ import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
 import type { MediaFileTag } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
+import { toast } from '@/services/toastService';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -274,13 +274,15 @@ export function UserDialogProfileMediaPanel({
                         : []
                 }));
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_load_value', {
-                              value: section.fileTag
-                          })
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_load_value', {
+                                  value: section.fileTag
+                              })
+                });
             } finally {
                 setLoadingBySection((current) => ({
                     ...current,

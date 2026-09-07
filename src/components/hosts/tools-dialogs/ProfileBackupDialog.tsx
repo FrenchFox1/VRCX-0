@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { formatDateTime } from '@/lib/dateTime';
 import { useProfileBackupSettings } from '@/lib/useProfileBackupSettings';
@@ -23,6 +22,7 @@ import {
     type ProfileBackupStatus,
     type ProfileRestoreRollbackState
 } from '@/services/profileBackupService';
+import { toast } from '@/services/toastService';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
@@ -207,31 +207,36 @@ export function ProfileBackupDialog({
                 const outcome = await retryProfileBackupDelivery();
                 applyStatus(outcome.status);
                 if (!outcome.accepted) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             outcome.error
                                 ? profileBackupErrorKey(outcome.error.code)
                                 : 'profile_backup.error.unknown'
                         )
-                    );
+                    });
                 }
             } else if (action === 'discard') {
                 const outcome = await discardPendingProfileBackup();
                 applyStatus(outcome.status);
                 if (!outcome.accepted) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             outcome.error
                                 ? profileBackupErrorKey(outcome.error.code)
                                 : 'profile_backup.error.unknown'
                         )
-                    );
+                    });
                 }
             } else {
                 applyStatus(await dismissProfileBackupError());
             }
         } catch {
-            toast.error(t('profile_backup.action_failed'));
+            toast.add({
+                type: 'error',
+                title: t('profile_backup.action_failed')
+            });
         } finally {
             setStatusActionRunning(false);
         }

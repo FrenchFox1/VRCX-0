@@ -10,41 +10,41 @@ use vrcx_0_runtime_host_desktop::local_data::{
     ActivityPageView, ActivityViewBuildInput, ActivityViewOutput,
 };
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__activity_overlap_view(
+pub async fn app__activity_overlap_view(
     state: State<'_, AppState>,
     input: ActivityOverlapViewBuildInput,
 ) -> Result<ActivityOverlapViewOutput, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .activity_overlap_view(input)
+    let local_data = state.runtime_host().local_data().clone();
+    tauri::async_runtime::spawn_blocking(move || local_data.activity_overlap_view(input))
+        .await
+        .map_err(|error| AppError::Custom(format!("activity overlap view task: {error}")))?
         .map_err(AppError::from)
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__activity_view(
+pub async fn app__activity_view(
     state: State<'_, AppState>,
     input: ActivityViewBuildInput,
 ) -> Result<ActivityViewOutput, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .activity_view(input)
+    let local_data = state.runtime_host().local_data().clone();
+    tauri::async_runtime::spawn_blocking(move || local_data.activity_view(input))
+        .await
+        .map_err(|error| AppError::Custom(format!("activity view task: {error}")))?
         .map_err(AppError::from)
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__activity_page_view(
+pub async fn app__activity_page_view(
     state: State<'_, AppState>,
     input: ActivityPageBuildInput,
 ) -> Result<ActivityPageView, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .activity_page_view(input)
+    let local_data = state.runtime_host().local_data().clone();
+    tauri::async_runtime::spawn_blocking(move || local_data.activity_page_view(input))
+        .await
+        .map_err(|error| AppError::Custom(format!("activity page view task: {error}")))?
         .map_err(AppError::from)
 }

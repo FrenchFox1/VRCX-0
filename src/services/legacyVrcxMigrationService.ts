@@ -1,5 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
 import type { LegacyVrcxMigrationStatus } from '@/platform/tauri/bindings';
+import type { AppToastOptions } from '@/services/toastService';
 
 type ConfirmResult = {
     ok?: boolean;
@@ -19,8 +20,7 @@ type LegacyMigrationPromptOptions = {
     confirm: (options: ConfirmOptions) => Promise<ConfirmResult>;
     t: (key: string, params?: Record<string, unknown>) => string;
     toast: {
-        error: (message: string) => void;
-        warning: (message: string) => void;
+        add(options: AppToastOptions): void;
     };
 };
 
@@ -68,21 +68,27 @@ export async function promptLegacyVrcxForceMigration({
     try {
         status = await commands.appGetLegacyVrcxForceMigrationStatus();
     } catch (error) {
-        toast.error(
-            t(`${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_failed`, {
-                error: errorMessage(error)
-            })
-        );
+        toast.add({
+            type: 'error',
+            title: t(
+                `${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_failed`,
+                {
+                    error: errorMessage(error)
+                }
+            )
+        });
         return;
     }
 
     if (!status?.available) {
-        toast.error(
-            status?.reason ||
+        toast.add({
+            type: 'error',
+            title:
+                status?.reason ||
                 t(
                     `${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_not_available`
                 )
-        );
+        });
         return;
     }
 
@@ -115,17 +121,22 @@ export async function promptLegacyVrcxForceMigration({
             allowRunningLegacyVrcx
         );
         if (!willRestart) {
-            toast.warning(
-                t(
+            toast.add({
+                type: 'warning',
+                title: t(
                     `${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_restart_manually`
                 )
-            );
+            });
         }
     } catch (error) {
-        toast.error(
-            t(`${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_failed`, {
-                error: errorMessage(error)
-            })
-        );
+        toast.add({
+            type: 'error',
+            title: t(
+                `${LEGACY_MIGRATION_I18N_PREFIX}.legacy_migration_failed`,
+                {
+                    error: errorMessage(error)
+                }
+            )
+        });
     }
 }

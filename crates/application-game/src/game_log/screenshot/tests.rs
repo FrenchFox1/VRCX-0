@@ -63,6 +63,8 @@ fn snapshot_location_short_circuits_the_database_lookup() {
         created_at: SHOT_AT.to_string(),
         path: "screenshot.png".to_string(),
         snapshot: RuntimeSnapshot {
+            ready: true,
+            has_player_events: true,
             location: LOCATION.to_string(),
             world_name: "Live World".to_string(),
             destination: String::new(),

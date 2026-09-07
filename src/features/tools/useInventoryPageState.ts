@@ -1,7 +1,6 @@
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { resolveProfileDecorationMutation } from '@/domain/entities/inventory';
 import mediaRepository, {
@@ -10,6 +9,7 @@ import mediaRepository, {
 } from '@/repositories/mediaRepository';
 import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '@/repositories/paginationConstants';
 import { refreshCurrentUser } from '@/services/backgroundMaintenanceSessionService';
+import { toast } from '@/services/toastService';
 import {
     IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
@@ -233,13 +233,15 @@ export function useInventoryPageState() {
                 }
             } catch (error) {
                 if (isCurrentInventoryAuthTarget(authTarget)) {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : translateRef.current(
-                                  'dialog.inventory.failed_to_load'
-                              )
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : translateRef.current(
+                                      'dialog.inventory.failed_to_load'
+                                  )
+                    });
                 }
             } finally {
                 if (isCurrentInventoryAuthTarget(authTarget)) {
@@ -273,7 +275,7 @@ export function useInventoryPageState() {
 
     function beginUpload(target: InventoryUploadTarget) {
         if (!isVrcPlusSupporter) {
-            toast.error(t('message.vrcplus.required'));
+            toast.add({ type: 'error', title: t('message.vrcplus.required') });
             return;
         }
         uploadTargetRef.current = target;
@@ -304,7 +306,7 @@ export function useInventoryPageState() {
             return;
         }
         if (!isVrcPlusSupporter) {
-            toast.error(t('message.vrcplus.required'));
+            toast.add({ type: 'error', title: t('message.vrcplus.required') });
             return;
         }
         if (!validateImageFile(file, t)) {
@@ -387,14 +389,16 @@ export function useInventoryPageState() {
             } else {
                 await refreshScope(target, 'custom');
             }
-            toast.success(t('message.upload.success'));
+            toast.add({ type: 'success', title: t('message.upload.success') });
         } catch (error) {
             if (isCurrentInventoryAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('message.upload.error')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('message.upload.error')
+                });
             }
         } finally {
             setUploadingTarget('');
@@ -431,15 +435,20 @@ export function useInventoryPageState() {
                         (file) => file.id !== normalizedFileId
                     )
                 }));
-                toast.success(t('view.tools.success.media_item_deleted'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.tools.success.media_item_deleted')
+                });
             }
         } catch (error) {
             if (isCurrentInventoryAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_delete_media_item')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_delete_media_item')
+                });
             }
         } finally {
             setMutatingKey((current) =>
@@ -463,20 +472,23 @@ export function useInventoryPageState() {
                 isArchived: Boolean(archived)
             });
             if (isCurrentInventoryAuthTarget(authTarget)) {
-                toast.success(
-                    archived
+                toast.add({
+                    type: 'success',
+                    title: archived
                         ? t('dialog.inventory.archived_success')
                         : t('dialog.inventory.unarchived_success')
-                );
+                });
                 await refreshScope(activeCategory, activeSubTab);
             }
         } catch (error) {
             if (isCurrentInventoryAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('dialog.inventory.failed_to_archive')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('dialog.inventory.failed_to_archive')
+                });
             }
         } finally {
             setMutatingKey((current) =>
@@ -495,18 +507,23 @@ export function useInventoryPageState() {
         try {
             await mediaRepository.consumeInventoryBundle(normalizedInventoryId);
             if (isCurrentInventoryAuthTarget(authTarget)) {
-                toast.success(t('view.tools.label.inventory_bundle_consumed'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.tools.label.inventory_bundle_consumed')
+                });
                 await refreshScope(activeCategory, activeSubTab);
             }
         } catch (error) {
             if (isCurrentInventoryAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.tools.toast.failed_to_consume_inventory_bundle'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.tools.toast.failed_to_consume_inventory_bundle'
+                              )
+                });
             }
         } finally {
             setMutatingKey((current) =>
@@ -552,13 +569,15 @@ export function useInventoryPageState() {
                 }
             } catch (error) {
                 if (isCurrentInventoryAuthTarget(authTarget)) {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t(
-                                  'dialog.inventory.failed_to_update_profile_decoration'
-                              )
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t(
+                                      'dialog.inventory.failed_to_update_profile_decoration'
+                                  )
+                    });
                 }
                 return;
             }
@@ -566,13 +585,14 @@ export function useInventoryPageState() {
                 return;
             }
 
-            toast.success(
-                t(
+            toast.add({
+                type: 'success',
+                title: t(
                     isUnequip
                         ? 'dialog.inventory.unequipped_success'
                         : 'dialog.inventory.equipped_success'
                 )
-            );
+            });
             await Promise.allSettled([
                 refreshScope('cosmetics', 'profile-decorations'),
                 refreshCurrentUser({
@@ -611,16 +631,21 @@ export function useInventoryPageState() {
         try {
             await mediaRepository.redeemReward(code);
             if (isCurrentInventoryAuthTarget(authTarget)) {
-                toast.success(t('prompt.redeem.success'));
+                toast.add({
+                    type: 'success',
+                    title: t('prompt.redeem.success')
+                });
                 await refreshScope(activeCategory, activeSubTab);
             }
         } catch (error) {
             if (isCurrentInventoryAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_redeem_reward')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_redeem_reward')
+                });
             }
         } finally {
             setMutatingKey((current) =>

@@ -1,6 +1,5 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
 import type {
@@ -11,6 +10,7 @@ import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { bootstrapFavorites } from '@/services/favoriteBootstrapService';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
@@ -69,9 +69,10 @@ export function useFavoritesCollectionActions({
             console.warn(
                 'Favorites refresh skipped: no authenticated user context available.'
             );
-            toast.error(
-                t('view.favorites.toast.favorites_refresh_unavailable')
-            );
+            toast.add({
+                type: 'error',
+                title: t('view.favorites.toast.favorites_refresh_unavailable')
+            });
             return false;
         }
         setRefreshing(true);
@@ -92,15 +93,20 @@ export function useFavoritesCollectionActions({
                 setAvatarHistory(rows);
             }
             if (!silent) {
-                toast.success(t('view.favorite.success.favorites_refreshed'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.favorite.success.favorites_refreshed')
+                });
             }
             return true;
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_refresh_favorites')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.favorites.toast.failed_to_refresh_favorites')
+            });
             return false;
         } finally {
             setRefreshing(false);
@@ -151,20 +157,25 @@ export function useFavoritesCollectionActions({
                 groupName: item.groupKey
             });
             if (!silent) {
-                toast.success(
-                    t('view.favorite.success.local_favorite_removed')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('view.favorite.success.local_favorite_removed')
+                });
             }
             return true;
         } catch (error) {
             if (silent) {
                 throw error;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_remove_local_favorite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_remove_local_favorite'
+                          )
+            });
             return false;
         } finally {
             if (!silent) {
@@ -218,20 +229,25 @@ export function useFavoritesCollectionActions({
                 objectId: item.id
             });
             if (!silent) {
-                toast.success(
-                    t('view.favorite.success.vrchat_favorite_removed')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('view.favorite.success.vrchat_favorite_removed')
+                });
             }
             return true;
         } catch (error) {
             if (silent) {
                 throw error;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_remove_vrchat_favorite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_remove_vrchat_favorite'
+                          )
+            });
             return false;
         } finally {
             if (!silent) {
@@ -245,9 +261,10 @@ export function useFavoritesCollectionActions({
 
     async function exportCurrentFavorites() {
         if (!allItems.length) {
-            toast.error(
-                t('view.favorite.empty.no_favorites_available_to_export')
-            );
+            toast.add({
+                type: 'error',
+                title: t('view.favorite.empty.no_favorites_available_to_export')
+            });
             return;
         }
         setExportDialogOpen(true);
@@ -275,13 +292,20 @@ export function useFavoritesCollectionActions({
                 group: group.name,
                 displayName: nextName
             });
-            toast.success(t('view.favorite.label.favorite_group_renamed'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.label.favorite_group_renamed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_rename_favorite_group')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_rename_favorite_group'
+                          )
+            });
         }
     }
 
@@ -298,15 +322,20 @@ export function useFavoritesCollectionActions({
                 group: group.name,
                 visibility
             });
-            toast.success(t('view.favorite.label.group_visibility_changed'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.label.group_visibility_changed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_change_group_visibility'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_change_group_visibility'
+                          )
+            });
         }
     }
 
@@ -328,13 +357,20 @@ export function useFavoritesCollectionActions({
                 type: favoriteGroupType(kind, group),
                 group: group.name
             });
-            toast.success(t('view.favorite.success.favorite_group_cleared'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.success.favorite_group_cleared')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.toast.failed_to_clear_favorite_group')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_clear_favorite_group'
+                          )
+            });
         }
     }
 
@@ -357,11 +393,15 @@ export function useFavoritesCollectionActions({
             return;
         }
         if (localGroups.some((localGroup) => localGroup.key === nextName)) {
-            toast.error(
-                t('view.favorites.dynamic.local_group_value_already_exists', {
-                    value: nextName
-                })
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.favorites.dynamic.local_group_value_already_exists',
+                    {
+                        value: nextName
+                    }
+                )
+            });
             return;
         }
         try {
@@ -373,17 +413,20 @@ export function useFavoritesCollectionActions({
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey(nextName);
             }
-            toast.success(
-                t('view.favorite.label.local_favorite_group_renamed')
-            );
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.label.local_favorite_group_renamed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_rename_local_favorite_group'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_rename_local_favorite_group'
+                          )
+            });
         }
     }
 
@@ -408,17 +451,20 @@ export function useFavoritesCollectionActions({
             if (selectedSource === 'local' && selectedGroupKey === group.key) {
                 setSelectedGroupKey('');
             }
-            toast.success(
-                t('view.favorite.success.local_favorite_group_deleted')
-            );
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.success.local_favorite_group_deleted')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_delete_local_favorite_group'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_delete_local_favorite_group'
+                          )
+            });
         }
     }
 

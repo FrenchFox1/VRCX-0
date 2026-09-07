@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
@@ -21,6 +20,7 @@ import {
     writeVrchatConfigFile,
     writeVrchatConfigFileWithCacheCleanup
 } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import { links } from '@/shared/constants/link';
 import {
     VRChatCameraResolutions,
@@ -199,14 +199,15 @@ export function VRChatConfigDialog({
             if (requestId !== loadRequestRef.current) {
                 return;
             }
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t(
                         'host.system_dialogs.toast.failed_to_load_vrchat_configuration'
                     )
                 )
-            );
+            });
         } finally {
             if (requestId === loadRequestRef.current) {
                 setLoading(false);
@@ -228,12 +229,13 @@ export function VRChatConfigDialog({
         const selected = await openFolderSelectorDialog(
             String(getConfigFieldValue(config, key))
         ).catch((error: unknown) => {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('host.system_dialogs.toast.failed_to_select_folder')
                 )
-            );
+            });
             return '';
         });
         if (selected) {
@@ -254,29 +256,34 @@ export function VRChatConfigDialog({
         );
         const maxSizeBytes = maxSizeGb * 1024 ** 3;
         if (cacheSizeBytes > maxSizeBytes && isGameRunning) {
-            toast.error(t('dialog.config_json.close_vrchat_before_cleanup'));
+            toast.add({
+                type: 'error',
+                title: t('dialog.config_json.close_vrchat_before_cleanup')
+            });
             return;
         }
         setLoading(true);
         try {
             const removed =
                 await assetBundleRepository.sweepCache(maxSizeBytes);
-            toast.success(
-                Array.isArray(removed)
+            toast.add({
+                type: 'success',
+                title: Array.isArray(removed)
                     ? t(
                           'host.system_dialogs.toast.removed_value_cache_entries',
                           { value: removed.length }
                       )
                     : t('message.cache.deleted')
-            );
+            });
             await loadConfig();
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('host.system_dialogs.toast.failed_to_sweep_asset_cache')
                 )
-            );
+            });
         } finally {
             setLoading(false);
         }
@@ -296,15 +303,16 @@ export function VRChatConfigDialog({
         setLoading(true);
         try {
             await assetBundleRepository.deleteAllCache();
-            toast.success(t('message.cache.deleted'));
+            toast.add({ type: 'success', title: t('message.cache.deleted') });
             await loadConfig();
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('host.system_dialogs.toast.failed_to_delete_asset_cache')
                 )
-            );
+            });
         } finally {
             setLoading(false);
         }
@@ -337,9 +345,12 @@ export function VRChatConfigDialog({
                 }
                 if (result.reason === 'ok') {
                     if (isGameRunning) {
-                        toast.error(
-                            t('dialog.config_json.close_vrchat_before_cleanup')
-                        );
+                        toast.add({
+                            type: 'error',
+                            title: t(
+                                'dialog.config_json.close_vrchat_before_cleanup'
+                            )
+                        });
                         return;
                     }
                     cleanOldCache = true;
@@ -353,27 +364,32 @@ export function VRChatConfigDialog({
             } else {
                 await writeVrchatConfigFile(json);
             }
-            toast.success(t('dialog.system.success.saved_vrchat_config'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.system.success.saved_vrchat_config')
+            });
             if (cleanupError) {
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         cleanupError,
                         t(
                             'host.system_dialogs.toast.failed_to_delete_asset_cache'
                         )
                     )
-                );
+                });
             }
             onOpenChange(false);
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t(
                         'host.system_dialogs.toast.failed_to_save_vrchat_configuration'
                     )
                 )
-            );
+            });
         } finally {
             setLoading(false);
         }

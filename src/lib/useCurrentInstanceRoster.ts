@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import {
-    includeCurrentUserInRoster,
+    decorateCurrentUserInRoster,
     type CurrentInstanceRosterContext,
     type CurrentInstanceRosterPlayer
 } from '@/domain/instances/currentInstanceRoster';
@@ -121,9 +121,7 @@ export function useCurrentInstanceRoster({
         setDetail('');
 
         loadCurrentInstanceRoster({
-            currentLocation: playerListLocation,
-            currentLocationStartedAt: playerListStartedAt ?? '',
-            currentUserId: currentUserId ?? ''
+            currentLocation: playerListLocation
         })
             .then((result) => {
                 if (!active) {
@@ -132,19 +130,21 @@ export function useCurrentInstanceRoster({
 
                 const rosterLocation =
                     result.context.location || playerListLocation;
-                const players = parseLocation(rosterLocation).isRealInstance
-                    ? includeCurrentUserInRoster({
-                          currentUserDisplayName: normalizeString(
-                              currentUserSnapshot?.displayName ||
-                                  currentUserSnapshot?.username
-                          ),
-                          currentUserId: currentUserId ?? '',
-                          joinedAt:
-                              result.context.createdAt ||
-                              (playerListStartedAt ?? ''),
-                          players: result.players
-                      })
-                    : result.players;
+                const players =
+                    result.context.playerFactsKnown &&
+                    parseLocation(rosterLocation).isRealInstance
+                        ? decorateCurrentUserInRoster({
+                              currentUserDisplayName: normalizeString(
+                                  currentUserSnapshot?.displayName ||
+                                      currentUserSnapshot?.username
+                              ),
+                              currentUserId: currentUserId ?? '',
+                              joinedAt:
+                                  result.context.createdAt ||
+                                  (playerListStartedAt ?? ''),
+                              players: result.players
+                          })
+                        : result.players;
                 const nextContext: CurrentInstanceRosterContext = {
                     ...result.context,
                     playerCount: players.length || result.context.playerCount
@@ -172,9 +172,9 @@ export function useCurrentInstanceRoster({
                 setPlayerRows(players);
                 setLoadStatus('ready');
                 setDetail(
-                    result.context.source === 'database'
-                        ? 'Rebuilt the current instance roster from local join/leave history.'
-                        : 'Using the current runtime location while waiting for local game-log player events.'
+                    result.context.playerFactsKnown
+                        ? 'Current instance roster is ready.'
+                        : 'Waiting for current game-log player events.'
                 );
             })
             .catch((error: unknown) => {

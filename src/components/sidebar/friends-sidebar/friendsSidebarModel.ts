@@ -64,7 +64,6 @@ export type SidebarFriendRecord = FriendRecordInput &
     };
 
 export type SidebarPreferences = {
-    isShowCurrentUserInSameInstance?: boolean;
     isHideFriendsInSameInstance?: boolean;
     isSameInstanceAboveFavorites?: boolean;
     isSidebarDivideByFriendGroup?: boolean;
@@ -425,7 +424,7 @@ export function buildSameInstanceGroups(
     locationTimes?: Readonly<Record<string, FriendLocationTimeEntry>>
 ) {
     return buildSameInstanceFriendGroups(sortRows(rows, prefs), lastLocation, {
-        includeCurrentUser: prefs.isShowCurrentUserInSameInstance !== false,
+        includeCurrentUser: true,
         locationTimes
     }).map(({ location, friends, isCurrentInstance }): SameInstanceGroup => ({
         location,

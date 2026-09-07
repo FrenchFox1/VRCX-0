@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { useShallow } from 'zustand/react/shallow';
 
 import {
@@ -8,6 +7,7 @@ import {
     type NotificationWebhookFormat,
     type WebhookDeliverySnapshot
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
@@ -71,9 +71,13 @@ export function SettingsIntegrationsTab() {
                 );
             } catch (error: unknown) {
                 if (showError) {
-                    toast.error(
-                        error instanceof Error ? error.message : String(error)
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : String(error)
+                    });
                 }
             } finally {
                 setWebhookDeliveryLoading(false);
@@ -135,17 +139,20 @@ export function SettingsIntegrationsTab() {
                 String(prefs.webhookFields || '')
             )
             .then((outcome) => {
-                toast.success(
-                    t(
+                toast.add({
+                    type: 'success',
+                    title: t(
                         'view.settings.notifications.notifications.webhook.test_sent',
                         { status: outcome.status }
                     )
-                );
+                });
             })
             .catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error ? error.message : String(error)
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error ? error.message : String(error)
+                });
             });
     }
 

@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import { commands } from '@/platform/tauri/bindings';
 import type {
     DeepLinkAction,
@@ -7,6 +5,7 @@ import type {
 } from '@/platform/tauri/bindings';
 import { tauriClient } from '@/platform/tauri/client';
 import shareCollectionRepository from '@/repositories/shareCollectionRepository';
+import { toast } from '@/services/toastService';
 import { isCollectionShortcode } from '@/shared/constants/collectionShare';
 import { isAvatarId, isWorldId } from '@/shared/constants/vrchatIds';
 import { useModalStore } from '@/state/modalStore';
@@ -193,18 +192,22 @@ async function importSharedCollectionFlow(collectionId: string): Promise<void> {
                 collectionId
             );
     } catch (error) {
-        toast.error(
-            errorMessage(
+        toast.add({
+            type: 'error',
+            title: errorMessage(
                 error,
                 i18n.t('deep_link.import_collection.toast.preview_failed')
             )
-        );
+        });
         return;
     }
 
     const worldCount = preview.worldIds.length;
     if (!worldCount) {
-        toast.error(i18n.t('deep_link.import_collection.toast.empty'));
+        toast.add({
+            type: 'error',
+            title: i18n.t('deep_link.import_collection.toast.empty')
+        });
         return;
     }
 
@@ -235,21 +238,23 @@ async function importSharedCollectionFlow(collectionId: string): Promise<void> {
             existingGroups = (await commands.appFavoriteLocalSnapshot('world'))
                 .groupNames;
         } catch (error) {
-            toast.error(
-                errorMessage(
+            toast.add({
+                type: 'error',
+                title: errorMessage(
                     error,
                     i18n.t('deep_link.import_collection.toast.import_failed')
                 )
-            );
+            });
             return;
         }
         if (existingGroups.includes(groupName)) {
-            toast.error(
-                i18n.t(
+            toast.add({
+                type: 'error',
+                title: i18n.t(
                     'deep_link.import_collection.prompt.name_already_exists',
                     { name: groupName }
                 )
-            );
+            });
             continue;
         }
         break;
@@ -265,43 +270,48 @@ async function importSharedCollectionFlow(collectionId: string): Promise<void> {
             ? started
             : await waitForSharedCollectionImport(started.runId);
         if (result.status === 'cancelled') {
-            toast.error(
-                errorMessage(
+            toast.add({
+                type: 'error',
+                title: errorMessage(
                     result.lastError,
                     i18n.t('deep_link.import_collection.toast.import_failed')
                 )
-            );
+            });
             return;
         }
         if (result.status === 'error' || !result.imported) {
-            toast.error(
-                errorMessage(
+            toast.add({
+                type: 'error',
+                title: errorMessage(
                     result.lastError,
                     i18n.t('deep_link.import_collection.toast.import_failed')
                 )
-            );
+            });
             return;
         }
-        toast.success(
-            i18n.t('deep_link.import_collection.toast.import_success', {
+        toast.add({
+            type: 'success',
+            title: i18n.t('deep_link.import_collection.toast.import_success', {
                 count: result.imported,
                 title: result.groupName
             })
-        );
+        });
         if (result.failed > 0) {
-            toast.error(
-                i18n.t(
+            toast.add({
+                type: 'error',
+                title: i18n.t(
                     'deep_link.import_collection.toast.import_partial_failed',
                     { count: result.failed }
                 )
-            );
+            });
         }
     } catch (error) {
-        toast.error(
-            errorMessage(
+        toast.add({
+            type: 'error',
+            title: errorMessage(
                 error,
                 i18n.t('deep_link.import_collection.toast.import_failed')
             )
-        );
+        });
     }
 }

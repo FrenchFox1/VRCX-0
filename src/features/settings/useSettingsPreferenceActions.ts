@@ -7,6 +7,7 @@ import {
     consumeSystemFontsUnavailableWarning,
     loadSystemFonts
 } from '@/services/systemFontsService';
+import type { AppToastOptions } from '@/services/toastService';
 import { loadVrchatConfigSnapshot } from '@/services/vrchatConfigService';
 import type { OverlayActivityTypeDefinition } from '@/shared/constants/overlayActivityFilters';
 import type {
@@ -130,9 +131,7 @@ type SettingsPreferenceActionsDeps = {
     };
     tableLimitsSaveDisabled: boolean;
     toast: {
-        error(message: string): void;
-        success(message: string): void;
-        warning(message: string): void;
+        add(options: AppToastOptions): void;
     };
     usePreferencesStore: {
         getState(): Pick<PreferencesStoreState, 'proxyServer' | 'tableLimits'>;
@@ -296,11 +295,12 @@ export function useSettingsPreferenceActions({
             .then((fonts) => {
                 setCustomFontOptions(fonts);
                 if (consumeSystemFontsUnavailableWarning(fonts)) {
-                    toast.warning(
-                        t(
+                    toast.add({
+                        type: 'warning',
+                        title: t(
                             'view.settings.appearance.appearance.font_family_custom_detection_unavailable_toast'
                         )
-                    );
+                    });
                 }
             })
             .finally(() => {
@@ -318,11 +318,12 @@ export function useSettingsPreferenceActions({
         };
         const nextValue = composeCustomFontFamily(nextDraft);
         if (!isValidFontFamilyList(nextValue)) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.settings.appearance.appearance.font_family_custom_invalid'
                 )
-            );
+            });
             return;
         }
         const previousFontFamily = prefs.appFontFamily;
@@ -374,7 +375,7 @@ export function useSettingsPreferenceActions({
             return;
         }
         setCustomFontDialogOpen(false);
-        toast.success(t('common.settings_saved'));
+        toast.add({ type: 'success', title: t('common.settings_saved') });
     }
     async function restorePersistedTrustColors() {
         const persisted = await loadTrustColorPreference();
@@ -391,11 +392,13 @@ export function useSettingsPreferenceActions({
                 trustColor: nextTrustColor
             }));
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.settings.toast.failed_to_save_trust_color')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.settings.toast.failed_to_save_trust_color')
+            });
             await restorePersistedTrustColors();
         }
     }
@@ -406,13 +409,15 @@ export function useSettingsPreferenceActions({
                 ...current,
                 trustColor: nextTrustColor
             }));
-            toast.success(t('common.settings_saved'));
+            toast.add({ type: 'success', title: t('common.settings_saved') });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.settings.toast.failed_to_save_trust_color')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.settings.toast.failed_to_save_trust_color')
+            });
         }
     }
     async function refreshSqliteTableSizes() {
@@ -436,13 +441,15 @@ export function useSettingsPreferenceActions({
                 external: sizes.external
             });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.settings.toast.failed_to_refresh_sqlite_table_sizes'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.settings.toast.failed_to_refresh_sqlite_table_sizes'
+                          )
+            });
         }
     }
     async function refreshConfigTreeData() {
@@ -450,11 +457,13 @@ export function useSettingsPreferenceActions({
             const snapshot = await loadVrchatConfigSnapshot({ force: true });
             setConfigTreeData(snapshot || {});
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.settings.toast.failed_to_refresh_config_json')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.settings.toast.failed_to_refresh_config_json')
+            });
         }
     }
     async function refreshOnlineVisits() {
@@ -462,13 +471,15 @@ export function useSettingsPreferenceActions({
             const response = await vrchatAuthRepository.getOnlineVisits();
             setOnlineVisitCount(Number(response.json) || 0);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.settings.toast.failed_to_refresh_online_user_count'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.settings.toast.failed_to_refresh_online_user_count'
+                          )
+            });
         }
     }
     async function openTablePageSizesDialog() {
@@ -514,7 +525,7 @@ export function useSettingsPreferenceActions({
             tableLimits: savedLimits
         }));
         setTableLimitsDialogOpen(false);
-        toast.success(t('common.settings_saved'));
+        toast.add({ type: 'success', title: t('common.settings_saved') });
     }
     async function toggleLocalFavoriteFriendsGroup(
         groupKey: string,
@@ -566,7 +577,7 @@ export function useSettingsPreferenceActions({
                 ...current,
                 [field]: savedFilters
             }));
-            toast.success(t('common.settings_saved'));
+            toast.add({ type: 'success', title: t('common.settings_saved') });
             return savedFilters;
         };
     }
@@ -631,11 +642,12 @@ export function useSettingsPreferenceActions({
             .appHostTtsSpeak(text, voiceId || null, prefs.notificationTTSVolume)
             .catch((error) => {
                 console.warn('Failed to play notification TTS', error);
-                toast.warning(
-                    t(
+                toast.add({
+                    type: 'warning',
+                    title: t(
                         'view.settings.notifications.notifications.text_to_speech.tts_test_failed'
                     )
-                );
+                });
             });
     }
     return {

@@ -12,28 +12,6 @@ use crate::Error;
 
 use crate::worlds::{world_summary_from_row, WorldSummaryOutput};
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PlayerLocationOutput {
-    pub created_at: String,
-    pub location: String,
-    pub world_id: String,
-    pub world_name: String,
-    pub time: i64,
-    pub group_name: String,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PlayerJoinLeaveOutput {
-    pub id: i64,
-    pub created_at: String,
-    pub r#type: String,
-    pub display_name: String,
-    pub user_id: String,
-    pub time: i64,
-}
-
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct InstanceActivityRowOutput {
@@ -44,80 +22,6 @@ pub struct InstanceActivityRowOutput {
     pub location: String,
     pub user_id: String,
     pub time: i64,
-}
-
-pub fn player_list_location_get(
-    db: &DatabaseService,
-    owner_user_id: &OwnerId,
-    location: String,
-) -> Result<Option<PlayerLocationOutput>, Error> {
-    ensure_game_log_tables(db)?;
-    let location = normalize_text(location);
-    if location.is_empty() {
-        return Ok(None);
-    }
-    let owner_id = owner_id_for_filter(db, owner_user_id)?;
-    Ok(db
-        .execute(
-            "SELECT created_at, location, world_id, world_name, time, group_name
-             FROM gamelog_location
-             WHERE owner_id IN (0, @owner_id)
-               AND location = @location
-             ORDER BY id DESC
-             LIMIT 1",
-            &ParamsBuilder::new()
-                .set("owner_id", owner_id)
-                .set("location", location)
-                .build(),
-        )?
-        .first()
-        .map(|row| player_location_from_row(row)))
-}
-
-pub fn player_list_latest_location_get(
-    db: &DatabaseService,
-    owner_user_id: &OwnerId,
-) -> Result<Option<PlayerLocationOutput>, Error> {
-    ensure_game_log_tables(db)?;
-    let owner_id = owner_id_for_filter(db, owner_user_id)?;
-    Ok(db
-        .execute(
-            "SELECT created_at, location, world_id, world_name, time, group_name
-             FROM gamelog_location
-             WHERE owner_id IN (0, @owner_id)
-             ORDER BY id DESC
-             LIMIT 1",
-            &ParamsBuilder::new().set("owner_id", owner_id).build(),
-        )?
-        .first()
-        .map(|row| player_location_from_row(row)))
-}
-
-pub fn player_list_join_leave_rows(
-    db: &DatabaseService,
-    owner_user_id: &OwnerId,
-    location: String,
-    started_at: String,
-) -> Result<Vec<PlayerJoinLeaveOutput>, Error> {
-    ensure_game_log_tables(db)?;
-    let owner_id = owner_id_for_filter(db, owner_user_id)?;
-    Ok(db
-        .execute(
-            "SELECT id, created_at, type, display_name, user_id, time
-             FROM gamelog_join_leave
-             WHERE owner_id IN (0, @owner_id)
-               AND location = @location
-               AND (@started_at = '' OR created_at >= @started_at)
-             ORDER BY id ASC",
-            &ParamsBuilder::new()
-                .set("owner_id", owner_id)
-                .set("location", normalize_text(location))
-                .set("started_at", normalize_text(started_at))
-                .build(),
-        )?
-        .into_iter()
-        .map(|row| player_join_leave_from_row(&row))
-        .collect())
 }
 
 pub fn instance_activity_dates_get(
@@ -274,26 +178,6 @@ pub fn world_summaries_get(
     Ok(summaries)
 }
 
-pub(crate) fn player_location_from_row(row: &[Value]) -> PlayerLocationOutput {
-    PlayerLocationOutput {
-        created_at: row_string(row, 0),
-        location: row_string(row, 1),
-        world_id: row_string(row, 2),
-        world_name: row_string(row, 3),
-        time: row_i64(row, 4),
-        group_name: row_string(row, 5),
-    }
-}
-pub(crate) fn player_join_leave_from_row(row: &[Value]) -> PlayerJoinLeaveOutput {
-    PlayerJoinLeaveOutput {
-        id: row_i64(row, 0),
-        created_at: row_string(row, 1),
-        r#type: row_string(row, 2),
-        display_name: row_string(row, 3),
-        user_id: row_string(row, 4),
-        time: row_i64(row, 5),
-    }
-}
 pub(crate) fn instance_activity_from_row(row: &[Value]) -> InstanceActivityRowOutput {
     InstanceActivityRowOutput {
         id: row_i64(row, 0),

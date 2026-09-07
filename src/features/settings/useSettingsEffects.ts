@@ -5,7 +5,6 @@ import {
     type SetStateAction
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     commands,
@@ -15,6 +14,7 @@ import {
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import { getAppDataDirState } from '@/services/shellIntegrationService';
 import { normalizeZoomLevel } from '@/services/themeService';
+import { toast } from '@/services/toastService';
 
 import type { AvatarProviderConfig } from './useAvatarProviderConfig';
 
@@ -60,11 +60,13 @@ export function useSettingsEffects({
                 applyAvatarProviderConfig(avatarConfig);
             })
             .catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.settings.toast.failed_to_load_settings')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.settings.toast.failed_to_load_settings')
+                });
             });
         return () => {
             active = false;
@@ -79,13 +81,15 @@ export function useSettingsEffects({
                 }
             })
             .catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'view.settings.advanced.advanced.data_directory.failed_to_load'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.settings.advanced.advanced.data_directory.failed_to_load'
+                              )
+                });
             });
         return () => {
             active = false;

@@ -142,7 +142,7 @@ describe('gameLogIngestService characterization', () => {
         ).toEqual(['usr_2']);
     });
 
-    it('restores a historical roster without requiring a frontend location', async () => {
+    it('hydrates the backend snapshot without requiring a frontend location', async () => {
         const { service, useRuntimeStore } = await loadGameLogService();
         useRuntimeStore.getState().setAuthBootstrap({
             currentUserId: 'usr_self',
@@ -155,6 +155,8 @@ describe('gameLogIngestService characterization', () => {
             context: {
                 location: 'wrld_test:123',
                 worldId: 'wrld_test',
+                source: 'runtime',
+                playerFactsKnown: true,
                 worldName: 'Recovered World',
                 createdAt: '2026-05-14T00:00:00.000Z'
             },
@@ -167,14 +169,12 @@ describe('gameLogIngestService characterization', () => {
             ]
         });
 
-        await expect(
-            service.restoreRuntimeGameLogProjectionFromPersistence()
-        ).resolves.toBe(true);
+        await expect(service.hydrateRuntimeGameLogProjection()).resolves.toBe(
+            true
+        );
 
         expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalledWith({
-            currentUserId: 'usr_self',
-            currentLocation: '',
-            currentLocationStartedAt: ''
+            currentLocation: ''
         });
         expect(useRuntimeStore.getState().gameState).toMatchObject({
             currentLocation: 'wrld_test:123',
@@ -213,8 +213,7 @@ describe('gameLogIngestService characterization', () => {
             })
         );
 
-        const restore =
-            service.restoreRuntimeGameLogProjectionFromPersistence();
+        const restore = service.hydrateRuntimeGameLogProjection();
         await vi.waitFor(() =>
             expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalled()
         );
@@ -230,7 +229,7 @@ describe('gameLogIngestService characterization', () => {
                 time: 0,
                 groupName: '',
                 playerCount: 0,
-                source: 'database'
+                source: 'runtime'
             },
             players: []
         });
@@ -280,4 +279,28 @@ describe('gameLogIngestService characterization', () => {
             lastGameLogType: 'game-stopped'
         });
     });
+});
+
+it('hydrates the backend current room over an unchanged stale frontend room', async () => {
+    const { service, useRuntimeStore } = await loadGameLogService();
+    mocks.appIsGameRunning.mockResolvedValue(true);
+    useRuntimeStore.getState().setAuthBootstrap({ currentUserId: 'usr_self' });
+    useRuntimeStore
+        .getState()
+        .setGameState({ currentLocation: 'wrld_stale:1' });
+    mocks.loadCurrentInstanceRoster.mockResolvedValue({
+        context: {
+            source: 'runtime',
+            playerFactsKnown: true,
+            location: 'wrld_current:2',
+            worldId: 'wrld_current',
+            worldName: 'Current',
+            createdAt: '2026-05-14T04:00:00Z'
+        },
+        players: []
+    });
+    await expect(service.hydrateRuntimeGameLogProjection()).resolves.toBe(true);
+    expect(useRuntimeStore.getState().gameState.currentLocation).toBe(
+        'wrld_current:2'
+    );
 });

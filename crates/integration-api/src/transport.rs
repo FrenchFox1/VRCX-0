@@ -13,6 +13,7 @@ use serde_json::json;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tokio_util::sync::CancellationToken;
+use tokio_util::task::TaskTracker;
 use vrcx_0_local_server::{bind_listener, header_to_str};
 
 use crate::auth::{
@@ -173,6 +174,7 @@ pub(crate) struct IntegrationApiRouterState {
     pub(crate) hub: Arc<ServerHub>,
     pub(crate) active_connections: Arc<AtomicU32>,
     pub(crate) session_cancel: CancellationToken,
+    pub(crate) sessions: TaskTracker,
 }
 
 pub(crate) fn build_integration_api_router(state: IntegrationApiRouterState) -> Router {
@@ -196,7 +198,10 @@ async fn integration_api_stream(
 ) -> Response {
     websocket
         .protocols([BASE_SUBPROTOCOL])
-        .on_upgrade(move |socket| run_session(socket, state))
+        .on_upgrade(move |socket| {
+            let sessions = state.sessions.clone();
+            sessions.track_future(run_session(socket, state))
+        })
 }
 
 async fn integration_api_auth_middleware(

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 import { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
 import {
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
@@ -22,7 +24,8 @@ function createMaintenanceActions({
     setFeedPersistenceDisabledPreference = async () => undefined,
     setAvatarFeedPersistenceDisabledPreference = async () => undefined,
     setPurgeDialogOpen = () => undefined,
-    toastWarning = () => undefined
+    toastWarning = () => undefined,
+    toastError = () => undefined
 }: {
     cleanupAvatarFeedHistory?: () => Promise<{
         deletedRows: number;
@@ -42,7 +45,8 @@ function createMaintenanceActions({
         disabled: boolean
     ) => Promise<void>;
     setPurgeDialogOpen?: (open: boolean) => void;
-    toastWarning?: (message: string) => void;
+    toastWarning?: (options: AppToastOptions) => void;
+    toastError?: (options: AppToastOptions) => void;
 }) {
     const prefs = createDefaultSettingsPrefs();
     return createSettingsMaintenanceActions({
@@ -93,9 +97,18 @@ function createMaintenanceActions({
         speakNotificationTts: async () => undefined,
         t: (key) => key,
         toast: {
-            error: () => undefined,
-            success: () => undefined,
-            warning: toastWarning
+            add: (options: AppToastOptions) => {
+                switch (options.type) {
+                    case 'warning':
+                        return toastWarning(options);
+                    case 'error':
+                        return toastError(options);
+                    default:
+                        throw new Error(
+                            'Unhandled toast type: ' + options.type
+                        );
+                }
+            }
         }
     });
 }
@@ -140,16 +153,24 @@ describe('handleGameLogDisabledChange', () => {
         const setGameLogPersistenceDisabledPreference = vi.fn(
             async () => undefined
         );
+        const toastError = vi.fn();
         const actions = createMaintenanceActions({
             confirm,
             isGameRunning: true,
-            setGameLogPersistenceDisabledPreference
+            setGameLogPersistenceDisabledPreference,
+            toastError
         });
 
         await actions.handleGameLogDisabledChange(true);
 
         expect(confirm).not.toHaveBeenCalled();
         expect(setGameLogPersistenceDisabledPreference).not.toHaveBeenCalled();
+        expect(toastError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'message.gamelog.vrchat_must_be_closed'
+            })
+        );
     });
 });
 
@@ -223,7 +244,10 @@ describe('purgeAvatarFeedData', () => {
 
         expect(setPurgeDialogOpen).toHaveBeenCalledWith(false);
         expect(toastWarning).toHaveBeenCalledWith(
-            'view.settings.advanced.advanced.database_cleanup.purge_optimization_failed'
+            expect.objectContaining({
+                type: 'warning',
+                title: 'view.settings.advanced.advanced.database_cleanup.purge_optimization_failed'
+            })
         );
     });
 });

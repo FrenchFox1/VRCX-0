@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     toastSuccess: vi.fn(),
     toastError: vi.fn(),
@@ -20,10 +22,18 @@ const mocks = vi.hoisted(() => ({
     otpPrompt: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        success: mocks.toastSuccess,
-        error: mocks.toastError
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -450,7 +460,10 @@ describe('authExecutionService characterization', () => {
         expect(useFriendLocationTimeStore.getState().byUserId).toEqual({});
         expect(mocks.resetVrchatConfigSnapshot).toHaveBeenCalled();
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'message.auth.logout_greeting:Self'
+            expect.objectContaining({
+                type: 'success',
+                title: 'message.auth.logout_greeting:Self'
+            })
         );
     });
 
@@ -679,7 +692,10 @@ describe('authExecutionService characterization', () => {
                 mocks.otpPrompt.mock.calls.map(([prompt]) => prompt.mode)
             ).toEqual(['totp', 'totp']);
             expect(mocks.toastError).toHaveBeenCalledWith(
-                'prompt.totp.input_error'
+                expect.objectContaining({
+                    type: 'error',
+                    title: 'prompt.totp.input_error'
+                })
             );
             expect(mocks.respondLoginSession).toHaveBeenCalledTimes(2);
         });

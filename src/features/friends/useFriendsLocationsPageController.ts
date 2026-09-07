@@ -70,7 +70,6 @@ export function useFriendsLocationsPageController() {
         changeShowSameInstanceInOnline,
         density,
         preferencesReady,
-        showCurrentUserInSameInstance,
         showSameInstanceInOnline,
         sidebarFavoritePrefs,
         sidebarSortMethods
@@ -111,7 +110,6 @@ export function useFriendsLocationsPageController() {
         remoteFavoriteFriendIds: roster.remoteFavoriteFriendIds,
         rosterStatus: roster.rosterStatus,
         scrollMetrics,
-        showCurrentUserInSameInstance,
         showSameInstanceInOnline,
         sidebarFavoritePrefs,
         sidebarSortMethods

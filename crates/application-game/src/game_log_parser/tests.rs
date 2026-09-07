@@ -656,3 +656,61 @@ fn deduplicates_video_errors_and_adds_youtube_bot_hint() {
     );
     assert_eq!(ctx.video_errors.len(), 2);
 }
+
+#[test]
+fn partial_last_line_is_not_consumed_before_it_is_complete() {
+    use std::io::Write;
+    let path = std::env::temp_dir().join(format!("vrcx-partial-{}.txt", std::process::id()));
+    std::fs::write(
+        &path,
+        "2020.01.01 00:00:00 Log        -  [Behaviour] OnPlayerJoined Par",
+    )
+    .unwrap();
+    let mut reader = LogReader::new();
+    let mut sink = RecordingParseSink::default();
+    let mut context = LogContext::new();
+    parse_log(
+        &mut reader,
+        &mut sink,
+        &path,
+        FILE,
+        &mut context,
+        chrono::NaiveDateTime::MIN,
+    );
+    let consumed = context.position;
+    writeln!(
+        std::fs::OpenOptions::new()
+            .append(true)
+            .open(&path)
+            .unwrap(),
+        "tial (usr_partial)"
+    )
+    .unwrap();
+    parse_log(
+        &mut reader,
+        &mut sink,
+        &path,
+        FILE,
+        &mut context,
+        chrono::NaiveDateTime::MIN,
+    );
+    std::fs::remove_file(path).unwrap();
+    assert_eq!(consumed, 0);
+    assert_eq!(
+        sink.payloads(),
+        vec![payload(&["player-joined", "Partial", "usr_partial"])]
+    );
+}
+
+#[test]
+fn incomplete_player_markers_do_not_panic_or_create_players() {
+    let mut sink = RecordingParseSink::default();
+    for marker in ["OnPlayerJoined", "OnPlayerLeft"] {
+        let line = format!("2020.01.01 00:00:00 Log        -  [Behaviour] {marker}");
+        presence::parse_player_joined_or_left(&mut sink, FILE, &line, content(&line));
+    }
+    assert!(sink.rows.is_empty());
+    let user = presence::parse_user_info("Name) (usr_partial");
+    assert_eq!(user.display_name, "Name)");
+    assert_eq!(user.user_id, "usr_partial");
+}

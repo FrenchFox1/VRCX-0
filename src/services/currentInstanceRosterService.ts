@@ -1,23 +1,18 @@
 import {
-    resolveRuntimeCurrentInstanceRoster,
     type CurrentInstanceRosterContext,
-    type CurrentInstanceRosterSnapshot,
-    type CurrentInstanceRuntimeRoster
+    type CurrentInstanceRosterSnapshot
 } from '@/domain/instances/currentInstanceRoster';
-import playerListPersistenceRepository, {
-    type PlayerListContext as PersistenceRosterContext
-} from '@/repositories/playerListPersistenceRepository';
+import currentInstanceRosterRepository, {
+    type PlayerListContext as BackendRosterContext
+} from '@/repositories/currentInstanceRosterRepository';
 import { normalizeString } from '@/shared/utils/string';
 
 interface LoadCurrentInstanceRosterInput {
     currentLocation: string;
-    currentLocationStartedAt?: string;
-    currentUserId?: string;
-    runtime?: CurrentInstanceRuntimeRoster;
 }
 
 function normalizeContext(
-    context: PersistenceRosterContext
+    context: BackendRosterContext
 ): CurrentInstanceRosterContext {
     return {
         ...context,
@@ -26,27 +21,12 @@ function normalizeContext(
 }
 
 export async function loadCurrentInstanceRoster({
-    currentLocation,
-    currentLocationStartedAt = '',
-    currentUserId = '',
-    runtime
+    currentLocation
 }: LoadCurrentInstanceRosterInput): Promise<CurrentInstanceRosterSnapshot> {
     const normalizedLocation = normalizeString(currentLocation);
-    if (runtime) {
-        const runtimeSnapshot = resolveRuntimeCurrentInstanceRoster({
-            requestedLocation: normalizedLocation,
-            runtime
-        });
-        if (runtimeSnapshot) {
-            return runtimeSnapshot;
-        }
-    }
-
     const snapshot =
-        await playerListPersistenceRepository.getCurrentInstanceSnapshot({
-            currentLocation: normalizedLocation,
-            currentLocationStartedAt,
-            currentUserId
+        await currentInstanceRosterRepository.getCurrentInstanceSnapshot({
+            currentLocation: normalizedLocation
         });
     return {
         context: normalizeContext(snapshot.context),

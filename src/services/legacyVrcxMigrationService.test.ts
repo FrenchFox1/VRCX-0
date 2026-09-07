@@ -23,10 +23,7 @@ function createPromptOptions() {
                   ? `${key}:${String(params.path)}`
                   : key
         ),
-        toast: {
-            error: vi.fn(),
-            warning: vi.fn()
-        }
+        toast: { add: vi.fn() }
     };
 }
 
@@ -49,8 +46,11 @@ describe('legacyVrcxMigrationService', () => {
 
         await promptLegacyVrcxForceMigration(options);
 
-        expect(options.toast.error).toHaveBeenCalledWith(
-            'view.settings.advanced.advanced.database_cleanup.legacy_migration_failed:status failed'
+        expect(options.toast.add).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'view.settings.advanced.advanced.database_cleanup.legacy_migration_failed:status failed'
+            })
         );
         expect(options.confirm).not.toHaveBeenCalled();
     });
@@ -66,8 +66,11 @@ describe('legacyVrcxMigrationService', () => {
 
         await promptLegacyVrcxForceMigration(options);
 
-        expect(options.toast.error).toHaveBeenCalledWith(
-            'Legacy DB is too new.'
+        expect(options.toast.add).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'Legacy DB is too new.'
+            })
         );
         expect(options.confirm).not.toHaveBeenCalled();
     });
@@ -106,8 +109,11 @@ describe('legacyVrcxMigrationService', () => {
         expect(
             commandMocks.appRequestLegacyVrcxForceMigration
         ).toHaveBeenCalledWith(false);
-        expect(options.toast.warning).toHaveBeenCalledWith(
-            'view.settings.advanced.advanced.database_cleanup.legacy_migration_restart_manually'
+        expect(options.toast.add).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'warning',
+                title: 'view.settings.advanced.advanced.database_cleanup.legacy_migration_restart_manually'
+            })
         );
     });
 
@@ -122,8 +128,11 @@ describe('legacyVrcxMigrationService', () => {
 
         await promptLegacyVrcxForceMigration(options);
 
-        expect(options.toast.error).toHaveBeenCalledWith(
-            'view.settings.advanced.advanced.database_cleanup.legacy_migration_failed:request failed'
+        expect(options.toast.add).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'view.settings.advanced.advanced.database_cleanup.legacy_migration_failed:request failed'
+            })
         );
     });
 

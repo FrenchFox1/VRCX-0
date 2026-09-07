@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { RuntimeModelSelect } from '@/features/assistant/components/RuntimeModelSelect';
 import {
@@ -8,6 +7,7 @@ import {
     type AssistantRuntimeSelection,
     type PlaybookMode
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import {
     openLlmEndpointsManager,
     useLlmEndpointsStore
@@ -104,7 +104,7 @@ export function AssistantSettingsGroup({
                 )
             );
         } catch (error) {
-            toast.error(errorMessage(error));
+            toast.add({ type: 'error', title: errorMessage(error) });
         }
     }
 
@@ -115,7 +115,7 @@ export function AssistantSettingsGroup({
                 await commands.appLlmEndpointSetFollowCustomProxy(enabled)
             );
         } catch (error) {
-            toast.error(errorMessage(error));
+            toast.add({ type: 'error', title: errorMessage(error) });
         } finally {
             setProxyLoading(false);
         }

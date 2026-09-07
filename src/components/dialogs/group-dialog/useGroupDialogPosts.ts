@@ -1,11 +1,11 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
 import type { GroupPostVisibility } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
+import { toast } from '@/services/toastService';
 
 import type { GroupRemoteData, GroupRemoteStatus } from './groupDialogTypes';
 
@@ -71,7 +71,10 @@ export function useGroupDialogPosts({
         const title = String(form.title || '').trim();
         const text = String(form.text || '').trim();
         if (!title || !text) {
-            toast.warning(t('dialog.group.error.title_and_text_are_required'));
+            toast.add({
+                type: 'warning',
+                title: t('dialog.group.error.title_and_text_are_required')
+            });
             return;
         }
 
@@ -112,17 +115,21 @@ export function useGroupDialogPosts({
             await loadTab('posts', { force: true });
             onPostsSaved?.();
             setPostEditor(null);
-            toast.success(
-                form.mode === 'edit'
-                    ? t('dialog.group.toast.group_post_updated')
-                    : t('dialog.group.toast.group_post_created')
-            );
+            toast.add({
+                type: 'success',
+                title:
+                    form.mode === 'edit'
+                        ? t('dialog.group.toast.group_post_updated')
+                        : t('dialog.group.toast.group_post_created')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.group.toast.failed_to_save_group_post')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.group.toast.failed_to_save_group_post')
+            });
         } finally {
             setPostEditorSubmitting(false);
         }
@@ -165,13 +172,18 @@ export function useGroupDialogPosts({
                 ...current,
                 posts: current.posts.filter((row) => row.id !== post.id)
             }));
-            toast.success(t('dialog.group.success.group_post_deleted'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.group.success.group_post_deleted')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.group.toast.failed_to_delete_group_post')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.group.toast.failed_to_delete_group_post')
+            });
         }
     }
 

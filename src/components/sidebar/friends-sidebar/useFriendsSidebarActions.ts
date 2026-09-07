@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { useCurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/useCurrentUserSocialStatusDialog';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -16,6 +15,7 @@ import {
 } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { recordRecentAction } from '@/services/recentActionService';
+import { toast } from '@/services/toastService';
 import { mergeCurrentUserPresenceFields } from '@/shared/utils/currentUserPresence';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
@@ -89,15 +89,20 @@ export function useFriendsSidebarActions({
                 parsedLocation.tag,
                 parsedLocation.shortName
             );
-            toast.success(t('message.invite.self_sent'));
+            toast.add({
+                type: 'success',
+                title: t('message.invite.self_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.friends_sidebar.toast.failed_to_send_self_invite'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.friends_sidebar.toast.failed_to_send_self_invite'
+                          )
+            });
         }
     }
 
@@ -107,28 +112,31 @@ export function useFriendsSidebarActions({
             return;
         }
         if (!currentInviteLocation) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'side_panel.error.cannot_invite_no_current_vrchat_location_is_available'
                 )
-            );
+            });
             return;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'side_panel.error.cannot_invite_from_the_current_instance_type'
                 )
-            );
+            });
             return;
         }
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'side_panel.error.cannot_invite_current_location_is_not_a_concrete_instance'
                 )
-            );
+            });
             return;
         }
         const result = await confirm({
@@ -151,13 +159,17 @@ export function useFriendsSidebarActions({
                 rsvp: true
             });
             recordRecentAction(friendId, 'Invite');
-            toast.success(t('message.invite.sent'));
+            toast.add({ type: 'success', title: t('message.invite.sent') });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('component.friends_sidebar.toast.failed_to_send_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.friends_sidebar.toast.failed_to_send_invite'
+                          )
+            });
         }
     }
 
@@ -180,15 +192,20 @@ export function useFriendsSidebarActions({
                 receiverUserId: friendId
             });
             recordRecentAction(friendId, 'Request Invite');
-            toast.success(t('side_panel.success.invite_request_sent'));
+            toast.add({
+                type: 'success',
+                title: t('side_panel.success.invite_request_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.friends_sidebar.toast.failed_to_request_invite'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.friends_sidebar.toast.failed_to_request_invite'
+                          )
+            });
         }
     }
 
@@ -208,13 +225,20 @@ export function useFriendsSidebarActions({
                 userId: friendId,
                 emojiId: result.value
             });
-            toast.success(t('side_panel.success.boop_sent'));
+            toast.add({
+                type: 'success',
+                title: t('side_panel.success.boop_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('component.friends_sidebar.toast.failed_to_send_boop')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.friends_sidebar.toast.failed_to_send_boop'
+                          )
+            });
         }
     }
 
@@ -223,11 +247,12 @@ export function useFriendsSidebarActions({
         { successMessage, errorMessage }: SaveCurrentUserPatchMessages
     ) {
         if (!currentUserId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'side_panel.error.cannot_update_profile_no_current_user_session_is_available'
                 )
-            );
+            });
             return false;
         }
         try {
@@ -250,10 +275,13 @@ export function useFriendsSidebarActions({
                     currentUserSnapshot: mergedUser
                 });
             }
-            toast.success(successMessage);
+            toast.add({ type: 'success', title: successMessage });
             return true;
         } catch (error) {
-            toast.error(userFacingErrorMessage(error, errorMessage));
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(error, errorMessage)
+            });
             return false;
         }
     }

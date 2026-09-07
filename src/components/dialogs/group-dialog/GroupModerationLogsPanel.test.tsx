@@ -242,3 +242,7 @@ describe('GroupModerationLogsPanel', () => {
         expect(html).toContain('data-location="wrld_target"');
     });
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

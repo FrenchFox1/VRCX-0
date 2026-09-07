@@ -104,7 +104,11 @@ impl GameLogRuntime {
         let worker_processor = processor.clone();
         let worker = RuntimeWorker::start(
             "game-log",
-            RuntimeWorkerOptions::default(),
+            RuntimeWorkerOptions {
+                capacity: 8,
+                max_batch: 1,
+                ..Default::default()
+            },
             deps.event_bus,
             move |jobs| worker_processor.handle_jobs(jobs),
         );
@@ -117,7 +121,59 @@ impl GameLogRuntime {
     }
 
     pub fn stop(&self) {
+        self.processor.request_stop();
         self.worker.stop();
+    }
+
+    pub fn reset_replay(&self) -> Result<()> {
+        let (completed, receiver) = std::sync::mpsc::sync_channel(1);
+        self.worker
+            .push_batch([GameLogWorkerJob::ResetReplay(completed)])?;
+        receiver
+            .recv_timeout(std::time::Duration::from_secs(10))
+            .map_err(|error| {
+                crate::Error::Custom(format!("GameLog replay reset failed: {error}"))
+            })?;
+        Ok(())
+    }
+
+    pub fn retry_pending_game_log(&self) -> Result<()> {
+        let (completed, receiver) = std::sync::mpsc::sync_channel(1);
+        self.worker
+            .push_batch([GameLogWorkerJob::RetryWrite(completed)])?;
+        receiver
+            .recv()
+            .map_err(|error| {
+                crate::Error::Custom(format!("GameLog write worker disconnected: {error}"))
+            })?
+            .map_err(crate::Error::Custom)
+    }
+
+    pub fn replay_cursor(&self) -> Option<crate::GameLogScanCursor> {
+        self.processor.replay_cursor()
+    }
+
+    pub fn ingest_game_log_scan(
+        &self,
+        events: &[GameLogEvent],
+        origin: GameLogEventOrigin,
+        cursor: crate::GameLogScanCursor,
+        publish: bool,
+    ) -> Result<()> {
+        let (completed, receiver) = std::sync::mpsc::sync_channel(1);
+        self.worker.push_batch([GameLogWorkerJob::Scan {
+            events: events.to_vec(),
+            origin,
+            cursor: Box::new(cursor),
+            publish,
+            completed: Some(completed),
+        }])?;
+        receiver
+            .recv()
+            .map_err(|error| {
+                crate::Error::Custom(format!("GameLog scan worker disconnected: {error}"))
+            })?
+            .map_err(crate::Error::Custom)
     }
 
     pub fn set_persistence_resume_after(&self, resume_after: &str) {
@@ -125,9 +181,7 @@ impl GameLogRuntime {
     }
 
     pub fn ingest_game_log_event(&self, event: &GameLogEvent) -> Result<()> {
-        self.worker
-            .push_batch([GameLogWorkerJob::Event(event.clone())])?;
-        Ok(())
+        self.ingest_game_log_events(std::slice::from_ref(event))
     }
 
     pub fn ingest_game_log_events(&self, events: &[GameLogEvent]) -> Result<()> {
@@ -142,9 +196,9 @@ impl GameLogRuntime {
         if events.is_empty() {
             return Ok(());
         }
-        let jobs = events.iter().cloned().map(|event| match origin {
-            GameLogEventOrigin::Live => GameLogWorkerJob::Event(event),
-            GameLogEventOrigin::InitialScan => GameLogWorkerJob::InitialEvent(event),
+        let jobs = events.chunks(256).map(|events| GameLogWorkerJob::Events {
+            events: events.to_vec(),
+            origin,
         });
         self.worker.push_batch(jobs)?;
         Ok(())
@@ -167,5 +221,12 @@ impl GameLogRuntime {
                 changed_at,
             })])?;
         Ok(())
+    }
+}
+
+impl Drop for GameLogRuntime {
+    fn drop(&mut self) {
+        self.processor.request_stop();
+        self.worker.stop();
     }
 }

@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import gameLogRepository from '@/repositories/gameLogRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 
 import {
@@ -62,13 +62,20 @@ export function useGameLogRowActions({
             try {
                 await gameLogRepository.deleteGameLogEntry(row);
                 removeRowByKey(rowKey);
-                toast.success(t('view.game_log.success.game_log_row_deleted'));
+                toast.add({
+                    type: 'success',
+                    title: t('view.game_log.success.game_log_row_deleted')
+                });
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.game_log.toast.failed_to_delete_game_log_row')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.game_log.toast.failed_to_delete_game_log_row'
+                              )
+                });
             } finally {
                 setDeletingGameLogKey('');
             }

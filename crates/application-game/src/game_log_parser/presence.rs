@@ -13,7 +13,10 @@ pub(super) struct ParsedUserInfo {
 pub(super) fn parse_user_info(s: &str) -> ParsedUserInfo {
     if let Some(pos) = s.rfind(" (") {
         let display_name = s[..pos].to_string();
-        let end = s.rfind(')').unwrap_or(s.len());
+        let end = s
+            .rfind(')')
+            .filter(|end| *end >= pos + 2)
+            .unwrap_or(s.len());
         let user_id: String = s[pos + 2..end]
             .chars()
             .filter(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '~' | ':' | '(' | ')'))
@@ -98,7 +101,7 @@ pub(super) fn parse_player_joined_or_left(
 ) -> bool {
     if content.contains("[Behaviour] OnPlayerJoined") && !content.contains("] OnPlayerJoined:") {
         if let Some(pos) = line.rfind("] OnPlayerJoined") {
-            let user_info = &line[pos + 17..];
+            let user_info = line.get(pos + 17..).unwrap_or_default();
             let ParsedUserInfo {
                 display_name,
                 user_id,
@@ -122,7 +125,7 @@ pub(super) fn parse_player_joined_or_left(
         && !content.contains("] OnPlayerLeft:")
     {
         if let Some(pos) = line.rfind("] OnPlayerLeft") {
-            let user_info = &line[pos + 15..];
+            let user_info = line.get(pos + 15..).unwrap_or_default();
             let ParsedUserInfo {
                 display_name,
                 user_id,

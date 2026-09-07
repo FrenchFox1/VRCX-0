@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     confirmInstall: vi.fn(),
     openExternalLink: vi.fn(),
@@ -30,12 +32,21 @@ vi.mock('@/services/i18nService', () => ({
     }
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        dismiss: mocks.toastDismiss,
-        error: mocks.toastError,
-        loading: mocks.toastLoading,
-        success: mocks.toastSuccess
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'loading':
+                    return mocks.toastLoading(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        },
+        close: mocks.toastDismiss
     }
 }));
 
@@ -199,8 +210,9 @@ describe('openOrInstallLatestAvailableUpdate', () => {
         expect(mocks.confirmInstall).not.toHaveBeenCalled();
         expect(mocks.restartApplication).not.toHaveBeenCalled();
         expect(mocks.toastError).toHaveBeenCalledWith(
-            'message.vrcx_updater.no_downloadable_releases_found',
             expect.objectContaining({
+                type: 'error',
+                title: 'message.vrcx_updater.no_downloadable_releases_found',
                 position: 'bottom-right'
             })
         );
@@ -413,8 +425,11 @@ describe('handleAppUpdateDownloadProgressEvent', () => {
         });
 
         expect(mocks.toastLoading).toHaveBeenCalledWith(
-            expect.any(String),
-            expect.objectContaining({ id: 'vrcx-update-available' })
+            expect.objectContaining({
+                type: 'loading',
+                title: expect.any(String),
+                id: 'vrcx-update-available'
+            })
         );
 
         void installPromise;

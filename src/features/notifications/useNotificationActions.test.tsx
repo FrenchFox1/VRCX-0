@@ -3,6 +3,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 import type { NotificationRow } from './notificationPageTypes';
 
 const mocks = vi.hoisted(() => ({
@@ -24,11 +26,20 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        success: mocks.toastSuccess,
-        warning: mocks.toastWarning
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'warning':
+                    return mocks.toastWarning(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -143,7 +154,10 @@ describe('useNotificationActions', () => {
             mocks.deleteNotification.mock.invocationCallOrder[0]
         ).toBeLessThan(mocks.reload.mock.invocationCallOrder[0]);
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'view.notification.success.notification_log_entry_deleted'
+            expect.objectContaining({
+                type: 'success',
+                title: 'view.notification.success.notification_log_entry_deleted'
+            })
         );
     });
 
@@ -160,7 +174,10 @@ describe('useNotificationActions', () => {
         expect(mocks.reload).toHaveBeenCalledOnce();
         expect(mocks.signalFriendLogChanged).toHaveBeenCalledOnce();
         expect(mocks.toastWarning).toHaveBeenCalledWith(
-            'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
+            expect.objectContaining({
+                type: 'warning',
+                title: 'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
+            })
         );
         expect(mocks.toastSuccess).not.toHaveBeenCalled();
     });
@@ -178,6 +195,8 @@ describe('useNotificationActions', () => {
         );
 
         expect(mocks.reload).toHaveBeenCalledOnce();
-        expect(mocks.toastError).toHaveBeenCalledWith('send failed');
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error', title: 'send failed' })
+        );
     });
 });

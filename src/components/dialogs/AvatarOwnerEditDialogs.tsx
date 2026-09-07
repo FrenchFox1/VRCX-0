@@ -1,7 +1,6 @@
 import { PersonStandingIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
@@ -9,6 +8,7 @@ import { commands } from '@/platform/tauri/bindings';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { toast } from '@/services/toastService';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -176,13 +176,15 @@ export function AvatarContentTagsDialog({
             .catch((error: unknown) => {
                 if (active) {
                     setOwnAvatars([avatar]);
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t(
-                                  'dialog.avatar_owner_edit_dialogs.toast.failed_to_load_own_avatars'
-                              )
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t(
+                                      'dialog.avatar_owner_edit_dialogs.toast.failed_to_load_own_avatars'
+                                  )
+                    });
                 }
             })
             .finally(() => {
@@ -254,8 +256,9 @@ export function AvatarContentTagsDialog({
                     result.appliedBeforeFailure > 0 &&
                     result.rollbackFailed > 0
                 ) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             'dialog.avatar_owner_edit_dialogs.dynamic.value_rolled_back_value_avatar_s_but_value_rollback',
                             {
                                 value: baseMessage,
@@ -263,32 +266,36 @@ export function AvatarContentTagsDialog({
                                 value3: result.rollbackFailed
                             }
                         )
-                    );
+                    });
                 } else if (result.appliedBeforeFailure > 0) {
-                    toast.error(
-                        t(
+                    toast.add({
+                        type: 'error',
+                        title: t(
                             'dialog.avatar_owner_edit_dialogs.dynamic.value_rolled_back_value_avatar_s',
                             {
                                 value: baseMessage,
                                 value2: result.rolledBack
                             }
                         )
-                    );
+                    });
                 } else {
-                    toast.error(baseMessage);
+                    toast.add({ type: 'error', title: baseMessage });
                 }
                 return;
             }
-            toast.success(
-                t('dialog.avatar.success.avatar_content_tags_updated')
-            );
+            toast.add({
+                type: 'success',
+                title: t('dialog.avatar.success.avatar_content_tags_updated')
+            });
             onOpenChange(false);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : 'Failed to update avatar content tags.'
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to update avatar content tags.'
+            });
         } finally {
             setSaving(false);
         }

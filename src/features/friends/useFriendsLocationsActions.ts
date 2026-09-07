@@ -1,6 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { FriendRecord } from '@/domain/friends/types';
 import {
@@ -15,6 +14,7 @@ import {
     sendRequestInviteToUser
 } from '@/services/inviteDeliveryService';
 import { selfInviteToInstance } from '@/services/launchService';
+import { toast } from '@/services/toastService';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
@@ -93,22 +93,28 @@ export function useFriendsLocationsActions({
                 parsedLocation.shortName || ''
             );
             if (opened) {
-                toast.success(
-                    t('view.friend_list.success.vrchat_launch_request_sent')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t(
+                        'view.friend_list.success.vrchat_launch_request_sent'
+                    )
+                });
                 return;
             }
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.friend_list.error.unable_to_open_this_instance_in_vrchat'
                 )
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.friends.toast.failed_to_launch_instance')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.friends.toast.failed_to_launch_instance')
+            });
         }
     }
 
@@ -126,13 +132,18 @@ export function useFriendsLocationsActions({
                 location,
                 parsedLocation.shortName || ''
             );
-            toast.success(t('message.invite.self_sent'));
+            toast.add({
+                type: 'success',
+                title: t('message.invite.self_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.friends.toast.failed_to_send_self_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.friends.toast.failed_to_send_self_invite')
+            });
         }
     }
 
@@ -142,28 +153,31 @@ export function useFriendsLocationsActions({
             return;
         }
         if (!currentInviteLocation) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.friend_list.error.cannot_invite_no_current_vrchat_location_is_available'
                 )
-            );
+            });
             return;
         }
         if (!canInviteFromCurrentLocation) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.friend_list.error.cannot_invite_from_the_current_instance_type'
                 )
-            );
+            });
             return;
         }
         const parsedLocation = parseLocation(currentInviteLocation);
         if (!parsedLocation.worldId || !parsedLocation.instanceId) {
-            toast.error(
-                t(
+            toast.add({
+                type: 'error',
+                title: t(
                     'view.friend_list.error.cannot_invite_current_location_is_not_a_concrete_instance'
                 )
-            );
+            });
             return;
         }
         const result = await confirm({
@@ -183,13 +197,15 @@ export function useFriendsLocationsActions({
                 worldId: parsedLocation.worldId,
                 rsvp: true
             });
-            toast.success(t('message.invite.sent'));
+            toast.add({ type: 'success', title: t('message.invite.sent') });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.friends.toast.failed_to_send_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.friends.toast.failed_to_send_invite')
+            });
         }
     }
 
@@ -211,13 +227,18 @@ export function useFriendsLocationsActions({
             await sendRequestInviteToUser({
                 receiverUserId: friendId
             });
-            toast.success(t('view.friend_list.success.invite_request_sent'));
+            toast.add({
+                type: 'success',
+                title: t('view.friend_list.success.invite_request_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.friends.toast.failed_to_request_invite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.friends.toast.failed_to_request_invite')
+            });
         }
     }
 
@@ -237,13 +258,18 @@ export function useFriendsLocationsActions({
                 userId: friendId,
                 emojiId: result.value
             });
-            toast.success(t('view.friend_list.success.boop_sent'));
+            toast.add({
+                type: 'success',
+                title: t('view.friend_list.success.boop_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.friends.toast.failed_to_send_boop')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.friends.toast.failed_to_send_boop')
+            });
         }
     }
 

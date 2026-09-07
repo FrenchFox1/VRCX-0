@@ -967,14 +967,10 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__instance_history_query', { input });
     },
     async appPlayerListCurrentSnapshot(
-        currentUserId: string,
-        currentLocation: string,
-        currentLocationStartedAt: string
+        currentLocation: string
     ): Promise<PlayerListSnapshotOutput> {
         return await TAURI_INVOKE('app__player_list_current_snapshot', {
-            currentUserId,
-            currentLocation,
-            currentLocationStartedAt
+            currentLocation
         });
     },
     async appInstanceActivityDatesGet(userId: string): Promise<string[]> {
@@ -5540,7 +5536,7 @@ export type PlayerListSnapshotPlayer = {
     joinedAt: string;
     joinedAtMs: number;
 };
-export type PlayerListSnapshotSource = 'database' | 'none' | 'runtime';
+export type PlayerListSnapshotSource = 'none' | 'runtime';
 export type PlayerState = {
     userId: string;
     displayName: string;

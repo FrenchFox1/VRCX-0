@@ -1,10 +1,11 @@
 use vrcx_0_contracts::game_log::{
-    GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogJoinLeaveSnapshot,
-    GameLogLocationEntry, GameLogLocationTimeUpdate, GameLogPortalSpawnEntry,
-    GameLogResourceLoadEntry, GameLogWriteBatch,
+    GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry,
+    GameLogLocationTimeUpdate, GameLogPortalSpawnEntry, GameLogResourceLoadEntry,
+    GameLogWriteBatch,
 };
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
 use vrcx_0_core::game_process::GameProcessEvent;
+use vrcx_0_core::location::parse_location;
 
 use super::runtime_state::{
     duration_ms, parse_event_time_ms, player_key, world_id_from_location, GameLogProjection,
@@ -67,8 +68,38 @@ pub struct GameLogIngestOutput {
     pub destination_started_at: Vec<String>,
     pub instance_roster_changed: bool,
     pub departed_user_ids: Vec<String>,
+    pub replayed_departed_user_ids: Vec<String>,
     pub projection: Option<GameLogProjection>,
     pub side_effects: Vec<GameLogSideEffect>,
+}
+
+impl GameLogIngestOutput {
+    pub(super) fn append(&mut self, mut next: Self) {
+        self.batch.locations.append(&mut next.batch.locations);
+        self.batch
+            .location_time_updates
+            .append(&mut next.batch.location_time_updates);
+        self.batch.join_leave.append(&mut next.batch.join_leave);
+        self.batch
+            .portal_spawns
+            .append(&mut next.batch.portal_spawns);
+        self.batch.video_plays.append(&mut next.batch.video_plays);
+        self.batch
+            .resource_loads
+            .append(&mut next.batch.resource_loads);
+        self.batch.events.append(&mut next.batch.events);
+        self.batch.externals.append(&mut next.batch.externals);
+        self.input_count += next.input_count;
+        self.runtime_persisted_mirrors
+            .append(&mut next.runtime_persisted_mirrors);
+        self.destination_started_at
+            .append(&mut next.destination_started_at);
+        self.instance_roster_changed |= next.instance_roster_changed;
+        self.departed_user_ids.append(&mut next.departed_user_ids);
+        self.replayed_departed_user_ids
+            .append(&mut next.replayed_departed_user_ids);
+        self.side_effects.append(&mut next.side_effects);
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -78,40 +109,24 @@ pub struct GameLogIngestEngine {
 }
 
 impl GameLogIngestEngine {
+    pub(super) fn restore_state(&mut self, state: GameLogRuntimeState) {
+        self.state = state;
+    }
+
+    pub(super) fn checkpoint_state(&self) -> GameLogRuntimeState {
+        self.state.clone()
+    }
+    pub(super) fn start_log_file(&mut self) {
+        self.state = GameLogRuntimeState {
+            is_game_running: self.state.is_game_running,
+            is_steamvr_running: self.state.is_steamvr_running,
+            ..Default::default()
+        };
+    }
+
     pub fn runtime_snapshot(&self) -> RuntimeSnapshot {
         self.state.snapshot()
     }
-    pub fn seed_current_location(
-        &mut self,
-        location: String,
-        world_name: String,
-        started_at: String,
-    ) {
-        if location.is_empty() || !self.state.current_location.is_empty() {
-            return;
-        }
-        self.state.current_location = location;
-        self.state.current_world_name = world_name;
-        self.state.current_location_started_at = started_at.clone();
-        self.state.current_location_started_at_ms = parse_event_time_ms(&started_at);
-    }
-
-    pub fn seed_current_roster(&mut self, entries: &[GameLogJoinLeaveSnapshot]) {
-        if self.state.current_location.is_empty() || !self.state.players_by_key.is_empty() {
-            return;
-        }
-        for (key, player) in super::roster::fold_roster(entries) {
-            self.state.players_by_key.insert(
-                key,
-                PlayerState {
-                    user_id: player.user_id,
-                    display_name: player.display_name,
-                    join_time_ms: player.joined_at_ms,
-                },
-            );
-        }
-    }
-
     pub fn ingest_events(
         &mut self,
         events: &[GameLogEvent],
@@ -156,6 +171,7 @@ impl GameLogIngestEngine {
                     display_name,
                     user_id,
                 } => {
+                    self.state.has_player_events = true;
                     self.ingest_player_joined(&mut output.batch, event, display_name, user_id);
                     output.instance_roster_changed = true;
                 }
@@ -163,6 +179,7 @@ impl GameLogIngestEngine {
                     display_name,
                     user_id,
                 } => {
+                    self.state.has_player_events = true;
                     if let Some(user_id) =
                         self.ingest_player_left(&mut output.batch, event, display_name, user_id)
                     {
@@ -342,6 +359,7 @@ impl GameLogIngestEngine {
         self.state.current_location_started_at = event.created_at.clone();
         self.state.current_location_started_at_ms = parse_event_time_ms(&event.created_at);
         self.state.players_by_key.clear();
+        self.state.has_player_events = false;
         self.state.last_resource_url.clear();
         self.state.last_video_url.clear();
     }
@@ -394,6 +412,9 @@ impl GameLogIngestEngine {
             world_name: self.state.current_world_name.clone(),
             time: duration,
         });
+        if !parse_location(&self.state.current_location).is_real_instance {
+            return None;
+        }
         player
             .map(|player| player.user_id)
             .filter(|id| !id.is_empty())

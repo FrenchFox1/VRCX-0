@@ -3,6 +3,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
 const mocks = vi.hoisted(() => ({
@@ -19,10 +21,18 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        success: mocks.toastSuccess
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -143,7 +153,10 @@ describe('useUserDialogSelfActions', () => {
         );
         expect(rendered.actionStatusRef.current).toBe('idle');
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'dialog.user.success.avatar_cloning_setting_updated'
+            expect.objectContaining({
+                type: 'success',
+                title: 'dialog.user.success.avatar_cloning_setting_updated'
+            })
         );
     });
 
@@ -158,7 +171,9 @@ describe('useUserDialogSelfActions', () => {
         expect(rendered.setBaseProfile).not.toHaveBeenCalled();
         expect(mocks.setAuthBootstrap).not.toHaveBeenCalled();
         expect(rendered.actionStatusRef.current).toBe('idle');
-        expect(mocks.toastError).toHaveBeenCalledWith('update failed');
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error', title: 'update failed' })
+        );
     });
 
     it('applies profile fields and language removals before additions', async () => {

@@ -13,19 +13,11 @@ use vrcx_0_runtime_host_desktop::local_data::{InstanceActivityRowOutput, WorldSu
 #[specta::specta]
 pub fn app__player_list_current_snapshot(
     state: State<'_, AppState>,
-    current_user_id: String,
     current_location: String,
-    current_location_started_at: String,
 ) -> Result<PlayerListSnapshotOutput, AppError> {
-    state
+    Ok(state
         .runtime_host()
-        .local_data()
-        .player_list_current_snapshot(
-            current_user_id,
-            current_location,
-            current_location_started_at,
-        )
-        .map_err(AppError::from)
+        .current_player_list_snapshot(&current_location))
 }
 
 #[tauri::command(async)]

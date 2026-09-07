@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { UserStatus } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
+import { toast } from '@/services/toastService';
 
 import {
     maxStatusPresets,
@@ -56,9 +56,12 @@ export function useSelfStatusPresets({
     async function saveSelfStatusPreset() {
         const nextStatus = normalizeSelfStatusInput(socialStatusDraft.status);
         if (!nextStatus) {
-            toast.warning(
-                t('dialog.user.label.please_choose_a_valid_social_status')
-            );
+            toast.add({
+                type: 'warning',
+                title: t(
+                    'dialog.user.label.please_choose_a_valid_social_status'
+                )
+            });
             return;
         }
 
@@ -76,15 +79,22 @@ export function useSelfStatusPresets({
                         nextPreset.statusDescription
             )
         ) {
-            toast.info(t('dialog.user.label.status_preset_already_exists'));
+            toast.add({
+                type: 'info',
+                title: t('dialog.user.label.status_preset_already_exists')
+            });
             return;
         }
         if (statusPresets.length >= maxStatusPresets) {
-            toast.warning(
-                t('dialog.user.dynamic.status_presets_are_limited_to_value', {
-                    value: maxStatusPresets
-                })
-            );
+            toast.add({
+                type: 'warning',
+                title: t(
+                    'dialog.user.dynamic.status_presets_are_limited_to_value',
+                    {
+                        value: maxStatusPresets
+                    }
+                )
+            });
             return;
         }
 
@@ -96,14 +106,19 @@ export function useSelfStatusPresets({
                 statusPresetsConfigKey,
                 nextPresets
             );
-            toast.success(t('dialog.user.success.status_preset_saved'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.success.status_preset_saved')
+            });
         } catch (error) {
             setStatusPresets(previousPresets);
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_save_status_preset')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_save_status_preset')
+            });
         }
     }
 
@@ -120,11 +135,13 @@ export function useSelfStatusPresets({
             );
         } catch (error) {
             setStatusPresets(previousPresets);
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_remove_status_preset')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_remove_status_preset')
+            });
         }
     }
 

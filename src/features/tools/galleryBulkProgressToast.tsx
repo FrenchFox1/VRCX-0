@@ -1,5 +1,4 @@
-import { toast } from 'sonner';
-
+import { toast } from '@/services/toastService';
 import { Progress } from '@/ui/shadcn/progress';
 
 const GALLERY_BULK_PROGRESS_TOAST_ID = 'gallery-bulk-progress';
@@ -26,16 +25,18 @@ export function startGalleryBulkProgressToast({
         if (cancelled) {
             return;
         }
-        toast.loading(buildMessage(done), {
+        toast.add({
+            type: 'loading',
+            title: buildMessage(done),
             id: GALLERY_BULK_PROGRESS_TOAST_ID,
-            duration: Infinity,
+            timeout: 0,
             description: (
                 <Progress
                     value={total > 0 ? Math.round((done / total) * 100) : 0}
                 />
             ),
-            cancel: {
-                label: cancelLabel,
+            actionProps: {
+                children: cancelLabel,
                 onClick: () => {
                     cancelled = true;
                     onCancel();
@@ -50,7 +51,7 @@ export function startGalleryBulkProgressToast({
         update: render,
         dismiss() {
             cancelled = true;
-            toast.dismiss(GALLERY_BULK_PROGRESS_TOAST_ID);
+            toast.close(GALLERY_BULK_PROGRESS_TOAST_ID);
         }
     };
 }

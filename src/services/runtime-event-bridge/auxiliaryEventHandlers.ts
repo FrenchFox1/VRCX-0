@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 import type {
     FavoriteKind,
     StoredLocalFavoriteKind
@@ -10,6 +8,7 @@ import type {
     PrintAutoCleanupEvent
 } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/vrchatMediaRepository';
+import { toast } from '@/services/toastService';
 import { printCleanupWarningMessageKey } from '@/shared/utils/printFavoriteMessages';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
@@ -38,23 +37,25 @@ function showPrintCleanupToast(event: PrintAutoCleanupEvent): void {
     if (warningKey) {
         if (event.warning !== lastPrintCleanupWarning) {
             lastPrintCleanupWarning = event.warning ?? null;
-            toast.warning(
-                i18n.t(warningKey, {
+            toast.add({
+                type: 'warning',
+                title: i18n.t(warningKey, {
                     remaining: event.remaining
                 })
-            );
+            });
         }
         return;
     }
 
     lastPrintCleanupWarning = null;
     if (event.deleted > 0) {
-        toast.success(
-            i18n.t('view.tools.prints_favorites.cleanup_deleted', {
+        toast.add({
+            type: 'success',
+            title: i18n.t('view.tools.prints_favorites.cleanup_deleted', {
                 count: event.deleted,
                 remaining: event.remaining
             })
-        );
+        });
     }
 }
 

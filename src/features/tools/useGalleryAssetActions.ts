@@ -90,13 +90,15 @@ export function createGalleryAssetActions({
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_load_value', {
-                              value: tab
-                          })
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_load_value', {
+                                  value: tab
+                              })
+                });
             }
         } finally {
             if (isRuntimeAuthTarget(authTarget)) {
@@ -125,11 +127,13 @@ export function createGalleryAssetActions({
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_load_prints')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_load_prints')
+                });
             }
         } finally {
             if (isRuntimeAuthTarget(authTarget)) {
@@ -151,11 +155,13 @@ export function createGalleryAssetActions({
             }
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_load_inventory')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_load_inventory')
+                });
             }
         } finally {
             if (isRuntimeAuthTarget(authTarget)) {
@@ -182,7 +188,7 @@ export function createGalleryAssetActions({
     }
     function beginUpload(tab: GalleryUploadTarget) {
         if (tab !== 'gallery' && tab !== 'icons' && !isVrcPlusSupporter) {
-            toast.error(t('message.vrcplus.required'));
+            toast.add({ type: 'error', title: t('message.vrcplus.required') });
             return;
         }
         uploadTargetRef.current = tab;
@@ -226,7 +232,7 @@ export function createGalleryAssetActions({
         }
         const tab = uploadTargetRef.current || activeTab;
         if (tab !== 'gallery' && tab !== 'icons' && !isVrcPlusSupporter) {
-            toast.error(t('message.vrcplus.required'));
+            toast.add({ type: 'error', title: t('message.vrcplus.required') });
             return;
         }
         if (!validateImageFile(file, t)) {
@@ -277,7 +283,7 @@ export function createGalleryAssetActions({
         }
         const { tab, settings, authTarget } = request;
         if (tab !== 'gallery' && tab !== 'icons' && !isVrcPlusSupporter) {
-            toast.error(t('message.vrcplus.required'));
+            toast.add({ type: 'error', title: t('message.vrcplus.required') });
             return;
         }
         setUploadingTab(tab);
@@ -324,14 +330,16 @@ export function createGalleryAssetActions({
                     await refreshTab(tab);
                 }
             }
-            toast.success(t('message.upload.success'));
+            toast.add({ type: 'success', title: t('message.upload.success') });
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('message.upload.error')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('message.upload.error')
+                });
             }
         } finally {
             setUploadingTab('');
@@ -375,14 +383,19 @@ export function createGalleryAssetActions({
                     (file) => file.id !== normalizedFileId
                 )
             }));
-            toast.success(t('view.tools.success.media_item_deleted'));
+            toast.add({
+                type: 'success',
+                title: t('view.tools.success.media_item_deleted')
+            });
         } catch (error) {
             if (isRuntimeAuthTarget(authTarget)) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.tools.toast.failed_to_delete_media_item')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t('view.tools.toast.failed_to_delete_media_item')
+                });
             }
         } finally {
             setMutatingKey((current) =>

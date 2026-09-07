@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { EntityRecord } from '@/domain/entities/shared';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 
 import {
@@ -104,19 +104,22 @@ export function useGroupModerationActionController({
             } else {
                 removeTabRow(userId);
             }
-            toast.success(
-                t('dialog.group.dynamic.value_completed', {
+            toast.add({
+                type: 'success',
+                title: t('dialog.group.dynamic.value_completed', {
                     value: action.label
                 })
-            );
+            });
         } catch (actionError) {
-            toast.error(
-                actionError instanceof Error
-                    ? actionError.message
-                    : t('dialog.group.toast.value_failed', {
-                          value: action.label
-                      })
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    actionError instanceof Error
+                        ? actionError.message
+                        : t('dialog.group.toast.value_failed', {
+                              value: action.label
+                          })
+            });
         } finally {
             setActionKey('');
         }

@@ -9,10 +9,10 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { useTileSelectionState } from '@/lib/useTileSelectionState';
 import mediaRepository from '@/repositories/vrchatMediaRepository';
+import { toast } from '@/services/toastService';
 import {
     printCleanupWarningMessageKey,
     printFavoriteWarningMessageKey
@@ -188,26 +188,33 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
             );
             hydratePrintFavorites(state);
             if (nextFavorite && !state.favoriteIds.includes(printId)) {
-                toast.error(
-                    t('view.tools.prints_favorites.favorite_limit_toast', {
-                        max: state.maxFavorites
-                    })
-                );
+                toast.add({
+                    type: 'error',
+                    title: t(
+                        'view.tools.prints_favorites.favorite_limit_toast',
+                        {
+                            max: state.maxFavorites
+                        }
+                    )
+                });
                 return;
             }
-            toast.success(
-                t(
+            toast.add({
+                type: 'success',
+                title: t(
                     nextFavorite
                         ? 'view.tools.prints_favorites.favorited_toast'
                         : 'view.tools.prints_favorites.unfavorited_toast'
                 )
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.tools.toast.failed_to_update_print_favorite')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.tools.toast.failed_to_update_print_favorite')
+            });
         } finally {
             setFavoriteMutatingId((current) =>
                 current === printId ? '' : current

@@ -6,6 +6,10 @@ vi.mock('@/services/launchService', () => ({
     launchVrchat: vi.fn()
 }));
 
+vi.mock('@/services/directAccessService', () => ({
+    tryOpenLaunchLocation: vi.fn()
+}));
+
 vi.mock('@/ui/shadcn/context-menu', async () => {
     const React = await import('react');
 
@@ -104,3 +108,7 @@ describe('LocationContextMenu', () => {
         expect(html).not.toContain('New Instance and Open In-game');
     });
 });
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn(), close: vi.fn() }
+}));

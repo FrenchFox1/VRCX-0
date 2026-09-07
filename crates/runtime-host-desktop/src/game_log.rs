@@ -147,6 +147,11 @@ impl GameLogHostRuntime {
     }
 
     pub fn prime_log_watcher(&self, log_watcher: &LogWatcher) -> Result<()> {
+        if vrcx_0_persistence::config::get_bool(&self.db, "gameLogDisabled", false)? {
+            log_watcher.set_date_till("1970-01-01T00:00:00Z");
+            log_watcher.set_initial_scan_latest_file_only(true);
+            return Ok(());
+        }
         let last_persisted = vrcx_0_persistence::game_log::get_last_game_log_date(&self.db)?;
         let resume_after =
             vrcx_0_persistence::config::get_string(&self.db, "gameLogPersistenceResumeAfter", "")?;
@@ -154,11 +159,10 @@ impl GameLogHostRuntime {
             later_timestamp(&last_persisted, &resume_after).unwrap_or(last_persisted.as_str());
         self.inner.set_persistence_resume_after(&resume_after);
         log_watcher.set_date_till(date_till);
-        log_watcher.set_initial_scan_latest_file_only(vrcx_0_persistence::config::get_bool(
-            &self.db,
-            "gameLogDisabled",
-            false,
-        )?);
+        if let Some(cursor) = self.inner.replay_cursor() {
+            log_watcher.resume_from(cursor);
+        }
+        log_watcher.set_initial_scan_latest_file_only(false);
         Ok(())
     }
 
@@ -169,36 +173,43 @@ impl GameLogHostRuntime {
             ));
         }
 
-        if disabled {
-            vrcx_0_persistence::config::config_set_values(
-                &self.db,
-                vec![vrcx_0_persistence::config::ConfigWriteEntry {
-                    key: "gameLogDisabled".into(),
-                    value: "true".into(),
-                }],
-            )?;
-            log_watcher.set_initial_scan_latest_file_only(true);
-            return Ok(());
-        }
-
-        let resume_after = vrcx_0_core::time::now_iso();
-        self.inner.set_persistence_resume_after(&resume_after);
-        vrcx_0_persistence::config::config_set_values(
-            &self.db,
-            vec![
-                vrcx_0_persistence::config::ConfigWriteEntry {
-                    key: "gameLogPersistenceResumeAfter".into(),
-                    value: resume_after.clone(),
-                },
-                vrcx_0_persistence::config::ConfigWriteEntry {
-                    key: "gameLogDisabled".into(),
-                    value: "false".into(),
-                },
-            ],
-        )?;
-        log_watcher.set_date_till(&resume_after);
-        log_watcher.set_initial_scan_latest_file_only(false);
-        Ok(())
+        log_watcher
+            .with_paused_scan(|| {
+                let resume_after = if disabled {
+                    String::new()
+                } else {
+                    vrcx_0_core::time::now_iso()
+                };
+                let mut values = vec![
+                    vrcx_0_persistence::config::ConfigWriteEntry {
+                        key: "gameLogDisabled".into(),
+                        value: disabled.to_string(),
+                    },
+                    vrcx_0_persistence::config::ConfigWriteEntry {
+                        key: "gameLogReplayCheckpoint".into(),
+                        value: "".into(),
+                    },
+                ];
+                if !disabled {
+                    values.push(vrcx_0_persistence::config::ConfigWriteEntry {
+                        key: "gameLogPersistenceResumeAfter".into(),
+                        value: resume_after.clone(),
+                    });
+                }
+                vrcx_0_persistence::config::config_set_values(&self.db, values)?;
+                self.inner.reset_replay()?;
+                self.inner.set_persistence_resume_after(&resume_after);
+                log_watcher.clear_resume_cursor();
+                log_watcher.set_initial_scan_latest_file_only(disabled);
+                log_watcher.set_date_till(if disabled {
+                    "1970-01-01T00:00:00Z"
+                } else {
+                    &resume_after
+                });
+                log_watcher.reset();
+                Ok(())
+            })
+            .map_err(crate::Error::from)
     }
 
     pub fn stop(&self) {
@@ -207,6 +218,21 @@ impl GameLogHostRuntime {
 }
 
 impl GameLogEventSink for GameLogHostRuntime {
+    fn retry_pending_game_log(&self) -> RuntimeResult<()> {
+        self.inner.retry_pending_game_log()
+    }
+
+    fn ingest_game_log_scan(
+        &self,
+        events: &[GameLogEvent],
+        origin: GameLogEventOrigin,
+        cursor: vrcx_0_application_game::GameLogScanCursor,
+        publish: bool,
+    ) -> RuntimeResult<()> {
+        self.inner
+            .ingest_game_log_scan(events, origin, cursor, publish)
+    }
+
     fn ingest_game_log_event(&self, event: &GameLogEvent) -> RuntimeResult<()> {
         self.inner.ingest_game_log_event(event)
     }

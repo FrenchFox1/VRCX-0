@@ -1,7 +1,6 @@
 import { BellIcon, CheckCheckIcon, RefreshCcwIcon, XIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog';
 import type { GroupInstanceRecord } from '@/domain/entities/group';
@@ -17,6 +16,7 @@ import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { preserveAppTitleBarOnOpenChange } from '@/lib/overlayTitlebar';
 import { cn } from '@/lib/utils';
 import { openWorldDialog } from '@/services/dialogService';
+import { toast } from '@/services/toastService';
 import { checkCanInvite } from '@/shared/utils/invite';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
@@ -272,14 +272,15 @@ export function VrcNotificationCenterHost() {
                                                 onClick={() => {
                                                     refreshForCurrentUser().catch(
                                                         (error: unknown) => {
-                                                            toast.error(
-                                                                userFacingErrorMessage(
+                                                            toast.add({
+                                                                type: 'error',
+                                                                title: userFacingErrorMessage(
                                                                     error,
                                                                     t(
                                                                         'host.vrc_notification_center.toast.failed_to_refresh_notifications'
                                                                     )
                                                                 )
-                                                            );
+                                                            });
                                                         }
                                                     );
                                                 }}

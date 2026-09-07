@@ -1,11 +1,11 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { WorldUpdateRequest } from '@/platform/tauri/bindings';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { toast } from '@/services/toastService';
 
 import type {
     WorldDetailsDraft,
@@ -92,13 +92,16 @@ export function useWorldDialogOwnerActions({
                       )
                     : currentWorld
             );
-            toast.success(successMessage);
+            toast.add({ type: 'success', title: successMessage });
             return true;
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return false;
             }
-            toast.error(userFacingErrorMessage(error, errorMessage));
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(error, errorMessage)
+            });
             return false;
         } finally {
             actionStatusRef.current = 'idle';
@@ -121,11 +124,12 @@ export function useWorldDialogOwnerActions({
                     processedValue = pathId;
                 }
             } catch {
-                toast.error(
-                    t(
+                toast.add({
+                    type: 'error',
+                    title: t(
                         'dialog.world.label.youtube_preview_must_be_a_video_id_or_valid_url'
                     )
-                );
+                });
                 return null;
             }
         }
@@ -156,11 +160,15 @@ export function useWorldDialogOwnerActions({
 
         const parsedValue = Number.parseInt(rawValue, 10);
         if (!Number.isFinite(parsedValue) || parsedValue < 1) {
-            toast.error(
-                t('dialog.world.dynamic.value_must_be_a_positive_number', {
-                    value: label
-                })
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'dialog.world.dynamic.value_must_be_a_positive_number',
+                    {
+                        value: label
+                    }
+                )
+            });
             return false;
         }
         patch[field] = parsedValue;
@@ -275,11 +283,15 @@ export function useWorldDialogOwnerActions({
         }
         const value = Number.parseInt(String(result.value ?? ''), 10);
         if (!Number.isFinite(value) || value < 1) {
-            toast.error(
-                t('dialog.world.dynamic.value_must_be_a_positive_number', {
-                    value: label
-                })
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'dialog.world.dynamic.value_must_be_a_positive_number',
+                    {
+                        value: label
+                    }
+                )
+            });
             return;
         }
         await saveWorldPatch(
@@ -416,20 +428,25 @@ export function useWorldDialogOwnerActions({
                       )
                     : currentWorld
             );
-            toast.success(
-                nextPublished
+            toast.add({
+                type: 'success',
+                title: nextPublished
                     ? t('dialog.world.toast.world_published')
                     : t('dialog.world.toast.world_unpublished')
-            );
+            });
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_update_world_publication')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.world.toast.failed_to_update_world_publication'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -474,20 +491,23 @@ export function useWorldDialogOwnerActions({
                     : currentWorld
             );
             setHasPersistData(false);
-            toast.success(
-                t('dialog.world.success.world_persistent_data_deleted')
-            );
+            toast.add({
+                type: 'success',
+                title: t('dialog.world.success.world_persistent_data_deleted')
+            });
         } catch (error) {
             if (!isCurrentWorldTarget(targetWorldId, targetEndpoint)) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.world.toast.failed_to_delete_world_persistent_data'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.world.toast.failed_to_delete_world_persistent_data'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -520,14 +540,19 @@ export function useWorldDialogOwnerActions({
             await worldProfileRepository.deleteWorld({
                 worldId: world.id
             });
-            toast.success(t('dialog.world.success.world_deleted'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.world.success.world_deleted')
+            });
             closeDialog();
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.world.toast.failed_to_delete_world')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.world.toast.failed_to_delete_world')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');

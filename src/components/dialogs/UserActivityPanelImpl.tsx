@@ -1,9 +1,9 @@
 import { RefreshCwIcon, SproutIcon, TractorIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { getResolvedThemeMode } from '@/services/themeService';
+import { toast } from '@/services/toastService';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
@@ -117,9 +117,10 @@ export function UserActivityPanel({
     );
 
     function onActivityChartRightClick() {
-        toast(t('dialog.user.activity.chart_hint'), {
+        toast.add({
+            title: t('dialog.user.activity.chart_hint'),
             position: 'bottom-center',
-            icon: <TractorIcon className="size-4" />
+            data: { icon: <TractorIcon className="size-4" /> }
         });
         if (easterEggTimerRef.current !== null) {
             clearTimeout(easterEggTimerRef.current);
@@ -133,9 +134,10 @@ export function UserActivityPanel({
         if (!easterEggTimerRef.current) {
             return;
         }
-        toast(t('dialog.user.activity.chart_hint_reply'), {
+        toast.add({
+            title: t('dialog.user.activity.chart_hint_reply'),
             position: 'bottom-center',
-            icon: <SproutIcon className="size-4" />
+            data: { icon: <SproutIcon className="size-4" /> }
         });
     }
 

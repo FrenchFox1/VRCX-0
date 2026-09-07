@@ -1,7 +1,6 @@
-import { toast } from 'sonner';
-
 import type { RuntimeVrchatAuthFailurePayload } from '@/platform/tauri/bindings';
 import authRepository from '@/repositories/authRepository';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
@@ -90,9 +89,7 @@ async function runRuntimeAuthRecovery(
     }
 
     runtimeStore.setStartupTask('auth', 'running', title);
-    toast.warning(title, {
-        description
-    });
+    toast.add({ type: 'warning', title: title, description });
 
     let snapshot: Awaited<ReturnType<typeof authRepository.endSession>>;
     try {

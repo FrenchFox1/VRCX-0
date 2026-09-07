@@ -1,6 +1,5 @@
-import { toast } from 'sonner';
-
 import type { ScreenshotExportProgress } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { Progress } from '@/ui/shadcn/progress';
 import { Spinner } from '@/ui/shadcn/spinner';
 
@@ -47,25 +46,25 @@ export function startScreenshotExportProgressToast({
             latestProgress,
             finalizingStartedAt ? Date.now() - finalizingStartedAt : 0
         );
-        toast.loading(
-            view.kind === 'spinner'
-                ? finalizingLabel
-                : buildMessage(view.writtenFiles, latestProgress.totalFiles),
-            {
-                id: SCREENSHOT_EXPORT_TOAST_ID,
-                duration: Infinity,
-                description:
-                    view.kind === 'spinner' ? (
-                        <Spinner />
-                    ) : (
-                        <Progress value={view.percent} />
-                    ),
-                cancel: {
-                    label: cancelLabel,
-                    onClick: onCancel
-                }
-            }
-        );
+        toast.add({
+            type: 'loading',
+            title:
+                view.kind === 'spinner'
+                    ? finalizingLabel
+                    : buildMessage(
+                          view.writtenFiles,
+                          latestProgress.totalFiles
+                      ),
+            id: SCREENSHOT_EXPORT_TOAST_ID,
+            timeout: 0,
+            description:
+                view.kind === 'spinner' ? (
+                    <Spinner />
+                ) : (
+                    <Progress value={view.percent} />
+                ),
+            actionProps: { children: cancelLabel, onClick: onCancel }
+        });
     }
 
     return {
@@ -84,7 +83,7 @@ export function startScreenshotExportProgressToast({
         dismiss() {
             dismissed = true;
             clearSpinnerTimer();
-            toast.dismiss(SCREENSHOT_EXPORT_TOAST_ID);
+            toast.close(SCREENSHOT_EXPORT_TOAST_ID);
         }
     };
 }

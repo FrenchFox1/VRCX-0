@@ -273,7 +273,6 @@ function FeedTableMode({
                         }
                         resetKey={normalQueryKey}
                         rows={listRows}
-                        sorting={tableModel.sorting}
                         sourceRows={rows}
                         table={table}
                         onViewingLatestChange={setViewingLatest}

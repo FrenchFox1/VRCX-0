@@ -1,10 +1,10 @@
 import { CheckCircle2Icon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { openExternalLink } from '@/services/entityMediaService';
 import { submitTelemetryFeedback } from '@/services/telemetry/telemetryEvent';
+import { toast } from '@/services/toastService';
 import { links } from '@/shared/constants/link';
 import {
     feedbackCooldownRemainingMs,
@@ -64,7 +64,10 @@ export function SettingsFeedbackTab() {
             markSubmitted(Date.now());
             setNow(Date.now());
         } catch {
-            toast.error(t('view.settings.feedback.error_generic'));
+            toast.add({
+                type: 'error',
+                title: t('view.settings.feedback.error_generic')
+            });
         } finally {
             setSubmitting(false);
         }

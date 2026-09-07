@@ -106,11 +106,17 @@ pub(crate) fn parse_log(
     ctx: &mut LogContext,
     till_date: NaiveDateTime,
 ) -> bool {
-    log_reader
-        .with_file(path, |reader| {
-            parse_opened_log(out, reader, file_name, ctx, till_date)
-        })
-        .unwrap_or(false)
+    ctx.read_failed = false;
+    match log_reader.with_file(path, |reader| {
+        parse_opened_log(out, reader, file_name, ctx, till_date)
+    }) {
+        Ok(changed) => changed,
+        Err(error) => {
+            ctx.read_failed = true;
+            tracing::warn!("failed to read GameLog file {file_name}: {error}");
+            false
+        }
+    }
 }
 
 fn parse_opened_log(
@@ -121,19 +127,37 @@ fn parse_opened_log(
     till_date: NaiveDateTime,
 ) -> bool {
     if reader.seek(SeekFrom::Start(ctx.position)).is_err() {
+        ctx.read_failed = true;
         return false;
     }
 
     let mut line = String::new();
     let initial_position = ctx.position;
+    ctx.at_end = true;
+    let mut line_count = 0;
     loop {
+        let line_start = reader.stream_position().unwrap_or(ctx.position);
         line.clear();
         match reader.read_line(&mut line) {
             Ok(0) => break,
-            Err(_) => break,
+            Err(error) => {
+                ctx.read_failed = true;
+                tracing::warn!("failed to read GameLog line in {file_name}: {error}");
+                break;
+            }
             _ => {}
         }
 
+        if !line.ends_with('\n') {
+            let _ = reader.seek(SeekFrom::Start(line_start));
+            break;
+        }
+        line_count += 1;
+        if line_count > 256 {
+            let _ = reader.seek(SeekFrom::Start(line_start));
+            ctx.at_end = false;
+            break;
+        }
         let trimmed = line.trim_end();
         if trimmed.is_empty() {
             continue;

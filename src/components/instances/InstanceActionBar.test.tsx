@@ -12,6 +12,8 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     runtimeState: {
         auth: {
@@ -33,10 +35,18 @@ const mocks = vi.hoisted(() => ({
     toastError: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        success: mocks.toastSuccess,
-        error: mocks.toastError
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 

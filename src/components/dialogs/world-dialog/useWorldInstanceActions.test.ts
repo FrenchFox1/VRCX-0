@@ -20,12 +20,8 @@ vi.mock('react-i18next', async (importOriginal) => {
     };
 });
 
-vi.mock('sonner', () => ({
-    toast: {
-        success: vi.fn(),
-        error: vi.fn(),
-        warning: vi.fn()
-    }
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn() }
 }));
 
 vi.mock('@/repositories/configRepository', () => ({

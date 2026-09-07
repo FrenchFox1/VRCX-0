@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import mediaRepository from '@/repositories/mediaRepository';
 import currentUserProfileService from '@/services/currentUserProfileService';
+import { toast } from '@/services/toastService';
 import {
     readFileAsBase64,
     withUploadTimeout

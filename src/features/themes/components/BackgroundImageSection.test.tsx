@@ -8,6 +8,7 @@ import type {
     BackgroundImageCustomSource,
     BackgroundImageSnapshot
 } from '@/platform/tauri/bindings';
+import type { AppToastOptions } from '@/services/toastService';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 
 const mocks = vi.hoisted(() => ({
@@ -19,10 +20,16 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        success: vi.fn()
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -185,7 +192,10 @@ describe('BackgroundImageSection current folder image', () => {
 
         await waitFor(() => {
             expect(mocks.toastError).toHaveBeenCalledWith(
-                'view.background_image.toast.failed_to_open_folder'
+                expect.objectContaining({
+                    type: 'error',
+                    title: 'view.background_image.toast.failed_to_open_folder'
+                })
             );
         });
     });

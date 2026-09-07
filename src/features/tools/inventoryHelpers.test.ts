@@ -23,13 +23,11 @@ import {
     validateImageFile
 } from './inventoryHelpers';
 
-vi.mock('sonner', () => ({
-    toast: {
-        error: vi.fn()
-    }
+vi.mock('@/services/toastService', () => ({
+    toast: { add: vi.fn() }
 }));
 
-const { toast } = await import('sonner');
+const { toast } = await import('@/services/toastService');
 
 describe('inventory helpers', () => {
     it('builds mutually exclusive static and animated emoji params', () => {
@@ -64,7 +62,7 @@ describe('inventory helpers', () => {
         });
     });
     beforeEach(() => {
-        vi.mocked(toast.error).mockClear();
+        vi.mocked(toast.add).mockClear();
     });
 
     it('parses emoji upload settings from filename tokens and clamps numeric bounds', () => {
@@ -110,7 +108,7 @@ describe('inventory helpers', () => {
         const file = new Blob(['image'], { type: 'image/png' });
 
         expect(validateImageFile(file, (key: string) => key)).toBe(true);
-        expect(toast.error).not.toHaveBeenCalled();
+        expect(toast.add).not.toHaveBeenCalled();
     });
 
     it('rejects files at the 20 MB limit and non-image file types with localized toast keys', () => {
@@ -121,13 +119,19 @@ describe('inventory helpers', () => {
 
         expect(validateImageFile(tooLarge, (key: string) => key)).toBe(false);
         expect(validateImageFile(textFile, (key: string) => key)).toBe(false);
-        expect(toast.error).toHaveBeenNthCalledWith(
+        expect(toast.add).toHaveBeenNthCalledWith(
             1,
-            'message.file.too_large'
+            expect.objectContaining({
+                type: 'error',
+                title: 'message.file.too_large'
+            })
         );
-        expect(toast.error).toHaveBeenNthCalledWith(
+        expect(toast.add).toHaveBeenNthCalledWith(
             2,
-            'message.file.not_image'
+            expect.objectContaining({
+                type: 'error',
+                title: 'message.file.not_image'
+            })
         );
     });
 

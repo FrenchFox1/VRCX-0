@@ -3,6 +3,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 import type { FavoriteItem } from './favoritesTypes';
 
 const mocks = vi.hoisted(() => ({
@@ -19,10 +21,18 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        success: mocks.toastSuccess
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -153,7 +163,10 @@ describe('useFavoritesItemActions', () => {
         expect(rendered.setAvatarHistory).toHaveBeenCalledWith([]);
         expect(rendered.setSelectedGroupKey).toHaveBeenCalledWith('');
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'view.favorite.success.avatar_history_cleared'
+            expect.objectContaining({
+                type: 'success',
+                title: 'view.favorite.success.avatar_history_cleared'
+            })
         );
     });
 

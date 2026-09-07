@@ -1,9 +1,8 @@
-import { toast } from 'sonner';
-
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { openExternalLink } from '@/services/entityMediaService';
 import i18n from '@/services/i18nService';
 import { restartApplication } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import {
     confirmInstall,
     formatReleaseDisplayVersion,
@@ -21,7 +20,7 @@ import { UPDATE_READY_TOAST_DURATION_MS } from './backgroundMaintenanceTiming';
 export const UPDATE_AVAILABLE_TOAST_ID = 'vrcx-update-available';
 
 type DirectUpdateInstallOptions = {
-    toastId?: string | number;
+    toastId?: string;
 };
 
 type RuntimeUpdateLoopState = ReturnType<
@@ -165,18 +164,19 @@ export function installUpdateRelease(
     }
 
     if (!canInstallUpdateRelease(release)) {
-        toast.error(
-            i18n.t('message.vrcx_updater.no_downloadable_releases_found'),
-            {
-                id: toastId,
-                position: 'bottom-right',
-                closeButton: true
-            }
-        );
+        toast.add({
+            type: 'error',
+            title: i18n.t(
+                'message.vrcx_updater.no_downloadable_releases_found'
+            ),
+            id: toastId,
+            position: 'bottom-right',
+            data: { closeButton: true }
+        });
         return Promise.resolve(false);
     }
 
-    toast.dismiss(toastId);
+    toast.close(toastId);
 
     directInstallInFlight = (async () => {
         try {
@@ -184,18 +184,17 @@ export function installUpdateRelease(
             return true;
         } catch (error) {
             resetAutoDownloadInstallState();
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     i18n.t('message.vrcx_updater.failed_install')
                 ),
-                {
-                    id: toastId,
-                    duration: Infinity,
-                    position: 'bottom-right',
-                    closeButton: true
-                }
-            );
+                id: toastId,
+                timeout: 0,
+                position: 'bottom-right',
+                data: { closeButton: true }
+            });
             return false;
         } finally {
             directInstallInFlight = null;
@@ -226,11 +225,12 @@ export function handleAppUpdateDownloadProgressEvent(
         return;
     }
 
-    toast.loading(i18n.t('message.vrcx_updater.installing_update'), {
+    toast.add({
+        type: 'loading',
+        title: i18n.t('message.vrcx_updater.installing_update'),
         id: UPDATE_AVAILABLE_TOAST_ID,
-        duration: Infinity,
-        position: 'bottom-right',
-        dismissible: false
+        timeout: 0,
+        position: 'bottom-right'
     });
 }
 
@@ -295,16 +295,15 @@ export function handleAppUpdateInstalledEvent(
     resetUpdateLoopState();
     const displayVersion =
         formatReleaseDisplayVersion(payload.version) || payload.version;
-    toast.success(
-        i18n.t('dialog.vrcx_updater.ready_for_update', {
+    toast.add({
+        type: 'success',
+        title: i18n.t('dialog.vrcx_updater.ready_for_update', {
             value: displayVersion
         }),
-        {
-            id: UPDATE_AVAILABLE_TOAST_ID,
-            description: undefined,
-            duration: UPDATE_READY_TOAST_DURATION_MS,
-            position: 'bottom-right'
-        }
-    );
+        id: UPDATE_AVAILABLE_TOAST_ID,
+        description: undefined,
+        timeout: UPDATE_READY_TOAST_DURATION_MS,
+        position: 'bottom-right'
+    });
     void restartApplication();
 }

@@ -4,6 +4,8 @@ import { act, renderHook } from '@testing-library/react';
 import type { Dispatch, SetStateAction } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 import type { FriendListRow } from './friendListRows';
 
 const mocks = vi.hoisted(() => ({
@@ -40,12 +42,20 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        error: mocks.toastError,
-        info: vi.fn(),
-        success: mocks.toastSuccess,
-        warning: mocks.toastWarning
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'warning':
+                    return mocks.toastWarning(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -199,7 +209,10 @@ describe('useFriendListRowActions', () => {
         expect(rendered.deletingFriendIds()).not.toContain('usr_friend');
         expect(rendered.setDeletingFriendIds).toHaveBeenCalledTimes(2);
         expect(mocks.toastWarning).toHaveBeenCalledWith(
-            'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
+            expect.objectContaining({
+                type: 'warning',
+                title: 'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
+            })
         );
         expect(mocks.toastSuccess).not.toHaveBeenCalled();
     });

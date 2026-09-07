@@ -10,17 +10,9 @@ use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
 
-use super::types::ActivityPageView;
+use vrcx_0_contracts::activity_page::{ActivityPageView, CachedActivityPage as CachedPage};
 
-pub(super) const PAYLOAD_VERSION: i64 = 2;
-
-pub(super) struct CachedPage {
-    pub(super) view: ActivityPageView,
-    pub(super) built_from_cursor: String,
-    pub(super) payload_version: i64,
-}
-
-pub(super) fn read_cached_page(
+pub fn read_cached_page(
     db: &DatabaseService,
     owner_user_id: &OwnerId,
     range_days: i64,
@@ -54,10 +46,11 @@ pub(super) fn read_cached_page(
     }))
 }
 
-pub(super) fn write_cached_page(
+pub fn write_cached_page(
     db: &DatabaseService,
     owner_user_id: &OwnerId,
     range_days: i64,
+    payload_version: i64,
     view: &ActivityPageView,
 ) -> Result<(), Error> {
     let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;
@@ -73,7 +66,7 @@ pub(super) fn write_cached_page(
         &ParamsBuilder::new()
             .set("user_id", owner_user_id.as_str())
             .set("range_days", range_days)
-            .set("payload_version", PAYLOAD_VERSION)
+            .set("payload_version", payload_version)
             .set("built_from_cursor", view.built_from_cursor.as_str())
             .set("payload_json", payload_json)
             .set("built_at", view.built_at.as_str())
@@ -82,10 +75,7 @@ pub(super) fn write_cached_page(
     Ok(())
 }
 
-pub(super) fn source_cursor(
-    db: &DatabaseService,
-    owner_user_id: &OwnerId,
-) -> Result<String, Error> {
+pub fn source_cursor(db: &DatabaseService, owner_user_id: &OwnerId) -> Result<String, Error> {
     ensure_game_log_tables(db)?;
     let owner_id = owner_id_for_filter(db, owner_user_id)?;
     let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;

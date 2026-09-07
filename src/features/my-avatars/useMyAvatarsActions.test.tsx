@@ -4,6 +4,8 @@ import { act, renderHook } from '@testing-library/react';
 import { createRef, type SetStateAction } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     selectAvatar: vi.fn(),
     toastSuccess: vi.fn(),
@@ -16,10 +18,18 @@ vi.mock('react-i18next', () => ({
     })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        success: mocks.toastSuccess,
-        error: mocks.toastError
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
     }
 }));
 
@@ -112,7 +122,12 @@ describe('useMyAvatarsActions avatar selection', () => {
         );
         expect(result.current.updatingAvatarId).toBe('');
         expect(setDetail).toHaveBeenCalledWith('selection failed');
-        expect(mocks.toastError).toHaveBeenCalledWith('selection failed');
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'selection failed'
+            })
+        );
     });
 
     it('does not report success for a superseded selection response', async () => {

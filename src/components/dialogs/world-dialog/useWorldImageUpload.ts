@@ -8,11 +8,11 @@ import {
     type SetStateAction
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
 import mediaRepository from '@/repositories/mediaRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { toast } from '@/services/toastService';
 import {
     readFileAsBase64,
     validateImageUploadFile,
@@ -81,7 +81,7 @@ export function useWorldImageUpload({
                     ? t('dialog.world.error.selected_image_is_too_large')
                     : t('dialog.world.error.selected_file_is_not_an_image');
             setDetail(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
             return;
         }
         const selectedWorld = imageUploadWorldRef.current || world;
@@ -137,14 +137,17 @@ export function useWorldImageUpload({
                     value: selectedWorld.name || selectedWorldId
                 })
             );
-            toast.success(t('dialog.world.success.world_image_updated'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.world.success.world_image_updated')
+            });
         } catch (error) {
             const message =
                 error instanceof Error
                     ? error.message
                     : t('dialog.world.toast.failed_to_upload_world_image');
             setDetail(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             imageUploadWorldRef.current = null;
             setImageCropRequest(null);

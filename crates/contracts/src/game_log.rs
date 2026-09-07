@@ -120,6 +120,7 @@ pub struct GameLogPreviousInstanceWorldOutput {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct GameLogWriteBatch {
+    pub replay_checkpoint: Option<String>,
     pub locations: Vec<GameLogLocationEntry>,
     pub location_time_updates: Vec<GameLogLocationTimeUpdate>,
     pub join_leave: Vec<GameLogJoinLeaveEntry>,
@@ -132,7 +133,8 @@ pub struct GameLogWriteBatch {
 
 impl GameLogWriteBatch {
     pub fn is_empty(&self) -> bool {
-        self.locations.is_empty()
+        self.replay_checkpoint.is_none()
+            && self.locations.is_empty()
             && self.location_time_updates.is_empty()
             && self.join_leave.is_empty()
             && self.portal_spawns.is_empty()

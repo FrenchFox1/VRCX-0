@@ -1,16 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     toastInfo: vi.fn(),
     toastSuccess: vi.fn(),
     toastDismiss: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        info: mocks.toastInfo,
-        success: mocks.toastSuccess,
-        dismiss: mocks.toastDismiss
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'info':
+                    return mocks.toastInfo(options);
+                case 'success':
+                    return mocks.toastSuccess(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        },
+        close: mocks.toastDismiss
     }
 }));
 
@@ -65,20 +75,21 @@ describe('showUpdateAvailableToast', () => {
         });
 
         expect(mocks.toastInfo).toHaveBeenCalledWith(
-            'service.background_maintenance.label.vrcx_update_available',
             expect.objectContaining({
+                type: 'info',
+                title: 'service.background_maintenance.label.vrcx_update_available',
                 id: 'vrcx-update-available',
                 description: '2.7.0',
-                duration: Infinity,
+                timeout: 0,
                 position: 'bottom-right',
-                action: expect.objectContaining({
-                    label: 'nav_menu.update'
+                actionProps: expect.objectContaining({
+                    children: 'nav_menu.update'
                 })
             })
         );
 
-        const options = mocks.toastInfo.mock.calls[0][1];
-        options.action.onClick();
+        const options = mocks.toastInfo.mock.calls[0][0];
+        options.actionProps.onClick();
         expect(onUpdate).toHaveBeenCalled();
     });
 
@@ -93,21 +104,22 @@ describe('showUpdateAvailableToast', () => {
         });
 
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'dialog.vrcx_updater.ready_for_update:{"value":"2.7.0"}',
             expect.objectContaining({
+                type: 'success',
+                title: 'dialog.vrcx_updater.ready_for_update:{"value":"2.7.0"}',
                 id: 'vrcx-update-available',
-                duration: Infinity,
+                timeout: 0,
                 position: 'bottom-right',
-                action: expect.objectContaining({
-                    label: 'nav_menu.update_downloaded'
+                actionProps: expect.objectContaining({
+                    children: 'nav_menu.update_downloaded'
                 })
             })
         );
         expect(mocks.toastInfo).not.toHaveBeenCalled();
 
-        const options = mocks.toastSuccess.mock.calls[0][1];
+        const options = mocks.toastSuccess.mock.calls[0][0];
         expect(options.description).toBeUndefined();
-        options.action.onClick();
+        options.actionProps.onClick();
         expect(onUpdate).toHaveBeenCalled();
     });
 });

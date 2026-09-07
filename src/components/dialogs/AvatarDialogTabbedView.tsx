@@ -2,6 +2,7 @@ import { CopyIcon, ExternalLinkIcon, PersonStandingIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { AvatarPlatformDots } from '@/components/avatars/AvatarPlatformDots';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import { openUserDialog } from '@/services/dialogService';
@@ -221,30 +222,38 @@ function AvatarDialogOverviewSection({
     return (
         <EntityOverviewCard
             media={
-                <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={!imageClickable}
-                    onClick={onImageClick}
-                    className={cn(
-                        'bg-muted aspect-[4/3] h-auto w-full overflow-hidden rounded-lg border p-0 disabled:pointer-events-none',
-                        imageClickable ? 'cursor-pointer' : 'cursor-default'
-                    )}
-                >
-                    {imageUrl ? (
-                        <FadeInImage
-                            src={imageUrl}
-                            alt={
-                                avatar.name || avatar.id || avatarFallbackLabel
-                            }
-                            className="size-full object-cover"
-                        />
-                    ) : (
-                        <span className="flex size-full items-center justify-center">
-                            <PersonStandingIcon className="text-muted-foreground size-10" />
-                        </span>
-                    )}
-                </Button>
+                <div className="relative">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={!imageClickable}
+                        onClick={onImageClick}
+                        className={cn(
+                            'bg-muted aspect-[4/3] h-auto w-full overflow-hidden rounded-lg border p-0 disabled:pointer-events-none',
+                            imageClickable ? 'cursor-pointer' : 'cursor-default'
+                        )}
+                    >
+                        {imageUrl ? (
+                            <FadeInImage
+                                src={imageUrl}
+                                alt={
+                                    avatar.name ||
+                                    avatar.id ||
+                                    avatarFallbackLabel
+                                }
+                                className="size-full object-cover"
+                            />
+                        ) : (
+                            <span className="flex size-full items-center justify-center">
+                                <PersonStandingIcon className="text-muted-foreground size-10" />
+                            </span>
+                        )}
+                    </Button>
+                    <AvatarPlatformDots
+                        unityPackages={avatar.unityPackages}
+                        className="pointer-events-none absolute top-2 right-2"
+                    />
+                </div>
             }
         >
             <div className="flex min-w-0 flex-col gap-2">
@@ -545,13 +554,6 @@ export function AvatarDialogTabbedView({
                                 avatar={avatar}
                                 isCurrentAvatar={isCurrentAvatar}
                                 avatarBlocked={avatarBlocked}
-                                platformInfo={platformInfo}
-                                fileAnalysis={fileAnalysis}
-                                contentTags={contentTags}
-                                authorTags={authorTags}
-                                hasImposter={hasImposter}
-                                imposterVersion={imposterVersion}
-                                onOpenCache={onOpenCache}
                             />
                         }
                         actions={
@@ -576,6 +578,7 @@ export function AvatarDialogTabbedView({
                                     onDeleteCache,
                                     onDeleteImposter,
                                     onEditDetails,
+                                    onOpenCache,
                                     onOpenLink: openExternalLink,
                                     onRefresh,
                                     onRegenerateImposter,
@@ -604,6 +607,9 @@ export function AvatarDialogTabbedView({
                             otherTags
                         }}
                         platformInfo={platformInfo}
+                        fileAnalysis={fileAnalysis}
+                        hasImposter={hasImposter}
+                        imposterVersion={imposterVersion}
                         onOpenAuthor={openAvatarAuthor}
                         onSaveMemo={onSaveMemo}
                     />
@@ -612,6 +618,7 @@ export function AvatarDialogTabbedView({
                         fileAnalysis={fileAnalysis}
                         loading={fileAnalysisStatus === 'running'}
                         pending={fileAnalysisStatus === 'pending'}
+                        onRefresh={onRefresh}
                     />
                     <AvatarDialogGalleryTab
                         canManageAvatar={canManageAvatar}

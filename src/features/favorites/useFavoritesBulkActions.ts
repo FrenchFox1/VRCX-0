@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { FavoriteRecord } from '@/domain/favorites/types';
 import type { FavoriteKind } from '@/domain/favorites/types';
@@ -12,6 +11,7 @@ import type {
 } from '@/platform/tauri/bindings';
 import { commands } from '@/platform/tauri/bindings';
 import favoriteTransferRepository from '@/repositories/favoriteTransferRepository';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -139,17 +139,19 @@ export function useFavoritesBulkActions({
                 );
             }
             if (batchResult.failed === 0) {
-                toast.success(
-                    t('view.favorite.success.selected_favorites_removed')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('view.favorite.success.selected_favorites_removed')
+                });
                 return;
             }
-            toast.error(
-                t('view.favorites.dynamic.removed_value_value_failed', {
+            toast.add({
+                type: 'error',
+                title: t('view.favorites.dynamic.removed_value_value_failed', {
                     value: batchResult.succeeded,
                     value2: batchResult.failed
                 })
-            );
+            });
         } catch (error) {
             const currentAuth = useRuntimeStore.getState().auth;
             if (
@@ -158,14 +160,19 @@ export function useFavoritesBulkActions({
             ) {
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.favorites.dynamic.removed_value_value_failed', {
-                          value: 0,
-                          value2: selectedContentItems.length
-                      })
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.dynamic.removed_value_value_failed',
+                              {
+                                  value: 0,
+                                  value2: selectedContentItems.length
+                              }
+                          )
+            });
         }
     }
 
@@ -276,17 +283,18 @@ export function useFavoritesBulkActions({
                   });
 
         if (failed === 0 && notices.length === 0) {
-            toast.success(successMessage);
+            toast.add({ type: 'success', title: successMessage });
             return;
         }
 
         if (failed === 0) {
-            toast.warning(
-                successMessage,
-                noticeDescription
+            toast.add({
+                type: 'warning',
+                title: successMessage,
+                ...(noticeDescription
                     ? { description: noticeDescription }
-                    : undefined
-            );
+                    : undefined)
+            });
             return;
         }
 
@@ -301,15 +309,16 @@ export function useFavoritesBulkActions({
         const combinedDescription = [noticeDescription, failureDescription]
             .filter(Boolean)
             .join('\n');
-        toast.error(
-            t('view.favorites.dynamic.transferred_value_value_failed', {
+        toast.add({
+            type: 'error',
+            title: t('view.favorites.dynamic.transferred_value_value_failed', {
                 value: succeeded,
                 value2: failed
             }),
-            combinedDescription
+            ...(combinedDescription
                 ? { description: combinedDescription }
-                : undefined
-        );
+                : undefined)
+        });
     }
 
     function bulkMoveSelection(targetGroup: FavoriteGroupView) {

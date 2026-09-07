@@ -632,6 +632,7 @@ const initialState: RuntimeStoreState = {
         addGameLogEvent: createRuntimeEventState(),
         backendRuntimeTelemetry: createRuntimeEventState(),
         gameLogPersistenceFallback: createRuntimeEventState(),
+        gameLogProjection: createRuntimeEventState(),
         gameLogSideEffect: createRuntimeEventState(),
         runtimeGroupInstancesProjection: createRuntimeEventState(),
         friendProfileLoadStatus: createRuntimeEventState(),

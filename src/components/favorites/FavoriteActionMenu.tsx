@@ -1,7 +1,6 @@
 import { HeartIcon, PlusIcon } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
 import type {
@@ -17,6 +16,7 @@ import favoritePersistenceRepository from '@/repositories/favoritePersistenceRep
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { persistAvatarDetails } from '@/services/favoriteAvatarCacheService';
 import { persistWorldDetails } from '@/services/favoriteWorldCacheService';
+import { toast } from '@/services/toastService';
 import { isRecord } from '@/shared/utils/record';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
@@ -254,15 +254,20 @@ export function FavoriteActionMenu({
             } else if (kind === 'avatar' && isRecord(entity)) {
                 persistAvatarDetails(entity, normalizedEntityId);
             }
-            toast.success(t('view.favorite.label.favorite_added'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.label.favorite_added')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.favorite_action_menu.toast.failed_to_add_favorite'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.favorite_action_menu.toast.failed_to_add_favorite'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -299,15 +304,20 @@ export function FavoriteActionMenu({
             await vrchatFavoriteRepository.deleteFavorite({
                 objectId: normalizedEntityId
             });
-            toast.success(t('view.favorite.success.favorite_removed'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.success.favorite_removed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.favorite_action_menu.toast.failed_to_remove_favorite'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.favorite_action_menu.toast.failed_to_remove_favorite'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -332,15 +342,20 @@ export function FavoriteActionMenu({
                 entityId: normalizedEntityId,
                 groupName
             });
-            toast.success(t('view.favorite.label.local_favorite_added'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.label.local_favorite_added')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.favorite_action_menu.toast.failed_to_add_local_favorite'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.favorite_action_menu.toast.failed_to_add_local_favorite'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -360,15 +375,20 @@ export function FavoriteActionMenu({
                 entityId: normalizedEntityId,
                 groupName
             });
-            toast.success(t('view.favorite.success.local_favorite_removed'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.success.local_favorite_removed')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.favorite_action_menu.toast.failed_to_remove_local_favorite'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.favorite_action_menu.toast.failed_to_remove_local_favorite'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -397,11 +417,15 @@ export function FavoriteActionMenu({
             return;
         }
         if (localGroups.includes(groupName)) {
-            toast.error(
-                t('view.favorites.dynamic.local_group_value_already_exists', {
-                    value: groupName
-                })
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'view.favorites.dynamic.local_group_value_already_exists',
+                    {
+                        value: groupName
+                    }
+                )
+            });
             return;
         }
 
@@ -422,15 +446,20 @@ export function FavoriteActionMenu({
                 entityId: normalizedEntityId,
                 groupName
             });
-            toast.success(t('view.favorite.label.local_favorite_added'));
+            toast.add({
+                type: 'success',
+                title: t('view.favorite.label.local_favorite_added')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'view.favorites.toast.failed_to_create_local_favorite_group'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.favorites.toast.failed_to_create_local_favorite_group'
+                          )
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');

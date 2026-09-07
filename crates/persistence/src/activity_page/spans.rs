@@ -6,21 +6,9 @@ use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::social_aggregates::{access_bucket_sql, world_id_from_location_sql};
 use crate::Error;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct LocationSpan {
-    pub(super) start_ms: i64,
-    pub(super) end_ms: i64,
-    pub(super) world_id: String,
-    pub(super) world_name: String,
-    pub(super) access_bucket: String,
-    pub(super) inferred: bool,
-}
-
-impl LocationSpan {
-    pub(super) fn duration_ms(&self) -> i64 {
-        self.end_ms - self.start_ms
-    }
-}
+use vrcx_0_contracts::activity_page::{
+    ActivityLocationSpan as LocationSpan, ActivityWindowSpans as WindowSpans,
+};
 
 struct SourceRow {
     left_at: String,
@@ -30,12 +18,7 @@ struct SourceRow {
     access_bucket: String,
 }
 
-pub(super) struct WindowSpans {
-    pub(super) spans: Vec<LocationSpan>,
-    pub(super) has_open_tail: bool,
-}
-
-pub(super) fn read_instance_spans(
+pub fn read_instance_spans(
     db: &DatabaseService,
     owner_user_id: &OwnerId,
     from_ms: Option<i64>,
@@ -179,7 +162,7 @@ mod tests {
         let spans = spans_from_rows(&[source_row(3 * HOUR, HOUR)]);
 
         assert_eq!(spans.len(), 1);
-        assert_eq!(spans[0].duration_ms(), HOUR);
+        assert_eq!((spans[0].end_ms - spans[0].start_ms), HOUR);
         assert_eq!(spans[0].start_ms, BASE + 2 * HOUR);
         assert_eq!(spans[0].end_ms, BASE + 3 * HOUR);
         assert!(!spans[0].inferred);

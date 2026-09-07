@@ -1,10 +1,10 @@
 import type { ChangeEvent } from 'react';
-import { toast } from 'sonner';
 
 import { assetBundleRepository } from '@/repositories/assetBundleRepository';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import mediaRepository from '@/repositories/mediaRepository';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
+import { toast } from '@/services/toastService';
 import {
     readFileAsBase64,
     validateImageUploadFile,
@@ -64,7 +64,7 @@ export function createAvatarImageUploadActions({
                     ? t('message.image.error.selected_image_is_too_large')
                     : t('message.image.success.selected_file_is_not_image');
             setDetail(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
             return;
         }
 
@@ -129,14 +129,17 @@ export function createAvatarImageUploadActions({
                     value: selectedAvatar.name || avatarId
                 })
             );
-            toast.success(t('dialog.avatar.success.avatar_image_updated'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.avatar.success.avatar_image_updated')
+            });
         } catch (error) {
             const message =
                 error instanceof Error
                     ? error.message
                     : t('dialog.avatar.toast.failed_to_upload_avatar_image');
             setDetail(message);
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             imageUploadAvatarRef.current = null;
             setImageCropRequest(null);
@@ -169,13 +172,15 @@ export function createAvatarCacheActions({
         try {
             await openFolderAndSelectItem(cachePath, true);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.avatar.toast.failed_to_open_avatar_cache_folder'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.avatar.toast.failed_to_open_avatar_cache_folder'
+                          )
+            });
         }
     }
 
@@ -188,9 +193,12 @@ export function createAvatarCacheActions({
         );
         const args = resolveAssetBundleArgs(avatar, sdkUnityVersion);
         if (!args) {
-            toast.error(
-                t('dialog.avatar.error.avatar_cache_location_unavailable')
-            );
+            toast.add({
+                type: 'error',
+                title: t(
+                    'dialog.avatar.error.avatar_cache_location_unavailable'
+                )
+            });
             return;
         }
         actionStatusRef.current = 'cache';
@@ -207,13 +215,18 @@ export function createAvatarCacheActions({
             setAvatar((current) =>
                 current ? { ...current, $isCached: cache.inCache } : current
             );
-            toast.success(t('dialog.avatar.success.avatar_cache_deleted'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.avatar.success.avatar_cache_deleted')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.avatar.toast.failed_to_delete_avatar_cache')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.avatar.toast.failed_to_delete_avatar_cache')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -256,11 +269,13 @@ export function createAvatarGalleryUploadActions({
         }
         const validation = validateImageUploadFile(file);
         if (!validation.ok) {
-            toast.error(
-                validation.reason === 'too_large'
-                    ? t('dialog.avatar.toast.selected_file_is_too_large')
-                    : t('dialog.avatar.toast.selected_file_is_not_an_image')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    validation.reason === 'too_large'
+                        ? t('dialog.avatar.toast.selected_file_is_too_large')
+                        : t('dialog.avatar.toast.selected_file_is_not_an_image')
+            });
             return;
         }
         actionStatusRef.current = 'gallery-upload';
@@ -285,18 +300,23 @@ export function createAvatarGalleryUploadActions({
                         .map(avatarGalleryImageUrl)
                         .filter((url): url is string => Boolean(url))
                 }));
-                toast.success(
-                    t('dialog.avatar.label.avatar_gallery_image_uploaded')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t(
+                        'dialog.avatar.label.avatar_gallery_image_uploaded'
+                    )
+                });
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.avatar.toast.failed_to_upload_avatar_gallery_image'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.avatar.toast.failed_to_upload_avatar_gallery_image'
+                          )
+            });
         } finally {
             if (actionStatusRef.current === 'gallery-upload') {
                 actionStatusRef.current = 'idle';

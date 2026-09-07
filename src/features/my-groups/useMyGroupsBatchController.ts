@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import {
@@ -8,6 +7,7 @@ import {
     type GroupMemberVisibility,
     type GroupMembershipBatchAction
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -158,24 +158,29 @@ export function useMyGroupsBatchController({
                     continue;
                 }
                 const name = namesByGroupId.get(item.groupId) || item.groupId;
-                toast.error(
-                    `${name}: ${userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: `${name}: ${userFacingErrorMessage(
                         item.message,
                         t('view.my_groups.batch_item_failed')
                     )}`
-                );
+                });
             }
             if (batchResult.succeeded) {
-                toast.success(successMessage(batchResult.succeeded));
+                toast.add({
+                    type: 'success',
+                    title: successMessage(batchResult.succeeded)
+                });
             }
         } catch (batchError) {
             if (isCurrentBatchRun()) {
-                toast.error(
-                    userFacingErrorMessage(
+                toast.add({
+                    type: 'error',
+                    title: userFacingErrorMessage(
                         batchError,
                         t('view.my_groups.batch_failed')
                     )
-                );
+                });
             }
         } finally {
             if (runSequenceRef.current === batchRunSequence) {

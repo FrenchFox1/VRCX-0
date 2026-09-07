@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
 import { openUserDialog } from '@/services/dialogService';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useMutualGraphRevisionStore } from '@/state/mutualGraphRevisionStore';
 
@@ -273,24 +273,36 @@ export function useMutualFriendsPageState() {
             }
             await snapshot.reloadSnapshot('', ownerUserId);
             if (result.status === 'optedOut') {
-                toast.warning(
-                    t('view.charts.dynamic.could_not_load_mutuals_for_value', {
-                        value: selectedNode.label
-                    })
-                );
+                toast.add({
+                    type: 'warning',
+                    title: t(
+                        'view.charts.dynamic.could_not_load_mutuals_for_value',
+                        {
+                            value: selectedNode.label
+                        }
+                    )
+                });
             } else {
-                toast.success(
-                    t('view.charts.dynamic.refreshed_mutuals_for_value', {
-                        value: selectedNode.label
-                    })
-                );
+                toast.add({
+                    type: 'success',
+                    title: t(
+                        'view.charts.dynamic.refreshed_mutuals_for_value',
+                        {
+                            value: selectedNode.label
+                        }
+                    )
+                });
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('view.charts.toast.failed_to_refresh_selected_mutuals')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'view.charts.toast.failed_to_refresh_selected_mutuals'
+                          )
+            });
         } finally {
             setNodeRefreshId('');
         }

@@ -14,6 +14,8 @@ import type {
 } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     createShareCollection: vi.fn(),
     copyTextToClipboard: vi.fn(),
@@ -28,8 +30,17 @@ vi.mock('react-i18next', () => ({
     })
 }));
 
-vi.mock('sonner', () => ({
-    toast: { error: mocks.toastError }
+vi.mock('@/services/toastService', () => ({
+    toast: {
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
+    }
 }));
 
 vi.mock('@/repositories/shareCollectionRepository', () => ({
@@ -283,7 +294,10 @@ describe('FavoriteShareCollectionDialog', () => {
         pending.reject(new Error('network unavailable'));
         await waitFor(() => {
             expect(mocks.toastError).toHaveBeenCalledWith(
-                expect.stringContaining('network unavailable')
+                expect.objectContaining({
+                    type: 'error',
+                    title: expect.stringContaining('network unavailable')
+                })
             );
         });
 

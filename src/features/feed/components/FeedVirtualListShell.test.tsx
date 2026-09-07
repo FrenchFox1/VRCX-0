@@ -86,7 +86,6 @@ const props = {
     onViewingLatestChange: () => undefined,
     resetKey: 'normal',
     rows: [row],
-    sorting: [],
     sourceRows: [row],
     table
 } satisfies ComponentProps<typeof FeedVirtualListShell>;
@@ -107,6 +106,43 @@ describe('FeedVirtualListShell', () => {
         expect(summary?.className).not.toContain(
             'min-h-[var(--vrcx-0-table-row-height)]'
         );
+    });
+
+    it('renders static labels instead of sortable headers', () => {
+        const tableWithSortableDateHeader = {
+            ...table,
+            getHeaderGroups: () => [
+                {
+                    headers: [
+                        {
+                            column: {
+                                id: 'created_at',
+                                columnDef: {
+                                    header: () => (
+                                        <button type="button">sort date</button>
+                                    )
+                                },
+                                getIsResizing: () => false,
+                                getSize: () => 120
+                            },
+                            getContext: () => ({
+                                table: { setColumnSizing: vi.fn() }
+                            })
+                        }
+                    ]
+                }
+            ]
+        } as unknown as FeedTableInstance;
+
+        render(
+            <FeedVirtualListShell
+                {...props}
+                table={tableWithSortableDateHeader}
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: 'sort date' })).toBeNull();
+        expect(screen.getByText('table.feed.date')).not.toBeNull();
     });
 
     it('keeps expansion controlled by the row key and ignores nested actions', () => {

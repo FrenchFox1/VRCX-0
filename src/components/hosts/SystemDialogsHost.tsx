@@ -1,5 +1,4 @@
 import { lazy, useEffect } from 'react';
-import { toast } from 'sonner';
 
 import {
     getHostCapabilityUnavailableReason,
@@ -7,6 +6,7 @@ import {
     isHostCapabilitySupported,
     type HostCapabilityKey
 } from '@/services/hostCapabilityService';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { DataDirCleanupHost } from './DataDirCleanupHost';
@@ -108,7 +108,10 @@ export function SystemDialogsHost() {
                     ? isHostCapabilitySupported(capability)
                     : isHostCapabilityAvailable(capability);
             if (open && !usable) {
-                toast.error(getHostCapabilityUnavailableReason(capability));
+                toast.add({
+                    type: 'error',
+                    title: getHostCapabilityUnavailableReason(capability)
+                });
                 setSystemHostOpen(hostKey, false);
             }
         }

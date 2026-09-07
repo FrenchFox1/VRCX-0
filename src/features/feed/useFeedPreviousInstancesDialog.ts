@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { normalizeFeedId as normalizeId } from '@/components/feed/feedRows';
 import type {
@@ -8,6 +7,7 @@ import type {
     FeedPreviousInstanceRow
 } from '@/components/feed/feedTypes';
 import gameLogRepository from '@/repositories/gameLogRepository';
+import { toast } from '@/services/toastService';
 import { parseLocation } from '@/shared/utils/location';
 
 export function useFeedPreviousInstancesDialog() {
@@ -65,11 +65,15 @@ export function useFeedPreviousInstancesDialog() {
                 );
                 setOpen(true);
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.feed.toast.failed_to_load_instance_history')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.feed.toast.failed_to_load_instance_history'
+                              )
+                });
             } finally {
                 setLoadingKey('');
             }

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { ScreenshotExportProgress } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import { subscribeScreenshotExportProgress } from '@/services/screenshotExportService';
+import { toast } from '@/services/toastService';
 
 import {
     startScreenshotExportProgressToast,
@@ -54,9 +54,10 @@ export function useScreenshotZipExport() {
                 groupByFolder
             );
             if (session.progress?.cancelled) {
-                toast.warning(
-                    t('message.screenshot_metadata.export_cancelled')
-                );
+                toast.add({
+                    type: 'warning',
+                    title: t('message.screenshot_metadata.export_cancelled')
+                });
                 return;
             }
             if (!outputPath) {
@@ -64,24 +65,28 @@ export function useScreenshotZipExport() {
             }
             const skipped = session.progress?.skippedFiles ?? 0;
             if (skipped > 0) {
-                toast.warning(
-                    t('message.screenshot_metadata.export_partial', {
+                toast.add({
+                    type: 'warning',
+                    title: t('message.screenshot_metadata.export_partial', {
                         count: skipped
                     })
-                );
+                });
                 return;
             }
-            toast.success(
-                t('message.screenshot_metadata.export_done', {
+            toast.add({
+                type: 'success',
+                title: t('message.screenshot_metadata.export_done', {
                     count: session.progress?.writtenFiles ?? paths.length
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('message.screenshot_metadata.export_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('message.screenshot_metadata.export_failed')
+            });
         } finally {
             unsubscribe();
             session.progressToast?.dismiss();

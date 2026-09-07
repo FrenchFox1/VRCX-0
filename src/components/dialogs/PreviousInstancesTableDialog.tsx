@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import gameLogRepository from '@/repositories/gameLogRepository';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
@@ -139,17 +139,22 @@ function PreviousInstancesPanel<TRow extends PreviousInstanceRow>({
                 return nextRows;
             });
             setDetailRow((current) => (current === row ? null : current));
-            toast.success(
-                t('dialog.previous_instances.success.instance_record_deleted')
-            );
+            toast.add({
+                type: 'success',
+                title: t(
+                    'dialog.previous_instances.success.instance_record_deleted'
+                )
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'dialog.previous_instances_table.toast.failed_to_delete_instance_record'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'dialog.previous_instances_table.toast.failed_to_delete_instance_record'
+                          )
+            });
         }
     }
 

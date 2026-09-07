@@ -92,10 +92,6 @@ export function NotificationDrawerRow({
 }) {
     const { t } = useTranslation();
     const rawMessage = String(getNotificationMessage(notification) || '');
-    const senderName =
-        String(getSenderName(notification) || '') ||
-        notification?.type ||
-        t('nav_tooltip.notification');
     const typeLabel = getNotificationTypeLabel(notification, t);
     const relativeTime = getNotificationRelativeTime(notification);
     const absoluteTime =
@@ -111,7 +107,17 @@ export function NotificationDrawerRow({
         () => toNotificationViewModel(notification),
         [notification]
     );
-    const message = isBoop ? view.body : rawMessage;
+    const isBroadcast = view.template === 'broadcast';
+    const senderName = isBroadcast
+        ? view.actor.name || t('view.notification.feed.unknown_sender')
+        : String(getSenderName(notification) || '') ||
+          notification.type ||
+          t('nav_tooltip.notification');
+    const headline = isBroadcast
+        ? view.headline || String(notification.title || '').trim()
+        : '';
+    const message = isBoop || isBroadcast ? view.body : rawMessage;
+    const previewMessage = isBroadcast && message === headline ? '' : message;
     const actor: NotificationActor =
         showAvatar || view.actor.kind === 'group'
             ? view.actor
@@ -125,7 +131,12 @@ export function NotificationDrawerRow({
         handlers,
         t
     });
-    const inlineActionCount = notification.type === 'friendRequest' ? 3 : 2;
+    let inlineActionCount = 2;
+    if (isBroadcast) {
+        inlineActionCount = 0;
+    } else if (notification.type === 'friendRequest') {
+        inlineActionCount = 3;
+    }
     const inlineActions = orderedActions.slice(0, inlineActionCount);
     const overflowActions = orderedActions.slice(inlineActionCount);
     const showMenuMarkRead = isUnseen && notification.type !== 'friendRequest';
@@ -141,6 +152,11 @@ export function NotificationDrawerRow({
         isQueueReady && countdownMs != null ? formatCountdown(countdownMs) : '';
 
     const showUnreadDot = isUnseen && !expired;
+    const hasLocation = Boolean(
+        (notification.type === 'invite' && notification.details?.worldId) ||
+        ((isQueueReady || notification.type === 'instance.closed') &&
+            notification.location)
+    );
 
     return (
         <HoverCard>
@@ -148,37 +164,88 @@ export function NotificationDrawerRow({
                 delay={400}
                 closeDelay={100}
                 render={
-                    <div className="group hover:bg-accent/50 relative mb-0.5 flex gap-3 rounded-lg px-2.5 py-2 transition-colors">
-                        <button
-                            type="button"
-                            className="shrink-0"
-                            aria-label={senderName}
-                            onClick={() => openSender(notification, t)}
-                        >
-                            {showAvatar ? (
-                                <NotificationPersonAvatar
-                                    notification={notification}
-                                    imageUrl={actorImageUrl}
-                                />
-                            ) : (
-                                <NotificationIconDisc
-                                    notification={notification}
-                                    imageUrl={actorImageUrl}
-                                />
-                            )}
-                        </button>
-                        <div className="min-w-0 flex-1">
-                            <div className="flex min-w-0 items-center gap-2">
-                                <button
-                                    type="button"
-                                    className="min-w-0 flex-1 truncate text-left text-sm font-medium hover:underline"
-                                    onClick={() => openSender(notification, t)}
-                                >
-                                    {senderName}
-                                </button>
+                    <div className="group hover:bg-accent/50 border-border/50 relative flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0">
+                        <div className="flex shrink-0 items-start gap-1.5">
+                            <span className="mt-1.5 flex w-1.5 shrink-0 justify-center">
                                 {showUnreadDot ? (
-                                    <span className="bg-primary size-2 shrink-0 rounded-full" />
+                                    <span className="bg-primary size-1.5 rounded-full">
+                                        <span className="sr-only">
+                                            {t('view.notification.feed.unread')}
+                                        </span>
+                                    </span>
                                 ) : null}
+                            </span>
+                            <button
+                                type="button"
+                                className="shrink-0"
+                                aria-label={senderName}
+                                onClick={() => openSender(notification, t)}
+                            >
+                                {showAvatar ? (
+                                    <NotificationPersonAvatar
+                                        notification={notification}
+                                        imageUrl={actorImageUrl}
+                                    />
+                                ) : (
+                                    <NotificationIconDisc
+                                        notification={notification}
+                                        imageUrl={actorImageUrl}
+                                    />
+                                )}
+                            </button>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div
+                                className={cn(
+                                    'relative flex min-w-0 items-start gap-2',
+                                    hasMenu && 'pr-8'
+                                )}
+                            >
+                                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            'max-w-full min-w-0 truncate text-left hover:underline',
+                                            isBroadcast
+                                                ? 'text-muted-foreground text-xs'
+                                                : 'text-sm',
+                                            !isBroadcast &&
+                                                showUnreadDot &&
+                                                'font-medium'
+                                        )}
+                                        onClick={() =>
+                                            openSender(notification, t)
+                                        }
+                                    >
+                                        {senderName}
+                                    </button>
+                                    {isBroadcast ? (
+                                        <span className="text-muted-foreground shrink-0 text-xs">
+                                            · {typeLabel}
+                                        </span>
+                                    ) : (
+                                        <Badge
+                                            className={cn(
+                                                'border-0',
+                                                isBoop
+                                                    ? 'bg-violet-500/15 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300'
+                                                    : isAction
+                                                      ? 'text-[var(--status-joinme)]'
+                                                      : 'bg-muted text-muted-foreground'
+                                            )}
+                                            style={
+                                                isAction && !isBoop
+                                                    ? {
+                                                          backgroundColor:
+                                                              STATUS_JOINME_TINT
+                                                      }
+                                                    : undefined
+                                            }
+                                        >
+                                            {typeLabel}
+                                        </Badge>
+                                    )}
+                                </div>
                                 {relativeTime ? (
                                     <Tooltip>
                                         <TooltipTrigger
@@ -193,12 +260,100 @@ export function NotificationDrawerRow({
                                         </TooltipContent>
                                     </Tooltip>
                                 ) : null}
+                                <div className="absolute -top-1 right-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100">
+                                    {hasMenu ? (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger
+                                                render={
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon-xs"
+                                                        aria-label={t(
+                                                            'side_panel.notification_center.more_actions'
+                                                        )}
+                                                    >
+                                                        <MoreHorizontalIcon data-icon="icon" />
+                                                    </Button>
+                                                }
+                                            />
+                                            <DropdownMenuContent
+                                                align="end"
+                                                className="w-56"
+                                            >
+                                                <DropdownMenuGroup>
+                                                    {showMenuMarkRead ? (
+                                                        <DropdownMenuItem
+                                                            onClick={() =>
+                                                                handlers.onMarkSeen(
+                                                                    notification
+                                                                )
+                                                            }
+                                                        >
+                                                            <CheckCheckIcon data-icon="inline-start" />
+                                                            {t(
+                                                                'side_panel.notification_center.mark_as_read'
+                                                            )}
+                                                        </DropdownMenuItem>
+                                                    ) : null}
+                                                    {overflowActions.map(
+                                                        (action) => (
+                                                            <DropdownMenuItem
+                                                                key={action.key}
+                                                                onClick={
+                                                                    action.onClick
+                                                                }
+                                                            >
+                                                                <action.Icon data-icon="inline-start" />
+                                                                {action.label}
+                                                            </DropdownMenuItem>
+                                                        )
+                                                    )}
+                                                </DropdownMenuGroup>
+                                                {showDelete ? (
+                                                    <>
+                                                        {showMenuMarkRead ||
+                                                        overflowActions.length >
+                                                            0 ? (
+                                                            <DropdownMenuSeparator />
+                                                        ) : null}
+                                                        <DropdownMenuGroup>
+                                                            <DropdownMenuItem
+                                                                variant="destructive"
+                                                                onClick={() =>
+                                                                    handlers.onDeleteNotification(
+                                                                        notification
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Trash2Icon data-icon="inline-start" />
+                                                                {t(
+                                                                    'view.notification.actions.delete_log'
+                                                                )}
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuGroup>
+                                                    </>
+                                                ) : null}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    ) : null}
+                                </div>
                             </div>
-                            {message || view.emoji ? (
+                            {headline ? (
+                                <p
+                                    className={cn(
+                                        'mt-1 line-clamp-2 text-sm text-pretty break-words',
+                                        showUnreadDot && 'font-medium'
+                                    )}
+                                >
+                                    {headline}
+                                </p>
+                            ) : null}
+                            {previewMessage || view.emoji ? (
                                 <div className="mt-0.5 flex min-w-0 items-center gap-2">
-                                    {message ? (
-                                        <p className="text-muted-foreground line-clamp-2 min-w-0 text-xs break-words">
-                                            {message}
+                                    {previewMessage ? (
+                                        <p className="text-muted-foreground line-clamp-2 min-w-0 text-xs text-pretty break-words">
+                                            {previewMessage}
                                         </p>
                                     ) : null}
                                     {view.emoji ? (
@@ -209,149 +364,56 @@ export function NotificationDrawerRow({
                                     ) : null}
                                 </div>
                             ) : null}
-                            <div className="mt-1.5 flex items-center gap-2">
-                                <Badge
-                                    className={cn(
-                                        'border-0',
-                                        isBoop
-                                            ? 'bg-violet-500/15 text-violet-700 dark:bg-violet-400/15 dark:text-violet-300'
-                                            : isAction
-                                              ? 'text-[var(--status-joinme)]'
-                                              : 'bg-muted text-muted-foreground'
-                                    )}
-                                    style={
-                                        isAction && !isBoop
-                                            ? {
-                                                  backgroundColor:
-                                                      STATUS_JOINME_TINT
-                                              }
-                                            : undefined
-                                    }
-                                >
-                                    {typeLabel}
-                                </Badge>
-                                <div className="min-w-0 flex-1 truncate text-xs">
-                                    <NotificationLocationLine
-                                        notification={notification}
-                                    />
-                                </div>
-                                <div className="flex shrink-0 items-center gap-1">
-                                    {isQueueReady ? (
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="ghost"
-                                            className="h-7 gap-1 px-2 text-xs font-medium text-[var(--status-askme)] hover:text-[var(--status-askme)]"
-                                            style={{
-                                                backgroundColor:
-                                                    STATUS_ASKME_TINT
-                                            }}
-                                            onClick={() =>
-                                                handlers.onJoinQueueReady(
-                                                    notification
-                                                )
-                                            }
-                                        >
-                                            {t(
-                                                'side_panel.notification_center.join_now'
-                                            )}
-                                            {countdownLabel ? (
-                                                <span className="tabular-nums">
-                                                    {countdownLabel}
-                                                </span>
-                                            ) : null}
-                                        </Button>
-                                    ) : null}
-                                    <div className="flex items-center gap-1 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100">
-                                        {inlineActions.map((action) => (
-                                            <NotificationActionButton
-                                                key={action.key}
-                                                label={action.label}
-                                                onClick={action.onClick}
+                            {hasLocation ||
+                            isQueueReady ||
+                            inlineActions.length > 0 ? (
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <div className="min-w-0 flex-1 truncate text-xs">
+                                        <NotificationLocationLine
+                                            notification={notification}
+                                        />
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        {isQueueReady ? (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-7 gap-1 px-2 text-xs font-medium text-[var(--status-askme)] hover:text-[var(--status-askme)]"
+                                                style={{
+                                                    backgroundColor:
+                                                        STATUS_ASKME_TINT
+                                                }}
+                                                onClick={() =>
+                                                    handlers.onJoinQueueReady(
+                                                        notification
+                                                    )
+                                                }
                                             >
-                                                <action.Icon data-icon="icon" />
-                                            </NotificationActionButton>
-                                        ))}
-                                        {hasMenu ? (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger
-                                                    render={
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon-xs"
-                                                            aria-label={t(
-                                                                'side_panel.notification_center.more_actions'
-                                                            )}
-                                                        >
-                                                            <MoreHorizontalIcon data-icon="icon" />
-                                                        </Button>
-                                                    }
-                                                />
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuGroup>
-                                                        {showMenuMarkRead ? (
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    handlers.onMarkSeen(
-                                                                        notification
-                                                                    )
-                                                                }
-                                                            >
-                                                                <CheckCheckIcon data-icon="inline-start" />
-                                                                {t(
-                                                                    'side_panel.notification_center.mark_as_read'
-                                                                )}
-                                                            </DropdownMenuItem>
-                                                        ) : null}
-                                                        {overflowActions.map(
-                                                            (action) => (
-                                                                <DropdownMenuItem
-                                                                    key={
-                                                                        action.key
-                                                                    }
-                                                                    onClick={
-                                                                        action.onClick
-                                                                    }
-                                                                >
-                                                                    <action.Icon data-icon="inline-start" />
-                                                                    {
-                                                                        action.label
-                                                                    }
-                                                                </DropdownMenuItem>
-                                                            )
-                                                        )}
-                                                    </DropdownMenuGroup>
-                                                    {showDelete ? (
-                                                        <>
-                                                            {showMenuMarkRead ||
-                                                            overflowActions.length >
-                                                                0 ? (
-                                                                <DropdownMenuSeparator />
-                                                            ) : null}
-                                                            <DropdownMenuGroup>
-                                                                <DropdownMenuItem
-                                                                    variant="destructive"
-                                                                    onClick={() =>
-                                                                        handlers.onDeleteNotification(
-                                                                            notification
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Trash2Icon data-icon="inline-start" />
-                                                                    {t(
-                                                                        'view.notification.actions.delete_log'
-                                                                    )}
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuGroup>
-                                                        </>
-                                                    ) : null}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                {t(
+                                                    'side_panel.notification_center.join_now'
+                                                )}
+                                                {countdownLabel ? (
+                                                    <span className="tabular-nums">
+                                                        {countdownLabel}
+                                                    </span>
+                                                ) : null}
+                                            </Button>
                                         ) : null}
+                                        <div className="flex items-center gap-1 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100">
+                                            {inlineActions.map((action) => (
+                                                <NotificationActionButton
+                                                    key={action.key}
+                                                    label={action.label}
+                                                    onClick={action.onClick}
+                                                >
+                                                    <action.Icon data-icon="icon" />
+                                                </NotificationActionButton>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            ) : null}
                         </div>
                     </div>
                 }

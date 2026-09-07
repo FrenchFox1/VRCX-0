@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
+use tokio_util::task::TaskTracker;
 
 use crate::auth::{generate_integration_api_token, IntegrationApiAuthPolicy};
 use crate::config::{
@@ -37,11 +38,15 @@ struct ControllerState {
     session_generation: u64,
 }
 
+const LISTENER_STOP_TIMEOUT: Duration = Duration::from_secs(5);
+const SESSION_DRAIN_TIMEOUT: Duration = Duration::from_secs(5);
+
 struct ListenerHandle {
     id: u64,
     port: u16,
     accept_cancel: CancellationToken,
     session_cancel: CancellationToken,
+    sessions: TaskTracker,
     join: JoinHandle<()>,
 }
 
@@ -420,6 +425,7 @@ impl IntegrationApiController {
         let id = self.next_listener_id.fetch_add(1, Ordering::AcqRel) + 1;
         let accept_cancel = CancellationToken::new();
         let session_cancel = CancellationToken::new();
+        let sessions = TaskTracker::new();
         let router = build_integration_api_router(IntegrationApiRouterState {
             policy: IntegrationApiAuthPolicy {
                 port: bound_port,
@@ -429,6 +435,7 @@ impl IntegrationApiController {
             hub,
             active_connections: Arc::clone(&self.active_connections),
             session_cancel: session_cancel.clone(),
+            sessions: sessions.clone(),
         });
         let shutdown = accept_cancel.clone();
         let expected_shutdown = accept_cancel.clone();
@@ -463,6 +470,7 @@ impl IntegrationApiController {
             port: bound_port,
             accept_cancel,
             session_cancel,
+            sessions,
             join,
         })
     }
@@ -483,6 +491,7 @@ impl IntegrationApiController {
         if let Some(handle) = state.handle.take() {
             handle.accept_cancel.cancel();
             handle.session_cancel.cancel();
+            handle.sessions.close();
         }
         if let Some(hub) = state.hub.take() {
             hub.clear();
@@ -497,12 +506,19 @@ impl IntegrationApiController {
             handle.session_cancel.cancel();
         }
         let mut join = handle.join;
-        if tokio::time::timeout(Duration::from_secs(5), &mut join)
+        if tokio::time::timeout(LISTENER_STOP_TIMEOUT, &mut join)
             .await
             .is_err()
         {
-            handle.session_cancel.cancel();
             join.abort();
+        }
+        handle.session_cancel.cancel();
+        handle.sessions.close();
+        if tokio::time::timeout(SESSION_DRAIN_TIMEOUT, handle.sessions.wait())
+            .await
+            .is_err()
+        {
+            tracing::warn!("Integration API sessions did not exit before the drain timeout");
         }
     }
 

@@ -4,6 +4,7 @@ import type {
     SavedAuthSnapshot,
     SavedCredentialSnapshot
 } from '@/platform/tauri/bindings';
+import type { AppToastOptions } from '@/services/toastService';
 
 const mocks = vi.hoisted(() => ({
     toastSuccess: vi.fn(),
@@ -22,12 +23,21 @@ const mocks = vi.hoisted(() => ({
     t: vi.fn()
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        success: mocks.toastSuccess,
-        error: mocks.toastError,
-        info: mocks.toastInfo,
-        dismiss: mocks.toastDismiss
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'error':
+                    return mocks.toastError(options);
+                case 'info':
+                    return mocks.toastInfo(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        },
+        close: mocks.toastDismiss
     }
 }));
 
@@ -214,7 +224,10 @@ describe('authAutoLoginService', () => {
             expect.any(Number)
         );
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'message.auth.auto_login_success'
+            expect.objectContaining({
+                type: 'success',
+                title: 'message.auth.auto_login_success'
+            })
         );
     });
 
@@ -256,8 +269,12 @@ describe('authAutoLoginService', () => {
             'frontend-auto-login-throttled'
         );
         expect(mocks.toastError).toHaveBeenCalledWith(
-            'message.auth.auto_login_failed',
-            { duration: Infinity, closeButton: true }
+            expect.objectContaining({
+                type: 'error',
+                title: 'message.auth.auto_login_failed',
+                timeout: 0,
+                data: expect.objectContaining({ closeButton: true })
+            })
         );
         expect(useSessionStore.getState()).toMatchObject({
             sessionPhase: 'signed_out',
@@ -335,6 +352,25 @@ describe('authAutoLoginService', () => {
         expect(mocks.finalizeSuccessfulLogin).toHaveBeenCalledTimes(1);
     });
 
+    it('localizes new-location errors in the automatic login failure toast', async () => {
+        mocks.autoLoginStart.mockResolvedValueOnce({
+            status: 'failed',
+            reason: '"It looks like you\'re logging in from somewhere new! Check your email for a message from VRChat."',
+            kind: 'sessionInvalidated',
+            snapshot: snapshot()
+        });
+
+        await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
+            status: 'failed'
+        });
+        expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith({
+            type: 'error',
+            title: 'view.auth.toast.new_location_login',
+            timeout: 0,
+            data: { closeButton: true }
+        });
+    });
+
     it('does not show a system auth notification when auto-login fails offline', async () => {
         Object.defineProperty(navigator, 'onLine', {
             configurable: true,
@@ -353,13 +389,21 @@ describe('authAutoLoginService', () => {
 
         expect(mocks.toastError).toHaveBeenNthCalledWith(
             1,
-            'Network unavailable',
-            { duration: Infinity, closeButton: true }
+            expect.objectContaining({
+                type: 'error',
+                title: 'Network unavailable',
+                timeout: 0,
+                data: expect.objectContaining({ closeButton: true })
+            })
         );
         expect(mocks.toastError).toHaveBeenNthCalledWith(
             2,
-            'message.auth.offline',
-            { duration: Infinity, closeButton: true }
+            expect.objectContaining({
+                type: 'error',
+                title: 'message.auth.offline',
+                timeout: 0,
+                data: expect.objectContaining({ closeButton: true })
+            })
         );
         expect(mocks.appAuthFailureNotificationShow).not.toHaveBeenCalled();
     });
@@ -386,8 +430,12 @@ describe('authAutoLoginService', () => {
             expect.objectContaining({ lastUserLoggedIn: null })
         );
         expect(mocks.toastError).toHaveBeenCalledWith(
-            'Saved credentials are no longer valid.',
-            { duration: Infinity, closeButton: true }
+            expect.objectContaining({
+                type: 'error',
+                title: 'Saved credentials are no longer valid.',
+                timeout: 0,
+                data: expect.objectContaining({ closeButton: true })
+            })
         );
     });
 });

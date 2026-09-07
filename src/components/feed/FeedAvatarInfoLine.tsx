@@ -2,13 +2,13 @@ import { LockIcon } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { LoadStatus } from '@/domain/shared/types';
 import { cn } from '@/lib/utils';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import { openAvatarDialog, openUserDialog } from '@/services/dialogService';
+import { toast } from '@/services/toastService';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
@@ -359,11 +359,15 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
                 nextOwnerId = normalizeId(nextInfo?.ownerId);
                 nextAvatarName = nextInfo?.avatarName || nextAvatarName;
             } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.feed.toast.failed_to_resolve_avatar_author')
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'view.feed.toast.failed_to_resolve_avatar_author'
+                              )
+                });
                 return;
             }
         }
@@ -386,12 +390,18 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         }
 
         if (!nextOwnerId) {
-            toast.warning(t('view.feed.error.avatar_author_unavailable'));
+            toast.add({
+                type: 'warning',
+                title: t('view.feed.error.avatar_author_unavailable')
+            });
             return;
         }
 
         if (nextOwnerId === normalizedUserId) {
-            toast.warning(t('view.feed.error.avatar_is_private_or_not_found'));
+            toast.add({
+                type: 'warning',
+                title: t('view.feed.error.avatar_is_private_or_not_found')
+            });
             return;
         }
 

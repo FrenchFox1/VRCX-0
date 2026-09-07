@@ -7,10 +7,10 @@ import {
     type SetStateAction
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import { toast } from '@/services/toastService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 import { normalizeUserId } from './userProfileFields';
@@ -168,11 +168,13 @@ export function useUserDialogMemoState({
             error = memoResult.reason;
         }
         if (!saveSucceeded) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_save_memo')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_save_memo')
+            });
         }
 
         if (
@@ -203,11 +205,12 @@ export function useUserDialogMemoState({
         }
 
         if (saveSucceeded) {
-            toast.success(
-                nextMemo
+            toast.add({
+                type: 'success',
+                title: nextMemo
                     ? t('dialog.user.toast.memo_saved')
                     : t('dialog.user.toast.memo_cleared')
-            );
+            });
             return;
         }
     }

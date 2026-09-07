@@ -596,7 +596,12 @@ fn application_crates_do_not_depend_on_outbound_implementations() {
                 "tauri::",
             ] {
                 assert!(
-                    !source.contains(forbidden),
+                    !source.lines().any(|line| {
+                        let line = line.trim();
+                        // Stable log targets may retain the previous owner's module path.
+                        line.contains(forbidden)
+                            && !(line.starts_with("target: \"") && line.ends_with("\","))
+                    }),
                     "application source imports outbound implementation {forbidden}: {}",
                     path.display()
                 );
@@ -1141,4 +1146,46 @@ fn architecture_dependency_rules_use_cargo_metadata() {
     assert!(source.contains("cargo_metadata::MetadataCommand"));
     let legacy_helper = ["fn manifest_", "dependency_section("].concat();
     assert!(!source.contains(&legacy_helper));
+}
+
+#[test]
+fn saved_group_favorites_rules_are_application_owned() {
+    let source = std::fs::read_to_string(workspace_file(
+        "crates/runtime-host-desktop/src/local_data.rs",
+    ))
+    .expect("read local data facade");
+    for forbidden in [
+        "vrcx_0_persistence::saved_group_favorites",
+        "Saved group collection name is required",
+        "Saved group favorite requires a canonical group ID",
+        "fn saved_group_owner(",
+    ] {
+        assert!(
+            !source.contains(forbidden),
+            "saved group rule remains in desktop host: {forbidden}"
+        );
+    }
+}
+
+#[test]
+fn activity_page_persistence_does_not_own_page_policy() {
+    for path in rust_sources_below("crates/persistence/src/activity_page") {
+        let source = std::fs::read_to_string(&path).expect("read activity storage source");
+        for forbidden in [
+            "fn activity_page_view_build(",
+            "fn window_bounds(",
+            "fn is_reusable(",
+            "fn series_bucket_for_range(",
+            "serving stale cache",
+            "TOP_WORLD_LIMIT",
+            "COMPANION_LIMIT",
+            "FADING_LIMIT",
+        ] {
+            assert!(
+                !source.contains(forbidden),
+                "activity page policy remains in {}: {forbidden}",
+                path.display()
+            );
+        }
+    }
 }

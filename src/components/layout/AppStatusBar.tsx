@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { formatDateTime } from '@/lib/dateTime';
 import { STATUS_BAR_CONFIG_KEYS } from '@/repositories/configKeys';
@@ -18,6 +17,7 @@ import {
     formatZoomPercentage,
     normalizeZoomLevel
 } from '@/services/themeService';
+import { toast } from '@/services/toastService';
 import { refreshVrcStatusNow } from '@/services/vrcStatusService';
 import {
     queueZoomLevelPreference,
@@ -179,7 +179,13 @@ function formatStatusDate(value: string | null | undefined) {
     });
 }
 
-export function AppStatusBar({ className }: { className?: string }) {
+export function AppStatusBar({
+    className,
+    sidebarWindowMode = false
+}: {
+    className?: string;
+    sidebarWindowMode?: boolean;
+}) {
     const { t } = useTranslation();
     const [appStartedAt] = useState(Date.now);
     const observedMutualGraphRunRef = useRef(0);
@@ -462,28 +468,32 @@ export function AppStatusBar({ className }: { className?: string }) {
 
         if (mutualGraphStatus === 'completed') {
             notifiedMutualGraphRunRef.current = runId;
-            toast.success(
-                t('view.charts.success.mutual_friends_graph_refreshed')
-            );
+            toast.add({
+                type: 'success',
+                title: t('view.charts.success.mutual_friends_graph_refreshed')
+            });
             return;
         }
 
         if (mutualGraphStatus === 'cancelled') {
             notifiedMutualGraphRunRef.current = runId;
-            toast.warning(
-                t(
+            toast.add({
+                type: 'warning',
+                title: t(
                     'view.charts.label.mutual_graph_fetch_cancelled_the_cached_graph_was_not_replaced'
                 )
-            );
+            });
             return;
         }
 
         if (mutualGraphStatus === 'error') {
             notifiedMutualGraphRunRef.current = runId;
-            toast.error(
-                mutualGraphLastError ||
+            toast.add({
+                type: 'error',
+                title:
+                    mutualGraphLastError ||
                     t('view.charts.toast.failed_to_fetch_mutual_friends_graph')
-            );
+            });
         }
     }, [mutualGraphLastError, mutualGraphRunId, mutualGraphStatus, t]);
 
@@ -553,13 +563,15 @@ export function AppStatusBar({ className }: { className?: string }) {
                 JSON.stringify(nextVisibility)
             )
             .catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.app_status_bar.toast.failed_to_save_status_bar_visibility'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'component.app_status_bar.toast.failed_to_save_status_bar_visibility'
+                              )
+                });
             });
     }
 
@@ -583,13 +595,15 @@ export function AppStatusBar({ className }: { className?: string }) {
         configRepository
             .setString(STATUS_BAR_CONFIG_KEYS.clockCount, String(parsed))
             .catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.app_status_bar.toast.failed_to_save_clock_count'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'component.app_status_bar.toast.failed_to_save_clock_count'
+                              )
+                });
             });
     }
 
@@ -615,13 +629,15 @@ export function AppStatusBar({ className }: { className?: string }) {
                     JSON.stringify(nextClocks)
                 )
                 .catch((error: unknown) => {
-                    toast.error(
-                        error instanceof Error
-                            ? error.message
-                            : t(
-                                  'component.app_status_bar.toast.failed_to_save_status_bar_clocks'
-                              )
-                    );
+                    toast.add({
+                        type: 'error',
+                        title:
+                            error instanceof Error
+                                ? error.message
+                                : t(
+                                      'component.app_status_bar.toast.failed_to_save_status_bar_clocks'
+                                  )
+                    });
                 });
             return nextClocks;
         });
@@ -638,13 +654,15 @@ export function AppStatusBar({ className }: { className?: string }) {
         try {
             await openExternalLink(links.vrchatStatus);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_status_bar.toast.failed_to_open_vrchat_status'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_status_bar.toast.failed_to_open_vrchat_status'
+                          )
+            });
         }
 
         await refreshStatusPromise;
@@ -662,12 +680,14 @@ export function AppStatusBar({ className }: { className?: string }) {
 
     function openProxyEditorWithToast() {
         openProxyEditor().catch((error: unknown) => {
-            toast.error(
-                proxySettingsErrorMessage(error) ||
+            toast.add({
+                type: 'error',
+                title:
+                    proxySettingsErrorMessage(error) ||
                     t(
                         'component.app_status_bar.toast.failed_to_update_proxy_settings'
                     )
-            );
+            });
         });
     }
 
@@ -690,18 +710,21 @@ export function AppStatusBar({ className }: { className?: string }) {
                 { restart }
             );
             if (!restart) {
-                toast.success(
-                    t('prompt.proxy_settings.saved_restart_required')
-                );
+                toast.add({
+                    type: 'success',
+                    title: t('prompt.proxy_settings.saved_restart_required')
+                });
                 setProxyEditorOpen(false);
             }
         } catch (error) {
-            toast.error(
-                proxySettingsErrorMessage(error) ||
+            toast.add({
+                type: 'error',
+                title:
+                    proxySettingsErrorMessage(error) ||
                     t(
                         'component.app_status_bar.toast.failed_to_update_proxy_settings'
                     )
-            );
+            });
         } finally {
             setProxySaving(false);
         }
@@ -711,40 +734,46 @@ export function AppStatusBar({ className }: { className?: string }) {
         setProxyTesting(true);
         try {
             const result = await testProxySettings(proxyDraftServer);
-            toast.success(
-                t('prompt.proxy_settings.test_success', {
+            toast.add({
+                type: 'success',
+                title: t('prompt.proxy_settings.test_success', {
                     status: result.status
                 })
-            );
+            });
         } catch (error) {
-            toast.error(
-                t('prompt.proxy_settings.test_failed', {
+            toast.add({
+                type: 'error',
+                title: t('prompt.proxy_settings.test_failed', {
                     message: proxySettingsErrorMessage(error)
                 })
-            );
+            });
         } finally {
             setProxyTesting(false);
         }
     }
 
     function showZoomError(error: unknown) {
-        toast.error(
-            error instanceof Error
-                ? error.message
-                : t('app_menu.messages.zoom_failed')
-        );
+        toast.add({
+            type: 'error',
+            title:
+                error instanceof Error
+                    ? error.message
+                    : t('app_menu.messages.zoom_failed')
+        });
     }
 
     function startBackgroundMode() {
         startBackgroundModeForCurrentSession().catch((error: unknown) => {
             console.warn('Failed to start background mode:', error);
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.app_status_bar.toast.failed_to_start_background_mode'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.app_status_bar.toast.failed_to_start_background_mode'
+                          )
+            });
         });
     }
 
@@ -797,13 +826,15 @@ export function AppStatusBar({ className }: { className?: string }) {
                 return;
             }
             openExternalLink(nowPlaying.url).catch((error: unknown) => {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.app_status_bar.toast.failed_to_open_media_link'
-                          )
-                );
+                toast.add({
+                    type: 'error',
+                    title:
+                        error instanceof Error
+                            ? error.message
+                            : t(
+                                  'component.app_status_bar.toast.failed_to_open_media_link'
+                              )
+                });
             });
         },
         onOpenStatusPage: openStatusPage,
@@ -823,6 +854,16 @@ export function AppStatusBar({ className }: { className?: string }) {
         onStepZoomLevel: stepQueuedZoomLevel,
         onUpdateClockTimezone: updateClockTimezone
     };
+
+    if (sidebarWindowMode) {
+        return (
+            <StatusBarFooter
+                className={className}
+                footer={footer}
+                sidebarWindowMode
+            />
+        );
+    }
 
     return (
         <ContextMenu>

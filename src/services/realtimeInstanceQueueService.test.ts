@@ -1,11 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     success: vi.fn(),
     t: vi.fn((key: string) => key)
 }));
 
-vi.mock('sonner', () => ({ toast: { success: mocks.success } }));
+vi.mock('@/services/toastService', () => ({
+    toast: {
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'success':
+                    return mocks.success(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        }
+    }
+}));
 vi.mock('@/services/i18nService', () => ({
     default: { t: mocks.t }
 }));
@@ -99,7 +112,10 @@ describe('realtimeInstanceQueueService', () => {
         );
         expect(useRuntimeStore.getState().instanceQueue.active).toBe(true);
         expect(mocks.success).toHaveBeenCalledWith(
-            'Instance ready to join wrld_other public'
+            expect.objectContaining({
+                type: 'success',
+                title: 'Instance ready to join wrld_other public'
+            })
         );
 
         handleRealtimeInstanceQueueProjection(

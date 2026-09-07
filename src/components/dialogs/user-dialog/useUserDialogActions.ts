@@ -7,7 +7,6 @@ import {
     type SetStateAction
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type { FriendRosterById } from '@/domain/friends/types';
 import {
@@ -26,6 +25,7 @@ import {
     hideRemoteAndExpireNotification
 } from '@/services/notificationActionService';
 import { recordRecentAction } from '@/services/recentActionService';
+import { toast } from '@/services/toastService';
 
 import { normalizeUserId } from './userProfileFields';
 import type {
@@ -186,11 +186,12 @@ export function useUserDialogActions({
                 currentUserId
             });
             if (deleteResult.stale) {
-                toast.info(
-                    t(
+                toast.add({
+                    type: 'info',
+                    title: t(
                         'dialog.user.action.unfriend_was_not_sent_because_the_active_account_changed'
                     )
-                );
+                });
             } else {
                 setBaseProfile((currentProfile) =>
                     currentProfile
@@ -202,25 +203,29 @@ export function useUserDialogActions({
                         : currentProfile
                 );
                 if (deleteResult.localError) {
-                    toast.warning(
-                        t(
+                    toast.add({
+                        type: 'warning',
+                        title: t(
                             'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
                         )
-                    );
+                    });
                 } else {
-                    toast.success(
-                        t('dialog.user.dynamic.unfriended_value', {
+                    toast.add({
+                        type: 'success',
+                        title: t('dialog.user.dynamic.unfriended_value', {
                             value: friend?.displayName || rosterUserId
                         })
-                    );
+                    });
                 }
             }
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_unfriend_user')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_unfriend_user')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -307,11 +312,12 @@ export function useUserDialogActions({
                     ) {
                         return;
                     }
-                    toast.info(
-                        t(
+                    toast.add({
+                        type: 'info',
+                        title: t(
                             'dialog.user.empty.friend_request_is_no_longer_active'
                         )
-                    );
+                    });
                     return;
                 }
                 let mutationOutcome: SocialFriendMutationOutcome | null = null;
@@ -330,11 +336,12 @@ export function useUserDialogActions({
                         ) {
                             return;
                         }
-                        toast.info(
-                            t(
+                        toast.add({
+                            type: 'info',
+                            title: t(
                                 'dialog.user.empty.friend_request_is_no_longer_active'
                             )
-                        );
+                        });
                         return;
                     }
                     mutationOutcome = acceptResult.outcome;
@@ -363,17 +370,19 @@ export function useUserDialogActions({
                     recordRecentAction(rosterUserId, 'Send Friend Request');
                 }
                 if (mutationOutcome?.status === 'remoteOkLocalFailed') {
-                    toast.warning(
-                        t(
+                    toast.add({
+                        type: 'warning',
+                        title: t(
                             'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
                         )
-                    );
+                    });
                 } else {
-                    toast.success(
-                        isNowFriend
+                    toast.add({
+                        type: 'success',
+                        title: isNowFriend
                             ? t('dialog.user.toast.friend_request_accepted')
                             : t('dialog.user.toast.friend_request_sent')
-                    );
+                    });
                 }
             } else {
                 incomingNotification =
@@ -393,11 +402,12 @@ export function useUserDialogActions({
                     ) {
                         return;
                     }
-                    toast.info(
-                        t(
+                    toast.add({
+                        type: 'info',
+                        title: t(
                             'dialog.user.empty.friend_request_is_no_longer_active'
                         )
-                    );
+                    });
                     return;
                 }
                 let cancelOutcome: SocialFriendMutationOutcome | null = null;
@@ -425,17 +435,22 @@ export function useUserDialogActions({
                     return;
                 }
                 if (cancelOutcome?.status === 'remoteOkLocalFailed') {
-                    toast.warning(
-                        t(
+                    toast.add({
+                        type: 'warning',
+                        title: t(
                             'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
                         )
-                    );
+                    });
                 } else {
-                    toast.success(
-                        action === 'decline'
-                            ? t('dialog.user.toast.friend_request_declined')
-                            : t('dialog.user.toast.friend_request_cancelled')
-                    );
+                    toast.add({
+                        type: 'success',
+                        title:
+                            action === 'decline'
+                                ? t('dialog.user.toast.friend_request_declined')
+                                : t(
+                                      'dialog.user.toast.friend_request_cancelled'
+                                  )
+                    });
                 }
             }
         } catch (error) {
@@ -461,18 +476,23 @@ export function useUserDialogActions({
                 ) {
                     return;
                 }
-                toast.info(
-                    t('dialog.user.empty.friend_request_is_no_longer_active')
-                );
+                toast.add({
+                    type: 'info',
+                    title: t(
+                        'dialog.user.empty.friend_request_is_no_longer_active'
+                    )
+                });
                 return;
             }
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.value_failed', {
-                          value: label
-                      })
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.value_failed', {
+                              value: label
+                          })
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -507,13 +527,18 @@ export function useUserDialogActions({
                 userId: rosterUserId,
                 reason: 'behavior-hacking'
             });
-            toast.success(t('dialog.user.success.report_sent'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.success.report_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_report_user')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_report_user')
+            });
         } finally {
             actionStatusRef.current = 'idle';
             setActionStatus('idle');
@@ -562,13 +587,18 @@ export function useUserDialogActions({
                 emojiId
             });
             setBoopDialogRequest(null);
-            toast.success(t('dialog.user.success.boop_sent'));
+            toast.add({
+                type: 'success',
+                title: t('dialog.user.success.boop_sent')
+            });
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t('dialog.user.toast.failed_to_send_boop')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.user.toast.failed_to_send_boop')
+            });
             throw error;
         } finally {
             actionStatusRef.current = 'idle';

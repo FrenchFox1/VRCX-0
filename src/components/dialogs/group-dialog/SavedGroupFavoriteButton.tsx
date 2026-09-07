@@ -1,12 +1,12 @@
 import { PlusIcon, StarIcon, Trash2Icon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     commands,
     type SavedGroupFavoritesSnapshot
 } from '@/platform/tauri/bindings';
+import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -180,5 +180,8 @@ export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
 }
 
 function showError(error: unknown) {
-    toast.error(error instanceof Error ? error.message : String(error));
+    toast.add({
+        type: 'error',
+        title: error instanceof Error ? error.message : String(error)
+    });
 }

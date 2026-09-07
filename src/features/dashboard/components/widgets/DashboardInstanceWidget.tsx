@@ -505,7 +505,7 @@ export function DashboardInstanceWidget({
         (state) => state.gameState.isGameRunning === true
     );
     const addGameLogEventCount = useRuntimeStore(
-        (state) => state.runtimeEvents.addGameLogEvent.count
+        (state) => state.runtimeEvents.gameLogProjection.count
     );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const remoteFavoriteFriendIds = useFavoriteStore(

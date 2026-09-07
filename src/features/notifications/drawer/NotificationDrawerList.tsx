@@ -68,7 +68,7 @@ export function NotificationDrawerList({
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
-            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+            <div className="min-h-0 flex-1 overflow-y-auto py-2">
                 {hasAny ? (
                     NOTIFICATION_LIFECYCLE_ORDER.map(
                         (bucket: NotificationLifecycleBucket) => {
@@ -78,7 +78,7 @@ export function NotificationDrawerList({
                             }
                             return (
                                 <div key={bucket} className="mb-2">
-                                    <div className="text-muted-foreground flex items-center gap-1.5 px-1 py-1.5 text-xs font-medium tracking-wider uppercase">
+                                    <div className="text-muted-foreground flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium">
                                         <span>
                                             {t(GROUP_LABEL_KEYS[bucket])}
                                         </span>
@@ -109,7 +109,7 @@ export function NotificationDrawerList({
                 )}
                 <button
                     type="button"
-                    className="text-muted-foreground hover:text-foreground hover:bg-accent/50 flex w-full items-center justify-center gap-1 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors"
+                    className="text-muted-foreground hover:text-foreground hover:bg-accent/50 flex w-full items-center justify-center gap-1 px-4 py-3 text-xs font-medium transition-colors"
                     onClick={onNavigateToTable}
                 >
                     {t('side_panel.notification_center.view_more')}

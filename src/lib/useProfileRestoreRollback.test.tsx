@@ -3,6 +3,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppToastOptions } from '@/services/toastService';
+
 const mocks = vi.hoisted(() => ({
     getState: vi.fn(),
     clear: vi.fn(),
@@ -17,11 +19,19 @@ vi.mock('react-i18next', () => ({
     })
 }));
 
-vi.mock('sonner', () => ({
+vi.mock('@/services/toastService', () => ({
     toast: {
-        success: mocks.toastSuccess,
-        error: mocks.toastError,
-        dismiss: mocks.toastDismiss
+        add: (options: AppToastOptions) => {
+            switch (options.type) {
+                case 'success':
+                    return mocks.toastSuccess(options);
+                case 'error':
+                    return mocks.toastError(options);
+                default:
+                    throw new Error('Unhandled toast type: ' + options.type);
+            }
+        },
+        close: mocks.toastDismiss
     }
 }));
 
@@ -154,7 +164,10 @@ describe('useProfileRestoreRollback', () => {
             PROFILE_RESTORE_ROLLBACK_TOAST_ID
         );
         expect(mocks.toastSuccess).toHaveBeenCalledWith(
-            'profile_backup.rollback_cleanup_succeeded'
+            expect.objectContaining({
+                type: 'success',
+                title: 'profile_backup.rollback_cleanup_succeeded'
+            })
         );
     });
 
@@ -183,7 +196,10 @@ describe('useProfileRestoreRollback', () => {
         });
         expect(mocks.toastDismiss).not.toHaveBeenCalled();
         expect(mocks.toastError).toHaveBeenCalledWith(
-            'profile_backup.rollback_error.io'
+            expect.objectContaining({
+                type: 'error',
+                title: 'profile_backup.rollback_error.io'
+            })
         );
     });
 });

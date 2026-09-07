@@ -28,6 +28,13 @@ pub(super) struct RuntimeHostSocialMaintenanceActions {
     pub(super) authenticated_runtime: AuthenticatedRuntimeOrchestrator,
     pub(super) group_instances_refresh_running: Arc<AtomicBool>,
     pub(super) group_order_source: Arc<dyn GroupOrderSource>,
+    pub(super) group_notification_group_ids: Mutex<Option<GroupNotificationGroupIds>>,
+}
+
+pub(super) struct GroupNotificationGroupIds {
+    owner_id: String,
+    revision: u64,
+    group_ids: Vec<String>,
 }
 
 impl RuntimeHostSocialMaintenanceActions {
@@ -66,6 +73,15 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
         let Some(session) = background_capability_session_identity(&self.session_slot) else {
             return Vec::new();
         };
+        let runtime = self.runtime_context.overlay_activity();
+        let revision = runtime.group_notification_inputs_revision();
+        if let Ok(cached) = self.group_notification_group_ids.lock() {
+            if let Some(cached) = cached.as_ref().filter(|cached| {
+                cached.owner_id == session.current_user_id && cached.revision == revision
+            }) {
+                return cached.group_ids.clone();
+            }
+        }
         let snapshot = match vrcx_0_persistence::saved_group_favorites::snapshot(
             self.db.as_ref(),
             &OwnerId::new(&session.current_user_id),
@@ -87,7 +103,6 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
             })
             .collect::<HashMap<_, _>>();
         let favorite_groups = OverlayFavoriteGroups::from_map(memberships);
-        let runtime = self.runtime_context.overlay_activity();
         let group_ids = favorite_groups.group_instance_notification_group_ids(&runtime.filters());
         runtime.set_group_favorite_groups(favorite_groups);
         let config_key = format!(
@@ -103,6 +118,13 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
             if let Err(error) = config.set_json(config_key.as_str(), &value) {
                 tracing::warn!(error = %error, "failed to persist group instance notification IDs");
             }
+        }
+        if let Ok(mut cached) = self.group_notification_group_ids.lock() {
+            *cached = Some(GroupNotificationGroupIds {
+                owner_id: session.current_user_id,
+                revision,
+                group_ids: group_ids.clone(),
+            });
         }
         group_ids
     }

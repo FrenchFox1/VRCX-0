@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import type { GameLogPreviousInstanceWorldRow } from '@/repositories/gameLogRepository';
+import { toast } from '@/services/toastService';
 import type { ParsedLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 
@@ -130,13 +130,15 @@ export function useLocationPreviousInstancesDialog({
             setPreviousInstancesDetailsOnly(false);
             setPreviousInstancesOpen(true);
         } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.location.toast.failed_to_load_instance_history'
-                      )
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t(
+                              'component.location.toast.failed_to_load_instance_history'
+                          )
+            });
         } finally {
             setPreviousInstancesLoading(false);
         }

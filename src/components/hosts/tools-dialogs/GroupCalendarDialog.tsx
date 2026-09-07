@@ -20,7 +20,6 @@ import {
 import type { ComponentProps } from 'react';
 import type { Locale } from 'react-day-picker';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import {
     entityQueryPolicies,
@@ -35,6 +34,7 @@ import vrchatToolsRepository, {
     type GroupCalendarEventRecord,
     type GroupCalendarGroupRecord
 } from '@/repositories/vrchatToolsRepository';
+import { toast } from '@/services/toastService';
 import { isRecord } from '@/shared/utils/record';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -339,12 +339,13 @@ export function GroupCalendarDialog({
             if (requestId !== loadRequestRef.current) {
                 return;
             }
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t('host.tools_dialogs.toast.failed_to_load_group_events')
                 )
-            );
+            });
         } finally {
             if (requestId === loadRequestRef.current) {
                 setLoading(false);
@@ -405,14 +406,15 @@ export function GroupCalendarDialog({
                 updateArrayValue(current, eventId, nextFollowing)
             );
         } catch (error) {
-            toast.error(
-                userFacingErrorMessage(
+            toast.add({
+                type: 'error',
+                title: userFacingErrorMessage(
                     error,
                     t(
                         'host.tools_dialogs.toast.failed_to_update_group_event_follow_state'
                     )
                 )
-            );
+            });
         }
     }
 

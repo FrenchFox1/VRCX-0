@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import type {
     CommunityThemeInstallMetadata,
@@ -34,6 +33,7 @@ import {
     setThemeColorPreference,
     setThemeModePreference
 } from '@/services/preferencesService';
+import { toast } from '@/services/toastService';
 import { isDevToolsBuild } from '@/shared/buildLabel';
 import { communityThemeControlsAccent } from '@/state/communityThemeStore';
 import type { ThemeMode } from '@/state/shellStore';
@@ -85,11 +85,13 @@ export function useThemesController() {
 
     useEffect(() => {
         loadCatalog().catch((loadError: unknown) => {
-            toast.error(
-                loadError instanceof Error
-                    ? loadError.message
-                    : t('view.community_themes.toast.catalog_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    loadError instanceof Error
+                        ? loadError.message
+                        : t('view.community_themes.toast.catalog_failed')
+            });
         });
         setOverrideDraft(getCommunityThemeOverrideCssSnapshot());
     }, [t]);
@@ -149,65 +151,90 @@ export function useThemesController() {
                     }
                 }));
             });
-            toast.success(t('view.community_themes.toast.theme_enabled'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.toast.theme_enabled')
+            });
         } catch (installError) {
-            toast.error(
-                installError instanceof Error
-                    ? installError.message
-                    : t('view.community_themes.toast.theme_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    installError instanceof Error
+                        ? installError.message
+                        : t('view.community_themes.toast.theme_failed')
+            });
         }
     }
 
     async function disableTheme() {
         try {
             await disableInstalledCommunityTheme();
-            toast.success(t('view.community_themes.toast.theme_disabled'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.toast.theme_disabled')
+            });
         } catch (disableError) {
-            toast.error(
-                disableError instanceof Error
-                    ? disableError.message
-                    : t('view.community_themes.toast.disable_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    disableError instanceof Error
+                        ? disableError.message
+                        : t('view.community_themes.toast.disable_failed')
+            });
         }
     }
 
     async function deleteTheme(themeId?: string) {
         try {
             await deleteInstalledCommunityTheme(themeId);
-            toast.success(t('view.community_themes.toast.theme_deleted'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.toast.theme_deleted')
+            });
         } catch (deleteError) {
-            toast.error(
-                deleteError instanceof Error
-                    ? deleteError.message
-                    : t('view.community_themes.toast.disable_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    deleteError instanceof Error
+                        ? deleteError.message
+                        : t('view.community_themes.toast.disable_failed')
+            });
         }
     }
 
     async function enableTheme(themeId?: string) {
         try {
             await enableInstalledCommunityTheme(themeId);
-            toast.success(t('view.community_themes.toast.theme_enabled'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.toast.theme_enabled')
+            });
         } catch (enableError) {
-            toast.error(
-                enableError instanceof Error
-                    ? enableError.message
-                    : t('view.community_themes.toast.theme_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    enableError instanceof Error
+                        ? enableError.message
+                        : t('view.community_themes.toast.theme_failed')
+            });
         }
     }
 
     async function saveOverride() {
         try {
             await saveCommunityThemeOverrideCss(overrideDraft);
-            toast.success(t('view.community_themes.toast.override_saved'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.toast.override_saved')
+            });
         } catch (saveError) {
-            toast.error(
-                saveError instanceof Error
-                    ? saveError.message
-                    : t('view.community_themes.toast.theme_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    saveError instanceof Error
+                        ? saveError.message
+                        : t('view.community_themes.toast.theme_failed')
+            });
         }
     }
 
@@ -215,26 +242,36 @@ export function useThemesController() {
         try {
             await clearCommunityThemeOverrideCss();
             setOverrideDraft('');
-            toast.success(t('view.community_themes.toast.override_cleared'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.toast.override_cleared')
+            });
         } catch (clearError) {
-            toast.error(
-                clearError instanceof Error
-                    ? clearError.message
-                    : t('view.community_themes.toast.disable_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    clearError instanceof Error
+                        ? clearError.message
+                        : t('view.community_themes.toast.disable_failed')
+            });
         }
     }
 
     async function disableOverride() {
         try {
             await disableCommunityThemeOverrideCss();
-            toast.success(t('view.community_themes.toast.override_disabled'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.toast.override_disabled')
+            });
         } catch (disableError) {
-            toast.error(
-                disableError instanceof Error
-                    ? disableError.message
-                    : t('view.community_themes.toast.disable_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    disableError instanceof Error
+                        ? disableError.message
+                        : t('view.community_themes.toast.disable_failed')
+            });
         }
     }
 
@@ -251,11 +288,13 @@ export function useThemesController() {
                 await stopLocalCommunityThemePreview();
             }
         } catch (sourceError) {
-            toast.error(
-                sourceError instanceof Error
-                    ? sourceError.message
-                    : t('view.themes.toast.source_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    sourceError instanceof Error
+                        ? sourceError.message
+                        : t('view.themes.toast.source_failed')
+            });
         }
     }
 
@@ -281,11 +320,13 @@ export function useThemesController() {
             }
             await setBackgroundImageMode(nextMode);
         } catch (sourceError) {
-            toast.error(
-                sourceError instanceof Error
-                    ? sourceError.message
-                    : t('view.background_image.toast.failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    sourceError instanceof Error
+                        ? sourceError.message
+                        : t('view.background_image.toast.failed')
+            });
         }
     }
 
@@ -299,11 +340,13 @@ export function useThemesController() {
                 await enableInstalledCommunityTheme(installedTheme.themeId);
             }
         } catch (sourceError) {
-            toast.error(
-                sourceError instanceof Error
-                    ? sourceError.message
-                    : t('view.community_themes.toast.theme_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    sourceError instanceof Error
+                        ? sourceError.message
+                        : t('view.community_themes.toast.theme_failed')
+            });
         }
     }
 
@@ -318,13 +361,16 @@ export function useThemesController() {
             if (devWatchEnabled) {
                 startLocalCommunityThemePreviewWatch(nextFolderPath);
             }
-            toast.success(t('view.community_themes.developer.loaded'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.developer.loaded')
+            });
         } catch (loadError) {
             const message =
                 loadError instanceof Error
                     ? loadError.message
                     : t('view.community_themes.developer.load_failed');
-            toast.error(message);
+            toast.add({ type: 'error', title: message });
         } finally {
             setDevLoading(false);
         }
@@ -354,11 +400,13 @@ export function useThemesController() {
             setDevFolderPath(folderPath);
             await loadLocalPreview(folderPath);
         } catch (pickError) {
-            toast.error(
-                pickError instanceof Error
-                    ? pickError.message
-                    : t('view.community_themes.developer.load_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    pickError instanceof Error
+                        ? pickError.message
+                        : t('view.community_themes.developer.load_failed')
+            });
         }
     }
 
@@ -366,13 +414,18 @@ export function useThemesController() {
         try {
             stopLocalCommunityThemePreviewWatch();
             await stopLocalCommunityThemePreview();
-            toast.success(t('view.community_themes.developer.stopped'));
+            toast.add({
+                type: 'success',
+                title: t('view.community_themes.developer.stopped')
+            });
         } catch (stopError) {
-            toast.error(
-                stopError instanceof Error
-                    ? stopError.message
-                    : t('view.community_themes.toast.disable_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    stopError instanceof Error
+                        ? stopError.message
+                        : t('view.community_themes.toast.disable_failed')
+            });
         }
     }
 
@@ -399,11 +452,13 @@ export function useThemesController() {
         try {
             await setThemeModePreference(nextThemeMode);
         } catch (modeError) {
-            toast.error(
-                modeError instanceof Error
-                    ? modeError.message
-                    : t('view.themes.toast.source_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    modeError instanceof Error
+                        ? modeError.message
+                        : t('view.themes.toast.source_failed')
+            });
         }
     }
 
@@ -414,11 +469,13 @@ export function useThemesController() {
         try {
             await setThemeColorPreference(nextThemeColor);
         } catch (colorError) {
-            toast.error(
-                colorError instanceof Error
-                    ? colorError.message
-                    : t('view.themes.toast.source_failed')
-            );
+            toast.add({
+                type: 'error',
+                title:
+                    colorError instanceof Error
+                        ? colorError.message
+                        : t('view.themes.toast.source_failed')
+            });
         }
     }
 

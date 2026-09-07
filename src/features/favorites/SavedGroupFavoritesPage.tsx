@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 
 import { GroupCard } from '@/components/groups/GroupCard';
 import {
@@ -28,6 +27,7 @@ import {
 } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openGroupDialog } from '@/services/dialogService';
+import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     AlertDialog,
@@ -467,5 +467,8 @@ export function SavedGroupFavoritesPage() {
 }
 
 function showError(error: unknown) {
-    toast.error(error instanceof Error ? error.message : String(error));
+    toast.add({
+        type: 'error',
+        title: error instanceof Error ? error.message : String(error)
+    });
 }

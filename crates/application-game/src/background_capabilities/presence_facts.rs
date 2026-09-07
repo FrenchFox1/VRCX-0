@@ -76,21 +76,13 @@ pub fn build_background_presence_facts(
     let parsed_location = parse_location(&current_location);
     let instance_type = normalize_instance_type(&parsed_location);
     let has_live_location = is_live_current_location(&current_location);
-    let runtime_players = normalize_runtime_players(&game_snapshot.players);
-    let runtime_player_count = runtime_players.len();
-    let (players, observed_player_event_count) = if has_live_location && runtime_players.is_empty()
-    {
-        load_players_from_persistence(
-            store,
-            &OwnerId::new(input.session.current_user_id.clone()),
-            &current_location,
-            &game_snapshot.started_at,
-        )?
+    let players = if game_snapshot.ready {
+        normalize_runtime_players(&game_snapshot.players)
     } else {
-        (runtime_players, 0)
+        Vec::new()
     };
     let player_facts_known =
-        has_live_location && (runtime_player_count > 0 || observed_player_event_count > 0);
+        has_live_location && game_snapshot.ready && game_snapshot.has_player_events;
     let friend_ids: Vec<String> = players
         .iter()
         .filter_map(|player| {
@@ -134,7 +126,7 @@ pub fn build_background_presence_facts(
         player_count: u32::try_from(players.len()).unwrap_or(u32::MAX),
         players,
         player_facts_known,
-        observed_player_event_count: u32::try_from(observed_player_event_count).unwrap_or(u32::MAX),
+        observed_player_event_count: 0,
         friend_count: u32::try_from(friend_ids.len()).unwrap_or(u32::MAX),
         present_friend_ids: friend_ids,
         present_favorite_group_keys,
@@ -182,37 +174,6 @@ fn normalize_runtime_players(players: &[PlayerState]) -> Vec<PresencePlayer> {
             })
         })
         .collect()
-}
-
-fn load_players_from_persistence(
-    store: &dyn GameStateStore,
-    owner_user_id: &OwnerId,
-    location: &str,
-    started_at: &str,
-) -> Result<(Vec<PresencePlayer>, usize)> {
-    let rows = store.player_join_leave_for_location(owner_user_id, location, started_at)?;
-    let mut players: HashMap<String, PresencePlayer> = HashMap::new();
-    let observed = rows.len();
-    for (index, row) in rows.into_iter().enumerate() {
-        let key = if row.user_id.trim().is_empty() {
-            format!("display:{}", row.display_name)
-        } else {
-            row.user_id.clone()
-        };
-        if row.event_type == "OnPlayerLeft" {
-            players.remove(&key);
-        } else {
-            players.insert(
-                key,
-                PresencePlayer {
-                    id: non_empty(&row.user_id, &format!("persisted:{index}")),
-                    user_id: row.user_id,
-                    display_name: row.display_name,
-                },
-            );
-        }
-    }
-    Ok((players.into_values().collect(), observed))
 }
 
 fn collect_present_favorite_group_keys(
@@ -332,5 +293,55 @@ mod tests {
         assert_eq!(parsed.world_id, "wrld_1");
         assert_eq!(parsed.access_type, "group");
         assert_eq!(normalize_instance_type(&parsed), "groupPlus");
+    }
+}
+
+#[cfg(test)]
+mod roster_tests {
+    use super::*;
+
+    #[test]
+    fn authoritative_empty_roster_is_not_replaced_by_database_history() {
+        let store = crate::ports::TestGameStateStore::default();
+        store
+            .write_game_log(
+                &OwnerId::new(""),
+                &vrcx_0_contracts::game_log::GameLogWriteBatch {
+                    join_leave: vec![vrcx_0_contracts::game_log::GameLogJoinLeaveEntry {
+                        created_at: "2026-05-14T04:00:00.000Z".into(),
+                        event_type: "OnPlayerJoined".into(),
+                        display_name: "Old player".into(),
+                        user_id: "usr_old".into(),
+                        location: "wrld_current:1".into(),
+                        world_name: "World".into(),
+                        time: 0,
+                    }],
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        let facts = build_background_presence_facts(
+            &store,
+            BackgroundPresenceFactsInput {
+                session: Default::default(),
+                is_game_running: true,
+                is_steamvr_running: false,
+                is_game_no_vr: true,
+                last_game_started_at: None,
+                game_log_snapshot: Arc::new(RuntimeSnapshot {
+                    ready: true,
+                    has_player_events: true,
+                    location: "wrld_current:1".into(),
+                    ..Default::default()
+                }),
+                now_playing: Arc::new(NowPlayingSnapshot::default()),
+                friend_user_ids: &HashSet::new(),
+                favorite_friend_groups_by_key: &HashMap::new(),
+                favorite_world_groups_by_key: &HashMap::new(),
+            },
+        )
+        .unwrap();
+        assert!(facts.players.is_empty());
+        assert!(facts.player_facts_known);
     }
 }
