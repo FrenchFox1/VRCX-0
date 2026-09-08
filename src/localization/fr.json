@@ -753,11 +753,41 @@
         }
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "Shortcut recording could not start. Close this dialog and try again.",
+            "checking": "Vérification du raccourci…",
+            "background_hint": "Hiding uses the Background Mode and delay settings.",
+            "global": "Global",
+            "title": "Afficher / Cacher VRCX-0",
+            "description": "Afficher ou masquer VRCX-0 depuis n'importe quelle application. VRCX-0 continue de s'exécuter lorsque qu'il est masqué.",
+            "configure": "Définir le raccourci global",
+            "unset": "Non défini",
+            "inactive": "Inactif",
+            "unsupported": "Les raccourcis globaux ne sont pas disponibles dans cet environnement.",
+            "record": "Pressez une combinaison de touches",
+            "record_description": "Utilisez Ctrl ou Alt avec une lettre, un nombre ou une touche de fonction. Esc annule. Le raccourci actuel ne masquera pas la fenêtre pendant l'enregistrement.",
+            "startup_failed": "Le raccourci global n'a pas pu être activé. Il pourrait être utilisé par une autre application.",
+            "error": {
+                "inUse": "Ce raccourci est déjà utilisé. Choisissez une autre combinaison.",
+                "invalid": "Utilisez Ctrl ou Alt avec une lettre, un nombre ou une touche de fonction.",
+                "reserved": "Cette combinaison est réservée pour une action système ou d'application. Choisissez une autre.",
+                "unavailable": "Ce raccourci est indisponible ou déjà utilisé. Essayez une autre combinaison.",
+                "unsupported": "Les raccourcis globaux ne sont pas disponibles dans cet environnement."
+            }
+        },
         "title": "Raccourcis clavier",
         "group": {
             "general": "Général",
-            "layout": "Disposition"
-        }
+            "layout": "Disposition",
+            "pagination": "Recherche et pagination du tableau",
+            "screenshots": "Détails des captures d'écran",
+            "image_viewer": "Visionneuse d'image en plein écran",
+            "selection": "Sélection dans les captures d'écran et favoris"
+        },
+        "navigation_items": "Ouvrir l'élément de navigation 1–9",
+        "hold_for_hints": "Afficher les indices de raccourci (maintenir)",
+        "toggle_details": "Afficher / masquer les détails",
+        "clear_selection": "Effacer la sélection"
     },
     "side_panel": {
         "search_placeholder": "Rechercher",
@@ -791,6 +821,12 @@
         "groups": "GROUPES",
         "friends": "AMIS",
         "me": "MOI",
+        "self_menu": "Menu du compte",
+        "filter_friends": "Filtrer les amis",
+        "filter_groups": "Filtrer les groupes",
+        "filter_no_results": "Aucune correspondance",
+        "self_more_actions": "Plus",
+        "switch_account": "Changer de compte",
         "favorite": "FAVORIS",
         "same_instance": "MÊME INSTANCE",
         "you_are_here": "VOUS ÊTES ICI",
@@ -1449,6 +1485,10 @@
             }
         },
         "friend_log": {
+            "date_range": "Plage de dates",
+            "latest": "Dernières",
+            "rows": "rangées",
+            "load_older_failed": "Impossible de charger l'historique plus ancien.",
             "filter_placeholder": "Filtrer",
             "all_types": "Tous les types",
             "groups": {
@@ -2704,8 +2744,6 @@
                     "troubleshooting": {
                         "header": "Dépannage",
                         "description": "Outils de journalisation et de diagnostic pour rechercher les problèmes.",
-                        "show": "Afficher les outils",
-                        "hide": "Masquer les outils",
                         "gamelog": "Enregistrer l’historique du journal de jeu",
                         "gamelog_description": "Lorsque cette option est désactivée, aucun nouvel historique n’est enregistré. Les fonctionnalités telles que la liste d'utilisateurs et ce qui joue restent disponibles.",
                         "feed_history": "Enregistrer l’historique du flux",
