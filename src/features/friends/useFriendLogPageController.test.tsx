@@ -72,8 +72,10 @@ function setOwner(currentUserId: string) {
     }));
 }
 
-async function renderLoadedController() {
+async function renderLoadedController(search = true) {
     const hook = renderHook(useFriendLogPageController);
+    if (search)
+        act(() => hook.result.current.filters.setDateRange('2020-01-01', ''));
     await waitFor(() => {
         expect(hook.result.current.rows.loadStatus).toBe('ready');
         expect(hook.result.current.tableState.pagination.pageSize).toBe(20);
@@ -119,6 +121,36 @@ afterEach(() => {
 });
 
 describe('FriendLog page data', () => {
+    it('only enables sorting and builds table rows for search results', async () => {
+        const rows = makeRows(100).reverse();
+        vi.mocked(
+            friendLogHistoryRepository.getFriendLogHistory
+        ).mockResolvedValue(rows);
+        const { result } = await renderLoadedController(false);
+        expect(result.current.table.getColumn('created_at')?.getCanSort()).toBe(
+            false
+        );
+        expect(result.current.table.getCoreRowModel().rows).toHaveLength(0);
+        act(() =>
+            result.current.table.setSorting([{ id: 'created_at', desc: false }])
+        );
+        expect(result.current.rows.orderedRows[0].rowId).toBe(100);
+        await act(async () =>
+            result.current.filters.setDateRange('2026-09-01', '2026-09-01')
+        );
+        expect(result.current.table.getColumn('created_at')?.getCanSort()).toBe(
+            true
+        );
+        expect(result.current.table.getRowModel().rows[0].original.rowId).toBe(
+            1
+        );
+        await act(async () => result.current.filters.setDateRange('', ''));
+        expect(result.current.table.getColumn('created_at')?.getCanSort()).toBe(
+            false
+        );
+        expect(result.current.rows.orderedRows[0].rowId).toBe(100);
+    });
+
     it('builds row models and display copies only for the current page, with full counts', async () => {
         const rows = makeRows(101);
         vi.mocked(
@@ -220,7 +252,9 @@ describe('FriendLog page data', () => {
         ).toBe(false);
 
         act(() => result.current.table.setPageIndex(2));
-        act(() => result.current.filters.setSearchQuery('  TARGET name  '));
+        await act(async () =>
+            result.current.filters.setSearchQuery('  TARGET name  ')
+        );
 
         expect(result.current.tableState.pagination.pageIndex).toBe(0);
         expect(result.current.table.getRowCount()).toBe(1);
@@ -274,7 +308,9 @@ describe('FriendLog page data', () => {
         expect(result.current.rows.orderedRows).toBe(orderedRows);
         expect(result.current.table.getCoreRowModel().rows).toBe(coreRows);
 
-        act(() => result.current.filters.setSearchQuery('New Name'));
+        await act(async () =>
+            result.current.filters.setSearchQuery('New Name')
+        );
         expect(result.current.table.getRowCount()).toBe(0);
         act(() =>
             useFriendRosterStore
@@ -298,14 +334,25 @@ describe('FriendLog page data', () => {
         }));
         vi.mocked(
             friendLogHistoryRepository.getFriendLogHistory
-        ).mockResolvedValue(rows);
+        ).mockImplementation(async (_owner, options = {}) =>
+            rows.filter(
+                (row) =>
+                    (!options.types?.length ||
+                        options.types.includes(row.type)) &&
+                    !options.excludedTypes?.includes(row.type)
+            )
+        );
         const { result } = await renderLoadedController();
         act(() => result.current.table.setPageIndex(1));
-        act(() => usePreferencesStore.setState({ hideUnfriends: true }));
+        await act(async () =>
+            usePreferencesStore.setState({ hideUnfriends: true })
+        );
 
         expect(result.current.tableState.pagination.pageIndex).toBe(0);
         expect(result.current.table.getRowCount()).toBe(43);
-        act(() => result.current.filters.setSelectedTypes(['Unfriend']));
+        await act(async () =>
+            result.current.filters.setSelectedTypes(['Unfriend'])
+        );
         expect(result.current.table.getRowCount()).toBe(2);
         expect(
             result.current.table
@@ -361,12 +408,11 @@ describe('FriendLog page data', () => {
 
         expect(result.current.rows.rowsOwnerUserId).toBe('usr_new_owner');
         expect(result.current.table.getRowCount()).toBe(1);
-        expect(result.current.table.getRowModel().rows[0].id).toBe(
-            'usr_new_owner:row:1'
-        );
+        expect(result.current.rows.orderedRows[0].rowId).toBe(1);
         expect(
-            result.current.table.getRowModel().rows[0].original
-                .resolvedDisplayName
+            result.current.rows.resolveDisplayName(
+                result.current.rows.orderedRows[0]
+            )
         ).toBe('New Owner Row');
     });
 
@@ -384,7 +430,7 @@ describe('FriendLog page data', () => {
             .mockResolvedValueOnce([
                 { ...makeRows(1)[0], displayName: 'New Name' }
             ]);
-        const { result } = await renderLoadedController();
+        const { result } = await renderLoadedController(false);
         const request = vi.mocked(commands.appFriendLogNamesResolve).mock
             .calls[0][0];
         act(() => setOwner('usr_new_owner'));
@@ -399,8 +445,9 @@ describe('FriendLog page data', () => {
             request.requestId
         );
         expect(
-            result.current.table.getRowModel().rows[0].original
-                .resolvedDisplayName
+            result.current.rows.resolveDisplayName(
+                result.current.rows.orderedRows[0]
+            )
         ).toBe('New Name');
     });
 });

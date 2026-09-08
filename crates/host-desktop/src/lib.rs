@@ -14,6 +14,8 @@ pub mod log_scanner;
 pub mod overlay_notifications;
 pub mod process_status;
 pub mod shell_actions;
+#[cfg(windows)]
+pub mod shortcut_recorder;
 pub mod sidebar_window;
 pub mod system_fonts;
 pub mod system_theme;

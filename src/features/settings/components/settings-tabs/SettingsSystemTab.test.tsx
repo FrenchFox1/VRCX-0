@@ -17,27 +17,39 @@ vi.mock('@/ui/shadcn/badge', () => ({
 }));
 
 vi.mock('@/ui/shadcn/button', () => ({
-    Button: ({ children }: ChildrenProps) => <button>{children}</button>
+    Button: ({
+        children,
+        disabled
+    }: ChildrenProps & { disabled?: boolean }) => (
+        <button disabled={disabled}>{children}</button>
+    )
 }));
 
 vi.mock('@/ui/shadcn/switch', () => ({
-    Switch: () => <span data-switch />
+    Switch: ({ disabled }: { disabled?: boolean }) => (
+        <input type="checkbox" aria-label="Setting" disabled={disabled} />
+    )
 }));
 
 vi.mock('../SettingsField', () => ({
     Field: ({
         children,
         description,
-        label
-    }: ChildrenProps & { description?: ReactNode; label?: ReactNode }) => (
-        <section>
+        label,
+        disabled
+    }: ChildrenProps & {
+        description?: ReactNode;
+        label?: ReactNode;
+        disabled?: boolean;
+    }) => (
+        <section
+            data-setting={typeof label === 'string' ? label : undefined}
+            data-disabled={disabled || undefined}
+        >
             <span>{label}</span>
             <span>{description}</span>
             {children}
         </section>
-    ),
-    SettingsGroup: ({ children }: ChildrenProps) => (
-        <section>{children}</section>
     )
 }));
 
@@ -66,6 +78,48 @@ const handlers = {
 };
 
 describe('SettingsSystemTab updater policy', () => {
+    it.each([false, true])(
+        'allows configuring background mode and delay without close-to-tray or a shortcut (background mode: %s)',
+        (backgroundModeEnabled) => {
+            const html = renderToStaticMarkup(
+                <SettingsSystemTab
+                    hostPlatform="windows"
+                    isCloseToTray={false}
+                    backgroundModeEnabled={backgroundModeEnabled}
+                    backgroundModeDelayEnabled
+                    backgroundModeDelayMinutes={60}
+                    {...handlers}
+                />
+            );
+            const sections =
+                html.match(/<section\b[^>]*>[\s\S]*?<\/section>/g) ?? [];
+            for (const setting of [
+                'background_mode',
+                'background_mode_delay',
+                'background_mode_delay_button'
+            ]) {
+                const section = sections.find((candidate) =>
+                    candidate.startsWith(
+                        `<section data-setting="view.settings.general.application.${setting}"`
+                    )
+                );
+                expect(section).toBeDefined();
+                expect(section).not.toContain('disabled');
+            }
+        }
+    );
+
+    it('shows global tray shortcut settings only on Windows', () => {
+        for (const hostPlatform of ['windows', 'macos', 'linux'] as const) {
+            const html = renderToStaticMarkup(
+                <SettingsSystemTab hostPlatform={hostPlatform} {...handlers} />
+            );
+            expect(html.includes('shortcuts.tray.title')).toBe(
+                hostPlatform === 'windows'
+            );
+        }
+    });
+
     it('shows a disabled status badge instead of an update control', () => {
         const html = renderToStaticMarkup(
             <SettingsSystemTab

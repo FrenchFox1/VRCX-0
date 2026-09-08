@@ -6,7 +6,7 @@ import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import { useCommunityThemeStore } from '@/state/communityThemeStore';
 import { Button } from '@/ui/shadcn/button';
 
-import { SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
 
 export function SettingsInterfaceThemesCard() {
     const { t } = useTranslation();
@@ -31,7 +31,8 @@ export function SettingsInterfaceThemesCard() {
             : t('view.themes.source.built_in');
 
     return (
-        <SettingsGroup
+        <SettingsCard
+            cardId="interface.themes"
             title={
                 <span className="flex items-center gap-2">
                     <PaletteIcon data-icon="inline-start" />
@@ -60,6 +61,6 @@ export function SettingsInterfaceThemesCard() {
                     {t('view.themes.action.open_themes')}
                 </Button>
             </div>
-        </SettingsGroup>
+        </SettingsCard>
     );
 }

@@ -86,7 +86,7 @@ pub fn friend_log_history_query(
     }
     let user_prefix = normalize_user_table_prefix(&user_id)?;
     ensure_realtime_tables(db, &user_prefix)?;
-    let mut clauses = Vec::new();
+    let mut clauses = vec!["TRIM(user_id) <> ''".to_string()];
     let mut db_params = HashMap::new();
     let target_user_id = normalize_text(query.target_user_id);
     if !target_user_id.is_empty() {
@@ -103,14 +103,46 @@ pub fn friend_log_history_query(
     if !type_placeholders.is_empty() {
         clauses.push(format!("type IN ({})", type_placeholders.join(", ")));
     }
-    let where_sql = if clauses.is_empty() {
-        String::new()
+    let excluded_placeholders = add_list_params(
+        &mut db_params,
+        &query.excluded_types,
+        "excluded_friend_log_type",
+    );
+    if !excluded_placeholders.is_empty() {
+        clauses.push(format!(
+            "type NOT IN ({})",
+            excluded_placeholders.join(", ")
+        ));
+    }
+    if !query.date_from.is_empty() {
+        clauses.push("julianday(created_at) >= julianday(@date_from)".into());
+        db_params.insert("@date_from".into(), Value::String(query.date_from));
+    }
+    if !query.date_to.is_empty() {
+        clauses.push("julianday(created_at) <= julianday(@date_to)".into());
+        db_params.insert("@date_to".into(), Value::String(query.date_to));
+    }
+    let paged = query.limit.is_some() || query.cursor.is_some();
+    if let Some(cursor) = query.cursor {
+        clauses.push("(COALESCE(julianday(created_at), 0), id) < (COALESCE(julianday(@cursor_date), 0), @cursor_id)".into());
+        db_params.insert("@cursor_date".into(), Value::String(cursor.created_at));
+        db_params.insert("@cursor_id".into(), Value::from(cursor.row_id));
+    }
+    let limit_sql = if let Some(limit) = query.limit {
+        db_params.insert("@limit".into(), Value::from(limit.max(1)));
+        " LIMIT @limit"
     } else {
-        format!(" WHERE {}", clauses.join(" AND "))
+        ""
     };
+    let order_sql = if paged {
+        "COALESCE(julianday(created_at), 0) DESC, id DESC"
+    } else {
+        "created_at DESC, id DESC"
+    };
+    let where_sql = format!(" WHERE {}", clauses.join(" AND "));
     Ok(db
         .execute(
-            &format!("SELECT id, created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number FROM {user_prefix}_friend_log_history{where_sql} ORDER BY created_at DESC, id DESC"),
+            &format!("SELECT id, created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number FROM {user_prefix}_friend_log_history{where_sql} ORDER BY {order_sql}{limit_sql}"),
             &db_params,
         )?
         .into_iter()

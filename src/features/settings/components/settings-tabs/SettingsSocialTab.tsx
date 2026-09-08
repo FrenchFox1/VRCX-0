@@ -40,7 +40,8 @@ import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 
 type KnownUserOption = Partial<UserFact> & {
@@ -175,7 +176,10 @@ export function SettingsSocialTab() {
 
     return (
         <SettingsTabContent value="social">
-            <SettingsGroup title={t('view.settings.social.interaction.header')}>
+            <SettingsCard
+                cardId="social.interaction"
+                title={t('view.settings.social.interaction.header')}
+            >
                 <Field
                     label={t(
                         'view.settings.appearance.user_dialog.recent_action_cooldown'
@@ -218,8 +222,9 @@ export function SettingsSocialTab() {
                         ) : null}
                     </div>
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup
+            </SettingsCard>
+            <SettingsCard
+                cardId="social.friend-log"
                 title={t('view.settings.appearance.friend_log.header')}
             >
                 <Field
@@ -242,8 +247,11 @@ export function SettingsSocialTab() {
                         onCheckedChange={onHideUnfriendsChange}
                     />
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup title={t('view.settings.social.hidden_feed.header')}>
+            </SettingsCard>
+            <SettingsCard
+                cardId="social.hidden-feed"
+                title={t('view.settings.social.hidden_feed.header')}
+            >
                 <Field
                     label={t('view.settings.social.hidden_feed.add')}
                     description={t(
@@ -378,8 +386,11 @@ export function SettingsSocialTab() {
                         )}
                     </div>
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup title={t('view.settings.social.favorites.header')}>
+            </SettingsCard>
+            <SettingsCard
+                cardId="social.favorites"
+                title={t('view.settings.social.favorites.header')}
+            >
                 <Field
                     label={t('view.settings.general.favorites.header')}
                     description={t(
@@ -472,7 +483,7 @@ export function SettingsSocialTab() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
         </SettingsTabContent>
     );
 }

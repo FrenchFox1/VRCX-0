@@ -1,4 +1,4 @@
-import { ShieldUserIcon } from 'lucide-react';
+import { UsersRoundIcon } from 'lucide-react';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type { UserGroupsOverviewGroup } from '@/platform/tauri/bindings';
@@ -20,11 +20,11 @@ export function GroupModerationGroupIcon({
                     alt=""
                     className="size-full object-cover"
                     fallback={
-                        <ShieldUserIcon className="text-muted-foreground size-4" />
+                        <UsersRoundIcon className="text-muted-foreground size-4" />
                     }
                 />
             ) : (
-                <ShieldUserIcon className="text-muted-foreground size-4" />
+                <UsersRoundIcon className="text-muted-foreground size-4" />
             )}
         </span>
     );

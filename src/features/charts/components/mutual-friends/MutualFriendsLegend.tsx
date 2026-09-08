@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { MUTUAL_GRAPH_MIN_DEGREE_LIMITS } from '../../mutual-friends/mutualFriendsFilters';
 import type {
@@ -117,26 +118,38 @@ export function MutualFriendsLegend({
                     </li>
                 ) : null}
                 <li>
-                    <button
-                        type="button"
-                        aria-pressed={crossCommunityOnly}
-                        title={t(
-                            'view.charts.mutual_friend.legend.cross_edges_only'
-                        )}
-                        onClick={onToggleCrossCommunityOnly}
-                        className={cn(
-                            '-mx-1.5 flex w-[calc(100%+0.75rem)] items-center gap-2 rounded-md px-1.5 py-1 text-left transition-[background-color] duration-150 ease-out',
-                            'hover:bg-foreground/5 active:translate-y-px',
-                            crossCommunityOnly ? 'bg-foreground/10' : ''
-                        )}
-                    >
-                        <span className="flex w-4 shrink-0 items-center justify-center">
-                            <span className="bg-muted-foreground/80 h-px w-3.5" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                            {t('view.charts.mutual_friend.legend.cross_edges')}
-                        </span>
-                    </button>
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <button
+                                    type="button"
+                                    aria-pressed={crossCommunityOnly}
+                                    onClick={onToggleCrossCommunityOnly}
+                                    className={cn(
+                                        '-mx-1.5 flex w-[calc(100%+0.75rem)] items-center gap-2 rounded-md px-1.5 py-1 text-left transition-[background-color] duration-150 ease-out',
+                                        'hover:bg-foreground/5 active:translate-y-px',
+                                        crossCommunityOnly
+                                            ? 'bg-foreground/10'
+                                            : ''
+                                    )}
+                                >
+                                    <span className="flex w-4 shrink-0 items-center justify-center">
+                                        <span className="bg-muted-foreground/80 h-px w-3.5" />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                        {t(
+                                            'view.charts.mutual_friend.legend.cross_edges'
+                                        )}
+                                    </span>
+                                </button>
+                            }
+                        />
+                        <TooltipContent>
+                            {t(
+                                'view.charts.mutual_friend.legend.cross_edges_only'
+                            )}
+                        </TooltipContent>
+                    </Tooltip>
                 </li>
             </ul>
 

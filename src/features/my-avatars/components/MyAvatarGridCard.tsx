@@ -17,8 +17,8 @@ import { useTranslation } from 'react-i18next';
 
 import { AvatarPlatformDots } from '@/components/avatars/AvatarPlatformDots';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
+import { TILE_SELECTED } from '@/shared/constants/selectableTile';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';

@@ -17,7 +17,8 @@ import { FadeInImage } from '@/components/media/FadeInImage';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import { timeToText } from '@/lib/dateTime';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
-import { getTrustColor, TRUST_COLOR_ENTRIES } from '@/shared/utils/trustColors';
+import { TRUST_COLOR_ENTRIES } from '@/shared/constants/trustColors';
+import { getTrustColor } from '@/shared/utils/trustColors';
 import { useModalStore } from '@/state/modalStore';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 

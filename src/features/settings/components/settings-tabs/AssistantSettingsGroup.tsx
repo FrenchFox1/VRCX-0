@@ -23,7 +23,8 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 
 const PLAYBOOK_MODES: PlaybookMode[] = ['auto', 'guided', 'open'];
 
@@ -128,7 +129,8 @@ export function AssistantSettingsGroup({
 
     return (
         <>
-            <SettingsGroup
+            <SettingsCard
+                cardId="ai.assistant"
                 title={t('view.settings.ai.header')}
                 description={t('view.settings.ai.description')}
             >
@@ -200,9 +202,10 @@ export function AssistantSettingsGroup({
                         </Field>
                     </>
                 )}
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="ai.endpoints"
                 title={t('view.tools.llm_endpoints.title')}
                 description={t('view.tools.llm_endpoints.description')}
                 action={
@@ -228,7 +231,7 @@ export function AssistantSettingsGroup({
                         onCheckedChange={updateFollowCustomProxy}
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
         </>
     );
 }

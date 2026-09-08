@@ -10,12 +10,12 @@ import {
     resolveProfileDecorationPreviewUrl,
     resolveProfileDecorationTypeLabelKey
 } from '@/domain/entities/inventory';
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/shared/constants/imageUpload';
 
 import {
     buildEmojiUploadParams,
     CATEGORY_DEFINITIONS,
     INITIAL_INVENTORY_SUB_TABS,
-    MAX_IMAGE_UPLOAD_BYTES,
     getLatestFileUrl,
     getUsefulDisplayName,
     parseEmojiUploadSettings,

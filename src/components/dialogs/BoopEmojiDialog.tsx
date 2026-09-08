@@ -4,14 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { cn } from '@/lib/utils';
+import mediaRepository from '@/repositories/mediaRepository';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import {
     TILE_CHECK,
     TILE_MOTION_STANDALONE,
     TILE_SELECTED
-} from '@/lib/selectableTile';
-import { cn } from '@/lib/utils';
-import mediaRepository from '@/repositories/mediaRepository';
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+} from '@/shared/constants/selectableTile';
 import { vrchatDefaultEmojis } from '@/shared/constants/vrchatDefaultEmojis';
 import { isRecord } from '@/shared/utils/record';
 import { Button } from '@/ui/shadcn/button';

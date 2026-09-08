@@ -11,25 +11,49 @@ import { Button } from '@/ui/shadcn/button';
 import { FriendLogPageTable } from './components/FriendLogPageTable';
 import { FriendLogPageToolbar } from './components/FriendLogPageToolbar';
 import { FriendLogEmptyState } from './components/FriendLogViewParts';
+import { FriendLogVirtualList } from './components/FriendLogVirtualList';
 import { useFriendLogPageController } from './useFriendLogPageController';
 
 export function FriendLogPage({
     embedded = false
 }: { embedded?: boolean } = {}) {
     const { t } = useTranslation();
-    const { filters, isError, isLoading, rows, table, tableState } =
-        useFriendLogPageController();
+    const {
+        filters,
+        isError,
+        isLoading,
+        rows,
+        rowActions,
+        shiftHeld,
+        table,
+        tableState
+    } = useFriendLogPageController();
     const hasRows = rows.orderedRows.length > 0;
-    const hasHistory = rows.rows.length > 0;
+    const hasHistory =
+        rows.rows.length > 0 ||
+        rows.searchMode ||
+        filters.selectedTypes.length > 0;
 
     return (
         <PageScaffold embedded={embedded}>
             <FriendLogPageToolbar
                 selectedTypes={filters.selectedTypes}
                 onSelectedTypesChange={filters.setSelectedTypes}
-                searchQuery={filters.searchQuery}
-                onSearchQueryChange={filters.setSearchQuery}
-                detail={rows.detail}
+                searchDraft={filters.searchDraft}
+                onSearchDraftChange={filters.setSearchDraft}
+                onCommitSearch={filters.commitSearch}
+                onClearSearch={filters.clearSearch}
+                dateFrom={filters.dateFrom}
+                dateTo={filters.dateTo}
+                onDateRangeChange={filters.setDateRange}
+                detail={
+                    rows.detail ||
+                    (rows.loadStatus === 'error'
+                        ? t(
+                              'view.friend_log.error.friend_history_failed_to_load'
+                          )
+                        : '')
+                }
                 currentUserId={rows.currentUserId}
                 loadStatus={rows.loadStatus}
                 onRefresh={filters.refreshFriendLog}
@@ -51,6 +75,28 @@ export function FriendLogPage({
                         description={
                             rows.detail || 'The history query did not complete.'
                         }
+                    />
+                ) : (hasRows || rows.hasMore) && !rows.searchMode ? (
+                    <FriendLogVirtualList
+                        rows={rows.orderedRows}
+                        table={table}
+                        resolveDisplayName={rows.resolveDisplayName}
+                        resetKey={rows.normalQueryKey}
+                        hasMore={rows.hasMore}
+                        loadingOlder={rows.loadingOlder}
+                        loadOlderFailed={rows.loadOlderFailed}
+                        hasUnloadedLatest={rows.hasUnloadedLatest}
+                        onLoadOlder={rows.loadOlder}
+                        onReloadLatest={rows.reloadLatest}
+                        onViewingLatestChange={rows.setViewingLatest}
+                        deleteAction={{
+                            currentUserId: rows.currentUserId,
+                            rowsOwnerUserId: rows.rowsOwnerUserId,
+                            loadStatus: rows.loadStatus,
+                            deletingRowKey: rowActions.deletingRowKey,
+                            handleDeleteRow: rowActions.handleDeleteRow,
+                            shiftHeld
+                        }}
                     />
                 ) : hasRows ? (
                     <FriendLogPageTable
@@ -80,7 +126,8 @@ export function FriendLogPage({
                                 variant="link"
                                 onClick={() => {
                                     filters.setSelectedTypes([]);
-                                    filters.setSearchQuery('');
+                                    filters.clearSearch();
+                                    filters.setDateRange('', '');
                                 }}
                             >
                                 {t('common.actions.clear')}

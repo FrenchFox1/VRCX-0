@@ -2333,6 +2333,27 @@ const generatedCommands = {
     async appGetSidebarAutoHide(): Promise<SidebarAutoHideSnapshot> {
         return await TAURI_INVOKE('app__get_sidebar_auto_hide');
     },
+    async appGetTrayShortcut(): Promise<TrayShortcutSnapshot> {
+        return await TAURI_INVOKE('app__get_tray_shortcut');
+    },
+    async appSetTrayShortcut(
+        binding: TrayShortcutBinding | null
+    ): Promise<TrayShortcutUpdate> {
+        return await TAURI_INVOKE('app__set_tray_shortcut', { binding });
+    },
+    async appCheckTrayShortcut(
+        binding: TrayShortcutBinding
+    ): Promise<TrayShortcutError | null> {
+        return await TAURI_INVOKE('app__check_tray_shortcut', { binding });
+    },
+    async appSetTrayShortcutRecording(recording: boolean): Promise<boolean> {
+        return await TAURI_INVOKE('app__set_tray_shortcut_recording', {
+            recording
+        });
+    },
+    async appTakeTrayShortcutStartupFailure(): Promise<boolean> {
+        return await TAURI_INVOKE('app__take_tray_shortcut_startup_failure');
+    },
     async appSetSidebarAutoHide(enabled: boolean): Promise<boolean> {
         return await TAURI_INVOKE('app__set_sidebar_auto_hide', { enabled });
     },
@@ -4148,6 +4169,7 @@ export type FriendLogCurrentOutput = {
     trustLevel: string;
     friendNumber: number;
 };
+export type FriendLogHistoryCursor = { createdAt: string; rowId: number };
 export type FriendLogHistoryEntryInput = {
     rowId?: JsonValue;
     createdAt?: string;
@@ -4174,6 +4196,11 @@ export type FriendLogHistoryQueryInput = {
     userId: string;
     targetUserId?: string;
     types?: string[];
+    excludedTypes?: string[];
+    dateFrom?: string;
+    dateTo?: string;
+    cursor: FriendLogHistoryCursor | null;
+    limit: number | null;
 };
 export type FriendLogNameResolutionInput = {
     requestId: string;
@@ -6217,6 +6244,34 @@ export type TranslationTranslateInput = {
     targetLanguage: string | null;
     overrides: TranslationOverrides | null;
 };
+export type TrayShortcutBinding = {
+    control: boolean;
+    alt: boolean;
+    shift: boolean;
+    key: string;
+};
+export type TrayShortcutError =
+    | 'invalid'
+    | 'reserved'
+    | 'inUse'
+    | 'unavailable'
+    | 'unsupported';
+export type TrayShortcutSnapshot = {
+    binding: TrayShortcutBinding | null;
+    status: TrayShortcutStatus;
+};
+export type TrayShortcutStatus =
+    | 'unset'
+    | 'active'
+    | 'unavailable'
+    | 'unsupported';
+export type TrayShortcutUpdate =
+    | { kind: 'saved'; snapshot: TrayShortcutSnapshot }
+    | {
+          kind: 'failed';
+          error: TrayShortcutError;
+          snapshot: TrayShortcutSnapshot;
+      };
 export type TtsVoice = { id: string; name: string; language: string };
 export type TurnStatus = 'running' | 'done' | 'error' | 'cancelled';
 export type UpdaterMetadata = {

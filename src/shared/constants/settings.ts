@@ -65,3 +65,22 @@ export {
     normalizeAvatarAutoCleanupPreference
 };
 export type { AvatarAutoCleanupPreference, VRChatResolution };
+
+export const DEFAULT_TABLE_PAGE_SIZE = 20;
+
+export const DEFAULT_TABLE_PAGE_SIZES = Object.freeze([
+    10, 15, 20, 25, 50, 100
+]);
+
+export const DEFAULT_PRINT_AUTO_DELETE_LIMIT = 60;
+
+export const PRINT_AUTO_DELETE_LIMIT_MIN = 30;
+
+export const PRINT_AUTO_DELETE_LIMIT_MAX = 60;
+
+export const PRINT_FAVORITE_LIMIT_BUFFER = 5;
+
+export const DEFAULT_TRANSLATION_ENDPOINT =
+    'https://api.openai.com/v1/chat/completions';
+
+export const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';

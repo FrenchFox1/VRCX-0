@@ -8,11 +8,11 @@ import {
 } from '@/components/location/useLocationMetadata';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatScreenshotDateTime } from '@/lib/dateTime';
-import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 import { requestScreenshotThumbnail } from '@/services/screenshotThumbnailQueueService';
+import { TILE_SELECTED } from '@/shared/constants/selectableTile';
 import { parseLocation } from '@/shared/utils/location';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';

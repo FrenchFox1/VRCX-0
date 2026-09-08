@@ -89,23 +89,23 @@
     --border-hover: var(--stroke-strong);
     --state-hover-surface: color-mix(
         in oklch,
-        var(--surface-panel) 94%,
-        var(--foreground)
+        var(--foreground) 7%,
+        transparent
     );
     --state-pressed-surface: color-mix(
         in oklch,
-        var(--surface-panel) 90%,
-        var(--foreground)
+        var(--foreground) 10%,
+        transparent
     );
     --state-selected-surface: color-mix(
         in oklab,
-        var(--surface-panel) 90%,
-        var(--primary)
+        var(--primary) 10%,
+        transparent
     );
     --state-selected-hover-surface: color-mix(
         in oklab,
-        var(--surface-panel) 85%,
-        var(--primary)
+        var(--primary) 15%,
+        transparent
     );
     --object-surface: var(--surface-panel);
     --object-surface-hover: var(--state-hover-surface);
@@ -204,9 +204,11 @@
     --vrcx-0-table-header-height: 2.5rem;
     --vrcx-0-table-row-height: 2.5rem;
     --vrcx-0-table-cell-padding-inline: 0.75rem;
-    --vrcx-0-main-content-gutter: 0.5rem;
-    --vrcx-0-main-content-radius: 0.5rem;
+    --vrcx-0-main-content-gutter: 0.75rem;
+    --vrcx-0-main-content-radius: 0.625rem;
     --vrcx-0-main-content-edge: var(--stroke-subtle);
+    --vrcx-0-main-content-highlight: transparent;
+    --vrcx-0-main-content-lift: 0 0 #0000;
     --vrcx-0-workspace-divider: color-mix(
         in oklch,
         var(--foreground) 4%,
@@ -241,6 +243,11 @@
         color-scheme: dark;
         --background: oklch(0.145 0 0);
         --foreground: oklch(0.985 0 0);
+        --stroke-subtle: color-mix(
+            in oklch,
+            var(--foreground) 10%,
+            transparent
+        );
         --surface-panel: color-mix(
             in oklch,
             var(--background) 96%,
@@ -251,12 +258,18 @@
             var(--background) 93%,
             var(--foreground)
         );
-        --vrcx-0-app-surface: var(--surface-canvas);
+        --vrcx-0-app-surface: color-mix(in oklch, var(--background) 85%, black);
         --vrcx-0-main-content-surface: color-mix(
             in oklch,
             var(--background) 97.5%,
             var(--foreground)
         );
+        --vrcx-0-main-content-highlight: color-mix(
+            in oklch,
+            var(--foreground) 6%,
+            transparent
+        );
+        --vrcx-0-main-content-lift: 0 8px 20px -10px rgb(0 0 0 / 0.65);
         --vrcx-0-table-row-striped-surface: color-mix(
             in oklch,
             var(--surface-panel) 97%,
@@ -292,6 +305,7 @@
     --sidebar-accent-foreground: var(--content-primary);
     --sidebar-border: var(--stroke-subtle);
     --sidebar-ring: oklch(0.556 0 0);
+    --stroke-subtle: color-mix(in oklch, var(--foreground) 10%, transparent);
     --surface-panel: color-mix(
         in oklch,
         var(--background) 96%,
@@ -302,12 +316,18 @@
         var(--background) 93%,
         var(--foreground)
     );
-    --vrcx-0-app-surface: var(--surface-canvas);
+    --vrcx-0-app-surface: color-mix(in oklch, var(--background) 85%, black);
     --vrcx-0-main-content-surface: color-mix(
         in oklch,
         var(--background) 97.5%,
         var(--foreground)
     );
+    --vrcx-0-main-content-highlight: color-mix(
+        in oklch,
+        var(--foreground) 6%,
+        transparent
+    );
+    --vrcx-0-main-content-lift: 0 8px 20px -10px rgb(0 0 0 / 0.65);
     --status-online: #2ed319;
     --status-joinme: #00b8ff;
     --status-busy: #c80928;
@@ -778,7 +798,10 @@
         margin: var(--vrcx-0-main-content-gutter);
         border-radius: var(--vrcx-0-main-content-radius);
         background: var(--vrcx-0-main-content-surface);
-        box-shadow: 0 0 0 1px var(--vrcx-0-main-content-edge);
+        box-shadow:
+            inset 0 1px 0 var(--vrcx-0-main-content-highlight),
+            0 0 0 1px var(--vrcx-0-main-content-edge),
+            var(--vrcx-0-main-content-lift);
     }
 
     .vrcx-0-workspace[data-window-sidebar-mode='true'] {
@@ -915,10 +938,6 @@
 
     .vrcx-0-side-panel[data-window-sidebar-mode='true'] {
         background: var(--vrcx-0-side-panel-surface);
-    }
-
-    .vrcx-0-side-panel-self {
-        border-block-end: 1px solid var(--vrcx-0-main-content-edge);
     }
 
     .vrcx-0-statusbar {

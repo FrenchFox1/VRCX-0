@@ -26,6 +26,8 @@ import {
 import {
     buildFavoriteIdSet,
     buildSameInstanceGroups,
+    friendMatchesSidebarFilterQuery,
+    normalizeSidebarFilterQuery,
     readFriendStatusSource,
     readFriendRefLocation,
     resolveCurrentInviteLocation,
@@ -66,6 +68,7 @@ type FriendsSidebarProps = {
     prefs: SidebarPreferences;
     excludedFavoriteGroupKeys?: string[];
     favoriteCollectionTab?: FavoriteCollectionTab | null;
+    filterQuery?: string;
 };
 
 type FavoriteGroupSection = {
@@ -83,6 +86,23 @@ function rowsByIds(
     friendsById: Record<string, unknown>
 ) {
     return ids.map((id) => friendsById[id]).filter(isSidebarFriendRecord);
+}
+
+function filterIdsByQuery(
+    ids: readonly string[],
+    friendsById: Record<string, unknown>,
+    query: string
+) {
+    if (!query) {
+        return ids;
+    }
+    return ids.filter((id) => {
+        const friend = friendsById[id];
+        return (
+            isSidebarFriendRecord(friend) &&
+            friendMatchesSidebarFilterQuery(friend, query)
+        );
+    });
 }
 
 function buildInstanceActionGateTarget(
@@ -106,7 +126,8 @@ function buildInstanceActionGateTarget(
 export function FriendsSidebar({
     prefs,
     excludedFavoriteGroupKeys = [],
-    favoriteCollectionTab = null
+    favoriteCollectionTab = null,
+    filterQuery = ''
 }: FriendsSidebarProps) {
     const { t } = useTranslation();
     const {
@@ -119,13 +140,26 @@ export function FriendsSidebar({
         isDarkMode
     } = useFriendsSidebarRuntimeSnapshot();
     const {
-        activeIds,
+        activeIds: allActiveIds,
         friendsById,
         loadStatus,
-        offlineIds,
+        offlineIds: allOfflineIds,
         onlineIds,
         orderedFriendIds
     } = useFriendsSidebarRosterState();
+    const filterText = normalizeSidebarFilterQuery(filterQuery);
+    const visibleOnlineIds = useMemo(
+        () => filterIdsByQuery(onlineIds, friendsById, filterText),
+        [filterText, friendsById, onlineIds]
+    );
+    const activeIds = useMemo(
+        () => filterIdsByQuery(allActiveIds, friendsById, filterText),
+        [allActiveIds, filterText, friendsById]
+    );
+    const offlineIds = useMemo(
+        () => filterIdsByQuery(allOfflineIds, friendsById, filterText),
+        [allOfflineIds, filterText, friendsById]
+    );
     const locationTimesByUserId = useFriendLocationTimeStore(
         (state) => state.byUserId
     );
@@ -205,8 +239,12 @@ export function FriendsSidebar({
     );
 
     const rows = useMemo(
-        () => rowsByIds(orderedFriendIds, friendsById),
-        [friendsById, orderedFriendIds]
+        () =>
+            rowsByIds(
+                filterIdsByQuery(orderedFriendIds, friendsById, filterText),
+                friendsById
+            ),
+        [filterText, friendsById, orderedFriendIds]
     );
     const instanceActionGateTargets = useMemo(
         () =>
@@ -397,7 +435,7 @@ export function FriendsSidebar({
             return [];
         }
         return sortRows(
-            rowsByIds(onlineIds, friendsById).filter(
+            rowsByIds(visibleOnlineIds, friendsById).filter(
                 (friend) =>
                     favoriteCollectionIdSet.has(normalizeId(friend.id)) &&
                     !favoriteCollectionSameInstanceIds.has(friend.id)
@@ -408,8 +446,8 @@ export function FriendsSidebar({
         favoriteCollectionIdSet,
         favoriteCollectionSameInstanceIds,
         friendsById,
-        onlineIds,
-        prefs
+        prefs,
+        visibleOnlineIds
     ]);
     const favoriteCollectionActiveRows = useMemo(() => {
         if (!favoriteCollectionIdSet) {
@@ -490,7 +528,7 @@ export function FriendsSidebar({
             return [];
         }
         return sortRows(
-            rowsByIds(onlineIds, friendsById).filter(
+            rowsByIds(visibleOnlineIds, friendsById).filter(
                 (friend) =>
                     !excludedFavoriteIds.has(normalizeId(friend.id)) &&
                     !(
@@ -504,9 +542,9 @@ export function FriendsSidebar({
         excludedFavoriteIds,
         favoriteCollectionTab,
         friendsById,
-        onlineIds,
         prefs,
-        sameInstanceIds
+        sameInstanceIds,
+        visibleOnlineIds
     ]);
     const activeRows = useMemo(() => {
         if (favoriteCollectionTab) {
@@ -663,6 +701,19 @@ export function FriendsSidebar({
     ]);
 
     const virtualRows = useMemo<SidebarVirtualRow[]>(() => {
+        const filteredRowsLength = favoriteCollectionTab
+            ? favoriteCollectionRows.length
+            : rows.length;
+        if (filterText && !filteredRowsLength) {
+            return [
+                {
+                    type: 'message',
+                    key: 'message:filter-empty',
+                    text: t('side_panel.filter_no_results')
+                },
+                { type: 'footer', key: 'footer' }
+            ];
+        }
         if (favoriteCollectionTab) {
             return buildFavoriteCollectionSidebarVirtualRows({
                 activeRows: favoriteCollectionActiveRows,
@@ -707,6 +758,7 @@ export function FriendsSidebar({
         favoriteCollectionSameInstanceGroups,
         favoriteCollectionTab,
         favoriteRows,
+        filterText,
         gameState,
         loadStatus,
         offlineRows,

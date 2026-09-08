@@ -13,7 +13,8 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 
 export function SettingsMediaTab() {
@@ -53,7 +54,8 @@ export function SettingsMediaTab() {
     const { t } = useTranslation();
     return (
         <SettingsTabContent value="media">
-            <SettingsGroup
+            <SettingsCard
+                cardId="media.screenshots"
                 title={t(
                     'view.settings.advanced.advanced.screenshot_helper.header'
                 )}
@@ -115,8 +117,9 @@ export function SettingsMediaTab() {
                         )}
                     </Button>
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup
+            </SettingsCard>
+            <SettingsCard
+                cardId="media.user-content"
                 title={t('view.settings.advanced.advanced.user_content.header')}
                 description={t(
                     'view.settings.advanced.advanced.user_content.description'
@@ -156,8 +159,9 @@ export function SettingsMediaTab() {
                         </Button>
                     ) : null}
                 </div>
-            </SettingsGroup>
-            <SettingsGroup
+            </SettingsCard>
+            <SettingsCard
+                cardId="media.prints"
                 title={t(
                     'view.settings.advanced.advanced.save_instance_prints_to_file.header'
                 )}
@@ -233,8 +237,9 @@ export function SettingsMediaTab() {
                         </NumberFieldGroup>
                     </NumberField>
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup
+            </SettingsCard>
+            <SettingsCard
+                cardId="media.stickers"
                 title={t(
                     'view.settings.advanced.advanced.save_instance_stickers_to_file.header'
                 )}
@@ -249,8 +254,9 @@ export function SettingsMediaTab() {
                         onCheckedChange={onSaveInstanceStickersChange}
                     />
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup
+            </SettingsCard>
+            <SettingsCard
+                cardId="media.emoji"
                 title={t(
                     'view.settings.advanced.advanced.save_instance_emoji_to_file.header'
                 )}
@@ -268,7 +274,7 @@ export function SettingsMediaTab() {
                         onCheckedChange={onSaveInstanceEmojiChange}
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
         </SettingsTabContent>
     );
 }

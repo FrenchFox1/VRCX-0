@@ -753,11 +753,41 @@
         }
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "Shortcut recording could not start. Close this dialog and try again.",
+            "checking": "Checking shortcut…",
+            "background_hint": "Hiding uses the Background Mode and delay settings.",
+            "global": "Global",
+            "title": "Show / Hide VRCX-0",
+            "description": "Show or hide VRCX-0 from any app. VRCX-0 keeps running when hidden.",
+            "configure": "Set Global Shortcut",
+            "unset": "Not set",
+            "inactive": "Not active",
+            "unsupported": "Global shortcuts are unavailable in this environment.",
+            "record": "Press a key combination",
+            "record_description": "Use Ctrl or Alt with a letter, number or function key. Esc cancels. The current shortcut will not hide the window while you record.",
+            "startup_failed": "The global shortcut could not be enabled. It may be in use by another app.",
+            "error": {
+                "inUse": "This shortcut is already in use. Choose another combination.",
+                "invalid": "Use Ctrl or Alt with a letter, number or function key.",
+                "reserved": "This combination is reserved for a system or app action. Choose another.",
+                "unavailable": "This shortcut is unavailable or already in use. Try another combination.",
+                "unsupported": "Global shortcuts are unavailable in this environment."
+            }
+        },
         "title": "Keyboard Shortcuts",
         "group": {
             "general": "General",
-            "layout": "Layout"
-        }
+            "layout": "Layout",
+            "pagination": "Search and table pagination",
+            "screenshots": "Screenshot details",
+            "image_viewer": "Fullscreen image viewer",
+            "selection": "Selection in screenshots and favorites"
+        },
+        "navigation_items": "Open navigation item 1–9",
+        "hold_for_hints": "Show shortcut hints (hold)",
+        "toggle_details": "Show / hide details",
+        "clear_selection": "Clear selection"
     },
     "side_panel": {
         "search_placeholder": "Quick Search...",
@@ -791,6 +821,12 @@
         "groups": "Groups",
         "friends": "Friends",
         "me": "ME",
+        "self_menu": "Account menu",
+        "filter_friends": "Filter friends",
+        "filter_groups": "Filter groups",
+        "filter_no_results": "No matches",
+        "self_more_actions": "More",
+        "switch_account": "Switch Account",
         "favorite": "FAVORITES",
         "same_instance": "SAME INSTANCE",
         "you_are_here": "YOU ARE HERE",
@@ -1449,6 +1485,10 @@
             }
         },
         "friend_log": {
+            "date_range": "Date range",
+            "latest": "Latest",
+            "rows": "rows",
+            "load_older_failed": "Could not load older history.",
             "filter_placeholder": "Filter",
             "all_types": "All types",
             "groups": {
@@ -2704,8 +2744,6 @@
                     "troubleshooting": {
                         "header": "Troubleshooting",
                         "description": "Logging and diagnostic tools for investigating problems.",
-                        "show": "Show tools",
-                        "hide": "Hide tools",
                         "gamelog": "Save GameLog history",
                         "gamelog_description": "When off, new history is not saved. Live features like Player List and Now Playing still work.",
                         "feed_history": "Save Feed history",

@@ -31,7 +31,7 @@ const navDefinitions = [
     },
     {
         key: 'player-list',
-        icon: 'lucide:UsersRound',
+        icon: 'lucide:Gamepad2',
         tooltip: 'nav_tooltip.player_list',
         labelKey: 'nav_tooltip.player_list',
         routeName: 'player-list'
@@ -80,14 +80,14 @@ const navDefinitions = [
     },
     {
         key: 'friend-log',
-        icon: 'lucide:Contact',
+        icon: 'lucide:Logs',
         tooltip: 'nav_tooltip.friend_log',
         labelKey: 'nav_tooltip.friend_log',
         routeName: 'friend-log'
     },
     {
         key: 'friend-list',
-        icon: 'lucide:BookOpen',
+        icon: 'lucide:UserRoundCheck',
         tooltip: 'nav_tooltip.friend_list',
         labelKey: 'nav_tooltip.friend_list',
         routeName: 'friend-list'
@@ -122,7 +122,7 @@ const navDefinitions = [
     },
     {
         key: 'charts-mutual',
-        icon: 'lucide:Users',
+        icon: 'lucide:Waypoints',
         tooltip: 'view.charts.mutual_friend.tab_label',
         labelKey: 'view.charts.mutual_friend.tab_label',
         routeName: 'charts-mutual'

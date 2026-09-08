@@ -30,6 +30,7 @@ import {
     ImagesIcon,
     LayoutDashboardIcon,
     ListIcon,
+    LogsIcon,
     MapPinnedIcon,
     MapPinIcon,
     MessageSquareTextIcon,
@@ -51,9 +52,11 @@ import {
     TagsIcon,
     TextSearchIcon,
     UserRoundIcon,
+    UserRoundCheckIcon,
     UserStarIcon,
     UsersIcon,
     UsersRoundIcon,
+    WaypointsIcon,
     WrenchIcon
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -95,6 +98,7 @@ const navIconComponentByName: Record<string, LucideIcon> = {
     Images: ImagesIcon,
     LayoutDashboard: LayoutDashboardIcon,
     List: ListIcon,
+    Logs: LogsIcon,
     MapPinned: MapPinnedIcon,
     MapPin: MapPinIcon,
     MessageSquareText: MessageSquareTextIcon,
@@ -116,9 +120,11 @@ const navIconComponentByName: Record<string, LucideIcon> = {
     Tags: TagsIcon,
     TextSearch: TextSearchIcon,
     UserRound: UserRoundIcon,
+    UserRoundCheck: UserRoundCheckIcon,
     UserStar: UserStarIcon,
     Users: UsersIcon,
     UsersRound: UsersRoundIcon,
+    Waypoints: WaypointsIcon,
     Wrench: WrenchIcon
 };
 

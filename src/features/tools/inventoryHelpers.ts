@@ -10,10 +10,8 @@ import {
     emojiAnimationStyleNames,
     type EmojiAnimationStyleName
 } from '@/shared/constants/emoji';
-import {
-    MAX_IMAGE_UPLOAD_BYTES,
-    validateImageUploadFile
-} from '@/shared/utils/imageUpload';
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/shared/constants/imageUpload';
+import { validateImageUploadFile } from '@/shared/utils/imageUpload';
 
 import { emojiAnimationStyleValues } from './emojiAnimationStyles';
 import {
@@ -21,8 +19,6 @@ import {
     sanitizeGalleryGridDensity,
     type GalleryGridDensity
 } from './galleryDensity';
-
-export { MAX_IMAGE_UPLOAD_BYTES };
 
 export const INVENTORY_GRID_DENSITY_STORAGE_KEY = 'VRCX_InventoryGridDensity';
 

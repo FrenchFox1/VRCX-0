@@ -42,6 +42,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { InputGroupButton } from '@/ui/shadcn/input-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS } from '../gameLogDateRange';
 import type {
@@ -142,37 +143,45 @@ function GameLogDateRangeFilter({
 
     return (
         <>
-            <DateTimeRangePicker
-                value={value}
-                onChange={onChange}
-                placeholder={dateRangeLabel}
-                startLabel={t('view.game_log.label.start')}
-                endLabel={t('view.game_log.label.end')}
-                clearLabel={t('common.actions.clear')}
-                confirmLabel={t('common.actions.confirm')}
-                formatValue={formatCompactDateTime}
-                maxDays={GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS}
-                minuteStep={15}
-                align="end"
-                disabled={{ after: todayDate }}
-                renderTrigger={({ active, label }) => (
-                    <InputGroupButton
-                        variant={active ? 'secondary' : 'ghost'}
-                        size={active ? 'xs' : 'icon-xs'}
-                        aria-label={
-                            active ? `${dateRangeLabel}: ${label}` : label
-                        }
-                        title={label}
-                    >
-                        <CalendarRangeIcon data-icon="inline-start" />
-                        {active ? (
-                            <span className="hidden max-w-52 truncate tabular-nums @min-5xl/game-log-toolbar:inline">
-                                {label}
-                            </span>
-                        ) : null}
-                    </InputGroupButton>
-                )}
-            />
+            <Tooltip>
+                <DateTimeRangePicker
+                    value={value}
+                    onChange={onChange}
+                    placeholder={dateRangeLabel}
+                    startLabel={t('view.game_log.label.start')}
+                    endLabel={t('view.game_log.label.end')}
+                    clearLabel={t('common.actions.clear')}
+                    confirmLabel={t('common.actions.confirm')}
+                    formatValue={formatCompactDateTime}
+                    maxDays={GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS}
+                    minuteStep={15}
+                    align="end"
+                    disabled={{ after: todayDate }}
+                    renderTrigger={({ active, label }) => (
+                        <TooltipTrigger
+                            render={
+                                <InputGroupButton
+                                    variant={active ? 'secondary' : 'ghost'}
+                                    size={active ? 'xs' : 'icon-xs'}
+                                    aria-label={
+                                        active
+                                            ? `${dateRangeLabel}: ${label}`
+                                            : label
+                                    }
+                                />
+                            }
+                        >
+                            <CalendarRangeIcon data-icon="inline-start" />
+                            {active ? (
+                                <span className="hidden max-w-52 truncate tabular-nums @min-5xl/game-log-toolbar:inline">
+                                    {label}
+                                </span>
+                            ) : null}
+                            <TooltipContent>{label}</TooltipContent>
+                        </TooltipTrigger>
+                    )}
+                />
+            </Tooltip>
             {hasRange ? (
                 <InputGroupButton
                     size="icon-xs"

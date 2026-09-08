@@ -17,11 +17,6 @@ export type FeedRow = FeedRowOutput;
 
 export type FeedLoadStatus = LoadStatus;
 
-export type FeedDateRange = {
-    from: Date | undefined;
-    to?: Date;
-};
-
 export type FeedFriendActionTarget = Record<string, unknown> | null;
 
 export type FeedLocationActionPayload = Partial<LocationNewInstanceTarget>;

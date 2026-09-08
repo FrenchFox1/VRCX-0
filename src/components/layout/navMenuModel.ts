@@ -162,7 +162,7 @@ export function createBaseDefaultNavLayout(t: TranslateKey): NavLayoutEntry[] {
             id: 'default-folder-social',
             nameKey: 'nav_tooltip.social',
             name: t('nav_tooltip.social'),
-            icon: 'lucide:Users',
+            icon: 'lucide:ContactRound',
             items: ['friend-log', 'friend-list', 'moderation']
         },
         { type: 'item', key: 'notification' },

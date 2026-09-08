@@ -15,6 +15,7 @@ import { MacNativeMenuActionHost } from '@/components/layout/MacNativeMenuAction
 import { MacOverlayTitleBar } from '@/components/layout/MacOverlayTitleBar';
 import { useGlobalKeyboardShortcuts } from '@/components/layout/useGlobalKeyboardShortcuts';
 import { useSidebarAutoHide } from '@/components/layout/useSidebarAutoHide';
+import { useTrayShortcut } from '@/components/layout/useTrayShortcut';
 import { WindowResizeHandles } from '@/components/layout/WindowResizeHandles';
 import { cn } from '@/lib/utils';
 import { recordRouteEnter } from '@/services/telemetry/telemetryPageReach';
@@ -24,10 +25,12 @@ import {
     restoreSidebarWindowModeAfterLogin,
     subscribeSidebarModeToggle
 } from '@/services/windowModeService';
+import { useNavigationCacheStore } from '@/state/navigationCacheStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { Button } from '@/ui/shadcn/button';
 
+import { isRememberedPageRoute } from './navigationRoute';
 import { RouteErrorBoundary } from './RouteErrorBoundary';
 import { protectedRoutes, publicRoutes, RouteLoadingFallback } from './routes';
 
@@ -73,6 +76,16 @@ function RequireAuth() {
     return <Outlet />;
 }
 
+function RememberedPageRedirect() {
+    const lastRoute = useNavigationCacheStore((state) => state.lastRoute);
+    return (
+        <Navigate
+            to={isRememberedPageRoute(lastRoute) ? lastRoute : '/feed'}
+            replace
+        />
+    );
+}
+
 function RedirectIfAuthenticated() {
     const sessionPhase = useSessionStore((state) => state.sessionPhase);
     const isSessionReady = sessionPhase === 'ready';
@@ -88,7 +101,7 @@ function RedirectIfAuthenticated() {
         return <RouteLoadingFallback />;
     }
     if (isSessionReady) {
-        return <Navigate to="/feed" replace />;
+        return <RememberedPageRedirect />;
     }
 
     return <Outlet />;
@@ -107,8 +120,18 @@ function AppRouterContent() {
         (state) => state.hostCapabilities.platform
     );
     const isMacHost = hostPlatform === 'macos';
-    const { pathname } = useLocation();
+    const { pathname, search, hash } = useLocation();
+    const sessionReady = useSessionStore(
+        (state) => state.sessionPhase === 'ready'
+    );
+    useEffect(() => {
+        const route = pathname + search + hash;
+        if (sessionReady && isRememberedPageRoute(route)) {
+            useNavigationCacheStore.getState().setLastRoute(route);
+        }
+    }, [pathname, search, hash, sessionReady]);
     useGlobalKeyboardShortcuts();
+    useTrayShortcut();
     useSidebarAutoHide();
     useEffect(() => {
         let disposed = false;
@@ -205,9 +228,7 @@ function AppRouterContent() {
                                 <Route element={<AppShellRoute />}>
                                     <Route
                                         index
-                                        element={
-                                            <Navigate to="/feed" replace />
-                                        }
+                                        element={<RememberedPageRedirect />}
                                     />
                                     {protectedRoutes.map((route) => (
                                         <Route
@@ -236,6 +257,11 @@ function AppRouterContent() {
 }
 
 export function AppRouter() {
+    const hydrated = useNavigationCacheStore((state) => state.hydrated);
+    useEffect(() => {
+        void useNavigationCacheStore.getState().hydrate();
+    }, []);
+    if (!hydrated) return <RouteLoadingFallback />;
     return (
         <HashRouter>
             <AppRouterContent />

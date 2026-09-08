@@ -13,7 +13,7 @@ import {
 import { Button } from '@/ui/shadcn/button';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-import { SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
 import { SettingsTabContent } from '../SettingsViewParts';
 
 const MAX_FEEDBACK_LENGTH = 2000;
@@ -108,7 +108,8 @@ export function SettingsFeedbackTab() {
     return (
         <SettingsTabContent value="feedback">
             <div className="flex max-w-2xl shrink-0 flex-col gap-2">
-                <SettingsGroup
+                <SettingsCard
+                    cardId="feedback.message"
                     className={COMPOSER_CLASS}
                     title={t('view.settings.feedback.title')}
                     description={
@@ -142,7 +143,7 @@ export function SettingsFeedbackTab() {
                                 : t('view.settings.feedback.submit')}
                         </Button>
                     </div>
-                </SettingsGroup>
+                </SettingsCard>
                 <p className="text-muted-foreground px-1 text-xs">
                     {t('view.settings.feedback.more_help')}{' '}
                     <button

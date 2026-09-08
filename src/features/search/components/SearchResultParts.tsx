@@ -3,7 +3,7 @@ import {
     PersonStandingIcon,
     SearchXIcon,
     UserIcon,
-    UsersIcon
+    UsersRoundIcon
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
@@ -38,7 +38,7 @@ import type { SearchActiveTab } from '../searchTypes';
 
 const SEARCH_EMPTY_ICONS: Record<SearchActiveTab, LucideIcon> = {
     avatar: PersonStandingIcon,
-    group: UsersIcon,
+    group: UsersRoundIcon,
     user: UserIcon,
     world: GlobeIcon
 };

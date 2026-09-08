@@ -13,7 +13,8 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 
 import type { SettingsPageStateSections } from '../../settingsPageStateSections';
-import { Field, SegmentedPreference, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field, SegmentedPreference } from '../SettingsField';
 import { SettingsInterfaceUserDialogCard } from './SettingsInterfaceUserDialogCard';
 
 type InterfaceState = SettingsPageStateSections['interface'];
@@ -75,7 +76,10 @@ export function SettingsInterfaceDisplayCards({
 
     return (
         <>
-            <SettingsGroup title={t('view.settings.appearance.display.header')}>
+            <SettingsCard
+                cardId="interface.display"
+                title={t('view.settings.appearance.display.header')}
+            >
                 <Field
                     label={t(
                         'view.settings.appearance.appearance.show_instance_id'
@@ -126,11 +130,12 @@ export function SettingsInterfaceDisplayCards({
                         onCheckedChange={onDisplayVrcPlusIconsAsAvatarChange}
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
             <SettingsInterfaceUserDialogCard />
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="interface.navigation"
                 title={t('view.settings.interface.navigation.header')}
             >
                 <Field
@@ -143,9 +148,10 @@ export function SettingsInterfaceDisplayCards({
                         onCheckedChange={onShowNewDashboardButtonChange}
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="interface.tables"
                 title={t('view.settings.interface.lists_tables.header')}
             >
                 <Field
@@ -180,9 +186,10 @@ export function SettingsInterfaceDisplayCards({
                         {t('common.actions.configure')}
                     </Button>
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="interface.time-date"
                 title={t('view.settings.appearance.timedate.header')}
             >
                 <Field
@@ -293,7 +300,7 @@ export function SettingsInterfaceDisplayCards({
                         ]}
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
         </>
     );
 }

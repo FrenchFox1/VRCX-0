@@ -4,12 +4,13 @@ import {
     PinOffIcon,
     Trash2Icon
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 
 import { ShortcutKey } from '@/components/keyboard/ShortcutHintPanel';
 import { cn } from '@/lib/utils';
+import { useNavigationCacheStore } from '@/state/navigationCacheStore';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -166,14 +167,19 @@ function NavMenuFolderItem({
 }) {
     const { t } = useTranslation();
     const children = item.children ?? [];
-    const [open, setOpen] = useState(() =>
-        children.some((entry) => isEntryActive(entry, pathname))
+    const rememberedOpen = useNavigationCacheStore(
+        (state) => state.folders[item.index]
+    );
+    const setFolderOpen = useNavigationCacheStore(
+        (state) => state.setFolderOpen
     );
     const label = labelForEntry(item, t);
     const isActive = children.some(
         (entry) => entry.index === activeIndex || isEntryActive(entry, pathname)
     );
     const isNotified = isNavItemNotified(item, notifiedKeys);
+    const open = rememberedOpen ?? isActive;
+    const wasActive = useRef(isActive);
     const shortcutPositions = children
         .map((entry) => shortcutPositionByIndex.get(entry.index))
         .filter((position): position is number => position !== undefined);
@@ -187,10 +193,11 @@ function NavMenuFolderItem({
               : `${firstShortcutPosition}–${lastShortcutPosition}`;
 
     useEffect(() => {
-        if (isActive) {
-            setOpen(true);
+        if (rememberedOpen === undefined || (isActive && !wasActive.current)) {
+            setFolderOpen(item.index, isActive);
         }
-    }, [isActive]);
+        wasActive.current = isActive;
+    }, [isActive, item.index, rememberedOpen, setFolderOpen]);
 
     if (isCollapsed) {
         return (
@@ -262,7 +269,7 @@ function NavMenuFolderItem({
                     isActive={Boolean(isActive)}
                     tooltip={label}
                     className={navMenuLucideClassName}
-                    onClick={() => setOpen((current) => !current)}
+                    onClick={() => setFolderOpen(item.index, !open)}
                 >
                     <NotifiedNavIcon entry={item} isNotified={isNotified} />
                     <span>{label}</span>

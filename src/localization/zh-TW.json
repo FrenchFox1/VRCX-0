@@ -753,11 +753,41 @@
         }
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "無法開始錄製快捷鍵，請關閉此對話框後重試。",
+            "checking": "正在檢查快捷鍵…",
+            "background_hint": "隱藏時會套用背景模式與延遲設定。",
+            "global": "全域",
+            "title": "顯示 / 隱藏 VRCX-0",
+            "description": "在其他應用程式中也能顯示或隱藏 VRCX-0。隱藏後仍會在背景執行。",
+            "configure": "設定全域快捷鍵",
+            "unset": "未設定",
+            "inactive": "未生效",
+            "unsupported": "目前環境無法使用全域快捷鍵。",
+            "record": "按下組合鍵",
+            "record_description": "請使用 Ctrl 或 Alt 搭配字母、數字或功能鍵。按 Esc 取消。錄製期間，原快捷鍵不會隱藏視窗。",
+            "startup_failed": "無法啟用全域快捷鍵，可能已被其他應用程式使用。",
+            "error": {
+                "inUse": "此快捷鍵已被佔用，請換一個組合。",
+                "invalid": "請使用 Ctrl 或 Alt 搭配字母、數字或功能鍵。",
+                "reserved": "此組合用於系統或應用程式操作，請換一個組合。",
+                "unavailable": "此快捷鍵無法使用或已被佔用，請換一個組合。",
+                "unsupported": "目前環境無法使用全域快捷鍵。"
+            }
+        },
         "title": "鍵盤快捷鍵",
         "group": {
             "general": "通用",
-            "layout": "佈局"
-        }
+            "layout": "佈局",
+            "pagination": "搜尋與表格分頁",
+            "screenshots": "截圖詳情",
+            "image_viewer": "全螢幕圖片檢視",
+            "selection": "截圖與收藏多選"
+        },
+        "navigation_items": "開啟第 1～9 個導覽項目",
+        "hold_for_hints": "顯示快速鍵提示（長按）",
+        "toggle_details": "顯示／隱藏詳情",
+        "clear_selection": "清除選取"
     },
     "side_panel": {
         "search_placeholder": "快速搜尋...",
@@ -791,6 +821,12 @@
         "groups": "群組",
         "friends": "好友",
         "me": "我",
+        "self_menu": "帳號選單",
+        "filter_friends": "篩選好友",
+        "filter_groups": "篩選群組",
+        "filter_no_results": "沒有符合的項目",
+        "self_more_actions": "更多",
+        "switch_account": "切換帳號",
         "favorite": "收藏",
         "same_instance": "在同個房間",
         "you_are_here": "您在這裡",
@@ -1449,6 +1485,10 @@
             }
         },
         "friend_log": {
+            "date_range": "日期範圍",
+            "latest": "最新",
+            "rows": "行",
+            "load_older_failed": "無法載入更早的歷史紀錄。",
             "filter_placeholder": "篩選好友紀錄",
             "all_types": "所有類型",
             "groups": {
@@ -2704,8 +2744,6 @@
                     "troubleshooting": {
                         "header": "疑難排解",
                         "description": "用於調查問題的記錄與診斷工具。",
-                        "show": "顯示工具",
-                        "hide": "隱藏工具",
                         "gamelog": "儲存遊戲紀錄歷史",
                         "gamelog_description": "關閉後不會儲存新的遊戲紀錄歷史；房間用戶列表、正在播放、截圖後設資料、房間媒體與其他即時日誌功能仍可使用。",
                         "feed_history": "儲存好友動態歷史",

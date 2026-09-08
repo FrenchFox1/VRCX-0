@@ -15,7 +15,7 @@ import {
     TagIcon,
     TicketIcon,
     UserIcon,
-    UsersIcon,
+    UsersRoundIcon,
     XIcon
 } from 'lucide-react';
 import {
@@ -230,7 +230,7 @@ export function GroupDialogHeaderSection({
                             />
                         ) : null}
                         <AvatarFallback className="rounded-lg [&>svg]:size-10">
-                            <UsersIcon />
+                            <UsersRoundIcon />
                         </AvatarFallback>
                     </Avatar>
                 </Button>

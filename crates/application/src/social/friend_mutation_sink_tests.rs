@@ -88,6 +88,7 @@ fn history_rows(
             user_id: owner.to_string(),
             target_user_id: target.to_string(),
             types: vec![r#type.to_string()],
+            ..Default::default()
         })
         .expect("history query")
         .len()

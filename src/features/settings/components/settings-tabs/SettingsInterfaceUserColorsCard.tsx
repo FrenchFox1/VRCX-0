@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import {
-    isValidTrustColor,
     TRUST_COLOR_DEFAULTS,
     TRUST_COLOR_ENTRIES
-} from '@/shared/utils/trustColors';
+} from '@/shared/constants/trustColors';
+import { isValidTrustColor } from '@/shared/utils/trustColors';
 import type { PreferencesSnapshot } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -19,7 +19,8 @@ import { Input } from '@/ui/shadcn/input';
 import { Switch } from '@/ui/shadcn/switch';
 
 import type { SettingsPageStateSections } from '../../settingsPageStateSections';
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 
 type InterfaceState = SettingsPageStateSections['interface'];
 type SettingsPrefs = Pick<
@@ -62,7 +63,10 @@ export function SettingsInterfaceUserColorsCard({
     const [trustColorsOpen, setTrustColorsOpen] = useState(false);
 
     return (
-        <SettingsGroup title={t('view.settings.appearance.user_colors.header')}>
+        <SettingsCard
+            cardId="interface.user-colors"
+            title={t('view.settings.appearance.user_colors.header')}
+        >
             <Field
                 label={t(
                     'view.settings.appearance.user_colors.random_colors_from_user_id'
@@ -233,6 +237,6 @@ export function SettingsInterfaceUserColorsCard({
                     </div>
                 </CollapsibleContent>
             </Collapsible>
-        </SettingsGroup>
+        </SettingsCard>
     );
 }

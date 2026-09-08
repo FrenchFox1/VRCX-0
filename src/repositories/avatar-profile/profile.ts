@@ -8,11 +8,11 @@ import {
     commands,
     type VrchatAvatarListByUserInput
 } from '@/platform/tauri/bindings';
+import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '@/shared/constants/pagination';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import avatarLocalRepository from '../avatarLocalRepository';
 import memoPersistenceRepository from '../memoPersistenceRepository';
-import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '../paginationConstants';
 import { normalize, normalizeLocalTags } from './normalization';
 import {
     collectPages,

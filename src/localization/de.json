@@ -753,11 +753,41 @@
         }
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "Die Tastenkürzel-Aufzeichnung konnte nicht gestartet werden. Diesen Dialog schließen und erneut versuchen.",
+            "checking": "Tastenkürzel wird geprüft…",
+            "background_hint": "Beim Ausblenden gelten die Einstellungen für Hintergrundmodus und Verzögerung.",
+            "global": "Global",
+            "title": "VRCX-0 anzeigen / ausblenden",
+            "description": "VRCX-0 aus jeder App heraus anzeigen oder ausblenden. Ausgeblendet läuft VRCX-0 im Hintergrund weiter.",
+            "configure": "Globales Tastenkürzel festlegen",
+            "unset": "Nicht festgelegt",
+            "inactive": "Nicht aktiv",
+            "unsupported": "Globale Tastenkürzel sind in dieser Umgebung nicht verfügbar.",
+            "record": "Tastenkombination drücken",
+            "record_description": "Strg oder Alt mit einem Buchstaben, einer Ziffer oder einer Funktionstaste kombinieren. Esc bricht ab. Während der Eingabe blendet das bisherige Kürzel das Fenster nicht aus.",
+            "startup_failed": "Das globale Tastenkürzel konnte nicht aktiviert werden. Möglicherweise wird es von einer anderen App verwendet.",
+            "error": {
+                "inUse": "Dieses Tastenkürzel ist bereits belegt. Bitte eine andere Kombination wählen.",
+                "invalid": "Strg oder Alt mit einem Buchstaben, einer Ziffer oder einer Funktionstaste kombinieren.",
+                "reserved": "Diese Kombination ist für eine System- oder App-Funktion reserviert. Bitte eine andere wählen.",
+                "unavailable": "Dieses Tastenkürzel ist nicht verfügbar oder bereits belegt. Bitte eine andere Kombination versuchen.",
+                "unsupported": "Globale Tastenkürzel sind in dieser Umgebung nicht verfügbar."
+            }
+        },
         "title": "Tastenkombinationen",
         "group": {
             "general": "Allgemein",
-            "layout": "Layout"
-        }
+            "layout": "Layout",
+            "pagination": "Such- und Tabellenseiten",
+            "screenshots": "Screenshot-Details",
+            "image_viewer": "Vollbild-Bildbetrachter",
+            "selection": "Auswahl in Screenshots und Favoriten"
+        },
+        "navigation_items": "Navigationseintrag 1–9 öffnen",
+        "hold_for_hints": "Tastenkürzel anzeigen (gedrückt halten)",
+        "toggle_details": "Details ein-/ausblenden",
+        "clear_selection": "Auswahl aufheben"
     },
     "side_panel": {
         "search_placeholder": "Schnellsuche...",
@@ -791,6 +821,12 @@
         "groups": "Gruppen",
         "friends": "Freunde",
         "me": "ICH",
+        "self_menu": "Kontomenü",
+        "filter_friends": "Freunde filtern",
+        "filter_groups": "Gruppen filtern",
+        "filter_no_results": "Keine Treffer",
+        "self_more_actions": "Mehr",
+        "switch_account": "Konto wechseln",
         "favorite": "FAVORITEN",
         "same_instance": "GLEICHE INSTANZ",
         "you_are_here": "DU BIST HIER",
@@ -1449,6 +1485,10 @@
             }
         },
         "friend_log": {
+            "date_range": "Zeitraum",
+            "latest": "Neueste",
+            "rows": "Zeilen",
+            "load_older_failed": "Ältere Einträge konnten nicht geladen werden.",
             "filter_placeholder": "Filter",
             "all_types": "Alle Typen",
             "groups": {
@@ -2704,8 +2744,6 @@
                     "troubleshooting": {
                         "header": "Problembehandlung",
                         "description": "Protokollierungs- und Diagnosewerkzeuge zur Fehlersuche.",
-                        "show": "Werkzeuge anzeigen",
-                        "hide": "Werkzeuge ausblenden",
                         "gamelog": "Spielprotokollverlauf speichern",
                         "gamelog_description": "Wenn deaktiviert, wird kein neuer Verlauf gespeichert. Echtzeitfunktionen wie Aktuelle Spieler und Läuft gerade bleiben verfügbar.",
                         "feed_history": "Feed-Verlauf speichern",

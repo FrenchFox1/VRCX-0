@@ -58,7 +58,7 @@ export const DEFAULT_SIDEBAR_TAB_LAYOUT: SidebarTabLayout = [
         id: SYSTEM_TAB_GROUPS,
         type: 'system',
         systemTab: SYSTEM_TAB_GROUPS,
-        icon: 'lucide:Users',
+        icon: 'lucide:UsersRound',
         visible: true
     }
 ];
@@ -252,7 +252,7 @@ export function sidebarTabFallbackIcon(item: SidebarTabLayoutItem): string {
         return 'lucide:UserStar';
     }
     if (item.systemTab === SYSTEM_TAB_GROUPS) {
-        return 'lucide:Users';
+        return 'lucide:UsersRound';
     }
     if (item.systemTab === SYSTEM_TAB_FRIENDS) {
         return 'lucide:UserRound';

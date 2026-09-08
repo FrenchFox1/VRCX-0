@@ -312,16 +312,20 @@ function CurrentBackgroundImageSummary({
                             </div>
                         ) : null}
                         {metaParts.length > 0 ? (
-                            <div
-                                className="text-muted-foreground truncate text-xs"
-                                title={
-                                    snapshot
+                            <Tooltip disabled={!snapshot}>
+                                <TooltipTrigger
+                                    render={
+                                        <div className="text-muted-foreground truncate text-xs">
+                                            {metaParts.join(' · ')}
+                                        </div>
+                                    }
+                                />
+                                <TooltipContent>
+                                    {snapshot
                                         ? `${t('view.background_image.settings.resolved_at')}: ${formatResolvedAt(snapshot.resolvedAt)}`
-                                        : undefined
-                                }
-                            >
-                                {metaParts.join(' · ')}
-                            </div>
+                                        : undefined}
+                                </TooltipContent>
+                            </Tooltip>
                         ) : null}
                     </>
                 ) : (

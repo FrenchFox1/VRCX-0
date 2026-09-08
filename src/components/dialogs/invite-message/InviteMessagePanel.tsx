@@ -21,8 +21,8 @@ import {
 import type { InviteMessageType } from '@/platform/tauri/bindings';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import { toast } from '@/services/toastService';
+import { IMAGE_UPLOAD_ACCEPT } from '@/shared/constants/imageUpload';
 import {
-    IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     validateImageUploadFile
 } from '@/shared/utils/imageUpload';

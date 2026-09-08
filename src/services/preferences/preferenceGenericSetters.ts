@@ -2,11 +2,15 @@ import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
+import {
+    APP_CJK_FONT_PACK_DEFAULT_KEY,
+    APP_FONT_DEFAULT_KEY
+} from '@/shared/constants/fonts';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
+import { TRUST_COLOR_DEFAULTS } from '@/shared/constants/trustColors';
 import {
     isValidTrustColor,
-    normalizeTrustColors,
-    TRUST_COLOR_DEFAULTS
+    normalizeTrustColors
 } from '@/shared/utils/trustColors';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { normalizeFeedHiddenUsers } from '@/state/preferencesStore';
@@ -25,8 +29,6 @@ import {
     readRecentActionCooldown
 } from '../recentActionService';
 import {
-    APP_CJK_FONT_PACK_DEFAULT_KEY,
-    APP_FONT_DEFAULT_KEY,
     applyAppFontPreferences,
     applyThemeColor,
     applyThemeMode,

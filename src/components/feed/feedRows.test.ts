@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { parseDateInput, toDateInputValue } from '@/lib/dateRange';
+
 import {
     buildFeedFavoriteIdSet,
     canExpandFeedRow,
@@ -8,7 +10,6 @@ import {
     getFeedRowId,
     isUserIdLike,
     normalizeFeedId,
-    parseDateInput,
     resolveDisplayNameCandidate,
     resolveFeedCurrentInviteLocation,
     resolveFeedLocationForDisplay,
@@ -16,7 +17,6 @@ import {
     resolveFeedStatusMeta,
     resolveFeedUserDisplayName,
     resolveFeedUserId,
-    toDateInputValue,
     UNKNOWN_FEED_USER_DISPLAY_NAME
 } from './feedRows';
 

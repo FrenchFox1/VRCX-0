@@ -70,7 +70,7 @@ function UserInstanceHistoryRow<TRow extends PreviousInstanceRow>({
                 aria-label={t(
                     'dialog.previous_instances.description.open_instance_details'
                 )}
-                className="hover:bg-muted/50 focus-visible:ring-ring/50 absolute inset-0 rounded-md transition-colors duration-[120ms] outline-none focus-visible:ring-2 motion-reduce:transition-none"
+                className="focus-visible:ring-ring/50 absolute inset-0 rounded-md transition-colors duration-[120ms] outline-none hover:bg-(--state-hover-surface) focus-visible:ring-2 motion-reduce:transition-none"
             />
             <span
                 className="text-muted-foreground pointer-events-none relative w-28 shrink-0 tabular-nums"

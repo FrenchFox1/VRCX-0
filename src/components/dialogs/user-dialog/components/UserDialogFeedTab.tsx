@@ -148,7 +148,7 @@ export function UserDialogFeedPanel({
                             return (
                                 <div
                                     key={`${getFeedRowId(row)}:${index}`}
-                                    className="hover:bg-muted/50 grid min-h-9 grid-cols-[7rem_7rem_minmax(0,1fr)] items-center gap-3 rounded-md px-2 text-xs transition-colors duration-[120ms] motion-reduce:transition-none"
+                                    className="grid min-h-9 grid-cols-[7rem_7rem_minmax(0,1fr)] items-center gap-3 rounded-md px-2 text-xs transition-colors duration-[120ms] hover:bg-(--state-hover-surface) motion-reduce:transition-none"
                                 >
                                     <span
                                         className="text-muted-foreground tabular-nums"

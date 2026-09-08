@@ -1,3 +1,4 @@
+import { MAX_IMAGE_UPLOAD_BYTES } from '@/shared/constants/imageUpload';
 export interface ImageUploadValidationOptions {
     maxSize?: number;
 }
@@ -7,9 +8,6 @@ export type ImageUploadValidationResult =
     | { ok: false; reason: 'missing' | 'too_large' | 'not_image' };
 
 const UPLOAD_TIMEOUT_MS = 30_000;
-export const MAX_IMAGE_UPLOAD_BYTES = 20_000_000;
-export const IMAGE_UPLOAD_ACCEPT =
-    'image/png,image/jpeg,image/webp,image/gif,image/bmp';
 
 const SAFE_RASTER_IMAGE_TYPES = new Set([
     'image/png',

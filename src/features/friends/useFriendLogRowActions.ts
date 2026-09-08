@@ -1,9 +1,4 @@
-import {
-    useState,
-    type Dispatch,
-    type MutableRefObject,
-    type SetStateAction
-} from 'react';
+import { useState, type MutableRefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import friendLogHistoryRepository from '@/repositories/friendLogHistoryRepository';
@@ -26,14 +21,14 @@ export function useFriendLogRowActions({
     rowsOwnerUserId,
     rowsOwnerUserIdRef,
     setDetail,
-    setRows
+    removeRow
 }: {
     currentUserId: string;
     loadStatus: string;
     rowsOwnerUserId: string;
     rowsOwnerUserIdRef: MutableRefObject<string>;
     setDetail(value: string): void;
-    setRows: Dispatch<SetStateAction<FriendLogRow[]>>;
+    removeRow(row: FriendLogRow): void;
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
@@ -101,12 +96,7 @@ export function useFriendLogRowActions({
                 );
                 return;
             }
-            setRows((currentRows) =>
-                currentRows.filter(
-                    (currentRow) =>
-                        getFriendLogRowKey(currentRow, ownerUserId) !== rowKey
-                )
-            );
+            removeRow(row);
             setDetail('Deleted one friend history row.');
         } catch (error) {
             setDetail(

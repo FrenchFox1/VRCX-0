@@ -11,10 +11,8 @@ import { UserDetailContent } from '@/components/UserDetailTile';
 import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { getNameColour, userImage } from '@/services/entityMediaService';
-import {
-    TRUST_COLOR_DEFAULTS,
-    type TrustColorMap
-} from '@/shared/utils/trustColors';
+import { TRUST_COLOR_DEFAULTS } from '@/shared/constants/trustColors';
+import { type TrustColorMap } from '@/shared/utils/trustColors';
 import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 import { useShellStore } from '@/state/shellStore';
 import { buttonVariants } from '@/ui/shadcn/button';

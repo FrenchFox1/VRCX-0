@@ -26,11 +26,17 @@
         },
         {
             "identifier": "fs:allow-read-text-file",
-            "allow": [{ "path": "$APPCACHE/quick-search-history.json" }]
+            "allow": [
+                { "path": "$APPCACHE/quick-search-history.json" },
+                { "path": "$APPCACHE/navigation-state.json" }
+            ]
         },
         {
             "identifier": "fs:allow-write-text-file",
-            "allow": [{ "path": "$APPCACHE/quick-search-history.json" }]
+            "allow": [
+                { "path": "$APPCACHE/quick-search-history.json" },
+                { "path": "$APPCACHE/navigation-state.json" }
+            ]
         },
         "notification:default"
     ]

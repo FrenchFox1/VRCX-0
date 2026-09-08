@@ -3,8 +3,8 @@ import type { ComponentProps, MouseEvent, ReactNode } from 'react';
 import { useRef } from 'react';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { TILE_MOTION, TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
+import { TILE_MOTION, TILE_SELECTED } from '@/shared/constants/selectableTile';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';

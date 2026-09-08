@@ -2,7 +2,7 @@ import {
     GlobeIcon,
     PersonStandingIcon,
     UserIcon,
-    UsersIcon
+    UsersRoundIcon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -42,7 +42,7 @@ function ResultRow({
               ? PersonStandingIcon
               : item.type === 'world'
                 ? GlobeIcon
-                : UsersIcon;
+                : UsersRoundIcon;
     const isFriend = item.type === 'friend';
 
     return (

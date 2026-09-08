@@ -19,7 +19,8 @@ import {
 import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { useSettingsNotificationsTabState } from '../useSettingsNotificationsTabState';
 
@@ -102,7 +103,8 @@ export function SettingsNotificationsTabContent({
 
     return (
         <SettingsTabContent value="notifications">
-            <SettingsGroup
+            <SettingsCard
+                cardId="notifications.dnd"
                 title={t(
                     'view.settings.notifications.notifications.do_not_disturb.header'
                 )}
@@ -125,8 +127,9 @@ export function SettingsNotificationsTabContent({
                         }
                     />
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup
+            </SettingsCard>
+            <SettingsCard
+                cardId="notifications.desktop"
                 title={t(
                     'view.settings.notifications.notifications.desktop_notifications.header'
                 )}
@@ -202,8 +205,9 @@ export function SettingsNotificationsTabContent({
                         onCheckedChange={onDesktopNotificationSoundChange}
                     />
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup
+            </SettingsCard>
+            <SettingsCard
+                cardId="notifications.tts"
                 title={t(
                     'view.settings.notifications.notifications.text_to_speech.header'
                 )}
@@ -431,7 +435,7 @@ export function SettingsNotificationsTabContent({
                         </Button>
                     </div>
                 ) : null}
-            </SettingsGroup>
+            </SettingsCard>
         </SettingsTabContent>
     );
 }

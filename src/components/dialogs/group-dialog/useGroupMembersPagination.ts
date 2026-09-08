@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { GroupMemberRow } from '@/domain/entities/group';
 import type { GroupMemberSort } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
-import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '@/repositories/paginationConstants';
+import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '@/shared/constants/pagination';
 
 import { moderationRowUserId } from './groupModerationRows';
 

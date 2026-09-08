@@ -131,27 +131,19 @@ function FeedTableMode({
     } = useFeedPageController({ routeScopedUserIds });
     const {
         activeFilters,
-        applyDateFilter,
-        clearDateFilter,
         clearSearch,
         commitSearch,
-        dateDraftFrom,
-        dateDraftRange,
-        dateDraftTo,
-        dateFilterOpen,
         dateFrom,
         dateTo,
         favoritesOnly,
         feedFilterTypes,
-        onDateRangeSelect,
         scopedUserIds,
         searchDraft,
-        setDateFilterOpen,
         setFavoritesOnly,
         setFeedFilters,
         setSearchDraft,
+        setDateRange,
         setUserScope,
-        todayDate,
         toggleFeedFilter
     } = filters;
     const isSearching =
@@ -163,42 +155,29 @@ function FeedTableMode({
     const filterModel = useMemo(
         () => ({
             activeFilters,
-            dateDraftFrom,
-            dateDraftRange,
-            dateDraftTo,
-            dateFilterOpen,
             dateFrom,
             dateTo,
             favoritesOnly,
             feedFilterTypes,
             scopedUserIds,
-            searchDraft,
-            todayDate
+            searchDraft
         }),
         [
             activeFilters,
-            dateDraftFrom,
-            dateDraftRange,
-            dateDraftTo,
-            dateFilterOpen,
             dateFrom,
             dateTo,
             favoritesOnly,
             feedFilterTypes,
             scopedUserIds,
-            searchDraft,
-            todayDate
+            searchDraft
         ]
     );
     const filterCommands = useMemo(
         () => ({
-            onApplyDateFilter: applyDateFilter,
-            onClearDateFilter: clearDateFilter,
+            onDateRangeChange: setDateRange,
             onClearFeedFilters: () => setFeedFilters([]),
             onClearSearch: clearSearch,
             onCommitSearch: () => commitSearch(),
-            onDateFilterOpenChange: setDateFilterOpen,
-            onDateRangeSelect,
             onScopeChange: (userIds: readonly string[]) => {
                 setUserScope(userIds);
                 setRouteScopedUserIds(userIds);
@@ -210,14 +189,11 @@ function FeedTableMode({
             onToggleFeedFilter: toggleFeedFilter
         }),
         [
-            applyDateFilter,
-            clearDateFilter,
             clearSearch,
             commitSearch,
-            onDateRangeSelect,
-            setDateFilterOpen,
             setFavoritesOnly,
             setFeedFilters,
+            setDateRange,
             setRouteScopedUserIds,
             setSearchDraft,
             setUserScope,

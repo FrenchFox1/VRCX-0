@@ -1,6 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
+import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '@/shared/constants/pagination';
 
-import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '../paginationConstants';
 import {
     collectPages,
     type GroupIdInput,

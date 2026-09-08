@@ -59,7 +59,12 @@ describe('friendLogHistoryRepository', () => {
         expect(commandMocks.appFriendLogHistoryQuery).toHaveBeenCalledWith({
             userId: 'owner_user',
             targetUserId: 'target_user',
-            types: ['Friend', 'DisplayName', 'TrustLevel']
+            types: ['Friend', 'DisplayName', 'TrustLevel'],
+            excludedTypes: [],
+            dateFrom: '',
+            dateTo: '',
+            cursor: null,
+            limit: null
         });
         expect(rows).toEqual([
             {
@@ -82,5 +87,33 @@ describe('friendLogHistoryRepository', () => {
                 previousTrustLevel: 'Known User'
             }
         ]);
+    });
+
+    it('passes the date range and cursor without applying a search result cap', async () => {
+        await getFriendLogHistory('usr_owner', {
+            dateFrom: '2026-09-01T00:00:00Z',
+            dateTo: '2026-09-02T23:59:59.999Z'
+        });
+        expect(commandMocks.appFriendLogHistoryQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                dateFrom: '2026-09-01T00:00:00Z',
+                dateTo: '2026-09-02T23:59:59.999Z',
+                limit: null,
+                cursor: null
+            })
+        );
+        const cursor = { createdAt: '2026-09-01T00:00:00Z', rowId: 42 };
+        await getFriendLogHistory('usr_owner', {
+            cursor,
+            limit: 80,
+            excludedTypes: ['Unfriend']
+        });
+        expect(commandMocks.appFriendLogHistoryQuery).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                cursor,
+                limit: 80,
+                excludedTypes: ['Unfriend']
+            })
+        );
     });
 });

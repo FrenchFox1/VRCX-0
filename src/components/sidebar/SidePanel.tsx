@@ -1,4 +1,10 @@
-import { EyeOffIcon, PlusIcon, SlidersHorizontalIcon } from 'lucide-react';
+import {
+    EyeOffIcon,
+    PlusIcon,
+    SearchIcon,
+    SlidersHorizontalIcon,
+    XIcon
+} from 'lucide-react';
 import { forwardRef, useEffect, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,7 +25,14 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput
+} from '@/ui/shadcn/input-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { FriendsSidebar } from './FriendsSidebar';
 import { GroupsSidebar } from './GroupsSidebar';
@@ -114,6 +127,16 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             useState(0);
         const [customTabsDialogOpen, setCustomTabsDialogOpen] = useState(false);
         const [customTabsAutoAdd, setCustomTabsAutoAdd] = useState(false);
+        const [filterQuery, setFilterQuery] = useState('');
+        const filterPlaceholder =
+            activeTab === 'groups'
+                ? t('side_panel.filter_groups')
+                : t('side_panel.filter_friends');
+
+        function selectTab(nextTab: string) {
+            setFilterQuery('');
+            setActiveTab(nextTab);
+        }
 
         function openCustomTabsDialog(autoAdd = false) {
             restoreNormalWindowModeForIntent();
@@ -334,10 +357,49 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 <Tabs
                     orientation="vertical"
                     value={activeTab}
-                    onValueChange={setActiveTab}
+                    onValueChange={selectTab}
                     className="flex min-h-0 min-w-0 flex-1 gap-0 overflow-hidden"
                 >
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-2 pl-2">
+                        <div className="shrink-0 pt-1 pr-1.5 pb-2 pl-0.5">
+                            <InputGroup
+                                className={cn(
+                                    'border-border-subtle h-7 rounded-md',
+                                    'bg-surface-interactive dark:bg-surface-interactive',
+                                    'hover:bg-surface-interactive-hover dark:hover:bg-surface-interactive-hover'
+                                )}
+                            >
+                                <InputGroupInput
+                                    value={filterQuery}
+                                    placeholder={filterPlaceholder}
+                                    aria-label={filterPlaceholder}
+                                    className="h-7 pl-2.5 text-xs md:text-xs"
+                                    onChange={(event) =>
+                                        setFilterQuery(event.target.value)
+                                    }
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Escape') {
+                                            setFilterQuery('');
+                                        }
+                                    }}
+                                />
+                                <InputGroupAddon align="inline-end">
+                                    {filterQuery ? (
+                                        <InputGroupButton
+                                            size="icon-xs"
+                                            aria-label={t(
+                                                'empty_state.clear_search'
+                                            )}
+                                            onClick={() => setFilterQuery('')}
+                                        >
+                                            <XIcon />
+                                        </InputGroupButton>
+                                    ) : (
+                                        <SearchIcon className="size-3.5" />
+                                    )}
+                                </InputGroupAddon>
+                            </InputGroup>
+                        </div>
                         <TabsContent
                             value="friends"
                             className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
@@ -347,6 +409,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                 excludedFavoriteGroupKeys={
                                     visibleFavoriteCollectionSourceGroupKeys
                                 }
+                                filterQuery={filterQuery}
                             />
                         </TabsContent>
                         {groupsTabVisible ? (
@@ -354,7 +417,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                 value="groups"
                                 className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
                             >
-                                <GroupsSidebar />
+                                <GroupsSidebar filterQuery={filterQuery} />
                             </TabsContent>
                         ) : null}
                         {visibleTabLayout
@@ -373,6 +436,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                     <FriendsSidebar
                                         prefs={prefs}
                                         favoriteCollectionTab={item}
+                                        filterQuery={filterQuery}
                                     />
                                 </TabsContent>
                             ))}
@@ -402,35 +466,44 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                           );
                                 return (
                                     <ContextMenu key={item.value}>
-                                        <ContextMenuTrigger
-                                            render={
-                                                <TabsTrigger
-                                                    value={item.value}
-                                                    title={item.title}
-                                                    data-active={
-                                                        activeTab === item.value
-                                                            ? ''
-                                                            : undefined
-                                                    }
-                                                    className="h-auto w-full flex-col justify-center gap-0.5 px-0 py-1.5 data-active:bg-(--vrcx-0-toolbar-item-selected-surface) sm:h-auto"
-                                                >
-                                                    <Icon
-                                                        className="size-4.5"
-                                                        data-icon="icon"
+                                        <Tooltip>
+                                            <TooltipTrigger
+                                                render={
+                                                    <ContextMenuTrigger
+                                                        render={
+                                                            <TabsTrigger
+                                                                value={
+                                                                    item.value
+                                                                }
+                                                                data-active={
+                                                                    activeTab ===
+                                                                    item.value
+                                                                        ? ''
+                                                                        : undefined
+                                                                }
+                                                                className="h-auto w-full flex-col justify-center gap-0.5 px-0 py-1.5 data-active:bg-(--vrcx-0-toolbar-item-selected-surface) sm:h-auto"
+                                                            />
+                                                        }
                                                     />
-                                                    <span className="sr-only">
-                                                        {item.label}
+                                                }
+                                            >
+                                                <Icon
+                                                    className="size-4.5"
+                                                    data-icon="icon"
+                                                />
+                                                <span className="sr-only">
+                                                    {item.label}
+                                                </span>
+                                                {item.railCountLabel ? (
+                                                    <span className="text-[10px] leading-none tabular-nums">
+                                                        {item.railCountLabel}
                                                     </span>
-                                                    {item.railCountLabel ? (
-                                                        <span className="text-[10px] leading-none tabular-nums">
-                                                            {
-                                                                item.railCountLabel
-                                                            }
-                                                        </span>
-                                                    ) : null}
-                                                </TabsTrigger>
-                                            }
-                                        />
+                                                ) : null}
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                {item.title}
+                                            </TooltipContent>
+                                        </Tooltip>
                                         <ContextMenuContent className="w-44">
                                             {canHideTab ? (
                                                 <>

@@ -753,11 +753,41 @@
         }
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "无法开始快捷键录制，请关闭此对话框后重试。",
+            "checking": "正在检查快捷键…",
+            "background_hint": "隐藏时沿用后台模式和延迟设置。",
+            "global": "全局",
+            "title": "显示 / 隐藏 VRCX-0",
+            "description": "在其他应用中也可显示或隐藏 VRCX-0。隐藏后继续在后台运行。",
+            "configure": "设置全局快捷键",
+            "unset": "未设置",
+            "inactive": "未生效",
+            "unsupported": "当前环境无法使用全局快捷键。",
+            "record": "按下组合键",
+            "record_description": "请使用 Ctrl 或 Alt 搭配字母、数字或功能键。按 Esc 取消。录制期间，原快捷键不会隐藏窗口。",
+            "startup_failed": "全局快捷键未能启用，可能已被其他应用占用。",
+            "error": {
+                "inUse": "此快捷键已被占用，请换一个组合。",
+                "invalid": "请使用 Ctrl 或 Alt 搭配字母、数字或功能键。",
+                "reserved": "此组合用于系统或应用操作，请换一个组合。",
+                "unavailable": "此快捷键不可用或已被占用，请换一个组合。",
+                "unsupported": "当前环境无法使用全局快捷键。"
+            }
+        },
         "title": "键盘快捷键",
         "group": {
             "general": "常规",
-            "layout": "布局"
-        }
+            "layout": "布局",
+            "pagination": "搜索与表格分页",
+            "screenshots": "截图详情",
+            "image_viewer": "全屏图片查看",
+            "selection": "截图与收藏多选"
+        },
+        "navigation_items": "打开第 1～9 个导航项",
+        "hold_for_hints": "显示快捷键提示（长按）",
+        "toggle_details": "显示／隐藏详情",
+        "clear_selection": "清除选择"
     },
     "side_panel": {
         "search_placeholder": "搜索",
@@ -791,6 +821,12 @@
         "groups": "群组房间",
         "friends": "好友",
         "me": "我",
+        "self_menu": "账号菜单",
+        "filter_friends": "筛选好友",
+        "filter_groups": "筛选群组",
+        "filter_no_results": "没有匹配项",
+        "self_more_actions": "更多",
+        "switch_account": "切换账号",
         "favorite": "已分组的好友",
         "same_instance": "同一房间",
         "you_are_here": "您在这里",
@@ -1449,6 +1485,10 @@
             }
         },
         "friend_log": {
+            "date_range": "日期范围",
+            "latest": "最新",
+            "rows": "行",
+            "load_older_failed": "无法加载更早的历史记录。",
             "filter_placeholder": "筛选好友日志",
             "all_types": "全部类型",
             "groups": {
@@ -2704,8 +2744,6 @@
                     "troubleshooting": {
                         "header": "故障排查",
                         "description": "用于排查问题的日志与诊断工具。",
-                        "show": "显示工具",
-                        "hide": "隐藏工具",
                         "gamelog": "保存游戏日志历史",
                         "gamelog_description": "关闭后不会保存新的游戏日志历史；当前玩家、正在播放、截图元数据、房间媒体和其他实时日志功能仍可使用。",
                         "feed_history": "保存好友动态历史",

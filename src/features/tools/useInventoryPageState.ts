@@ -7,11 +7,10 @@ import mediaRepository, {
     type InventoryItemRecord,
     type MediaFileRecord
 } from '@/repositories/mediaRepository';
-import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '@/repositories/paginationConstants';
 import { refreshCurrentUser } from '@/services/backgroundMaintenanceSessionService';
 import { toast } from '@/services/toastService';
+import { VRCHAT_API_DEFAULT_PAGE_SIZE } from '@/shared/constants/pagination';
 import {
-    IMAGE_UPLOAD_ACCEPT,
     readFileAsBase64,
     withUploadTimeout
 } from '@/shared/utils/imageUpload';
@@ -34,8 +33,6 @@ import {
     type InventoryUploadTarget,
     type EmojiUploadSettings
 } from './inventoryHelpers';
-
-export { IMAGE_UPLOAD_ACCEPT };
 
 type InventoryAuthTarget = {
     endpoint: string;

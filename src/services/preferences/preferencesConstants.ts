@@ -4,9 +4,7 @@ import {
 } from '@/state/preferencesStore';
 
 export const DEFAULT_NOTIFICATION_LAYOUT = 'notification-center';
-export const DEFAULT_TRANSLATION_ENDPOINT =
-    'https://api.openai.com/v1/chat/completions';
-export const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
+
 export const DEFAULT_TABLE_PAGE_SIZE =
     Number(DEFAULT_PREFERENCES.tablePageSize) || 20;
 export const DEFAULT_TABLE_PAGE_SIZES = Array.isArray(

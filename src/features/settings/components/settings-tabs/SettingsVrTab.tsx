@@ -20,7 +20,8 @@ import {
 import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { useSettingsVrTabState } from '../useSettingsVrTabState';
 
@@ -180,7 +181,8 @@ export function SettingsVrTabContent({
 
     return (
         <SettingsTabContent value="vr">
-            <SettingsGroup
+            <SettingsCard
+                cardId="vr.notifications"
                 title={t(
                     'view.settings.notifications.notifications.vr_notifications.header'
                 )}
@@ -297,9 +299,10 @@ export function SettingsVrTabContent({
                         </span>
                     </div>
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="vr.hmd"
                 title={t('view.settings.vr.hmd_notifications.header')}
             >
                 <Field
@@ -455,9 +458,12 @@ export function SettingsVrTabContent({
                         {t('common.actions.configure')}
                     </Button>
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup title={t('view.settings.vr.wrist_overlay.header')}>
+            <SettingsCard
+                cardId="vr.wrist"
+                title={t('view.settings.vr.wrist_overlay.header')}
+            >
                 <Field
                     label={t(
                         'view.settings.vr.wrist_overlay.wrist_feed_overlay'
@@ -679,9 +685,10 @@ export function SettingsVrTabContent({
                         {t('common.actions.configure')}
                     </Button>
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="vr.test"
                 title={t('view.settings.vr.test_mode.header')}
                 description={t('view.settings.vr.test_mode.description')}
             >
@@ -700,7 +707,7 @@ export function SettingsVrTabContent({
                         onCheckedChange={onOverlayTestModeChange}
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
         </SettingsTabContent>
     );
 }

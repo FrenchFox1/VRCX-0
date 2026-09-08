@@ -34,6 +34,13 @@ function normalizeKeys(keys: string | string[]): string[] {
     return Array.isArray(keys) ? keys : [keys];
 }
 
+export function formatKeyboardShortcut(keys: string | string[]): string {
+    return normalizeKeys(keys)
+        .filter(Boolean)
+        .map((key) => KEY_LABELS[key] || key)
+        .join(' + ');
+}
+
 export function KeyboardShortcut({
     keys,
     className = '',

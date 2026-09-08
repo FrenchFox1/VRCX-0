@@ -601,6 +601,7 @@ fn friend_log_history_count(
             user_id: "usr_self".into(),
             target_user_id: target_user_id.into(),
             types: vec![entry_type.into()],
+            ..Default::default()
         },
     )?
     .len())
@@ -809,6 +810,7 @@ fn reconcile_records_display_name_change_for_existing_friend() -> Result<()> {
             user_id: "usr_self".into(),
             target_user_id: String::new(),
             types: vec!["DisplayName".into()],
+            ..Default::default()
         },
     )?;
     assert_eq!(history.len(), 1);
@@ -892,6 +894,7 @@ fn reconcile_records_and_projects_trust_only_change_once() -> Result<()> {
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
             types: vec!["TrustLevel".into()],
+            ..Default::default()
         },
     )?;
     assert_eq!(history.len(), 1);
@@ -957,6 +960,7 @@ fn reconcile_skips_placeholder_records() -> Result<()> {
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
             types: vec!["TrustLevel".into()],
+            ..Default::default()
         },
     )?;
     assert!(history.is_empty());
@@ -1031,6 +1035,7 @@ fn init_seeds_placeholder_without_trust_and_reconcile_fills_it_silently() -> Res
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
             types: vec![],
+            ..Default::default()
         },
     )?;
     assert!(history.is_empty());
@@ -1091,6 +1096,7 @@ fn reconcile_updates_legacy_equivalent_trust_without_history_or_feed() -> Result
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
             types: vec!["TrustLevel".into()],
+            ..Default::default()
         },
     )?;
     assert!(history.is_empty());
@@ -1151,6 +1157,7 @@ fn first_time_baseline_init_fills_current_roster_without_history_or_feed() -> Re
             user_id: "usr_self".into(),
             target_user_id: String::new(),
             types: Vec::new(),
+            ..Default::default()
         },
     )?
     .is_empty());
@@ -1264,6 +1271,7 @@ fn first_time_init_treats_friend_accepted_during_init_window_as_preexisting() ->
             user_id: "usr_self".into(),
             target_user_id: "usr_just_accepted".into(),
             types: vec!["Friend".into()],
+            ..Default::default()
         },
     )?;
     assert!(history.is_empty());

@@ -127,3 +127,11 @@ for (const theme of Object.values(THEME_COLOR_CONFIG)) {
     theme.ring ??= theme.primary;
     theme.ringDark ??= theme.ring;
 }
+
+export const DEFAULT_ZOOM_LEVEL = 100;
+
+export const MIN_ZOOM_LEVEL = 30;
+
+export const MAX_ZOOM_LEVEL = 300;
+
+export const ZOOM_STEP = 5;

@@ -1,7 +1,7 @@
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
 import type { AvatarProfileRecord } from '@/domain/entities/avatar';
-import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
+import { IMAGE_UPLOAD_ACCEPT } from '@/shared/constants/imageUpload';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 

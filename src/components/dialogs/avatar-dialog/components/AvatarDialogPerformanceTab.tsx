@@ -14,6 +14,7 @@ import { assessPerformanceStat } from '@/shared/utils/avatarPerformance';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsList, TabsTab, TabsPanel } from '@/ui/shadcn/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { EntityDialogTabContent } from '../../EntityDialogScaffold';
 import type { AvatarPlatformInfo } from '../avatarDialogTypes';
@@ -64,17 +65,23 @@ function PerformanceFact({
         <div className="min-w-0 px-3 py-2">
             <span className="text-muted-foreground block text-xs">{label}</span>
             <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span
-                    title={rankLabel}
-                    className={cn(
-                        'min-w-0 text-sm font-semibold break-words tabular-nums',
-                        rankClass
-                    )}
-                >
-                    {limit
-                        ? `${measured}/${limit}${suffix}`
-                        : `${measured}${suffix}`}
-                </span>
+                <Tooltip disabled={!rankLabel}>
+                    <TooltipTrigger
+                        render={
+                            <span
+                                className={cn(
+                                    'min-w-0 text-sm font-semibold break-words tabular-nums',
+                                    rankClass
+                                )}
+                            >
+                                {limit
+                                    ? `${measured}/${limit}${suffix}`
+                                    : `${measured}${suffix}`}
+                            </span>
+                        }
+                    />
+                    <TooltipContent>{rankLabel}</TooltipContent>
+                </Tooltip>
                 {detail ? (
                     <span className={cn('text-xs', rankClass)}>{detail}</span>
                 ) : null}

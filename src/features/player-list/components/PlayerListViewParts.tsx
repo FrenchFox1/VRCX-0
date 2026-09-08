@@ -1,4 +1,10 @@
-import { Clock3Icon, HeartIcon, HomeIcon, UsersIcon } from 'lucide-react';
+import {
+    Clock3Icon,
+    Gamepad2Icon,
+    HeartIcon,
+    HomeIcon,
+    UsersIcon
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -429,7 +435,7 @@ export function PlayerListEmptyState({
         <EmptyState
             title={title}
             description={description}
-            icon={UsersIcon}
+            icon={Gamepad2Icon}
             className={className}
         />
     );

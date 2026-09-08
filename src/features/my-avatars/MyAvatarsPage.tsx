@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { LoadingState, PageScaffold } from '@/components/layout/PageScaffold';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
+import { IMAGE_UPLOAD_ACCEPT } from '@/shared/constants/imageUpload';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 

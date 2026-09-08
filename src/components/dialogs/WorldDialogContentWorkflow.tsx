@@ -7,7 +7,7 @@ import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
+import { IMAGE_UPLOAD_ACCEPT } from '@/shared/constants/imageUpload';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 import type { WorldNewInstanceDefaults } from '@/state/dialogStore';

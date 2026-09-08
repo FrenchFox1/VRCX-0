@@ -23,6 +23,7 @@ type VirtualSidebarViewport = {
 
 type VirtualSidebarOptions = {
     overscan?: number;
+    keepMountedKey?: VirtualRowKey | null;
     preserveScrollAnchor?: boolean;
     resetKey?: string;
 };
@@ -363,8 +364,23 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
             visibleWindow.lastIndex + overscan
         );
 
-        return rows.slice(startIndex, endIndex).map((row, offset) => {
-            const index = startIndex + offset;
+        const indexes = Array.from(
+            { length: endIndex - startIndex },
+            (_, offset) => startIndex + offset
+        );
+        const keptIndex =
+            options.keepMountedKey == null
+                ? undefined
+                : rowMetrics.indexesByKey.get(options.keepMountedKey);
+        if (
+            keptIndex !== undefined &&
+            (keptIndex < startIndex || keptIndex >= endIndex)
+        ) {
+            indexes.push(keptIndex);
+            indexes.sort((left, right) => left - right);
+        }
+        return indexes.map((index) => {
+            const row = rows[index];
             return {
                 index,
                 key: row?.key ?? index,
@@ -373,7 +389,7 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
                 start: offsets[index]
             };
         });
-    }, [overscan, rowMetrics, rows, visibleWindow]);
+    }, [overscan, rowMetrics, rows, visibleWindow, options.keepMountedKey]);
 
     const scrollKeyToView = useCallback(
         (key: VirtualRowKey, topInset = 0) => {

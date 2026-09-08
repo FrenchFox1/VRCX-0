@@ -1,15 +1,22 @@
+import { SearchIcon, XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTable } from '@/components/data-table/appTable';
 import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
+import { DateRangeFilter } from '@/components/date-range-filter/DateRangeFilter';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
     ToolbarRefreshButton,
-    ToolbarSearch,
     ToolbarStatus,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
+import {
+    InputGroup,
+    InputGroupInput,
+    InputGroupAddon,
+    InputGroupButton
+} from '@/ui/shadcn/input-group';
 
 import type { FriendLogRow } from '../friendLogRows';
 import { FriendLogTypeFilterDropdown } from './FriendLogViewParts';
@@ -17,8 +24,13 @@ import { FriendLogTypeFilterDropdown } from './FriendLogViewParts';
 export function FriendLogPageToolbar({
     selectedTypes,
     onSelectedTypesChange,
-    searchQuery,
-    onSearchQueryChange,
+    searchDraft,
+    onSearchDraftChange,
+    onCommitSearch,
+    onClearSearch,
+    dateFrom,
+    dateTo,
+    onDateRangeChange,
     detail,
     currentUserId,
     loadStatus,
@@ -27,8 +39,13 @@ export function FriendLogPageToolbar({
 }: {
     selectedTypes: string[];
     onSelectedTypesChange: (value: string[]) => void;
-    searchQuery: string;
-    onSearchQueryChange: (value: string) => void;
+    searchDraft: string;
+    onSearchDraftChange(value: string): void;
+    onCommitSearch(): void;
+    onClearSearch(): void;
+    dateFrom: string;
+    dateTo: string;
+    onDateRangeChange(from: string, to: string): void;
     detail: string;
     currentUserId: string;
     loadStatus: string;
@@ -47,11 +64,56 @@ export function FriendLogPageToolbar({
                     />
                 </ToolbarViews>
 
-                <ToolbarSearch
-                    value={searchQuery}
-                    onValueChange={onSearchQueryChange}
-                    placeholder={t('view.friend_log.search_placeholder')}
-                />
+                <form
+                    className="ml-auto flex max-w-96 min-w-0 flex-1"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        onCommitSearch();
+                    }}
+                >
+                    <InputGroup className="h-auto min-h-8 flex-wrap">
+                        <InputGroupInput
+                            value={searchDraft}
+                            onChange={(event) =>
+                                onSearchDraftChange(event.target.value)
+                            }
+                            placeholder={t(
+                                'view.friend_log.search_placeholder'
+                            )}
+                            aria-label={t('view.friend_log.search_placeholder')}
+                            className="min-w-16"
+                        />
+                        <InputGroupAddon
+                            align="inline-end"
+                            className="ml-auto gap-1"
+                        >
+                            {searchDraft ? (
+                                <InputGroupButton
+                                    size="icon-xs"
+                                    aria-label={t('empty_state.clear_search')}
+                                    onClick={onClearSearch}
+                                >
+                                    <XIcon />
+                                </InputGroupButton>
+                            ) : null}
+                            <DateRangeFilter
+                                dateFrom={dateFrom}
+                                dateTo={dateTo}
+                                onChange={onDateRangeChange}
+                                label={t('view.friend_log.date_range')}
+                            />
+                            <InputGroupButton
+                                type="submit"
+                                size="icon-xs"
+                                aria-label={t(
+                                    'view.friend_log.search_placeholder'
+                                )}
+                            >
+                                <SearchIcon />
+                            </InputGroupButton>
+                        </InputGroupAddon>
+                    </InputGroup>
+                </form>
 
                 <ToolbarActions>
                     <ToolbarRefreshButton

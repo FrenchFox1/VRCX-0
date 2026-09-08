@@ -3,7 +3,7 @@ import type { ChangeEvent, RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
-import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
+import { IMAGE_UPLOAD_ACCEPT } from '@/shared/constants/imageUpload';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {

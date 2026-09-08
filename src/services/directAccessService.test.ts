@@ -32,6 +32,7 @@ import {
 } from './directAccessService';
 
 const WORLD_ID = 'wrld_12345678-1234-1234-1234-1234567890ab';
+const AVATAR_ID = 'avtr_12345678-1234-1234-1234-1234567890ab';
 const INSTANCE_ID = '12345~hidden(usr_owner)';
 const LOCATION = `${WORLD_ID}:${INSTANCE_ID}`;
 
@@ -76,6 +77,8 @@ describe('directAccessParse detect mode', () => {
     it('recognises links and prefixed ids without side effects', async () => {
         const cases = [
             `https://vrchat.com/home/world/${WORLD_ID}`,
+            `https://open.vrcx-0.dev/world/${WORLD_ID}`,
+            `https://open.vrcx-0.dev/avatar/${AVATAR_ID}`,
             `https://vrchat.com/home/launch?worldId=${WORLD_ID}`,
             `https://vrchat.com/home/launch?worldId=${WORLD_ID}&instanceId=x`,
             'https://vrchat.com/home/user/usr_id',
@@ -119,12 +122,37 @@ describe('directAccessParse detect mode', () => {
             '   ',
             'hello world',
             'https://vrchat.com/home',
+            'https://open.vrcx-0.dev/world/wrld_invalid',
+            `http://open.vrcx-0.dev/world/${WORLD_ID}`,
+            `https://open.vrcx-0.dev.example.com/world/${WORLD_ID}`,
+            `https://open.vrcx-0.dev//world/${WORLD_ID}`,
+            `https://open.vrcx-0.dev/world/${WORLD_ID}/extra`,
+            `Open world: https://open.vrcx-0.dev/world/${WORLD_ID}`,
+            `https://open.vrcx-0.dev/avatar/${WORLD_ID}`,
             'https://example.com/x'
         ]) {
             await expect(directAccessParse(value, 'detect')).resolves.toBe(
                 false
             );
         }
+    });
+
+    it('opens VRCX-0 share links in their matching dialogs', async () => {
+        const dialogService = await import('@/services/dialogService');
+
+        await expect(
+            directAccessParse(`https://open.vrcx-0.dev/world/${WORLD_ID}`)
+        ).resolves.toBe(true);
+        await expect(
+            directAccessParse(`https://open.vrcx-0.dev/avatar/${AVATAR_ID}`)
+        ).resolves.toBe(true);
+
+        expect(mocks.openWorldDialog).toHaveBeenCalledWith({
+            worldId: WORLD_ID
+        });
+        expect(dialogService.openAvatarDialog).toHaveBeenCalledWith({
+            avatarId: AVATAR_ID
+        });
     });
 
     it('keeps mixed case payloads intact', async () => {

@@ -22,7 +22,7 @@ export function useFriendLogResolvedNames(
     rows: FriendLogRow[]
 ): ResolveDisplayName {
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const missingNameUserIds = useMemo(() => {
+    const retainedUserIds = useMemo(() => {
         const userIds = new Set<string>();
         for (const row of rows) {
             const userId = normalizeUserId(row.userId);
@@ -33,12 +33,12 @@ export function useFriendLogResolvedNames(
                 userIds.add(userId);
             }
         }
-        return [...userIds];
+        return userIds;
     }, [rows]);
     const rosterNamesById = useFriendRosterStore(
         useShallow((state) => {
             const names: Record<string, string> = {};
-            for (const userId of missingNameUserIds) {
+            for (const userId of retainedUserIds) {
                 names[userId] = resolveDisplayNameCandidate(
                     state.friendsById[userId]?.displayName,
                     userId
@@ -48,7 +48,30 @@ export function useFriendLogResolvedNames(
         })
     );
     const [namesById, setNamesById] = useState<Record<string, string>>({});
-    const attemptedRef = useRef<Set<string>>(new Set());
+    const [attemptedUserIds, setAttemptedUserIds] = useState(
+        () => new Set<string>()
+    );
+    const retainedUserIdsRef = useRef(retainedUserIds);
+    retainedUserIdsRef.current = retainedUserIds;
+
+    useEffect(() => {
+        setAttemptedUserIds((current) => {
+            const retained = [...current].filter((userId) =>
+                retainedUserIds.has(userId)
+            );
+            return retained.length === current.size
+                ? current
+                : new Set(retained);
+        });
+        setNamesById((current) => {
+            const retained = Object.entries(current).filter(([userId]) =>
+                retainedUserIds.has(userId)
+            );
+            return retained.length === Object.keys(current).length
+                ? current
+                : Object.fromEntries(retained);
+        });
+    }, [retainedUserIds]);
 
     const resolveSyncName = useCallback(
         (userId: string, rowDisplayName: string) => {
@@ -67,8 +90,10 @@ export function useFriendLogResolvedNames(
     );
 
     useEffect(() => {
-        attemptedRef.current = new Set();
-        setNamesById({});
+        setAttemptedUserIds((current) =>
+            current.size ? new Set<string>() : current
+        );
+        setNamesById((current) => (Object.keys(current).length ? {} : current));
     }, [currentUserId, endpoint]);
 
     const missingKey = useMemo(() => {
@@ -79,11 +104,7 @@ export function useFriendLogResolvedNames(
         const seen = new Set<string>();
         for (const row of rows) {
             const userId = normalizeUserId(row?.userId);
-            if (
-                !userId ||
-                seen.has(userId) ||
-                attemptedRef.current.has(userId)
-            ) {
+            if (!userId || seen.has(userId) || attemptedUserIds.has(userId)) {
                 continue;
             }
             if (resolveSyncName(userId, row.displayName) || namesById[userId]) {
@@ -96,16 +117,13 @@ export function useFriendLogResolvedNames(
             }
         }
         return missing.join('\n');
-    }, [currentUserId, rows, namesById, resolveSyncName]);
+    }, [currentUserId, rows, namesById, resolveSyncName, attemptedUserIds]);
 
     useEffect(() => {
         if (!missingKey) {
             return undefined;
         }
         const missing = missingKey.split('\n');
-        for (const userId of missing) {
-            attemptedRef.current.add(userId);
-        }
 
         const requestId = crypto.randomUUID();
         let active = true;
@@ -119,32 +137,37 @@ export function useFriendLogResolvedNames(
                 if (!active) {
                     return;
                 }
+                settled = true;
+                setAttemptedUserIds(
+                    (current) =>
+                        new Set([
+                            ...current,
+                            ...missing.filter((userId) =>
+                                retainedUserIdsRef.current.has(userId)
+                            )
+                        ])
+                );
                 const resolved: Record<string, string> = {};
                 for (const row of rows) {
-                    resolved[row.userId] = row.displayName;
+                    if (retainedUserIdsRef.current.has(row.userId)) {
+                        resolved[row.userId] = row.displayName;
+                    }
                 }
                 if (Object.keys(resolved).length > 0) {
                     setNamesById((current) => ({ ...current, ...resolved }));
                 }
             })
-            .catch(() => {
-                for (const userId of missing) {
-                    attemptedRef.current.delete(userId);
-                }
-            })
+            .catch(() => {})
             .finally(() => {
                 settled = true;
             });
         return () => {
             active = false;
             if (!settled) {
-                for (const userId of missing) {
-                    attemptedRef.current.delete(userId);
-                }
                 void commands.appFriendLogNamesCancel(requestId);
             }
         };
-    }, [missingKey]);
+    }, [missingKey, currentUserId, endpoint]);
 
     return useCallback(
         (row: FriendLogRow) => {

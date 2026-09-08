@@ -11,17 +11,23 @@ import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useNavigationCacheStore } from '@/state/navigationCacheStore';
 import { TooltipProvider } from '@/ui/shadcn/tooltip';
 
 import { AdvancedTroubleshootingGroup } from './AdvancedTroubleshootingGroup';
+
+vi.mock('@tauri-apps/plugin-fs', () => ({
+    BaseDirectory: { AppCache: 16 },
+    mkdir: vi.fn().mockResolvedValue(undefined),
+    writeTextFile: vi.fn().mockResolvedValue(undefined),
+    readTextFile: vi.fn().mockResolvedValue('{}')
+}));
 
 const labels: Record<string, string> = {
     'view.settings.advanced.advanced_ui.troubleshooting.header':
         'Troubleshooting',
     'view.settings.advanced.advanced_ui.troubleshooting.description':
         'Diagnostic tools',
-    'view.settings.advanced.advanced_ui.troubleshooting.show': 'Show tools',
-    'view.settings.advanced.advanced_ui.troubleshooting.hide': 'Hide tools',
     'view.settings.advanced.advanced_ui.troubleshooting.tools': 'Diagnostics',
     'view.settings.advanced.advanced_ui.troubleshooting.database_usage':
         'Database usage',
@@ -86,7 +92,7 @@ function renderGroup(props: TroubleshootingProps) {
 }
 
 async function openTools(user: ReturnType<typeof userEvent.setup>) {
-    const trigger = screen.getByRole('button', { name: 'Show tools' });
+    const trigger = screen.getByRole('button', { name: 'Troubleshooting' });
     trigger.focus();
     await user.keyboard('{Enter}');
     return trigger;
@@ -96,6 +102,7 @@ describe('AdvancedTroubleshootingGroup', () => {
     afterEach(cleanup);
 
     beforeEach(() => {
+        useNavigationCacheStore.setState({ hydrated: true, settingsCards: {} });
         vi.stubGlobal(
             'ResizeObserver',
             class {
@@ -111,7 +118,9 @@ describe('AdvancedTroubleshootingGroup', () => {
         const user = userEvent.setup();
         renderGroup(createProps());
 
-        expect(screen.queryByText('Resource load logging')).toBeNull();
+        expect(
+            screen.queryByRole('switch', { name: 'Resource load logging' })
+        ).toBeNull();
         const trigger = await openTools(user);
 
         expect(trigger.getAttribute('aria-expanded')).toBe('true');

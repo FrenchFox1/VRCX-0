@@ -1,4 +1,4 @@
-import { UsersIcon } from 'lucide-react';
+import { UsersIcon, UsersRoundIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -54,7 +54,7 @@ export function GroupCard({
                         />
                     ) : null}
                     <AvatarFallback className="rounded-lg [&>svg]:size-5">
-                        <UsersIcon aria-hidden="true" />
+                        <UsersRoundIcon aria-hidden="true" />
                     </AvatarFallback>
                 </Avatar>
                 <span className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">

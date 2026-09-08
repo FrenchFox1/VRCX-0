@@ -16,8 +16,8 @@ import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
-import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
+import { TILE_SELECTED } from '@/shared/constants/selectableTile';
 import { Button } from '@/ui/shadcn/button';
 
 import type { FavoritesDensityConfig } from '../favoritesDensity';

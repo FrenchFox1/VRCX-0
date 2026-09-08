@@ -6,6 +6,7 @@ mod protocol;
 mod setup;
 mod shared;
 pub(crate) mod sidebar_auto_hide;
+pub(crate) mod tray_shortcut;
 mod window;
 
 pub use adapters::emit_to_main_window_if_visible;

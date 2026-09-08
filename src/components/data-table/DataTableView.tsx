@@ -21,6 +21,8 @@ import type { ComponentProps, CSSProperties, ReactNode } from 'react';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
+import { usePaginationKeyboardShortcuts } from '@/components/keyboard/usePaginationKeyboardShortcuts';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -443,6 +445,12 @@ export function DataTablePagination<TData extends RowData>({
     const resolvedPreviousLabel =
         previousLabel || t('table.pagination.previous');
     const resolvedNextLabel = nextLabel || t('table.pagination.next');
+    const paginationRef = usePaginationKeyboardShortcuts<HTMLDivElement>({
+        canPrevious: table.getCanPreviousPage(),
+        canNext: table.getCanNextPage(),
+        onPrevious: () => table.previousPage(),
+        onNext: () => table.nextPage()
+    });
 
     const resolvedPageIndex =
         typeof pageIndex === 'number' && Number.isFinite(pageIndex)
@@ -469,6 +477,7 @@ export function DataTablePagination<TData extends RowData>({
 
     return (
         <div
+            ref={paginationRef}
             data-vrcx-0-pagination=""
             className={cn(
                 'text-content-tertiary flex flex-wrap items-center gap-2 text-xs tabular-nums',
@@ -518,6 +527,7 @@ export function DataTablePagination<TData extends RowData>({
                         >
                             <ChevronLeftIcon data-icon="inline-start" />
                             {resolvedPreviousLabel}
+                            <KeyboardShortcut keys="ArrowLeft" />
                         </Button>
                     </PaginationItem>
                     <PaginationItem>
@@ -536,6 +546,7 @@ export function DataTablePagination<TData extends RowData>({
                             onClick={() => table?.nextPage?.()}
                         >
                             {resolvedNextLabel}
+                            <KeyboardShortcut keys="ArrowRight" />
                             <ChevronRightIcon data-icon="inline-end" />
                         </Button>
                     </PaginationItem>

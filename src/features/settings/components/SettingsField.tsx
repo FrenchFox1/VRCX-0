@@ -8,7 +8,6 @@ import {
 } from 'react';
 
 import { cn } from '@/lib/utils';
-import { Card, CardContent } from '@/ui/shadcn/card';
 import {
     Field as ShadcnField,
     FieldContent,
@@ -37,15 +36,6 @@ type FieldProps = {
     error?: ReactNode;
     invalid?: boolean;
     disabled?: boolean;
-};
-
-type SettingsGroupProps = {
-    title?: ReactNode;
-    description?: ReactNode;
-    action?: ReactNode;
-    bodyClassName?: string;
-    className?: string;
-    children?: ReactNode;
 };
 
 type SettingsSectionHeadingProps = {
@@ -153,40 +143,6 @@ export function Field({
                 {applyControlProps(children, labelControlId, isInvalid)}
             </div>
         </ShadcnField>
-    );
-}
-
-export function SettingsGroup({
-    title,
-    description,
-    action,
-    bodyClassName = 'flex flex-col',
-    className = '',
-    children
-}: SettingsGroupProps) {
-    return (
-        <section className={cn('flex flex-col gap-2', className)}>
-            {title || action ? (
-                <div className="flex items-start justify-between gap-3">
-                    <div className="flex flex-col gap-0.5">
-                        {title ? (
-                            <h2 className="font-heading text-base leading-snug font-semibold">
-                                {title}
-                            </h2>
-                        ) : null}
-                        {description ? (
-                            <div className="text-muted-foreground text-sm">
-                                {description}
-                            </div>
-                        ) : null}
-                    </div>
-                    {action}
-                </div>
-            ) : null}
-            <Card className="bg-surface-panel ring-stroke-subtle py-2.5 shadow-none">
-                <CardContent className={bodyClassName}>{children}</CardContent>
-            </Card>
-        </section>
     );
 }
 

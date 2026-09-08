@@ -2,6 +2,7 @@ import { CheckIcon, ImageIcon } from 'lucide-react';
 import type { ComponentType, CSSProperties } from 'react';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { cn } from '@/lib/utils';
 import {
     TILE_BADGE,
     TILE_BUSY_OVERLAY,
@@ -12,8 +13,7 @@ import {
     TILE_SELECTED,
     TILE_SHELL,
     TILE_SURFACE
-} from '@/lib/selectableTile';
-import { cn } from '@/lib/utils';
+} from '@/shared/constants/selectableTile';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 

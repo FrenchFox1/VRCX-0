@@ -67,6 +67,7 @@ fn all_history(db: &DatabaseService) -> Vec<FriendLogHistoryOutput> {
             user_id: "usr_self".into(),
             target_user_id: String::new(),
             types: Vec::new(),
+            ..Default::default()
         },
     )
     .unwrap()
@@ -490,6 +491,7 @@ fn friend_log_history_query_filters_by_target_user_and_types() {
             user_id: "usr_self".into(),
             target_user_id: "usr_alice".into(),
             types: Vec::new(),
+            ..Default::default()
         },
     )
     .unwrap();
@@ -501,6 +503,7 @@ fn friend_log_history_query_filters_by_target_user_and_types() {
             user_id: "usr_self".into(),
             target_user_id: "usr_alice".into(),
             types: vec!["TrustLevel".into()],
+            ..Default::default()
         },
     )
     .unwrap();
@@ -517,5 +520,157 @@ fn current_friend_trust_level_defaults_to_visitor_and_keeps_explicit_levels() {
     assert_eq!(
         current_friend_trust_level(&current_entry("usr_a", "Alice", Some("Trusted"), 1)),
         "Trusted"
+    );
+}
+
+#[test]
+fn friend_log_history_pages_keep_equal_timestamps_and_owner_filters() {
+    use vrcx_0_contracts::friend_log::FriendLogHistoryCursor;
+    let (_dir, db) = test_db("history-cursor");
+    friend_log_history_add(
+        &db,
+        "usr_self".into(),
+        vec![
+            history_entry("usr_a", "Friend"),
+            history_entry("usr_b", "Unfriend"),
+            history_entry("usr_c", "Friend"),
+            history_entry("usr_d", "Friend"),
+        ],
+    )
+    .unwrap();
+    friend_log_history_add(
+        &db,
+        "usr_other".into(),
+        vec![history_entry("usr_foreign", "Friend")],
+    )
+    .unwrap();
+    let query = FriendLogHistoryQueryInput {
+        user_id: "usr_self".into(),
+        excluded_types: vec!["Unfriend".into()],
+        limit: Some(2),
+        ..Default::default()
+    };
+    let first = friend_log_history_query(&db, query.clone()).unwrap();
+    assert_eq!(
+        first
+            .iter()
+            .map(|row| row.user_id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["usr_d", "usr_c"]
+    );
+    let cursor = FriendLogHistoryCursor {
+        created_at: first[1].created_at.clone(),
+        row_id: first[1].row_id,
+    };
+    friend_log_history_add(
+        &db,
+        "usr_self".into(),
+        vec![history_entry("usr_new", "Friend")],
+    )
+    .unwrap();
+    let older = friend_log_history_query(
+        &db,
+        FriendLogHistoryQueryInput {
+            cursor: Some(cursor),
+            ..query
+        },
+    )
+    .unwrap();
+    assert_eq!(older.len(), 1);
+    assert_eq!(older[0].user_id, "usr_a");
+}
+
+#[test]
+fn friend_log_history_date_range_includes_endpoints_and_handles_timestamp_offsets() {
+    let (_dir, db) = test_db("history-date-range");
+    let entries = [
+        ("usr_before", "2026-08-31T14:59:59.999Z"),
+        ("usr_start", "2026-09-01T00:00:00+09:00"),
+        ("usr_end", "2026-09-01T14:59:59.999Z"),
+        ("usr_after", "2026-09-01T15:00:00Z"),
+    ]
+    .into_iter()
+    .map(|(id, date)| {
+        let mut entry = history_entry(id, "Friend");
+        entry.created_at = date.into();
+        entry
+    })
+    .collect();
+    friend_log_history_add(&db, "usr_self".into(), entries).unwrap();
+    let query = FriendLogHistoryQueryInput {
+        user_id: "usr_self".into(),
+        date_from: "2026-08-31T15:00:00.000Z".into(),
+        date_to: "2026-09-01T14:59:59.999Z".into(),
+        ..Default::default()
+    };
+    let rows = friend_log_history_query(&db, query.clone()).unwrap();
+    assert_eq!(rows.len(), 2);
+    assert!(rows
+        .iter()
+        .all(|row| ["usr_start", "usr_end"].contains(&row.user_id.as_str())));
+    let from_only = friend_log_history_query(
+        &db,
+        FriendLogHistoryQueryInput {
+            date_to: String::new(),
+            ..query
+        },
+    )
+    .unwrap();
+    assert_eq!(from_only.len(), 3);
+}
+
+#[test]
+fn friend_log_history_cursor_orders_actual_times_across_legacy_formats() {
+    use vrcx_0_contracts::friend_log::FriendLogHistoryCursor;
+    let (_dir, db) = test_db("history-time-order");
+    let entries = [
+        ("usr_older", "2026-09-01T00:00:00Z"),
+        ("usr_newer", "2026-09-01T00:00:00.500Z"),
+        ("usr_same_time", "2026-09-01T09:00:00+09:00"),
+        ("usr_unknown_time", ""),
+    ]
+    .into_iter()
+    .map(|(id, date)| {
+        let mut entry = history_entry(id, "Friend");
+        entry.created_at = date.into();
+        entry
+    })
+    .collect();
+    friend_log_history_add(&db, "usr_self".into(), entries).unwrap();
+    let first = friend_log_history_query(
+        &db,
+        FriendLogHistoryQueryInput {
+            user_id: "usr_self".into(),
+            limit: Some(2),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        first
+            .iter()
+            .map(|row| row.user_id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["usr_newer", "usr_same_time"]
+    );
+    let second = friend_log_history_query(
+        &db,
+        FriendLogHistoryQueryInput {
+            user_id: "usr_self".into(),
+            limit: Some(2),
+            cursor: Some(FriendLogHistoryCursor {
+                created_at: first[1].created_at.clone(),
+                row_id: first[1].row_id,
+            }),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        second
+            .iter()
+            .map(|row| row.user_id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["usr_older", "usr_unknown_time"]
     );
 }

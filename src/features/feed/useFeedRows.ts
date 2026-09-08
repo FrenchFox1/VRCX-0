@@ -4,15 +4,14 @@ import {
     buildFeedFavoriteIdSet as buildFavoriteIdSet,
     normalizeFeedId as normalizeId,
     resolveDisplayNameCandidate,
-    resolveFeedUserId,
-    toIsoRangeEnd,
-    toIsoRangeStart
+    resolveFeedUserId
 } from '@/components/feed/feedRows';
 import type {
     FeedFilterType,
     FeedLoadStatus,
     FeedRow
 } from '@/components/feed/feedTypes';
+import { toIsoRangeStart, toIsoRangeEnd } from '@/lib/dateRange';
 import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
 import feedRepository from '@/repositories/feedRepository';
 import friendLogRepository from '@/repositories/friendLogRepository';

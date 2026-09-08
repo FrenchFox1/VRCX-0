@@ -16,6 +16,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 type GallerySelectionBarProps = {
     selectedCount: number;
@@ -124,25 +125,37 @@ export function GallerySelectionBar({
                     </DropdownMenuContent>
                 </DropdownMenu>
             ) : null}
-            <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={actionsDisabled || deletableCount === 0}
-                title={
-                    deletableCount === 0
-                        ? t('view.tools.gallery_selection.delete_locked')
-                        : undefined
-                }
-                onClick={onDelete}
-            >
-                <Trash2Icon data-icon="inline-start" />
-                {deletableCount < selectedCount
-                    ? t('view.tools.gallery_selection.delete_unlocked', {
-                          count: deletableCount
-                      })
-                    : t('common.actions.delete')}
-            </Button>
+            <Tooltip disabled={deletableCount !== 0}>
+                <TooltipTrigger
+                    render={
+                        <span
+                            className="inline-flex"
+                            tabIndex={deletableCount === 0 ? 0 : undefined}
+                        />
+                    }
+                >
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={actionsDisabled || deletableCount === 0}
+                        onClick={onDelete}
+                    >
+                        <Trash2Icon data-icon="inline-start" />
+                        {deletableCount < selectedCount
+                            ? t(
+                                  'view.tools.gallery_selection.delete_unlocked',
+                                  {
+                                      count: deletableCount
+                                  }
+                              )
+                            : t('common.actions.delete')}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    {t('view.tools.gallery_selection.delete_locked')}
+                </TooltipContent>
+            </Tooltip>
         </SelectionActionBar>
     );
 }

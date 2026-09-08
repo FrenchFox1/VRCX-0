@@ -59,13 +59,10 @@ function FilterHarness({ userIds = [] }: { userIds?: string[] }) {
             <FeedToolbar
                 filterModel={filters}
                 filterCommands={{
-                    onApplyDateFilter: filters.applyDateFilter,
-                    onClearDateFilter: filters.clearDateFilter,
+                    onDateRangeChange: filters.setDateRange,
                     onClearFeedFilters: () => filters.setFeedFilters([]),
                     onClearSearch: filters.clearSearch,
                     onCommitSearch: filters.commitSearch,
-                    onDateFilterOpenChange: filters.setDateFilterOpen,
-                    onDateRangeSelect: filters.onDateRangeSelect,
                     onScopeChange: filters.setUserScope,
                     onSearchDraftChange: filters.setSearchDraft,
                     onFeedFiltersChange: filters.setFeedFilters,
@@ -269,6 +266,33 @@ async function selectDateRange(
 }
 
 describe('Feed compound search', { timeout: 10_000 }, () => {
+    it('discards unconfirmed date edits when the shared date picker reopens', async () => {
+        const user = userEvent.setup();
+        renderFilters();
+        let calendar = await selectDateRange(user);
+        await user.click(
+            calendar.getByRole('button', { name: en.common.actions.confirm })
+        );
+        await user.click(screen.getByRole('button', { name: /^Date range:/ }));
+        calendar = within(
+            await screen.findByRole('dialog', { name: 'Date range' })
+        );
+        await user.click(
+            calendar.getByRole('button', { name: /August 20.*2026/ })
+        );
+        await user.keyboard('{Escape}');
+        await user.click(screen.getByRole('button', { name: /^Date range:/ }));
+        calendar = within(
+            await screen.findByRole('dialog', { name: 'Date range' })
+        );
+        await user.click(
+            calendar.getByRole('button', { name: en.common.actions.confirm })
+        );
+        expect(
+            screen.getByRole('status', { name: 'Applied dates' }).textContent
+        ).toBe('2026-08-10/2026-08-12');
+    });
+
     it('applies dates without a keyword and tabs from friend search to the date trigger', async () => {
         const user = userEvent.setup();
         renderFilters();

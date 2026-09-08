@@ -31,12 +31,12 @@ import {
     resetTrustColorsPreference
 } from '@/services/preferencesService';
 import {
-    APP_FONT_DEFAULT_KEY,
     applyAppFontPreferences,
     normalizeAppCjkFontPack,
     normalizeAppFontFamily
 } from '@/services/themeService';
 import { toast } from '@/services/toastService';
+import { APP_FONT_DEFAULT_KEY } from '@/shared/constants/fonts';
 import {
     DEFAULT_MAX_TABLE_SIZE,
     DEFAULT_SEARCH_LIMIT,

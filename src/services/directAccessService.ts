@@ -11,9 +11,12 @@ import {
     hasAvatarIdPrefix,
     hasGroupIdPrefix,
     hasUserIdPrefix,
-    hasWorldIdPrefix
+    hasWorldIdPrefix,
+    isAvatarId,
+    isWorldId
 } from '@/shared/constants/vrchatIds';
 import { VRCHAT_WEB_BASE } from '@/shared/constants/vrchatWebUrls';
+import { VRCX_OPEN_RELAY_ORIGIN } from '@/shared/constants/vrcxDeepLinks';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
@@ -29,6 +32,29 @@ function parseUrlOrNull(value: string) {
     } catch {
         return null;
     }
+}
+
+function parseVrcxShareLink(
+    input: string
+): { type: 'avatar' | 'world'; id: string } | null {
+    const url = parseUrlOrNull(input);
+    if (!url || url.origin !== VRCX_OPEN_RELAY_ORIGIN) {
+        return null;
+    }
+
+    const pathParts = url.pathname.split('/');
+    if (pathParts.length !== 3) {
+        return null;
+    }
+
+    const [, type, id] = pathParts;
+    if (type === 'world' && isWorldId(id)) {
+        return { type, id };
+    }
+    if (type === 'avatar' && isAvatarId(id)) {
+        return { type, id };
+    }
+    return null;
 }
 
 function emptyRecordArray(value: unknown): LooseRecord[] {
@@ -306,6 +332,19 @@ export async function directAccessParse(
     const value = normalizeString(input).trim();
     if (!value) {
         return false;
+    }
+
+    const vrcxShareLink = parseVrcxShareLink(value);
+    if (vrcxShareLink) {
+        if (mode === 'detect') {
+            return true;
+        }
+        if (vrcxShareLink.type === 'world') {
+            openWorldDialog({ worldId: vrcxShareLink.id });
+        } else {
+            openAvatarDialog({ avatarId: vrcxShareLink.id });
+        }
+        return true;
     }
 
     if (await directAccessWorld(value, mode)) {

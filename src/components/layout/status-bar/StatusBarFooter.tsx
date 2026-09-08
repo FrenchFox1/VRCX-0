@@ -23,7 +23,7 @@ import {
     MAX_ZOOM_LEVEL,
     MIN_ZOOM_LEVEL,
     ZOOM_STEP
-} from '@/services/themeService';
+} from '@/shared/constants/themes';
 import type { VrcStatusState } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {

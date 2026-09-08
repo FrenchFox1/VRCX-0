@@ -15,6 +15,14 @@ pub(crate) fn sidebar_mode() -> bool {
     SIDEBAR_MODE.load(std::sync::atomic::Ordering::Acquire)
 }
 
+#[cfg(windows)]
+pub(crate) fn is_edge_hidden(app: &AppHandle) -> bool {
+    app.try_state::<native::Shared>().is_some_and(|shared| {
+        let control = shared.control.lock().unwrap_or_else(|e| e.into_inner());
+        control.machine.is_hidden() || control.machine.is_animating()
+    })
+}
+
 pub(crate) fn snapshot(app: &AppHandle) -> SidebarAutoHideSnapshot {
     #[cfg(any(windows, target_os = "macos"))]
     if let Some(shared) = app.try_state::<native::Shared>() {

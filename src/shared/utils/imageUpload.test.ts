@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { IMAGE_UPLOAD_ACCEPT, validateImageUploadFile } from './imageUpload';
+import { IMAGE_UPLOAD_ACCEPT } from '@/shared/constants/imageUpload';
+
+import { validateImageUploadFile } from './imageUpload';
 
 describe('imageUpload validation', () => {
     it('accepts supported raster image types below the size limit', () => {

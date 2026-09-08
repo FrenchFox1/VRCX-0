@@ -24,7 +24,7 @@ import {
     PlusIcon,
     SettingsIcon,
     StarIcon,
-    UsersIcon,
+    UsersRoundIcon,
     WrenchIcon,
     type LucideIcon
 } from 'lucide-react';
@@ -79,7 +79,7 @@ const categoryIconByKey: Record<string, LucideIcon> = {
     image: ImageIcon,
     shortcuts: FolderOpenIcon,
     automation: BotIcon,
-    group: UsersIcon,
+    group: UsersRoundIcon,
     vrchat: SettingsIcon,
     data: DatabaseBackupIcon,
     debug: BugIcon,

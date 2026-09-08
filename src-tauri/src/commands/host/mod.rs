@@ -16,6 +16,7 @@ pub mod screenshots;
 pub mod shell;
 pub mod startup_bootstrap;
 pub mod theme_debug;
+pub mod tray_shortcut;
 pub mod tts;
 pub mod updater;
 pub mod vrchat_log;

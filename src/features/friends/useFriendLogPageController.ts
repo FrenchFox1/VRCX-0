@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
 import { sortTableRowsByDateAndType } from '@/components/data-table/sortRowsByDateAndType';
-import { useFriendLogStore } from '@/state/friendLogStore';
 
 import { useFriendLogColumns } from './components/FriendLogColumns';
 import { getFriendLogRowKey } from './friendLogRows';
@@ -15,25 +14,17 @@ import { useFriendLogTableState } from './useFriendLogTableState';
 export function useFriendLogPageController() {
     const filters = useFriendLogFilters();
 
-    const friendLogRevision = useFriendLogStore((state) => state.revision);
-    const refreshFriendLogRef = useRef(filters.refreshFriendLog);
-    refreshFriendLogRef.current = filters.refreshFriendLog;
-    const seenRevisionRef = useRef(friendLogRevision);
-    useEffect(() => {
-        if (seenRevisionRef.current === friendLogRevision) {
-            return;
-        }
-        seenRevisionRef.current = friendLogRevision;
-        refreshFriendLogRef.current();
-    }, [friendLogRevision]);
-
     const rows = useFriendLogRows({
         refreshToken: filters.refreshToken,
         searchQuery: filters.searchQuery,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
         selectedTypes: filters.selectedTypes
     });
     const tableState = useFriendLogTableState({
         hideUnfriends: rows.hideUnfriends,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
         orderedRowsLength: rows.orderedRows.length,
         searchQuery: filters.searchQuery,
         selectedTypes: filters.selectedTypes
@@ -45,7 +36,7 @@ export function useFriendLogPageController() {
         rowsOwnerUserId: rows.rowsOwnerUserId,
         rowsOwnerUserIdRef: rows.rowsOwnerUserIdRef,
         setDetail: rows.setDetail,
-        setRows: rows.setRows
+        removeRow: rows.removeRow
     });
     const columns = useFriendLogColumns({
         currentUserId: rows.currentUserId,
@@ -56,18 +47,25 @@ export function useFriendLogPageController() {
         shiftHeld
     });
     const sortedRows = useMemo(
-        () => sortTableRowsByDateAndType(rows.orderedRows, tableState.sorting),
-        [rows.orderedRows, tableState.sorting]
+        () =>
+            rows.searchMode
+                ? sortTableRowsByDateAndType(
+                      rows.orderedRows,
+                      tableState.sorting
+                  )
+                : rows.orderedRows,
+        [rows.orderedRows, rows.searchMode, tableState.sorting]
     );
     const { resolveDisplayName } = rows;
     const { pageIndex, pageSize } = tableState.pagination;
     const pageRows = useMemo(() => {
+        if (!rows.searchMode) return [];
         const start = pageIndex * pageSize;
         return sortedRows.slice(start, start + pageSize).map((row) => ({
             ...row,
             resolvedDisplayName: resolveDisplayName(row)
         }));
-    }, [sortedRows, pageIndex, pageSize, resolveDisplayName]);
+    }, [sortedRows, rows.searchMode, pageIndex, pageSize, resolveDisplayName]);
     const table = useAppTable({
         data: pageRows,
         columns,
@@ -84,6 +82,7 @@ export function useFriendLogPageController() {
         onColumnOrderChange: tableState.setColumnOrder,
         onColumnSizingChange: tableState.setColumnSizing,
         getRowId: (row) => getFriendLogRowKey(row, rows.rowsOwnerUserId),
+        enableSorting: rows.searchMode,
         manualPagination: true,
         manualSorting: true,
         rowCount: rows.orderedRows.length,
@@ -103,6 +102,8 @@ export function useFriendLogPageController() {
         isError,
         isLoading,
         rows,
+        rowActions,
+        shiftHeld,
         table,
         tableState
     };

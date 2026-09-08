@@ -1,16 +1,9 @@
-import { ArrowUpToLineIcon, ChevronRightIcon } from 'lucide-react';
-import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    type KeyboardEvent,
-    type PointerEvent
-} from 'react';
+import { ChevronRightIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { AppHeader } from '@/components/data-table/appTable';
+import { DataTableColumnResizeHandle } from '@/components/data-table/DataTableColumnResizeHandle';
+import { VirtualHistoryList } from '@/components/data-table/VirtualHistoryList';
 import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
 import {
     canExpandFeedRow,
@@ -25,7 +18,6 @@ import type {
     FeedRow,
     FeedTableInstance
 } from '@/components/feed/feedTypes';
-import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import { cn } from '@/lib/utils';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
@@ -70,12 +62,6 @@ type FeedListLayout = {
     minWidth: number;
 };
 
-type FeedListResizeSession = {
-    pointerId: number;
-    startWidth: number;
-    startX: number;
-};
-
 function getFeedListLayout(table: FeedTableInstance): FeedListLayout {
     const timeWidth = table.getColumn('created_at')?.getSize() ?? 144;
     const userWidth = table.getColumn('displayName')?.getSize() ?? 160;
@@ -85,103 +71,6 @@ function getFeedListLayout(table: FeedTableInstance): FeedListLayout {
         gridTemplateColumns: `2rem ${timeWidth}px ${userWidth}px ${typeWidth}px minmax(${detailWidth}px, 1fr)`,
         minWidth: 32 + timeWidth + userWidth + typeWidth + detailWidth
     };
-}
-
-function clampFeedListColumnSize(header: AppHeader<FeedRow>, size: number) {
-    const minSize = header.column.columnDef.minSize ?? 20;
-    const maxSize = header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER;
-    return Math.min(maxSize, Math.max(minSize, Math.round(size)));
-}
-
-function resizeFeedListColumnFromKeyboard(
-    event: KeyboardEvent<HTMLButtonElement>,
-    header: AppHeader<FeedRow>
-) {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
-        return;
-    }
-    event.preventDefault();
-    const direction = event.key === 'ArrowRight' ? 1 : -1;
-    const step = event.shiftKey ? 32 : 16;
-    const size = clampFeedListColumnSize(
-        header,
-        header.column.getSize() + direction * step
-    );
-    header.getContext().table.setColumnSizing((current) => ({
-        ...current,
-        [header.column.id]: size
-    }));
-}
-
-function FeedListResizeHandle({
-    header,
-    label
-}: {
-    header: AppHeader<FeedRow>;
-    label: string;
-}) {
-    const { t } = useTranslation();
-    const minSize = header.column.columnDef.minSize ?? 20;
-    const maxSize = header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER;
-    const resizeSessionRef = useRef<FeedListResizeSession | null>(null);
-
-    const updateResize = (event: PointerEvent<HTMLButtonElement>) => {
-        const session = resizeSessionRef.current;
-        if (!session || session.pointerId !== event.pointerId) {
-            return;
-        }
-        const size = clampFeedListColumnSize(
-            header,
-            session.startWidth + event.clientX - session.startX
-        );
-        header.getContext().table.setColumnSizing((current) => ({
-            ...current,
-            [header.column.id]: size
-        }));
-    };
-
-    const endResize = (event: PointerEvent<HTMLButtonElement>) => {
-        if (resizeSessionRef.current?.pointerId !== event.pointerId) {
-            return;
-        }
-        updateResize(event);
-        resizeSessionRef.current = null;
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            event.currentTarget.releasePointerCapture(event.pointerId);
-        }
-    };
-
-    return (
-        <Button
-            type="button"
-            variant="ghost"
-            role="separator"
-            aria-label={t('accessibility.resize_column', { column: label })}
-            aria-orientation="vertical"
-            aria-valuemin={minSize}
-            aria-valuemax={maxSize}
-            aria-valuenow={header.column.getSize()}
-            data-resizing={header.column.getIsResizing() ? '' : undefined}
-            className="vrcx-0-column-resize absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none rounded-none border-0 bg-transparent p-0 hover:bg-transparent"
-            onPointerDown={(event) => {
-                event.preventDefault();
-                event.currentTarget.setPointerCapture(event.pointerId);
-                resizeSessionRef.current = {
-                    pointerId: event.pointerId,
-                    startWidth:
-                        event.currentTarget.parentElement?.getBoundingClientRect()
-                            .width || header.column.getSize(),
-                    startX: event.clientX
-                };
-            }}
-            onPointerMove={updateResize}
-            onPointerUp={endResize}
-            onPointerCancel={endResize}
-            onKeyDown={(event) =>
-                resizeFeedListColumnFromKeyboard(event, header)
-            }
-        />
-    );
 }
 
 function FeedListHeader({
@@ -214,7 +103,7 @@ function FeedListHeader({
                     >
                         <span className="min-w-0 truncate">{label}</span>
                         {header ? (
-                            <FeedListResizeHandle
+                            <DataTableColumnResizeHandle
                                 header={header}
                                 label={label}
                             />
@@ -365,10 +254,6 @@ export function FeedVirtualListShell({
     const { t } = useTranslation();
     const tableDensity = usePreferencesStore((state) => state.tableDensity);
     const estimatedRowHeight = tableDensity === 'compact' ? 32 : 40;
-    const estimateRowHeight = useCallback(
-        () => estimatedRowHeight,
-        [estimatedRowHeight]
-    );
     const entries = useMemo<FeedVirtualRow[]>(
         () => rows.map((row) => ({ key: getFeedRowId(row), row })),
         [rows]
@@ -382,29 +267,6 @@ export function FeedVirtualListShell({
     );
     const newRowKeys = useFeedNewTopRowKeys(sourceRows, resetKey);
     const layout = getFeedListLayout(table);
-    const {
-        getRowRef,
-        scrollToStart,
-        scrollTop,
-        totalSize,
-        viewportRef,
-        virtualItems
-    } = useVirtualSidebarRows(entries, estimateRowHeight, {
-        preserveScrollAnchor: true,
-        resetKey
-    });
-    const [viewportElement, setViewportElement] =
-        useState<HTMLDivElement | null>(null);
-    const headerViewportRef = useRef<HTMLDivElement | null>(null);
-    const sentinelRef = useRef<HTMLDivElement | null>(null);
-    const setViewportRef = useCallback(
-        (element: HTMLDivElement | null) => {
-            setViewportElement(element);
-            viewportRef(element);
-        },
-        [viewportRef]
-    );
-
     useEffect(() => {
         setExpandedRowKeys(new Set());
     }, [resetKey]);
@@ -418,175 +280,73 @@ export function FeedVirtualListShell({
         });
     }, [rowKeys]);
 
-    useEffect(() => {
-        if (!viewportElement) {
-            return undefined;
-        }
-        const syncHeaderScroll = () => {
-            if (headerViewportRef.current) {
-                headerViewportRef.current.scrollLeft =
-                    viewportElement.scrollLeft;
-            }
-            onViewingLatestChange(
-                viewportElement.scrollTop <= estimatedRowHeight
-            );
-        };
-        syncHeaderScroll();
-        viewportElement.addEventListener('scroll', syncHeaderScroll, {
-            passive: true
-        });
-        return () =>
-            viewportElement.removeEventListener('scroll', syncHeaderScroll);
-    }, [estimatedRowHeight, onViewingLatestChange, viewportElement]);
-
-    useEffect(() => {
-        if (
-            !hasMore ||
-            loadingOlder ||
-            typeof IntersectionObserver !== 'function'
-        ) {
-            return undefined;
-        }
-        const root = viewportElement;
-        const sentinel = sentinelRef.current;
-        if (!root || !sentinel) {
-            return undefined;
-        }
-        const observer = new IntersectionObserver(
-            (observedEntries) => {
-                if (observedEntries.some((entry) => entry.isIntersecting)) {
-                    onLoadOlder();
-                }
-            },
-            { root, rootMargin: '320px' }
-        );
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, [hasMore, loadingOlder, onLoadOlder, rows.length, viewportElement]);
-
     return (
-        <div className="vrcx-0-data-table relative flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div
-                ref={headerViewportRef}
-                className="shrink-0 overflow-hidden border-b bg-[var(--vrcx-0-table-header-surface)]"
-            >
-                <FeedListHeader layout={layout} table={table} />
-            </div>
-            {hasUnloadedLatest || scrollTop > estimatedRowHeight ? (
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="bg-popover/95 absolute top-[calc(var(--vrcx-0-table-header-height)+0.5rem)] left-1/2 z-20 h-7 -translate-x-1/2 rounded-full border px-3 text-xs shadow-md backdrop-blur"
-                    onClick={hasUnloadedLatest ? onReloadLatest : scrollToStart}
-                >
-                    <ArrowUpToLineIcon data-icon="inline-start" />
-                    {t('view.feed.columns.latest')}
-                </Button>
-            ) : null}
-            <div
-                ref={setViewportRef}
-                className="min-h-0 flex-1 overflow-auto [overflow-anchor:none]"
-            >
-                {rows.length ? (
+        <VirtualHistoryList
+            rows={entries}
+            estimatedRowHeight={estimatedRowHeight}
+            resetKey={resetKey}
+            minWidth={layout.minWidth}
+            header={<FeedListHeader layout={layout} table={table} />}
+            hasMore={hasMore}
+            loadingOlder={loadingOlder}
+            onLoadOlder={onLoadOlder}
+            hasUnloadedLatest={hasUnloadedLatest}
+            onReloadLatest={onReloadLatest}
+            onViewingLatestChange={onViewingLatestChange}
+            latestLabel={t('view.feed.columns.latest')}
+            rowClassName={(entry) =>
+                newRowKeys.has(entry.key) ? 'feed-column-row-new' : undefined
+            }
+            renderRow={(entry) => (
+                <FeedVirtualListRow
+                    actions={actions}
+                    cachedDisplayName={
+                        friendLogNamesById[resolveFeedUserId(entry.row)] || ''
+                    }
+                    expanded={expandedRowKeys.has(entry.key)}
+                    layout={layout}
+                    loadingPreviousInstancesKey={loadingPreviousInstancesKey}
+                    onOpenPreviousInstances={onOpenPreviousInstances}
+                    onToggle={() =>
+                        setExpandedRowKeys((current) => {
+                            const next = new Set(current);
+                            if (next.has(entry.key)) next.delete(entry.key);
+                            else next.add(entry.key);
+                            return next;
+                        })
+                    }
+                    row={entry.row}
+                />
+            )}
+            footer={
+                loadingOlder ? (
                     <>
-                        <div
-                            className="relative"
-                            style={{
-                                height: totalSize,
-                                minWidth: layout.minWidth
-                            }}
-                        >
-                            {virtualItems.map(({ key, row: entry, start }) => (
-                                <div
-                                    key={String(key)}
-                                    ref={getRowRef(key)}
-                                    className={cn(
-                                        'absolute right-0 left-0',
-                                        newRowKeys.has(String(key)) &&
-                                            'feed-column-row-new'
-                                    )}
-                                    style={{
-                                        transform: `translateY(${start}px)`
-                                    }}
-                                >
-                                    <FeedVirtualListRow
-                                        actions={actions}
-                                        cachedDisplayName={
-                                            friendLogNamesById[
-                                                resolveFeedUserId(entry.row)
-                                            ] || ''
-                                        }
-                                        expanded={expandedRowKeys.has(
-                                            String(key)
-                                        )}
-                                        layout={layout}
-                                        loadingPreviousInstancesKey={
-                                            loadingPreviousInstancesKey
-                                        }
-                                        onOpenPreviousInstances={
-                                            onOpenPreviousInstances
-                                        }
-                                        onToggle={() => {
-                                            setExpandedRowKeys((current) => {
-                                                const next = new Set(current);
-                                                if (next.has(String(key))) {
-                                                    next.delete(String(key));
-                                                } else {
-                                                    next.add(String(key));
-                                                }
-                                                return next;
-                                            });
-                                        }}
-                                        row={entry.row}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                        <div
-                            ref={sentinelRef}
-                            className="text-muted-foreground flex min-h-10 items-center justify-center px-3 py-2 text-sm"
-                        >
-                            {loadingOlder ? (
-                                <>
-                                    <Spinner
-                                        data-icon="inline-start"
-                                        className="mr-2"
-                                    />
-                                    {t('common.load_more')}...
-                                </>
-                            ) : hasMore ? (
-                                <span>{t('common.load_more')}...</span>
-                            ) : (
-                                <span>
-                                    {rows.length} {t('view.feed.label.rows')} ·{' '}
-                                    {t('common.no_more')}
-                                </span>
-                            )}
-                        </div>
+                        <Spinner data-icon="inline-start" className="mr-2" />
+                        {t('common.load_more')}...
                     </>
+                ) : hasMore ? (
+                    <span>{t('common.load_more')}...</span>
                 ) : (
-                    <div
-                        className="text-muted-foreground flex h-full min-h-24 items-center justify-center px-4 text-center text-sm"
-                        style={{ minWidth: layout.minWidth }}
-                    >
-                        {loadStatus === 'running' ? (
-                            <span className="inline-flex items-center gap-2">
-                                <Spinner />
-                                {t('view.feed.loading.loading_feed_rows')}
-                            </span>
-                        ) : favoritesOnly && !isFavoritesLoaded ? (
-                            t('view.feed.label.favorites_are_still_hydrating')
-                        ) : loadStatus === 'error' ? (
-                            t('view.feed.error.feed_query_failed')
-                        ) : (
-                            t(
-                                'view.feed.empty.no_feed_rows_match_the_current_filters'
-                            )
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
+                    <span>
+                        {rows.length} {t('view.feed.label.rows')} ·{' '}
+                        {t('common.no_more')}
+                    </span>
+                )
+            }
+            emptyState={
+                loadStatus === 'running' ? (
+                    <span className="inline-flex items-center gap-2">
+                        <Spinner />
+                        {t('view.feed.loading.loading_feed_rows')}
+                    </span>
+                ) : favoritesOnly && !isFavoritesLoaded ? (
+                    t('view.feed.label.favorites_are_still_hydrating')
+                ) : loadStatus === 'error' ? (
+                    t('view.feed.error.feed_query_failed')
+                ) : (
+                    t('view.feed.empty.no_feed_rows_match_the_current_filters')
+                )
+            }
+        />
     );
 }

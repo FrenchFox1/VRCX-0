@@ -753,11 +753,41 @@
         }
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "Não foi possível iniciar a captura do atalho. Feche esta caixa de diálogo e tente novamente.",
+            "checking": "Verificando atalho…",
+            "background_hint": "Ao ocultar a janela, são aplicadas as configurações de modo em segundo plano e de atraso.",
+            "global": "Global",
+            "title": "Mostrar / Ocultar VRCX-0",
+            "description": "Mostre ou oculte o VRCX-0 a partir de qualquer aplicativo. O VRCX-0 continua em execução em segundo plano quando oculto.",
+            "configure": "Definir atalho global",
+            "unset": "Não definido",
+            "inactive": "Inativo",
+            "unsupported": "Os atalhos globais não estão disponíveis neste ambiente.",
+            "record": "Pressione uma combinação de teclas",
+            "record_description": "Combine Ctrl ou Alt com uma letra, um número ou uma tecla de função. Esc cancela. Durante a captura, o atalho atual não ocultará a janela.",
+            "startup_failed": "Não foi possível ativar o atalho global. Ele pode estar sendo usado por outro aplicativo.",
+            "error": {
+                "inUse": "Este atalho já está em uso. Escolha outra combinação.",
+                "invalid": "Combine Ctrl ou Alt com uma letra, um número ou uma tecla de função.",
+                "reserved": "Esta combinação está reservada para uma ação do sistema ou do aplicativo. Escolha outra.",
+                "unavailable": "Este atalho está indisponível ou já está em uso. Tente outra combinação.",
+                "unsupported": "Os atalhos globais não estão disponíveis neste ambiente."
+            }
+        },
         "title": "Atalhos de Teclado",
         "group": {
             "general": "Geral",
-            "layout": "Layout"
-        }
+            "layout": "Layout",
+            "pagination": "Paginação de buscas e tabelas",
+            "screenshots": "Detalhes da captura de tela",
+            "image_viewer": "Visualizador de imagens em tela cheia",
+            "selection": "Seleção em capturas e favoritos"
+        },
+        "navigation_items": "Abrir o item de navegação 1–9",
+        "hold_for_hints": "Mostrar atalhos (manter pressionado)",
+        "toggle_details": "Mostrar / ocultar detalhes",
+        "clear_selection": "Limpar seleção"
     },
     "side_panel": {
         "search_placeholder": "Pesquisa Rápida...",
@@ -791,6 +821,12 @@
         "groups": "Grupos",
         "friends": "Amigos",
         "me": "EU",
+        "self_menu": "Menu da conta",
+        "filter_friends": "Filtrar amigos",
+        "filter_groups": "Filtrar grupos",
+        "filter_no_results": "Nenhuma correspondência",
+        "self_more_actions": "Mais",
+        "switch_account": "Trocar de conta",
         "favorite": "FAVORITOS",
         "same_instance": "MESMA INSTÂNCIA",
         "you_are_here": "VOCÊ ESTÁ AQUI",
@@ -1449,6 +1485,10 @@
             }
         },
         "friend_log": {
+            "date_range": "Intervalo de datas",
+            "latest": "Mais recente",
+            "rows": "linhas",
+            "load_older_failed": "Não foi possível carregar o histórico anterior.",
             "filter_placeholder": "Filtrar",
             "all_types": "Todos os tipos",
             "groups": {
@@ -2704,8 +2744,6 @@
                     "troubleshooting": {
                         "header": "Solução de problemas",
                         "description": "Ferramentas de registro e diagnóstico para investigar problemas.",
-                        "show": "Mostrar ferramentas",
-                        "hide": "Ocultar ferramentas",
                         "gamelog": "Salvar histórico do registro do jogo",
                         "gamelog_description": "Quando desativado, nenhum novo histórico é salvo. Recursos em tempo real como Lista de usuários e Tocando agora continuam disponíveis.",
                         "feed_history": "Salvar histórico do Feed",

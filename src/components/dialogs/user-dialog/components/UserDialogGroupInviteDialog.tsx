@@ -1,4 +1,8 @@
-import { AlertTriangleIcon, LoaderCircleIcon, UsersIcon } from 'lucide-react';
+import {
+    AlertTriangleIcon,
+    LoaderCircleIcon,
+    UsersRoundIcon
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -200,7 +204,7 @@ export function UserDialogGroupInviteDialog({
                                                 />
                                             ) : null}
                                             <AvatarFallback className="rounded-md [&>svg]:size-4">
-                                                <UsersIcon aria-hidden="true" />
+                                                <UsersRoundIcon aria-hidden="true" />
                                             </AvatarFallback>
                                         </Avatar>
                                         <span className="min-w-0 flex-1">

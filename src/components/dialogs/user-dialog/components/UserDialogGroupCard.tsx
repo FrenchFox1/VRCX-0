@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { EyeIcon, TagIcon, UsersIcon } from 'lucide-react';
+import { EyeIcon, TagIcon, UsersIcon, UsersRoundIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { EntityRecord } from '@/domain/entities/shared';
@@ -56,7 +56,7 @@ export function UserGroupCard({ group }: { group: EntityRecord }) {
                         />
                     ) : null}
                     <AvatarFallback className="rounded-md [&>svg]:size-4">
-                        <UsersIcon aria-hidden="true" />
+                        <UsersRoundIcon aria-hidden="true" />
                     </AvatarFallback>
                 </Avatar>
                 <span className="min-w-0 flex-1 overflow-hidden">

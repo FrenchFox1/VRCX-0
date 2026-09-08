@@ -5,12 +5,8 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
-import {
-    Field,
-    FieldGroup,
-    SettingsGroup,
-    SettingsSectionHeading
-} from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field, FieldGroup, SettingsSectionHeading } from '../SettingsField';
 
 export function SettingsInterfaceUserDialogCard() {
     const { t } = useTranslation();
@@ -36,7 +32,8 @@ export function SettingsInterfaceUserDialogCard() {
     } = settingsInterface;
 
     return (
-        <SettingsGroup
+        <SettingsCard
+            cardId="interface.user-dialog"
             title={t('view.settings.appearance.user_dialog.header')}
             bodyClassName="flex flex-col gap-5"
         >
@@ -133,6 +130,6 @@ export function SettingsInterfaceUserDialogCard() {
                     />
                 </Field>
             </FieldGroup>
-        </SettingsGroup>
+        </SettingsCard>
     );
 }

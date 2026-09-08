@@ -4,6 +4,7 @@ import {
 } from '@/domain/friends/friendLog';
 import {
     commands,
+    type FriendLogHistoryCursor,
     type FriendLogHistoryEntryInput,
     type FriendLogHistoryOutput
 } from '@/platform/tauri/bindings';
@@ -34,7 +35,12 @@ export interface FriendLogHistoryEntry {
 
 export interface FriendLogHistoryOptions {
     targetUserId?: string;
-    types?: FriendLogType[];
+    types?: string[];
+    excludedTypes?: string[];
+    dateFrom?: string;
+    dateTo?: string;
+    cursor?: FriendLogHistoryCursor | null;
+    limit?: number;
 }
 
 type FriendLogHistorySourceRow = FriendLogHistoryOutput;
@@ -92,7 +98,12 @@ async function getFriendLogHistory(
     const rows = await commands.appFriendLogHistoryQuery({
         userId: normalizedUserId,
         targetUserId: normalizedTargetUserId,
-        types: normalizedTypes
+        types: normalizedTypes,
+        excludedTypes: options.excludedTypes ?? [],
+        dateFrom: options.dateFrom ?? '',
+        dateTo: options.dateTo ?? '',
+        cursor: options.cursor ?? null,
+        limit: options.limit ?? null
     });
 
     return rows

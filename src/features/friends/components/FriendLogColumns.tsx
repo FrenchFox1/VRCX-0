@@ -68,21 +68,7 @@ export function useFriendLogColumns({
                     />
                 ),
                 cell: ({ row }) => {
-                    const createdAt = row.original?.created_at || '';
-                    return (
-                        <Tooltip>
-                            <TooltipTrigger
-                                render={
-                                    <span className="text-sm">
-                                        {formatDateFilter(createdAt, 'short')}
-                                    </span>
-                                }
-                            />
-                            <TooltipContent>
-                                {formatDateFilter(createdAt, 'long')}
-                            </TooltipContent>
-                        </Tooltip>
-                    );
+                    return <FriendLogDateCell row={row.original} />;
                 }
             },
             {
@@ -123,43 +109,16 @@ export function useFriendLogColumns({
                 },
                 header: () => t('table.friendLog.action'),
                 cell: ({ row }) => {
-                    const rowKey = getFriendLogRowKey(
-                        row.original,
-                        rowsOwnerUserId
-                    );
                     return (
-                        <div className="flex justify-end">
-                            <Button
-                                type="button"
-                                size="icon-xs"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-foreground"
-                                aria-label={t('common.actions.delete')}
-                                disabled={
-                                    !currentUserId ||
-                                    rowsOwnerUserId !==
-                                        normalizeUserId(currentUserId) ||
-                                    loadStatus === 'running' ||
-                                    deletingRowKey === rowKey
-                                }
-                                onClick={(event) =>
-                                    handleDeleteRow(row.original, {
-                                        skipConfirm: shiftHeld || event.shiftKey
-                                    })
-                                }
-                            >
-                                {deletingRowKey === rowKey ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : shiftHeld ? (
-                                    <XIcon
-                                        data-icon="inline-start"
-                                        className="text-destructive"
-                                    />
-                                ) : (
-                                    <Trash2Icon data-icon="inline-start" />
-                                )}
-                            </Button>
-                        </div>
+                        <FriendLogDeleteAction
+                            row={row.original}
+                            currentUserId={currentUserId}
+                            deletingRowKey={deletingRowKey}
+                            handleDeleteRow={handleDeleteRow}
+                            loadStatus={loadStatus}
+                            rowsOwnerUserId={rowsOwnerUserId}
+                            shiftHeld={shiftHeld}
+                        />
                     );
                 }
             },
@@ -181,5 +140,69 @@ export function useFriendLogColumns({
             shiftHeld,
             t
         ]
+    );
+}
+
+export function FriendLogDateCell({ row }: { row: FriendLogRow }) {
+    const createdAt = row.created_at;
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <span className="text-sm">
+                        {formatDateFilter(createdAt, 'short')}
+                    </span>
+                }
+            />
+            <TooltipContent>
+                {formatDateFilter(createdAt, 'long')}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
+
+export function FriendLogDeleteAction({
+    row,
+    currentUserId,
+    deletingRowKey,
+    handleDeleteRow,
+    loadStatus,
+    rowsOwnerUserId,
+    shiftHeld
+}: Parameters<typeof useFriendLogColumns>[0] & { row: FriendLogRow }) {
+    const { t } = useTranslation();
+    const rowKey = getFriendLogRowKey(row, rowsOwnerUserId);
+    return (
+        <div className="flex justify-end">
+            <Button
+                type="button"
+                size="icon-xs"
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground"
+                aria-label={t('common.actions.delete')}
+                disabled={
+                    !currentUserId ||
+                    rowsOwnerUserId !== normalizeUserId(currentUserId) ||
+                    loadStatus === 'running' ||
+                    deletingRowKey === rowKey
+                }
+                onClick={(event) =>
+                    handleDeleteRow(row, {
+                        skipConfirm: shiftHeld || event.shiftKey
+                    })
+                }
+            >
+                {deletingRowKey === rowKey ? (
+                    <Spinner data-icon="inline-start" />
+                ) : shiftHeld ? (
+                    <XIcon
+                        data-icon="inline-start"
+                        className="text-destructive"
+                    />
+                ) : (
+                    <Trash2Icon data-icon="inline-start" />
+                )}
+            </Button>
+        </div>
     );
 }

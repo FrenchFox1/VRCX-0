@@ -78,9 +78,12 @@ vi.mock('../recentActionService', () => ({
     readRecentActionCooldown: mocks.readRecentActionCooldown
 }));
 
-vi.mock('../themeService', () => ({
+vi.mock('@/shared/constants/fonts', () => ({
     APP_CJK_FONT_PACK_DEFAULT_KEY: 'system',
-    APP_FONT_DEFAULT_KEY: 'default',
+    APP_FONT_DEFAULT_KEY: 'default'
+}));
+
+vi.mock('../themeService', () => ({
     applyAppFontPreferences: mocks.applyAppFontPreferences,
     applyThemeColor: mocks.applyThemeColor,
     applyThemeMode: mocks.applyThemeMode,

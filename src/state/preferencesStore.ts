@@ -16,6 +16,15 @@ import {
     parseOverlayActivityFilters
 } from '@/shared/constants/overlayActivityFilters';
 import {
+    DEFAULT_TABLE_PAGE_SIZE,
+    DEFAULT_TABLE_PAGE_SIZES,
+    DEFAULT_PRINT_AUTO_DELETE_LIMIT,
+    PRINT_AUTO_DELETE_LIMIT_MIN,
+    PRINT_AUTO_DELETE_LIMIT_MAX,
+    DEFAULT_TRANSLATION_ENDPOINT,
+    DEFAULT_TRANSLATION_MODEL
+} from '@/shared/constants/settings';
+import {
     normalizeAvatarAutoCleanupPreference,
     DEFAULT_MAX_TABLE_SIZE,
     DEFAULT_SEARCH_LIMIT,
@@ -25,25 +34,11 @@ import {
     TABLE_MAX_SIZE_MIN
 } from '@/shared/constants/settings';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
+import { TRUST_COLOR_DEFAULTS } from '@/shared/constants/trustColors';
 import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
-import {
-    TRUST_COLOR_DEFAULTS,
-    normalizeTrustColors
-} from '@/shared/utils/trustColors';
+import { normalizeTrustColors } from '@/shared/utils/trustColors';
 
 import { normalizeNavWidth, normalizeTableDensity } from './shellStore';
-
-export const DEFAULT_TABLE_PAGE_SIZE = 20;
-export const DEFAULT_TABLE_PAGE_SIZES = Object.freeze([
-    10, 15, 20, 25, 50, 100
-]);
-export const DEFAULT_PRINT_AUTO_DELETE_LIMIT = 60;
-export const PRINT_AUTO_DELETE_LIMIT_MIN = 30;
-export const PRINT_AUTO_DELETE_LIMIT_MAX = 60;
-export const PRINT_FAVORITE_LIMIT_BUFFER = 5;
-const DEFAULT_TRANSLATION_ENDPOINT =
-    'https://api.openai.com/v1/chat/completions';
-const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
 
 export type FeedTimeDisplayModePreference = 'exact' | 'relative';
 export type TranslationApiType = TranslationProvider;

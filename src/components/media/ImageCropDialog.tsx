@@ -486,6 +486,7 @@ export function ImageCropDialog({
                     <div className="flex flex-col gap-4">
                         <div
                             ref={cropWrapperRef}
+                            inert={isConfirming}
                             className="bg-muted/60 ring-border/60 relative flex items-center justify-center overflow-hidden rounded-xl border p-2 shadow-inner ring-1 ring-inset"
                         >
                             {previewSrc && cropperReady ? (

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export const FEEDBACK_SUBMIT_COOLDOWN_MS = 60_000;
+import { FEEDBACK_SUBMIT_COOLDOWN_MS } from '@/shared/constants/feedback';
 
 type FeedbackDraftStore = {
     draft: string;

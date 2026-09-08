@@ -12,11 +12,11 @@ import {
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
 import type { MediaFileTag } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import { toast } from '@/services/toastService';
+import { TILE_SELECTED } from '@/shared/constants/selectableTile';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';

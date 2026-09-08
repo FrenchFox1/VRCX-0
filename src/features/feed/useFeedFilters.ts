@@ -6,9 +6,6 @@ import {
     useState
 } from 'react';
 
-import { parseDateInput, toDateInputValue } from '@/components/feed/feedRows';
-import type { FeedDateRange } from '@/components/feed/feedTypes';
-import { useTodayDate } from '@/lib/useTodayDate';
 import {
     FEED_FILTER_TYPES,
     isFeedFilterType,
@@ -35,9 +32,6 @@ export function useFeedFilters({
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
-    const [dateDraftFrom, setDateDraftFrom] = useState('');
-    const [dateDraftTo, setDateDraftTo] = useState('');
-    const [dateFilterOpen, setDateFilterOpen] = useState(false);
     const [activeFilters, setActiveFilters] = useState<FeedFilterType[]>([]);
     const [favoritesOnly, setFavoritesOnly] = useState(false);
     const normalizedRouteScopedUserIds = useMemo(
@@ -49,7 +43,6 @@ export function useFeedFilters({
     );
     const deferredSearchQuery = useDeferredValue(searchQuery);
     const deferredScopedUserIds = useDeferredValue(scopedUserIds);
-    const todayDate = useTodayDate();
 
     const setUserScope = useCallback((nextUserIds: readonly string[]) => {
         const normalized = normalizeScopedUserIds(nextUserIds);
@@ -100,42 +93,9 @@ export function useFeedFilters({
         setSearchQuery('');
     }, []);
 
-    const applyDateFilter = useCallback(() => {
-        if (dateDraftFrom && dateDraftTo && dateDraftFrom > dateDraftTo) {
-            setDateFrom(dateDraftTo);
-            setDateTo(dateDraftFrom);
-        } else {
-            setDateFrom(dateDraftFrom);
-            setDateTo(dateDraftTo);
-        }
-        setDateFilterOpen(false);
-    }, [dateDraftFrom, dateDraftTo]);
-
-    const clearDateFilter = useCallback(() => {
-        setDateDraftFrom('');
-        setDateDraftTo('');
-        setDateFrom('');
-        setDateTo('');
-        setDateFilterOpen(false);
-    }, []);
-
-    const dateDraftRange = useMemo(() => {
-        const from = parseDateInput(dateDraftFrom);
-        const to = parseDateInput(dateDraftTo);
-        return from || to ? { from, to } : undefined;
-    }, [dateDraftFrom, dateDraftTo]);
-
-    useEffect(() => {
-        if (!dateFilterOpen) {
-            return;
-        }
-        setDateDraftFrom(dateFrom);
-        setDateDraftTo(dateTo);
-    }, [dateFilterOpen, dateFrom, dateTo]);
-
-    const onDateRangeSelect = useCallback((range?: FeedDateRange) => {
-        setDateDraftFrom(toDateInputValue(range?.from));
-        setDateDraftTo(toDateInputValue(range?.to));
+    const setDateRange = useCallback((from: string, to: string) => {
+        setDateFrom(from);
+        setDateTo(to);
     }, []);
 
     return {
@@ -143,23 +103,15 @@ export function useFeedFilters({
         deferredScopedUserIds,
         scopedUserIds,
         setUserScope,
-        dateDraftFrom,
-        dateDraftRange,
-        dateDraftTo,
-        dateFilterOpen,
+        setDateRange,
         dateFrom,
         dateTo,
         deferredSearchQuery,
         favoritesOnly,
         feedFilterTypes: FEED_FILTER_TYPES,
         searchDraft,
-        todayDate,
-        applyDateFilter,
-        clearDateFilter,
         clearSearch,
         commitSearch,
-        onDateRangeSelect,
-        setDateFilterOpen,
         setFavoritesOnly,
         setFeedFilters,
         setSearchDraft,

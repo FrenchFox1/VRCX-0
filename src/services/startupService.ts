@@ -3,6 +3,10 @@ import { commands } from '@/platform/tauri/bindings';
 import type { StartupBootstrapSnapshot } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
+import {
+    APP_CJK_FONT_PACK_DEFAULT_KEY,
+    APP_FONT_DEFAULT_KEY
+} from '@/shared/constants/fonts';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
@@ -15,8 +19,6 @@ import { loadPreferenceSnapshot } from './preferencesService';
 import { showSQLiteErrorDialog } from './sqliteErrorDialogService';
 import { primeStartupBootstrapSystemCulture } from './startupBootstrapSnapshot';
 import {
-    APP_CJK_FONT_PACK_DEFAULT_KEY,
-    APP_FONT_DEFAULT_KEY,
     applyAppFontPreferences,
     applyThemeColor,
     applyThemeMode,

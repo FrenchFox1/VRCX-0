@@ -8,7 +8,7 @@ import type {
 import {
     DEFAULT_PRINT_AUTO_DELETE_LIMIT,
     PRINT_FAVORITE_LIMIT_BUFFER
-} from '@/state/preferencesStore';
+} from '@/shared/constants/settings';
 
 const DEFAULT_MAX_FAVORITES =
     DEFAULT_PRINT_AUTO_DELETE_LIMIT - PRINT_FAVORITE_LIMIT_BUFFER;

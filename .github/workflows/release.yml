@@ -28,7 +28,6 @@ jobs:
             build_version: ${{ steps.version.outputs.build_version }}
             channel: ${{ steps.version.outputs.channel }}
             prerelease: ${{ steps.version.outputs.prerelease }}
-            beta_number: ${{ steps.version.outputs.beta_number }}
             display_version: ${{ steps.version.outputs.display_version }}
             tag: ${{ steps.version.outputs.tag }}
         steps:
@@ -70,18 +69,6 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    - label: Linux Packages
-                      os: ubuntu-24.04
-                      rust_target: ''
-                      artifact_name: linux-packages
-                      artifact_path: |
-                          target/release/bundle/appimage/*.AppImage
-                          target/release/bundle/appimage/*.AppImage.sig
-                          target/release/bundle/deb/*.deb
-                          target/release/bundle/deb/*.deb.sig
-                          target/release/bundle/rpm/*.rpm
-                          target/release/bundle/rpm/*.rpm.sig
-                          target/release/bundle/latest_linux_and_macos.json
                     - label: macOS DMG (Apple Silicon)
                       os: macos-latest
                       rust_target: aarch64-apple-darwin
@@ -114,16 +101,9 @@ jobs:
             - uses: dtolnay/rust-toolchain@stable
 
             - name: Install Rust target
-              if: matrix.rust_target != ''
               run: rustup target add "${{ matrix.rust_target }}"
 
             - uses: ./.github/actions/setup-node
-
-            - name: Install Linux package dependencies
-              if: runner.os == 'Linux'
-              uses: ./.github/actions/setup-linux-tauri
-              with:
-                  mode: package
 
             - name: Inject updater public key
               env:
@@ -142,125 +122,15 @@ jobs:
                   TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
                   VRCX_0_WEBKIT_BUILD_TARGET: ${{ matrix.webkit_build_target }}
               run: |
-                  override_config="${RUNNER_TEMP}/tauri-release-override.json"
                   if [[ "${{ needs.prepare.outputs.channel }}" == "beta" ]]; then
-                      if [[ "$RUNNER_OS" == "Linux" ]]; then
-                          node -e "require('node:fs').writeFileSync(process.argv[1], JSON.stringify({ version: process.argv[2], bundle: { linux: { rpm: { release: '0.beta.' + process.argv[3] } } } }))" "$override_config" "${{ needs.prepare.outputs.base_version }}" "${{ needs.prepare.outputs.beta_number }}"
-                      else
-                          node -e "require('node:fs').writeFileSync(process.argv[1], JSON.stringify({ version: process.argv[2], bundle: { macOS: { bundleVersion: process.argv[3] } } }))" "$override_config" "${{ needs.prepare.outputs.base_version }}" "${{ github.run_number }}"
-                      fi
-                  fi
-
-                  if [[ "$RUNNER_OS" == "Linux" ]]; then
-                      VRCX_0_WEBKIT_BUILD_TARGET=safari17 \
-                          npm run tauri:build -- \
-                          --config src-tauri/tauri.linux.conf.json \
-                          --bundles appimage
-                      VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
-                          npm run tauri:build -- \
-                          --config src-tauri/tauri.linux.conf.json \
-                          --bundles deb
-                      if [[ "${{ needs.prepare.outputs.channel }}" == "beta" ]]; then
-                          VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
-                              npm run tauri:build -- \
-                              --config "$override_config" \
-                              --bundles rpm
-                      else
-                          VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
-                              npm run tauri:build -- \
-                              --config src-tauri/tauri.linux.conf.json \
-                              --bundles rpm
-                      fi
-                      exit 0
-                  fi
-                  if [[ "${{ needs.prepare.outputs.channel }}" == "beta" ]]; then
+                      override_config="${RUNNER_TEMP}/tauri-release-override.json"
+                      node -e "require('node:fs').writeFileSync(process.argv[1], JSON.stringify({ version: process.argv[2], bundle: { macOS: { bundleVersion: process.argv[3] } } }))" "$override_config" "${{ needs.prepare.outputs.base_version }}" "${{ github.run_number }}"
                       ${{ matrix.build_command }} --config "$override_config"
                   else
                       ${{ matrix.build_command }}
                   fi
 
-            - name: Prepare Linux release and updater assets
-              if: runner.os == 'Linux'
-              run: |
-                  bundle_dir="target/release/bundle"
-                  manifest_path="$bundle_dir/latest_linux_and_macos.json"
-
-                  find "$bundle_dir" -maxdepth 2 -type f | sort
-
-                  rename_asset() {
-                      local source="$1"
-                      local destination="$2"
-                      local source_signature="${source}.sig"
-                      local destination_signature="${destination}.sig"
-
-                      if [[ "$source" != "$destination" ]]; then
-                          if [[ -e "$destination" ]]; then
-                              echo "Target release asset already exists: $destination" >&2
-                              exit 1
-                          fi
-                          mv "$source" "$destination"
-                      fi
-
-                      if [[ -f "$source_signature" && "$source_signature" != "$destination_signature" ]]; then
-                          if [[ -e "$destination_signature" ]]; then
-                              echo "Target release signature already exists: $destination_signature" >&2
-                              exit 1
-                          fi
-                          mv "$source_signature" "$destination_signature"
-                      fi
-
-                      if [[ ! -f "$destination_signature" ]]; then
-                          node node_modules/@tauri-apps/cli/tauri.js signer sign "$destination" > "$destination_signature"
-                      fi
-                      if [[ ! -s "$destination_signature" ]]; then
-                          echo "No updater signature found at $destination_signature" >&2
-                          exit 1
-                      fi
-                  }
-
-                  appimage_source="$(find "$bundle_dir/appimage" -maxdepth 1 -name '*.AppImage' | sort | head -n 1)"
-                  deb_source="$(find "$bundle_dir/deb" -maxdepth 1 -name '*.deb' | sort | head -n 1)"
-                  rpm_source="$(find "$bundle_dir/rpm" -maxdepth 1 -name '*.rpm' | sort | head -n 1)"
-
-                  if [[ -z "$appimage_source" || -z "$deb_source" || -z "$rpm_source" ]]; then
-                      echo "Missing Linux release artifact. AppImage=$appimage_source deb=$deb_source rpm=$rpm_source" >&2
-                      exit 1
-                  fi
-
-                  appimage_path="$bundle_dir/appimage/VRCX-0_${{ needs.prepare.outputs.build_version }}_linux_x86_64.AppImage"
-                  deb_path="$bundle_dir/deb/VRCX-0_${{ needs.prepare.outputs.build_version }}_linux_x86_64.deb"
-                  rpm_path="$bundle_dir/rpm/VRCX-0_${{ needs.prepare.outputs.build_version }}_linux_x86_64.rpm"
-
-                  rename_asset "$appimage_source" "$appimage_path"
-                  rename_asset "$deb_source" "$deb_path"
-                  rename_asset "$rpm_source" "$rpm_path"
-
-                  node scripts/create-tauri-updater-manifest.ts \
-                      --version "${{ needs.prepare.outputs.build_version }}" \
-                      --tag "${{ needs.prepare.outputs.tag }}" \
-                      --target "linux-x86_64-appimage-stable" \
-                      --asset-name "$(basename "$appimage_path")" \
-                      --signature-file "${appimage_path}.sig" \
-                      --out "$manifest_path"
-                  node scripts/create-tauri-updater-manifest.ts \
-                      --version "${{ needs.prepare.outputs.build_version }}" \
-                      --tag "${{ needs.prepare.outputs.tag }}" \
-                      --target "linux-x86_64-deb-stable" \
-                      --asset-name "$(basename "$deb_path")" \
-                      --signature-file "${deb_path}.sig" \
-                      --base "$manifest_path" \
-                      --out "$manifest_path"
-                  node scripts/create-tauri-updater-manifest.ts \
-                      --version "${{ needs.prepare.outputs.build_version }}" \
-                      --tag "${{ needs.prepare.outputs.tag }}" \
-                      --target "linux-x86_64-rpm-stable" \
-                      --asset-name "$(basename "$rpm_path")" \
-                      --signature-file "${rpm_path}.sig" \
-                      --base "$manifest_path" \
-                      --out "$manifest_path"
-
             - name: Prepare macOS release and updater assets
-              if: runner.os == 'macOS'
               run: |
                   dmg_dir="target/${{ matrix.rust_target }}/release/bundle/dmg"
                   dmg_path="$(find "$dmg_dir" -maxdepth 1 -name '*.dmg' | sort | head -n 1)"
@@ -333,13 +203,10 @@ jobs:
             - name: List prepared release assets
               run: find release-assets -type f | sort
 
-            - name: Add macOS updater entries to Linux/macOS manifest
+            - name: Create macOS updater manifest
               run: |
                   manifest_path="release-assets/latest_linux_and_macos.json"
-                  if [[ ! -f "$manifest_path" ]]; then
-                      echo "No Linux/macOS updater manifest found at $manifest_path" >&2
-                      exit 1
-                  fi
+                  base_args=()
 
                   for target in macos-aarch64-stable macos-x86_64-stable; do
                       archive_name="update_${target%-stable}.app.tar.gz"
@@ -360,8 +227,9 @@ jobs:
                           --target "$target" \
                           --asset-name "$(basename "$archive_path")" \
                           --signature-file "$signature_path" \
-                          --base "$manifest_path" \
+                          "${base_args[@]}" \
                           --out "$manifest_path"
+                      base_args=(--base "$manifest_path")
                   done
 
             - name: Remove updater signatures from GitHub release assets

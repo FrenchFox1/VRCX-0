@@ -34,7 +34,8 @@ import {
 } from '@/ui/shadcn/number-field';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 
 function IntegrationApiInformationTypesDialog({
     id,
@@ -232,7 +233,8 @@ export function IntegrationApiSettingsGroup() {
     }
 
     return (
-        <SettingsGroup
+        <SettingsCard
+            cardId="integrations.api"
             title={t('view.settings.integrations.integration_api.header')}
             description={t(
                 'view.settings.integrations.integration_api.description'
@@ -427,7 +429,7 @@ export function IntegrationApiSettingsGroup() {
                     </Button>
                 </div>
             </Field>
-        </SettingsGroup>
+        </SettingsCard>
     );
 }
 

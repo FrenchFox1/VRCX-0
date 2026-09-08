@@ -1,4 +1,4 @@
-import { UsersIcon } from 'lucide-react';
+import { UsersRoundIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
@@ -194,7 +194,7 @@ export function GroupInstanceRows({
             <Empty className="min-h-32 border">
                 <EmptyHeader>
                     <EmptyMedia variant="icon">
-                        <UsersIcon />
+                        <UsersRoundIcon />
                     </EmptyMedia>
                     <EmptyTitle>
                         {t('dialog.group.overview.no_active_instances')}

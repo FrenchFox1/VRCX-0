@@ -3,13 +3,13 @@ import { ChevronDownIcon, Settings2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { getLanguageName, languageCodes } from '@/localization/index';
+import { supportsConfigurableCjkFontPack } from '@/services/themeService';
 import {
     APP_CJK_FONT_PACK_DEFAULT_KEY,
     APP_CJK_FONT_PACKS,
     APP_FONT_DEFAULT_KEY,
-    APP_FONT_FAMILIES,
-    supportsConfigurableCjkFontPack
-} from '@/services/themeService';
+    APP_FONT_FAMILIES
+} from '@/shared/constants/fonts';
 import type { NotificationLayout, TableDensity } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -38,7 +38,8 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { Field, SegmentedPreference, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field, SegmentedPreference } from '../SettingsField';
 
 type SettingsOption = readonly [value: string, labelKey: string];
 type SettingsOptionItem = {
@@ -300,7 +301,10 @@ export function SettingsInterfaceAppearanceCard({
         }));
 
     return (
-        <SettingsGroup title={t('view.settings.appearance.appearance.header')}>
+        <SettingsCard
+            cardId="interface.appearance"
+            title={t('view.settings.appearance.appearance.header')}
+        >
             <Field
                 label={t('view.settings.appearance.appearance.language')}
                 controlId="settings-language"
@@ -490,6 +494,6 @@ export function SettingsInterfaceAppearanceCard({
                     onCheckedChange={onAccessibleStatusIndicatorsChange}
                 />
             </Field>
-        </SettingsGroup>
+        </SettingsCard>
     );
 }

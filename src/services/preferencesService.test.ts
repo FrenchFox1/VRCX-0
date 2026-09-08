@@ -98,8 +98,6 @@ vi.mock('./recentActionService', () => ({
 vi.mock('./themeService', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./themeService')>();
     return {
-        APP_CJK_FONT_PACK_DEFAULT_KEY: actual.APP_CJK_FONT_PACK_DEFAULT_KEY,
-        APP_FONT_DEFAULT_KEY: actual.APP_FONT_DEFAULT_KEY,
         applyAppFontPreferences: mocks.applyAppFontPreferences,
         applyThemeColor: mocks.applyThemeColor,
         applyThemeMode: mocks.applyThemeMode,

@@ -753,11 +753,41 @@
         }
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "Záznam klávesové zkratky se nepodařilo spustit. Zavřete tento dialog a zkuste to znovu.",
+            "checking": "Kontrola zkratky…",
+            "background_hint": "Při skrytí se použije nastavení režimu na pozadí a zpoždění.",
+            "global": "Globální",
+            "title": "Zobrazit / Skrýt VRCX-0",
+            "description": "Zobrazte nebo skryjte VRCX-0 z libovolné aplikace. Po skrytí VRCX-0 běží dál na pozadí.",
+            "configure": "Nastavit globální zkratku",
+            "unset": "Nenastaveno",
+            "inactive": "Neaktivní",
+            "unsupported": "Globální zkratky nejsou v tomto prostředí dostupné.",
+            "record": "Stiskněte kombinaci kláves",
+            "record_description": "Použijte Ctrl nebo Alt společně s písmenem, číslicí nebo funkční klávesou. Esc zadávání zruší. Během zadávání původní zkratka okno neskryje.",
+            "startup_failed": "Globální zkratku se nepodařilo aktivovat. Možná ji používá jiná aplikace.",
+            "error": {
+                "inUse": "Tato zkratka se již používá. Zvolte jinou kombinaci.",
+                "invalid": "Použijte Ctrl nebo Alt společně s písmenem, číslicí nebo funkční klávesou.",
+                "reserved": "Tato kombinace je vyhrazena pro systém nebo aplikaci. Zvolte jinou.",
+                "unavailable": "Tato zkratka není dostupná nebo ji již používá jiná aplikace. Zkuste jinou kombinaci.",
+                "unsupported": "Globální zkratky nejsou v tomto prostředí dostupné."
+            }
+        },
         "title": "Klávesové zkratky",
         "group": {
             "general": "Obecné",
-            "layout": "Rozvržení"
-        }
+            "layout": "Rozvržení",
+            "pagination": "Stránkování vyhledávání a tabulek",
+            "screenshots": "Podrobnosti snímku obrazovky",
+            "image_viewer": "Prohlížeč obrázků na celou obrazovku",
+            "selection": "Výběr ve snímcích a oblíbených"
+        },
+        "navigation_items": "Otevřít položku navigace 1–9",
+        "hold_for_hints": "Zobrazit klávesové zkratky (podržet)",
+        "toggle_details": "Zobrazit / skrýt podrobnosti",
+        "clear_selection": "Zrušit výběr"
     },
     "side_panel": {
         "search_placeholder": "Search",
@@ -791,6 +821,12 @@
         "groups": "Skupiny",
         "friends": "Přátelé",
         "me": "JÁ",
+        "self_menu": "Nabídka účtu",
+        "filter_friends": "Filtrovat přátele",
+        "filter_groups": "Filtrovat skupiny",
+        "filter_no_results": "Žádné shody",
+        "self_more_actions": "Více",
+        "switch_account": "Přepnout účet",
         "favorite": "OBLÍBENÍ",
         "same_instance": "STEJNÁ INSTANCE",
         "you_are_here": "JSTE ZDE",
@@ -1451,6 +1487,10 @@
             }
         },
         "friend_log": {
+            "date_range": "Časové rozmezí",
+            "latest": "Nejnovější",
+            "rows": "řádků",
+            "load_older_failed": "Starší záznamy se nepodařilo načíst.",
             "filter_placeholder": "Filtrovat",
             "all_types": "Všechny typy",
             "groups": {
@@ -2706,8 +2746,6 @@
                     "troubleshooting": {
                         "header": "Řešení potíží",
                         "description": "Nástroje protokolování a diagnostiky pro hledání problémů.",
-                        "show": "Zobrazit nástroje",
-                        "hide": "Skrýt nástroje",
                         "gamelog": "Ukládat historii herního záznamu",
                         "gamelog_description": "Při vypnutí se nová historie neukládá. Živé funkce jako Seznam hráčů a Nyní hraje zůstanou dostupné.",
                         "feed_history": "Ukládat historii Zdroje",

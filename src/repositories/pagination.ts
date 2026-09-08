@@ -1,7 +1,7 @@
 import {
     VRCHAT_API_DEFAULT_PAGE_SIZE,
     VRCHAT_PROFILE_MAX_PAGES
-} from './paginationConstants';
+} from '@/shared/constants/pagination';
 
 export interface PageRequest {
     n: number;

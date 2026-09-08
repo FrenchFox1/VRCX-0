@@ -21,19 +21,23 @@ vi.mock('@/components/data-table/TableColumnVisibilityMenu', () => ({
     TableColumnVisibilityMenu: () => <button>Columns</button>
 }));
 
-vi.mock('@/components/date-time-range-picker/DateTimeRangePicker', () => ({
-    DateTimeRangePicker: (
-        props: ComponentProps<typeof DateTimeRangePicker>
-    ) => {
-        mocks.picker(props);
-        return props.renderTrigger?.({
-            active: Boolean(props.value.from || props.value.to),
-            label: props.value.from
-                ? 'Sep 1 00:00 - Sep 2 23:59'
-                : props.placeholder
-        });
+vi.mock(
+    '@/components/date-time-range-picker/DateTimeRangePicker',
+    async (importOriginal) => {
+        const actual =
+            await importOriginal<
+                typeof import('@/components/date-time-range-picker/DateTimeRangePicker')
+            >();
+        return {
+            DateTimeRangePicker: (
+                props: ComponentProps<typeof DateTimeRangePicker>
+            ) => {
+                mocks.picker(props);
+                return <actual.DateTimeRangePicker {...props} />;
+            }
+        };
     }
-}));
+);
 
 type ToolbarProps = Omit<ComponentProps<typeof GameLogToolbar>, 'table'>;
 const dateRangeLabel = 'view.game_log.label.session_date_range';
@@ -82,6 +86,32 @@ describe('GameLogToolbar', () => {
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
+    });
+
+    it('opens the real date picker after showing its tooltip and can reopen it', async () => {
+        render(<ToolbarHarness {...createProps()} />);
+        const user = userEvent.setup();
+        const trigger = screen.getByRole('button', { name: dateRangeLabel });
+        expect(trigger.hasAttribute('title')).toBe(false);
+        await user.hover(trigger);
+        expect(
+            (
+                await screen.findByText(dateRangeLabel, {
+                    selector: '[data-slot="tooltip-content"]'
+                })
+            ).textContent
+        ).toBe(dateRangeLabel);
+        await user.click(trigger);
+        const popup = await screen.findByRole('dialog');
+        expect(
+            within(popup).getByRole('button', {
+                name: 'common.actions.confirm'
+            })
+        ).toBeTruthy();
+        await user.keyboard('{Escape}');
+        await user.click(trigger);
+        expect(await screen.findByRole('dialog')).toBeTruthy();
+        expect(document.querySelector('button button')).toBeNull();
     });
 
     it('places the date filter inside search while retaining date-time constraints', () => {

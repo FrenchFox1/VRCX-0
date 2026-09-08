@@ -10,6 +10,25 @@ type Row = { key: string };
 describe('useVirtualSidebarRows scroll anchoring', () => {
     afterEach(cleanup);
 
+    it('keeps the focused row mounted outside the viewport without rendering the intervening rows', () => {
+        const rows = Array.from({ length: 160 }, (_, index) => ({
+            key: String(index)
+        }));
+        const { result, rerender } = renderHook(
+            ({ keepMountedKey }: { keepMountedKey: string | null }) =>
+                useVirtualSidebarRows(rows, () => 40, { keepMountedKey }),
+            { initialProps: { keepMountedKey: '120' as string | null } }
+        );
+        expect(
+            result.current.virtualItems.some((item) => item.key === '120')
+        ).toBe(true);
+        expect(result.current.virtualItems.length).toBeLessThan(20);
+        rerender({ keepMountedKey: null });
+        expect(
+            result.current.virtualItems.some((item) => item.key === '120')
+        ).toBe(false);
+    });
+
     it('keeps the first visible row at the same offset when rows prepend', () => {
         const { result, rerender } = renderHook(
             ({ resetKey, rows }: { resetKey: string; rows: Row[] }) =>

@@ -20,11 +20,15 @@ import {
 } from './friendLogState';
 
 export function useFriendLogTableState({
+    dateFrom,
+    dateTo,
     hideUnfriends,
     orderedRowsLength,
     searchQuery,
     selectedTypes
 }: {
+    dateFrom: string;
+    dateTo: string;
     hideUnfriends: boolean;
     orderedRowsLength: number;
     searchQuery: string;
@@ -166,7 +170,7 @@ export function useFriendLogTableState({
             ...current,
             pageIndex: 0
         }));
-    }, [searchQuery, selectedTypes, hideUnfriends]);
+    }, [searchQuery, selectedTypes, hideUnfriends, dateFrom, dateTo]);
 
     useEffect(() => {
         const maxPageIndex = Math.max(

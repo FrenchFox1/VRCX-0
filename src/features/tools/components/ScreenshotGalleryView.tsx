@@ -21,6 +21,7 @@ import {
     CollapsibleTrigger
 } from '@/ui/shadcn/collapsible';
 import { Skeleton } from '@/ui/shadcn/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { pickRandomScreenshotPath } from '../screenshotMetadataValues';
 import { useClearSelectionOnEscape } from '../useClearSelectionOnEscape';
@@ -362,21 +363,18 @@ export function ScreenshotGalleryView({
             </aside>
             <section className="relative flex min-h-0 min-w-0 flex-col gap-3 pt-3 lg:pt-0 lg:pl-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="min-w-0">
-                        <div
-                            className="truncate text-sm font-medium"
-                            title={activeFolderPath}
-                        >
-                            {activeFolder?.name ||
-                                t('dialog.screenshot_metadata.gallery')}
-                        </div>
-                        <div
-                            className="text-muted-foreground truncate text-xs"
-                            title={activeFolderPath}
-                        >
-                            {activeFolderPath || '—'}
-                        </div>
-                    </div>
+                    <Tooltip disabled={!activeFolderPath}>
+                        <TooltipTrigger render={<div className="min-w-0" />}>
+                            <div className="truncate text-sm font-medium">
+                                {activeFolder?.name ||
+                                    t('dialog.screenshot_metadata.gallery')}
+                            </div>
+                            <div className="text-muted-foreground truncate text-xs">
+                                {activeFolderPath || '—'}
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>{activeFolderPath}</TooltipContent>
+                    </Tooltip>
                     <div className="flex items-center gap-2">
                         <span className="text-muted-foreground text-xs tabular-nums">
                             {t('dialog.screenshot_metadata.image_count', {

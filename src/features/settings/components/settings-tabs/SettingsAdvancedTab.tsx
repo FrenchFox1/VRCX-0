@@ -28,7 +28,8 @@ import { Switch } from '@/ui/shadcn/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { BrowseHistoryRetentionField } from '../BrowseHistoryRetentionField';
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { useSettingsAdvancedTabState } from '../useSettingsAdvancedTabState';
 import { AdvancedTroubleshootingGroup } from './AdvancedTroubleshootingGroup';
@@ -190,7 +191,8 @@ export function SettingsAdvancedTabContent({
 
     return (
         <SettingsTabContent value="advanced">
-            <SettingsGroup
+            <SettingsCard
+                cardId="advanced.behavior"
                 title={t('view.settings.advanced.advanced_ui.behavior.header')}
             >
                 <Field
@@ -237,9 +239,10 @@ export function SettingsAdvancedTabContent({
                     </Field>
                 ) : null}
                 <DeepLinkRegistrationField />
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="advanced.storage"
                 title={t('view.settings.advanced.advanced_ui.storage.header')}
             >
                 <Field
@@ -494,7 +497,7 @@ export function SettingsAdvancedTabContent({
                         }
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
             <AdvancedTroubleshootingGroup
                 prefs={prefs}
@@ -510,7 +513,8 @@ export function SettingsAdvancedTabContent({
                 onUdonExceptionLoggingChange={onUdonExceptionLoggingChange}
             />
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="advanced.import-recovery"
                 title={t(
                     'view.settings.advanced.advanced_ui.import_recovery.header'
                 )}
@@ -534,8 +538,9 @@ export function SettingsAdvancedTabContent({
                         )}
                     </Button>
                 </Field>
-            </SettingsGroup>
-            <SettingsGroup
+            </SettingsCard>
+            <SettingsCard
+                cardId="advanced.usage-data"
                 title={t(
                     'view.settings.advanced.advanced_ui.usage_data.header'
                 )}
@@ -553,7 +558,7 @@ export function SettingsAdvancedTabContent({
                         onCheckedChange={onAnonymousUsageTelemetryChange}
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
             {/* Danger zone: destructive, irreversible actions kept visually separate at the bottom. */}
             <section className="border-destructive/30 flex shrink-0 flex-col rounded-lg border">
                 <div className="px-4 pt-4 pb-1">

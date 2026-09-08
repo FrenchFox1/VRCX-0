@@ -3,7 +3,8 @@ import {
     GlobeIcon,
     LinkIcon,
     PersonStandingIcon,
-    UsersIcon
+    UsersIcon,
+    UsersRoundIcon
 } from 'lucide-react';
 import { useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -257,7 +258,7 @@ export function QuickSearchDialog({
                                     disabled
                                     className="gap-3 opacity-70"
                                 >
-                                    <UsersIcon />
+                                    <UsersRoundIcon />
                                     <span className="min-w-0 flex-1 truncate">
                                         {t('side_panel.search_groups')}
                                     </span>

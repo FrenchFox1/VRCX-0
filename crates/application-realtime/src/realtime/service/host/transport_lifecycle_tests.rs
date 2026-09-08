@@ -1143,6 +1143,7 @@ fn friend_ws_dispatch_fans_out_one_canonical_output() -> Result<()> {
             user_id: active_session.user_id.clone(),
             target_user_id: "usr_friend".into(),
             types: vec!["Friend".into()],
+            ..Default::default()
         },
     )?;
     assert_eq!(history.len(), 1);
@@ -1313,6 +1314,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
             types: vec!["TrustLevel".into()],
+            ..Default::default()
         },
     )?
     .len();
@@ -1345,6 +1347,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
             types: vec!["TrustLevel".into()],
+            ..Default::default()
         },
     )?
     .len();

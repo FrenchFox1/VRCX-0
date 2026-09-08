@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { TRUST_COLOR_DEFAULTS } from '@/shared/constants/trustColors';
+
 import {
-    TRUST_COLOR_DEFAULTS,
     getTrustColor,
     isValidTrustColor,
     normalizeTrustColors,

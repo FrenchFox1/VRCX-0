@@ -4,12 +4,20 @@ import configRepository from '@/repositories/configRepository';
 import storageRepository from '@/repositories/storageRepository';
 import { getPrefetchedSystemCulture } from '@/services/startupBootstrapSnapshot';
 import {
+    APP_CJK_FONT_PACK_DEFAULT_KEY,
+    APP_FONT_DEFAULT_KEY
+} from '@/shared/constants/fonts';
+import {
     DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
     parseHmdOverlayActivityFilterProfile,
     parseOverlayActivityFilterProfile
 } from '@/shared/constants/overlayActivityFilters';
 import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
+import {
+    DEFAULT_TRANSLATION_ENDPOINT,
+    DEFAULT_TRANSLATION_MODEL
+} from '@/shared/constants/settings';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
 import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 import { normalizeTrustColors } from '@/shared/utils/trustColors';
@@ -43,8 +51,6 @@ import {
 import { POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY } from '../changelogService';
 import { configureRecentActionCooldown } from '../recentActionService';
 import {
-    APP_CJK_FONT_PACK_DEFAULT_KEY,
-    APP_FONT_DEFAULT_KEY,
     normalizeAppCjkFontPack,
     normalizeAppFontFamily
 } from '../themeService';
@@ -53,9 +59,7 @@ import {
     DEFAULT_NOTIFICATION_LAYOUT,
     DEFAULT_TABLE_LIMITS,
     DEFAULT_TABLE_PAGE_SIZE,
-    DEFAULT_TABLE_PAGE_SIZES,
-    DEFAULT_TRANSLATION_ENDPOINT,
-    DEFAULT_TRANSLATION_MODEL
+    DEFAULT_TABLE_PAGE_SIZES
 } from './preferencesConstants';
 import {
     applyAccessibleStatusClass,

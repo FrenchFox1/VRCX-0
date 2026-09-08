@@ -348,7 +348,7 @@ export function SidePanelSettingsPopover({
                                             <Field
                                                 key={group.key}
                                                 orientation="horizontal"
-                                                className="hover:bg-muted/50 cursor-pointer gap-2 rounded px-1.5 py-1 text-xs"
+                                                className="cursor-pointer gap-2 rounded px-1.5 py-1 text-xs hover:bg-(--state-hover-surface)"
                                             >
                                                 <Checkbox
                                                     id={`sidebar-favorite-${group.key}`}

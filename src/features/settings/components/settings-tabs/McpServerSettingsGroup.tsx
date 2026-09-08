@@ -20,7 +20,8 @@ import {
 } from '@/ui/shadcn/number-field';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 
 type McpCommandOptions = {
     successMessage?: string;
@@ -179,7 +180,8 @@ export function McpServerSettingsGroup() {
     }
 
     return (
-        <SettingsGroup
+        <SettingsCard
+            cardId="integrations.mcp"
             title={t('view.settings.integrations.mcp_server.header')}
             description={t('view.settings.integrations.mcp_server.description')}
         >
@@ -358,6 +360,6 @@ export function McpServerSettingsGroup() {
                     {t('view.settings.integrations.mcp_server.rotate_token')}
                 </Button>
             </Field>
-        </SettingsGroup>
+        </SettingsCard>
     );
 }

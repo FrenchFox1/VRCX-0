@@ -14,7 +14,8 @@ import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { IntegrationApiSettingsGroup } from './IntegrationApiSettingsGroup';
 import { McpServerSettingsGroup } from './McpServerSettingsGroup';
@@ -158,7 +159,8 @@ export function SettingsIntegrationsTab() {
 
     return (
         <SettingsTabContent value="integrations">
-            <SettingsGroup
+            <SettingsCard
+                cardId="integrations.discord"
                 title={t(
                     'view.settings.discord_presence.discord_presence.header'
                 )}
@@ -278,7 +280,7 @@ export function SettingsIntegrationsTab() {
                         onCheckedChange={onDiscordWorldNameAsStatusChange}
                     />
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
             <WebhookSettingsGroup
                 prefs={prefs}
@@ -299,7 +301,8 @@ export function SettingsIntegrationsTab() {
                 }}
             />
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="integrations.translation"
                 title={t(
                     'view.settings.advanced.advanced.translation_api.header'
                 )}
@@ -331,9 +334,10 @@ export function SettingsIntegrationsTab() {
                         {t('common.actions.configure')}
                     </Button>
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="integrations.youtube"
                 title={t('view.settings.advanced.advanced.youtube_api.header')}
                 description={t(
                     'view.settings.advanced.advanced.youtube_api.enable_tooltip'
@@ -363,9 +367,10 @@ export function SettingsIntegrationsTab() {
                         {t('common.actions.configure')}
                     </Button>
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
-            <SettingsGroup
+            <SettingsCard
+                cardId="integrations.remote-database"
                 title={t(
                     'view.settings.advanced.advanced.remote_database.header'
                 )}
@@ -398,7 +403,7 @@ export function SettingsIntegrationsTab() {
                         {t('common.actions.configure')}
                     </Button>
                 </Field>
-            </SettingsGroup>
+            </SettingsCard>
 
             <McpServerSettingsGroup />
             <IntegrationApiSettingsGroup />

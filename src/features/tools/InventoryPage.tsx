@@ -39,6 +39,7 @@ import type {
     MediaFileRecord
 } from '@/repositories/mediaRepository';
 import { openExternalLink } from '@/services/entityMediaService';
+import { IMAGE_UPLOAD_ACCEPT } from '@/shared/constants/imageUpload';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -83,7 +84,6 @@ import {
     type InventorySource
 } from './inventoryHelpers';
 import {
-    IMAGE_UPLOAD_ACCEPT,
     useInventoryPageState,
     type InventoryRow
 } from './useInventoryPageState';

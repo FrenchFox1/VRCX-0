@@ -13,11 +13,11 @@ import { useTranslation } from 'react-i18next';
 
 import { groupIdForRow } from '@/components/dialogs/user-dialog/userDialogGroupRows';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { TILE_SELECTED } from '@/lib/selectableTile';
 import { cn } from '@/lib/utils';
 import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { TILE_SELECTED } from '@/shared/constants/selectableTile';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {

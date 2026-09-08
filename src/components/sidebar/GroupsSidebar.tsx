@@ -1,10 +1,11 @@
-import { ChevronDownIcon, UsersIcon } from 'lucide-react';
+import { ChevronDownIcon, UsersRoundIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { normalizeSidebarFilterQuery } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import type {
     GroupInstanceRecord,
@@ -330,7 +331,7 @@ function GroupInstanceRow({
         <ContextMenu>
             <ContextMenuTrigger
                 render={
-                    <div className="hover:bg-muted/50 flex w-full items-center rounded-lg">
+                    <div className="flex w-full items-center rounded-lg hover:bg-(--state-hover-surface)">
                         <Button
                             type="button"
                             variant="ghost"
@@ -350,14 +351,14 @@ function GroupInstanceRow({
                                         alt=""
                                         className="size-full object-cover"
                                         fallback={
-                                            <UsersIcon
+                                            <UsersRoundIcon
                                                 data-icon="inline-start"
                                                 className="text-muted-foreground"
                                             />
                                         }
                                     />
                                 ) : (
-                                    <UsersIcon
+                                    <UsersRoundIcon
                                         data-icon="inline-start"
                                         className="text-muted-foreground"
                                     />
@@ -418,8 +419,9 @@ function GroupInstanceRow({
     );
 }
 
-export function GroupsSidebar() {
+export function GroupsSidebar({ filterQuery = '' }: { filterQuery?: string }) {
     const { t } = useTranslation();
+    const filterText = normalizeSidebarFilterQuery(filterQuery);
     const groupInstancesState = useRuntimeStore(
         (state) => state.groupInstances
     );
@@ -541,8 +543,42 @@ export function GroupsSidebar() {
         const savedGroupIds = new Set(
             savedGroups.collections.flatMap((collection) => collection.groupIds)
         );
+        const matchesFilter = (name: string) =>
+            !filterText || name.toLowerCase().includes(filterText);
+        const savedGroupName = (groupId: string) => {
+            const groupRows = groupsById.get(groupId) || [];
+            return (
+                savedGroupProfiles.get(groupId)?.name ||
+                resolveGroupName(groupRows[0], groupId) ||
+                groupId
+            );
+        };
+        const savedCollections = savedGroups.collections
+            .map((collection) => ({
+                collection,
+                groupIds: collection.groupIds.filter((groupId) =>
+                    matchesFilter(savedGroupName(groupId))
+                )
+            }))
+            .filter(({ groupIds }) => !filterText || groupIds.length);
+        const otherGroups = groups.filter(
+            ([groupId, groupRows]) =>
+                !savedGroupIds.has(groupId) &&
+                matchesFilter(resolveGroupName(groupRows[0], groupId))
+        );
 
-        if (savedGroups.collections.length) {
+        if (filterText && !savedCollections.length && !otherGroups.length) {
+            return [
+                {
+                    type: 'message',
+                    key: 'message:filter-empty',
+                    text: t('side_panel.filter_no_results')
+                },
+                { type: 'footer', key: 'footer' }
+            ] satisfies GroupSidebarRow[];
+        }
+
+        if (savedCollections.length) {
             nextRows.push({
                 type: 'section',
                 key: 'section:saved',
@@ -550,20 +586,16 @@ export function GroupsSidebar() {
                     defaultValue: '收藏群组'
                 })
             });
-            savedGroups.collections.forEach((collection) => {
+            savedCollections.forEach(({ collection, groupIds }) => {
                 nextRows.push({
                     type: 'collection',
                     key: `collection:${collection.id}`,
                     name: collection.name,
-                    count: collection.groupIds.length
+                    count: groupIds.length
                 });
-                collection.groupIds.forEach((groupId) => {
+                groupIds.forEach((groupId) => {
                     const groupRows = groupsById.get(groupId) || [];
-                    const profile = savedGroupProfiles.get(groupId);
-                    const name =
-                        profile?.name ||
-                        resolveGroupName(groupRows[0], groupId) ||
-                        groupId;
+                    const name = savedGroupName(groupId);
                     const isCollapsed = collapsedGroups.has(groupId);
                     nextRows.push({
                         type: 'group-header',
@@ -595,9 +627,6 @@ export function GroupsSidebar() {
             })
         });
 
-        const otherGroups = groups.filter(
-            ([groupId]) => !savedGroupIds.has(groupId)
-        );
         otherGroups.forEach(([groupId, groupRows], index) => {
             const name = resolveGroupName(groupRows[0], groupId);
             const isCollapsed = collapsedGroups.has(groupId);
@@ -640,7 +669,7 @@ export function GroupsSidebar() {
                         defaultValue: '没有其他活动群组房间'
                     })
                 });
-            } else {
+            } else if (!filterText) {
                 for (let index = 0; index < 4; index += 1) {
                     nextRows.push({
                         type: 'skeleton',
@@ -655,6 +684,7 @@ export function GroupsSidebar() {
     }, [
         collapsedGroups,
         error,
+        filterText,
         groups,
         savedGroupProfiles,
         savedGroups.collections,

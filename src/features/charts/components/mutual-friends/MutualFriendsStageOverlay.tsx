@@ -1,4 +1,4 @@
-import { UsersIcon } from 'lucide-react';
+import { WaypointsIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -83,7 +83,7 @@ export function MutualFriendsStageOverlay({
         return (
             <StageOverlay>
                 <AppEmptyState
-                    icon={UsersIcon}
+                    icon={WaypointsIcon}
                     title={t('empty_state.mutual_friends_title')}
                     description={t('empty_state.mutual_friends_description')}
                     contentClassName="max-w-md"

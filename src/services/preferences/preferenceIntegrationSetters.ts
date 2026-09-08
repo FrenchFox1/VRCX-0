@@ -2,15 +2,15 @@ import { normalizeLanguageCode } from '@/localization/locales';
 import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import {
+    DEFAULT_TRANSLATION_ENDPOINT,
+    DEFAULT_TRANSLATION_MODEL
+} from '@/shared/constants/settings';
+import {
     normalizeTranslationApiType,
     type DiscordPreferenceKey
 } from '@/state/preferencesStore';
 
-import {
-    DEFAULT_TRANSLATION_ENDPOINT,
-    DEFAULT_TRANSLATION_MODEL,
-    DISCORD_BOOL_PREFERENCE_KEYS
-} from './preferencesConstants';
+import { DISCORD_BOOL_PREFERENCE_KEYS } from './preferencesConstants';
 import { patchPreferences, publishPreferenceChanged } from './preferencesCore';
 import type { TranslationApiConfigPreferenceInput } from './preferencesTypes';
 

@@ -114,6 +114,33 @@ export function readFriendRef(
     return friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
 }
 
+export function normalizeSidebarFilterQuery(query: string | null | undefined) {
+    return String(query || '')
+        .trim()
+        .toLowerCase();
+}
+
+export function friendMatchesSidebarFilterQuery(
+    friend: SidebarFriendRecord | null | undefined,
+    query: string
+) {
+    if (!query) {
+        return true;
+    }
+    const ref = readFriendRef(friend);
+    return [
+        friend?.displayName,
+        friend?.name,
+        friend?.username,
+        ref?.displayName,
+        ref?.name,
+        ref?.username
+    ].some(
+        (value) =>
+            typeof value === 'string' && value.toLowerCase().includes(query)
+    );
+}
+
 export function readFriendStatusSource(
     friend: SidebarFriendRecord | null | undefined
 ) {

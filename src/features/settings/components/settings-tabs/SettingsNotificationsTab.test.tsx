@@ -98,10 +98,7 @@ vi.mock('../SettingsField', () => ({
     }: {
         children?: ReactNode;
         label?: ReactNode;
-    }) => <section data-field-label={String(label)}>{children}</section>,
-    SettingsGroup: ({ children }: PropsWithChildren) => (
-        <section>{children}</section>
-    )
+    }) => <section data-field-label={String(label)}>{children}</section>
 }));
 
 vi.mock('../SettingsViewParts', () => ({

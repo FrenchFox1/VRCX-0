@@ -10,6 +10,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 const visibilityLabelKeys: Record<GroupMemberVisibility, string> = {
     visible: 'dialog.group.actions.visibility_everyone',
@@ -94,25 +95,34 @@ export function MyGroupsSelectionBar({
                     ))}
                 </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={leavableCount === 0}
-                title={
-                    leavableCount === 0
-                        ? t('view.my_groups.leave_owner_locked')
-                        : undefined
-                }
-                onClick={onLeave}
-            >
-                <LogOutIcon data-icon="inline-start" />
-                {leavableCount < selectedCount
-                    ? t('view.my_groups.leave_partial', {
-                          count: leavableCount
-                      })
-                    : t('view.my_groups.leave')}
-            </Button>
+            <Tooltip disabled={leavableCount !== 0}>
+                <TooltipTrigger
+                    render={
+                        <span
+                            className="inline-flex"
+                            tabIndex={leavableCount === 0 ? 0 : undefined}
+                        />
+                    }
+                >
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        disabled={leavableCount === 0}
+                        onClick={onLeave}
+                    >
+                        <LogOutIcon data-icon="inline-start" />
+                        {leavableCount < selectedCount
+                            ? t('view.my_groups.leave_partial', {
+                                  count: leavableCount
+                              })
+                            : t('view.my_groups.leave')}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    {t('view.my_groups.leave_owner_locked')}
+                </TooltipContent>
+            </Tooltip>
         </SelectionActionBar>
     );
 }

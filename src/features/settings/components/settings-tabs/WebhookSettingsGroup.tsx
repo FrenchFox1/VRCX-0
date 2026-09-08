@@ -29,7 +29,8 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
-import { Field, SettingsGroup } from '../SettingsField';
+import { SettingsCard } from '../SettingsCard';
+import { Field } from '../SettingsField';
 
 const GENERIC_WEBHOOK_EXAMPLE = `{
   "version": 1,
@@ -178,7 +179,8 @@ export function WebhookSettingsGroup({
         Boolean(prefs.webhookAuthEventsEnabled);
 
     return (
-        <SettingsGroup
+        <SettingsCard
+            cardId="integrations.webhook"
             title={t(
                 'view.settings.notifications.notifications.webhook.header'
             )}
@@ -352,7 +354,7 @@ export function WebhookSettingsGroup({
                     </Button>
                 </div>
             </Field>
-        </SettingsGroup>
+        </SettingsCard>
     );
 }
 

@@ -16,7 +16,7 @@ import {
     ShieldIcon,
     TagIcon,
     UserIcon,
-    UsersIcon,
+    UsersRoundIcon,
     XIcon,
     type LucideIcon
 } from 'lucide-react';
@@ -92,7 +92,7 @@ export function getDiscIcon(
         return TagIcon;
     }
     if (type.startsWith('group.') || type === 'groupChange') {
-        return UsersIcon;
+        return UsersRoundIcon;
     }
     return BellIcon;
 }
@@ -127,7 +127,7 @@ export function getNotificationLinkIcon(
         case 'user':
             return UserIcon;
         case 'group':
-            return UsersIcon;
+            return UsersRoundIcon;
         case 'event':
             return CalendarIcon;
         case 'world':

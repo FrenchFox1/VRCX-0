@@ -752,11 +752,41 @@
         "about": "VRCX-0 정보"
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "단축키 입력을 시작하지 못했습니다. 이 대화 상자를 닫고 다시 시도하세요.",
+            "checking": "단축키 확인 중…",
+            "background_hint": "숨길 때 백그라운드 모드와 지연 설정이 적용됩니다.",
+            "global": "전역",
+            "title": "VRCX-0 표시 / 숨기기",
+            "description": "다른 앱을 사용하는 중에도 VRCX-0를 표시하거나 숨길 수 있습니다. 숨긴 후에도 백그라운드에서 계속 실행됩니다.",
+            "configure": "전역 단축키 설정",
+            "unset": "설정 안 됨",
+            "inactive": "작동하지 않음",
+            "unsupported": "현재 환경에서는 전역 단축키를 사용할 수 없습니다.",
+            "record": "키 조합을 누르세요",
+            "record_description": "Ctrl 또는 Alt와 문자, 숫자 또는 기능 키를 조합하세요. Esc를 누르면 취소됩니다. 입력 중에는 기존 단축키를 눌러도 창이 숨겨지지 않습니다.",
+            "startup_failed": "전역 단축키를 활성화하지 못했습니다. 다른 앱에서 사용 중일 수 있습니다.",
+            "error": {
+                "inUse": "이미 사용 중인 단축키입니다. 다른 조합을 선택하세요.",
+                "invalid": "Ctrl 또는 Alt와 문자, 숫자 또는 기능 키를 조합하세요.",
+                "reserved": "시스템 또는 앱에서 사용하는 키 조합입니다. 다른 조합을 선택하세요.",
+                "unavailable": "사용할 수 없거나 이미 사용 중인 단축키입니다. 다른 조합을 시도하세요.",
+                "unsupported": "현재 환경에서는 전역 단축키를 사용할 수 없습니다."
+            }
+        },
         "title": "키보드 단축키",
         "group": {
             "general": "일반",
-            "layout": "레이아웃"
-        }
+            "layout": "레이아웃",
+            "pagination": "검색 및 표 페이지 이동",
+            "screenshots": "스크린샷 상세 정보",
+            "image_viewer": "전체 화면 이미지 뷰어",
+            "selection": "스크린샷 및 즐겨찾기 선택"
+        },
+        "navigation_items": "1~9번째 탐색 항목 열기",
+        "hold_for_hints": "단축키 힌트 표시(길게 누르기)",
+        "toggle_details": "상세 정보 표시/숨기기",
+        "clear_selection": "선택 해제"
     },
     "side_panel": {
         "search_placeholder": "검색",
@@ -789,6 +819,12 @@
         "groups": "그룹",
         "friends": "친구",
         "me": "나",
+        "self_menu": "계정 메뉴",
+        "filter_friends": "친구 필터",
+        "filter_groups": "그룹 필터",
+        "filter_no_results": "일치하는 항목 없음",
+        "self_more_actions": "더 보기",
+        "switch_account": "계정 전환",
         "favorite": "친한 친구",
         "same_instance": "동일한 인스턴스",
         "you_are_here": "현재 위치",
@@ -1428,6 +1464,10 @@
             }
         },
         "friend_log": {
+            "date_range": "기간",
+            "latest": "최신",
+            "rows": "행",
+            "load_older_failed": "이전 기록을 불러오지 못했어요.",
             "filter_placeholder": "필터",
             "all_types": "모든 유형",
             "groups": {
@@ -2657,8 +2697,6 @@
                     "troubleshooting": {
                         "header": "문제 해결",
                         "description": "문제를 조사하기 위한 로그 및 진단 도구입니다.",
-                        "show": "도구 표시",
-                        "hide": "도구 숨기기",
                         "gamelog": "게임 로그 기록 저장",
                         "gamelog_description": "끄면 새 기록이 저장되지 않습니다. 플레이어 목록, 지금 재생 중 등 실시간 기능은 그대로 사용할 수 있습니다.",
                         "feed_history": "피드 기록 저장",

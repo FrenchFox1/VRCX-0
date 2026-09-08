@@ -287,6 +287,7 @@ pub fn setup_app_with_data_dir(
 
     let state = app.state::<AppState>();
     configure_tray(app, &state)?;
+    super::tray_shortcut::setup(app.handle(), &state);
     state.runtime_host().record_lifecycle_phase(
         "tray",
         RuntimeOperationStatus::Completed,

@@ -73,9 +73,12 @@ vi.mock('./sqliteErrorDialogService', () => ({
     showSQLiteErrorDialog: mocks.showSQLiteErrorDialog
 }));
 
-vi.mock('./themeService', () => ({
+vi.mock('@/shared/constants/fonts', () => ({
     APP_CJK_FONT_PACK_DEFAULT_KEY: 'default-cjk',
-    APP_FONT_DEFAULT_KEY: 'default-font',
+    APP_FONT_DEFAULT_KEY: 'default-font'
+}));
+
+vi.mock('./themeService', () => ({
     applyAppFontPreferences: mocks.applyAppFontPreferences,
     applyThemeColor: mocks.applyThemeColor,
     applyThemeMode: mocks.applyThemeMode,

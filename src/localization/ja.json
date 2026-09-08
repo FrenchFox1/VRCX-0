@@ -753,11 +753,41 @@
         }
     },
     "shortcuts": {
+        "tray": {
+            "recording_failed": "ショートカットの入力を開始できません。このダイアログを閉じて、もう一度お試しください。",
+            "checking": "ショートカットを確認中…",
+            "background_hint": "非表示にすると、バックグラウンドモードと遅延の設定が適用されます。",
+            "global": "グローバル",
+            "title": "VRCX-0を表示 / 非表示",
+            "description": "他のアプリを使用中でもVRCX-0を表示・非表示にできます。非表示にしてもバックグラウンドで動作します。",
+            "configure": "グローバルショートカットを設定",
+            "unset": "未設定",
+            "inactive": "無効",
+            "unsupported": "この環境ではグローバルショートカットを利用できません。",
+            "record": "キーの組み合わせを押してください",
+            "record_description": "CtrlまたはAltと、英字・数字・ファンクションキーを組み合わせてください。Escでキャンセルできます。入力中は現在のショートカットを押してもウィンドウは非表示になりません。",
+            "startup_failed": "グローバルショートカットを有効にできませんでした。他のアプリが使用している可能性があります。",
+            "error": {
+                "inUse": "このショートカットはすでに使用されています。別の組み合わせを選んでください。",
+                "invalid": "CtrlまたはAltと、英字・数字・ファンクションキーを組み合わせてください。",
+                "reserved": "この組み合わせはシステムまたはアプリの操作に使われています。別の組み合わせを選んでください。",
+                "unavailable": "このショートカットは利用できないか、すでに使用されています。別の組み合わせをお試しください。",
+                "unsupported": "この環境ではグローバルショートカットを利用できません。"
+            }
+        },
         "title": "キーボードショートカット",
         "group": {
             "general": "一般",
-            "layout": "レイアウト"
-        }
+            "layout": "レイアウト",
+            "pagination": "検索・テーブルのページ切り替え",
+            "screenshots": "スクリーンショットの詳細",
+            "image_viewer": "全画面画像ビューアー",
+            "selection": "スクリーンショット・お気に入りの選択"
+        },
+        "navigation_items": "ナビゲーションの1～9番目を開く",
+        "hold_for_hints": "ショートカットのヒントを表示（長押し）",
+        "toggle_details": "詳細の表示／非表示",
+        "clear_selection": "選択を解除"
     },
     "side_panel": {
         "search_placeholder": "検索...",
@@ -791,6 +821,12 @@
         "groups": "グループ",
         "friends": "フレンド",
         "me": "自分",
+        "self_menu": "アカウントメニュー",
+        "filter_friends": "フレンドを絞り込み",
+        "filter_groups": "グループを絞り込み",
+        "filter_no_results": "該当なし",
+        "self_more_actions": "その他",
+        "switch_account": "アカウントを切り替え",
         "favorite": "お気に入り",
         "same_instance": "同じインスタンス",
         "you_are_here": "現在地",
@@ -1445,6 +1481,10 @@
             }
         },
         "friend_log": {
+            "date_range": "期間",
+            "latest": "最新",
+            "rows": "行",
+            "load_older_failed": "過去の履歴を読み込めませんでした。",
             "filter_placeholder": "フィルター",
             "all_types": "すべての種類",
             "groups": {
@@ -2700,8 +2740,6 @@
                     "troubleshooting": {
                         "header": "トラブルシューティング",
                         "description": "問題の調査に使用するログと診断ツールです。",
-                        "show": "ツールを表示",
-                        "hide": "ツールを隠す",
                         "gamelog": "ゲームログ履歴を保存",
                         "gamelog_description": "オフにすると新しい履歴は保存されません。プレイヤーリストや再生中などのリアルタイム機能は引き続き利用できます。",
                         "feed_history": "フィード履歴を保存",

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
@@ -14,6 +15,42 @@ import { MyGroupsSelectionBar } from './MyGroupsSelectionBar';
 
 describe('MyGroupsSelectionBar', () => {
     afterEach(cleanup);
+
+    it('explains the disabled leave action without allowing it to run', async () => {
+        const onLeave = vi.fn();
+        render(
+            <MyGroupsSelectionBar
+                selectedCount={1}
+                leavableCount={0}
+                allSelected={false}
+                busy={false}
+                progress={null}
+                onSelectAll={vi.fn()}
+                onClearSelection={vi.fn()}
+                onSetVisibility={vi.fn()}
+                onLeave={onLeave}
+            />
+        );
+        const user = userEvent.setup();
+        const button = screen.getByRole('button', {
+            name: 'view.my_groups.leave_partial:0'
+        });
+        const trigger = button.parentElement;
+        expect(trigger).not.toBeNull();
+        if (!trigger)
+            throw new Error('Missing disabled action tooltip trigger');
+        await user.hover(trigger);
+        expect(
+            (
+                await screen.findByText('view.my_groups.leave_owner_locked', {
+                    selector: '[data-slot="tooltip-content"]'
+                })
+            ).textContent
+        ).toBe('view.my_groups.leave_owner_locked');
+        fireEvent.click(button);
+        expect(onLeave).not.toHaveBeenCalled();
+        expect(button.hasAttribute('disabled')).toBe(true);
+    });
 
     it('offers select all before any group is selected', () => {
         const onSelectAll = vi.fn();

@@ -3,7 +3,7 @@ import {
     HeartIcon,
     MoreHorizontalIcon,
     Trash2Icon,
-    UsersIcon
+    UsersRoundIcon
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -382,7 +382,7 @@ export function SavedGroupFavoritesPage() {
                                 ) : !visibleGroupIds.length ? (
                                     <EmptyState
                                         variant="panel"
-                                        icon={UsersIcon}
+                                        icon={UsersRoundIcon}
                                         title={
                                             searchQuery.trim()
                                                 ? t(
