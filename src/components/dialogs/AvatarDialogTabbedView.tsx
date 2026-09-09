@@ -280,7 +280,7 @@ function AvatarDialogOverviewSection({
                         type="button"
                         variant="ghost"
                         disabled={!avatar.authorId}
-                        className="text-muted-foreground hover:text-primary h-auto max-w-full min-w-0 justify-start overflow-hidden p-0 text-left font-mono text-sm disabled:pointer-events-none disabled:opacity-100"
+                        className="text-muted-foreground hover:text-primary h-auto max-w-full min-w-0 justify-start overflow-hidden p-0 text-left text-sm disabled:pointer-events-none disabled:opacity-100"
                         onClick={avatar.authorId ? onAuthorClick : undefined}
                     >
                         <span className="truncate">{avatar.authorName}</span>
