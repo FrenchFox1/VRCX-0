@@ -7,12 +7,17 @@ import {
     type LocationMetadataEntry
 } from '@/components/location/useLocationMetadata';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TileShell } from '@/components/tile/TileShell';
 import { formatScreenshotDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 import { requestScreenshotThumbnail } from '@/services/screenshotThumbnailQueueService';
-import { TILE_SELECTED } from '@/shared/constants/selectableTile';
+import {
+    TILE_SELECT_BOX,
+    TILE_SELECT_TOGGLE,
+    TILE_SELECT_TOGGLE_VISIBLE
+} from '@/shared/constants/selectableTile';
 import { parseLocation } from '@/shared/utils/location';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -188,21 +193,25 @@ export function ScreenshotThumbnailCard({
 
     return (
         <div className="group/tile relative min-w-0">
-            <Button
-                type="button"
-                variant="outline"
+            <TileShell
+                selected={selected}
                 className={cn(
-                    'bg-card text-card-foreground hover:bg-accent/50 w-full min-w-0 flex-col items-stretch justify-start overflow-hidden p-0 text-left has-data-[icon=inline-start]:pl-0',
-                    cardHeight,
-                    selected && TILE_SELECTED
+                    'w-full flex-col items-stretch justify-start p-0 text-left has-data-[icon=inline-start]:pl-0',
+                    cardHeight
                 )}
-                onClick={(event) => {
-                    if (isSelectionActive) {
-                        onToggleSelect?.(!selected, event.shiftKey);
-                        return;
-                    }
-                    onOpen(item.path);
-                }}
+                render={
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={(event) => {
+                            if (isSelectionActive) {
+                                onToggleSelect?.(!selected, event.shiftKey);
+                                return;
+                            }
+                            onOpen(item.path);
+                        }}
+                    />
+                }
             >
                 <div
                     className={`bg-muted relative flex ${mediaHeight} items-center justify-center overflow-hidden`}
@@ -259,20 +268,21 @@ export function ScreenshotThumbnailCard({
                         <span className="truncate">{dateLabel}</span>
                     </div>
                 </div>
-            </Button>
+            </TileShell>
             {selectable ? (
                 <span
                     role="presentation"
                     className={cn(
-                        'absolute top-2 left-2 z-20 opacity-0 transition-opacity',
-                        'group-has-[:focus-visible]/tile:opacity-100 pointer-fine:group-hover/tile:opacity-100',
-                        (selected || isSelectionActive) && 'opacity-100'
+                        TILE_SELECT_TOGGLE,
+                        (selected || isSelectionActive) &&
+                            TILE_SELECT_TOGGLE_VISIBLE
                     )}
                     onClickCapture={(event) => {
                         shiftPressedRef.current = event.shiftKey;
                     }}
                 >
                     <Checkbox
+                        className={TILE_SELECT_BOX}
                         aria-label={selectLabel}
                         checked={selected}
                         onCheckedChange={(checked) =>

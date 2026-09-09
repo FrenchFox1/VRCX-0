@@ -13,6 +13,7 @@ import { GlobalHosts } from '@/app/GlobalHosts';
 import { AppTitleBar } from '@/components/layout/AppTitleBar';
 import { MacNativeMenuActionHost } from '@/components/layout/MacNativeMenuActionHost';
 import { MacOverlayTitleBar } from '@/components/layout/MacOverlayTitleBar';
+import { QuickSearchProvider } from '@/components/layout/QuickSearchProvider';
 import { useGlobalKeyboardShortcuts } from '@/components/layout/useGlobalKeyboardShortcuts';
 import { useSidebarAutoHide } from '@/components/layout/useSidebarAutoHide';
 import { useTrayShortcut } from '@/components/layout/useTrayShortcut';
@@ -190,7 +191,7 @@ function AppRouterContent() {
         isWindowsHost && !window.__VRCX_SYSTEM_WINDOW_FRAME__;
 
     return (
-        <>
+        <QuickSearchProvider enabled={sessionReady}>
             <div
                 data-vrcx-0-surface="app-root"
                 className={cn(
@@ -252,7 +253,7 @@ function AppRouterContent() {
                 <MacNativeMenuActionHost />
             </div>
             {hasCustomWindowFrame ? <WindowResizeHandles /> : null}
-        </>
+        </QuickSearchProvider>
     );
 }
 

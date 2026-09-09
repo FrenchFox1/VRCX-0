@@ -13,11 +13,12 @@ import { useTranslation } from 'react-i18next';
 
 import { groupIdForRow } from '@/components/dialogs/user-dialog/userDialogGroupRows';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TileShell } from '@/components/tile/TileShell';
 import { cn } from '@/lib/utils';
 import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-import { TILE_SELECTED } from '@/shared/constants/selectableTile';
+import { TILE_SELECT_BOX } from '@/shared/constants/selectableTile';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -122,29 +123,33 @@ export function MyGroupCard({
                 isDragging && 'z-10 opacity-60'
             )}
         >
-            <Button
-                {...attributes}
-                {...listeners}
-                type="button"
-                variant="ghost"
+            <TileShell
+                selected={selected}
                 className={cn(
-                    'object-row bg-object-surface hover:bg-object-surface-hover dark:hover:bg-object-surface-hover h-full w-full min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-lg border-[var(--object-border)] p-0 text-left font-normal whitespace-normal hover:border-[var(--object-border-hover)]',
+                    'object-row h-full w-full flex-col items-stretch gap-0 p-0 text-left font-normal whitespace-normal',
                     !dragDisabled &&
-                        'cursor-grab touch-none active:cursor-grabbing',
-                    selected && TILE_SELECTED
+                        'cursor-grab touch-none active:cursor-grabbing'
                 )}
-                aria-pressed={editMode ? selected : undefined}
-                onClick={() => {
-                    if (editMode) {
-                        onToggleSelected(groupId);
-                        return;
-                    }
-                    openGroupDialog({
-                        groupId,
-                        title: group.name || undefined,
-                        seedData: group
-                    });
-                }}
+                render={
+                    <Button
+                        {...attributes}
+                        {...listeners}
+                        type="button"
+                        variant="ghost"
+                        aria-pressed={editMode ? selected : undefined}
+                        onClick={() => {
+                            if (editMode) {
+                                onToggleSelected(groupId);
+                                return;
+                            }
+                            openGroupDialog({
+                                groupId,
+                                title: group.name || undefined,
+                                seedData: group
+                            });
+                        }}
+                    />
+                }
             >
                 <div className="bg-muted relative aspect-[3/1] w-full overflow-hidden">
                     {bannerUrl ? (
@@ -228,18 +233,18 @@ export function MyGroupCard({
                         </span>
                     ) : null}
                 </div>
-            </Button>
+            </TileShell>
             {editMode ? (
                 <span
                     role="presentation"
-                    className="absolute top-1 left-1 z-20"
+                    className="absolute top-2 left-2 z-20"
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => event.stopPropagation()}
                     onKeyDown={(event) => event.stopPropagation()}
                 >
                     <Checkbox
                         checked={selected}
-                        className="bg-background/85 shadow-sm"
+                        className={TILE_SELECT_BOX}
                         aria-label={`${t('common.actions.select')} ${group.name || groupId}`}
                         onCheckedChange={(checked) => {
                             if (Boolean(checked) !== selected) {

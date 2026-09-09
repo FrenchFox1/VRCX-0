@@ -15,6 +15,7 @@ import {
     cachePreviousInstances,
     cacheUserStats,
     DEFAULT_USER_STATS,
+    normalizeUserRelationshipHistory,
     readCachedPreviousInstances,
     readCachedUserStats,
     type UserDialogPreviousInstance,
@@ -36,23 +37,6 @@ type DialogRecord = Record<string, unknown>;
 type SupplementalStats = UserDialogStats & { mutualFriendCount?: number };
 
 export const USER_DIALOG_INSTANCE_HISTORY_LIMIT = 50;
-
-function record(value: unknown): DialogRecord {
-    return value && typeof value === 'object'
-        ? Object.fromEntries(Object.entries(value))
-        : {};
-}
-
-function resolveFriendedAtFromHistoryRows(rows: unknown) {
-    const latestRelationshipRow = Array.isArray(rows)
-        ? rows
-              .map(record)
-              .find((row) => row.type === 'Friend' || row.type === 'Unfriend')
-        : null;
-    return latestRelationshipRow?.type === 'Friend'
-        ? normalizeUserId(latestRelationshipRow.created_at)
-        : '';
-}
 
 type RepresentedGroupState = {
     endpoint: string;
@@ -441,12 +425,14 @@ export function useUserDialogSupplementalData({
                 if (!isTargetCurrentUser) {
                     return {
                         ...current,
-                        friendedAt: ''
+                        friendedAt: '',
+                        relationshipHistory: []
                     };
                 }
                 return {
                     ...current,
                     friendedAt: '',
+                    relationshipHistory: [],
                     ...replacePreviousDisplayNameSource(
                         profileDisplayNameRef.current,
                         current.previousDisplayNameSources,
@@ -469,9 +455,13 @@ export function useUserDialogSupplementalData({
                 if (!active) {
                     return;
                 }
-                const friendedAt = normalizeUserId(
-                    resolveFriendedAtFromHistoryRows(rows)
-                );
+                const relationshipHistory =
+                    normalizeUserRelationshipHistory(rows);
+                const latestRelationship = relationshipHistory[0];
+                const friendedAt =
+                    latestRelationship?.type === 'Friend'
+                        ? latestRelationship.created_at
+                        : '';
                 const friendLogPreviousDisplayNames = rows
                     .filter((row) => row.type === 'DisplayName')
                     .map((row) => ({
@@ -481,6 +471,7 @@ export function useUserDialogSupplementalData({
                 setUserStatsForTarget((current) => ({
                     ...current,
                     friendedAt,
+                    relationshipHistory,
                     ...replacePreviousDisplayNameSource(
                         profileDisplayNameRef.current,
                         current.previousDisplayNameSources,

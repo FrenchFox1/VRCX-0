@@ -1,22 +1,24 @@
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
     ToolbarSearch,
-    ToolbarSegmented,
+    ToolbarTabs,
     ToolbarViewMenu,
     ToolbarViews,
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Switch } from '@/ui/shadcn/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
-
 import {
-    isFriendsLocationsSegment,
-    type FriendsLocationsSegment
-} from '../friendsLocationsConfig';
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
+
+import { type FriendsLocationsSegment } from '../friendsLocationsConfig';
 import {
     FRIENDS_LOCATIONS_DENSITY_OPTIONS,
     sanitizeFriendsLocationsDensity,
@@ -30,24 +32,20 @@ type FriendsLocationsSegmentOption = {
 };
 
 type FriendsLocationsToolbarProps = {
-    activeSegment: FriendsLocationsSegment;
     segmentOptions: FriendsLocationsSegmentOption[];
     searchQuery: string;
     showSameInstanceInOnline: boolean;
     density: FriendsLocationsDensity;
-    onActiveSegmentChange: (value: FriendsLocationsSegment) => void;
     onSearchQueryChange: (value: string) => void;
     onShowSameInstanceInOnlineChange: (value: boolean) => void;
     onDensityChange: (value: FriendsLocationsDensity) => void;
 };
 
 export function FriendsLocationsToolbar({
-    activeSegment,
     segmentOptions,
     searchQuery,
     showSameInstanceInOnline,
     density,
-    onActiveSegmentChange,
     onSearchQueryChange,
     onShowSameInstanceInOnlineChange,
     onDensityChange
@@ -64,15 +62,7 @@ export function FriendsLocationsToolbar({
         <PageToolbar>
             <PageToolbarRow>
                 <ToolbarViews>
-                    <ToolbarSegmented
-                        value={activeSegment}
-                        onValueChange={(value) => {
-                            if (isFriendsLocationsSegment(value)) {
-                                onActiveSegmentChange(value);
-                            }
-                        }}
-                        options={options}
-                    />
+                    <ToolbarTabs options={options} />
                 </ToolbarViews>
 
                 <ToolbarSearch
@@ -111,7 +101,6 @@ export function FriendsLocationsToolbar({
                                 <ToggleGroup
                                     variant="outline"
                                     size="sm"
-                                    spacing={1}
                                     value={density ? [density] : []}
                                     onValueChange={(nextValue) => {
                                         if (nextValue[0]) {
@@ -122,20 +111,26 @@ export function FriendsLocationsToolbar({
                                             );
                                         }
                                     }}
-                                    className="grid w-full grid-cols-3"
+                                    className="w-full [&>[data-slot=toggle]]:min-w-0 [&>[data-slot=toggle]]:flex-1"
                                 >
                                     {FRIENDS_LOCATIONS_DENSITY_OPTIONS.map(
-                                        (option) => (
-                                            <ToggleGroupItem
-                                                key={option.value}
-                                                value={option.value}
-                                                aria-label={t(option.labelKey)}
-                                                className="w-full min-w-0 justify-center px-2"
-                                            >
-                                                <span className="truncate">
-                                                    {t(option.labelKey)}
-                                                </span>
-                                            </ToggleGroupItem>
+                                        (option, index) => (
+                                            <Fragment key={option.value}>
+                                                {index > 0 ? (
+                                                    <ToggleGroupSeparator />
+                                                ) : null}
+                                                <ToggleGroupItem
+                                                    value={option.value}
+                                                    aria-label={t(
+                                                        option.labelKey
+                                                    )}
+                                                    className="w-full min-w-0 justify-center px-2"
+                                                >
+                                                    <span className="truncate">
+                                                        {t(option.labelKey)}
+                                                    </span>
+                                                </ToggleGroupItem>
+                                            </Fragment>
                                         )
                                     )}
                                 </ToggleGroup>

@@ -814,6 +814,7 @@
         "search_direct_access": "링크나 ID 붙여넣기",
         "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
         "search_open_direct": "이 링크나 ID 열기",
+        "search_clipboard_detected": "클립보드에서 링크 또는 ID를 찾았어요. Enter를 눌러 여세요.",
         "search_joined_groups": "가입된 그룹",
         "refresh_tooltip": "새로고침",
         "groups": "그룹",
@@ -1519,9 +1520,8 @@
                 "moderation_snapshot_failed_to_load": "모더레이션 기록을 불러오지 못했습니다."
             },
             "label": {
-                "showing": "표시",
-                "of": "의",
                 "moderation_row": "검토 행",
+                "back_to_top": "맨 위로",
                 "moderation_rows": "검토 행",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "더 많은 결과를 보려면 유형 필터 또는 검색어를 확장하세요."
             },
@@ -2186,7 +2186,7 @@
             },
             "feedback": {
                 "title": "피드백 보내기",
-                "description": "피드백은 익명으로 전송됩니다. 모든 메시지를 읽지만 직접 답변드리기는 어렵습니다.",
+                "description": "피드백은 기본적으로 익명으로 전송되며, 모든 메시지를 읽고 있습니다. 답변이 필요하시면 피드백 내용에 이메일 주소를 함께 적어 주세요.",
                 "privacy_note": "계정 정보는 포함되지 않습니다.",
                 "placeholder": "잘 되는 점, 불편한 점, 추가됐으면 하는 기능 등을 알려 주세요…",
                 "submit": "보내기",
@@ -3665,6 +3665,8 @@
                 "last_activity": "마지막 활동",
                 "date_joined": "계정 생성일",
                 "friended": "친구 추가됨",
+                "unfriended": "친구 삭제 일시",
+                "relationship_history": "친구 관계 기록",
                 "avatar_cloning": "아바타 복제",
                 "booping": "부핑",
                 "avatar_cloning_allow": "허용",
@@ -4937,7 +4939,7 @@
             "openai": {
                 "model": "모델명",
                 "prompt_optional": "프롬프트(선택 사항)",
-                "prompt_optional_description": "선택적 시스템 프롬프트입니다. 대상 언어를 나타내는 {targetLang} 변수를 반드시 포함하세요.",
+                "prompt_optional_description": "선택적 시스템 프롬프트입니다. {targetLang} 변수를 반드시 포함하세요.",
                 "connection": "LLM 엔드포인트",
                 "connection_description": "OpenAI 호환 엔드포인트만 지원됩니다.",
                 "connection_placeholder": "엔드포인트를 선택하세요",
@@ -5225,7 +5227,7 @@
                 "stable": "안정 버전",
                 "beta": "베타",
                 "description": "VRCX-0은 현재 설치된 채널의 업데이트만 확인합니다.",
-                "switch_description": "{channel}(으)로 전환하려면 GitHub에서 해당 채널의 최신 릴리스를 다운로드하여 설치하세요.",
+                "switch_description": "{channel}(으)로 전환하려면 해당 채널의 최신 릴리스를 다운로드하여 설치하세요.",
                 "download_stable": "최신 안정 버전 다운로드",
                 "download_beta": "최신 베타 다운로드",
                 "no_release": "이 채널에는 사용 가능한 릴리스가 없습니다."
@@ -5437,9 +5439,6 @@
         },
         "direct_access_omni": {
             "header": "빠른 접근",
-            "description": "유저/월드/인스턴스/아바타/그룹 URL 혹은 ID (UUID) 입력",
-            "cancel": "취소",
-            "ok": "확인",
             "message": {
                 "opening": "여는 중..."
             },
@@ -6260,5 +6259,16 @@
             "vrchat_log_viewer_for_local_output_logs": "로컬 VRChat 출력 로그 뷰어.",
             "themes_description": "테마 소스 및 사용자 정의 CSS 관리."
         }
+    },
+    "linux_rendering": {
+        "title": "하드웨어 가속 (실험적)",
+        "description": "VRCX-0을 다시 시작하면 적용됩니다. 켠 뒤에는 시작 후 30초 이내에 화면을 확인하세요. 확인하지 않으면 하드웨어 가속을 끄고 다시 시작합니다.",
+        "saved": "저장되었습니다. VRCX-0을 다시 시작하면 적용됩니다.",
+        "restart_now": "지금 다시 시작",
+        "confirm_title": "화면이 정상적으로 표시되나요?",
+        "confirm_description": "시작 후 30초 이내에 확인하지 않으면 VRCX-0이 하드웨어 가속을 끄고 다시 시작합니다.",
+        "restore": "호환 모드로 복원하고 다시 시작",
+        "keep": "정상적으로 표시됨, 유지",
+        "failed": "렌더링 설정을 변경하지 못했습니다. 다시 시도하세요."
     }
 }

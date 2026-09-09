@@ -1,5 +1,5 @@
 import { ImageIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -26,7 +26,11 @@ import {
     InputGroupInput
 } from '@/ui/shadcn/input-group';
 import { Textarea } from '@/ui/shadcn/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 import { getGroupRowImage, getGroupRowLabel } from './groupDialogUtils';
 import { GroupListState } from './GroupListState';
@@ -213,15 +217,17 @@ export function GroupPostEditorDialog({
                             }}
                             disabled={submitting}
                         >
-                            {['public', 'group'].map((visibility) => (
-                                <ToggleGroupItem
-                                    key={visibility}
-                                    value={visibility}
-                                >
-                                    {visibility === 'public'
-                                        ? 'Public'
-                                        : 'Group'}
-                                </ToggleGroupItem>
+                            {['public', 'group'].map((visibility, index) => (
+                                <Fragment key={visibility}>
+                                    {index > 0 ? (
+                                        <ToggleGroupSeparator />
+                                    ) : null}
+                                    <ToggleGroupItem value={visibility}>
+                                        {visibility === 'public'
+                                            ? 'Public'
+                                            : 'Group'}
+                                    </ToggleGroupItem>
+                                </Fragment>
                             ))}
                         </ToggleGroup>
                     </Field>

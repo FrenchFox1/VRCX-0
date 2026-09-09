@@ -6,7 +6,7 @@ import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
     ToolbarSearch,
-    ToolbarSegmented,
+    ToolbarTabs,
     ToolbarViews,
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
@@ -28,9 +28,7 @@ type PlayerListToolbarProps = {
     counts: PlayerListScopeCounts;
     onQueryChange: (query: string) => void;
     onResetLayout: () => void;
-    onScopeChange: (scope: PlayerListFilterScope) => void;
     query: string;
-    scope: PlayerListFilterScope;
     table: AppTable<PlayerListRow>;
 };
 
@@ -38,9 +36,7 @@ export function PlayerListToolbar({
     counts,
     onQueryChange,
     onResetLayout,
-    onScopeChange,
     query,
-    scope,
     table
 }: PlayerListToolbarProps) {
     const { t } = useTranslation();
@@ -61,11 +57,7 @@ export function PlayerListToolbar({
         <PageToolbar>
             <PageToolbarRow>
                 <ToolbarViews>
-                    <ToolbarSegmented
-                        value={scope}
-                        onValueChange={onScopeChange}
-                        options={scopeOptions}
-                    />
+                    <ToolbarTabs options={scopeOptions} />
                 </ToolbarViews>
 
                 <ToolbarSearch

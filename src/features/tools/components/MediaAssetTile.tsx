@@ -1,10 +1,24 @@
-import { MoreHorizontalIcon, ImageIcon, type LucideIcon } from 'lucide-react';
+import {
+    CheckIcon,
+    MoreHorizontalIcon,
+    ImageIcon,
+    type LucideIcon
+} from 'lucide-react';
 import type { ComponentProps, MouseEvent, ReactNode } from 'react';
 import { useRef } from 'react';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TileShell } from '@/components/tile/TileShell';
 import { cn } from '@/lib/utils';
-import { TILE_MOTION, TILE_SELECTED } from '@/shared/constants/selectableTile';
+import {
+    TILE_CHECK,
+    TILE_MOTION,
+    TILE_SELECT_BOX,
+    TILE_SELECT_OVERLAY_SHIFT,
+    TILE_SELECT_OVERLAY_SHIFT_ACTIVE,
+    TILE_SELECT_TOGGLE,
+    TILE_SELECT_TOGGLE_VISIBLE
+} from '@/shared/constants/selectableTile';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
@@ -197,13 +211,13 @@ export function MediaAssetTile({
     );
 
     return (
-        <Card
-            size="sm"
+        <TileShell
+            selected={isCurrent || selected}
             className={cn(
-                'group/tile gap-0 overflow-hidden rounded-lg py-0 transition-colors data-[size=sm]:gap-0 data-[size=sm]:py-0',
-                (isCurrent || selected) && TILE_SELECTED,
+                'group/tile gap-0 py-0 data-[size=sm]:gap-0 data-[size=sm]:py-0',
                 className
             )}
+            render={<Card size="sm" />}
         >
             <div className="relative">
                 <Button
@@ -248,15 +262,16 @@ export function MediaAssetTile({
                     <span
                         role="presentation"
                         className={cn(
-                            'absolute top-2 left-2 z-20 opacity-0 transition-opacity',
-                            'group-has-[:focus-visible]/tile:opacity-100 pointer-fine:group-hover/tile:opacity-100',
-                            (selected || isSelectionActive) && 'opacity-100'
+                            TILE_SELECT_TOGGLE,
+                            (selected || isSelectionActive) &&
+                                TILE_SELECT_TOGGLE_VISIBLE
                         )}
                         onClickCapture={(event: MouseEvent<HTMLElement>) => {
                             shiftPressedRef.current = event.shiftKey;
                         }}
                     >
                         <Checkbox
+                            className={TILE_SELECT_BOX}
                             aria-label={selectLabel}
                             checked={selected}
                             onCheckedChange={(checked) =>
@@ -271,13 +286,20 @@ export function MediaAssetTile({
                 <div
                     className={cn(
                         'pointer-events-none absolute top-2 flex flex-wrap gap-1',
-                        selectable ? 'left-9' : 'left-2'
+                        selectable ? TILE_SELECT_OVERLAY_SHIFT : 'left-2',
+                        selectable &&
+                            (selected || isSelectionActive) &&
+                            TILE_SELECT_OVERLAY_SHIFT_ACTIVE
                     )}
                 >
                     {isCurrent && currentLabel ? (
-                        <Badge variant="secondary" className="bg-background/80">
-                            {currentLabel}
-                        </Badge>
+                        <span
+                            role="img"
+                            aria-label={currentLabel}
+                            className={TILE_CHECK}
+                        >
+                            <CheckIcon className="size-3" />
+                        </span>
                     ) : null}
                     {safeBadges.map((badge) => (
                         <Badge
@@ -352,6 +374,6 @@ export function MediaAssetTile({
                     ) : null}
                 </CardContent>
             )}
-        </Card>
+        </TileShell>
     );
 }

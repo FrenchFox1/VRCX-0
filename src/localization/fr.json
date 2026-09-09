@@ -5544,10 +5544,7 @@
         },
         "direct_access_omni": {
             "header": "Accès direct",
-            "description": "Saisissez l'URL ou l'ID d'un utilisateur/monde/instance/avatar/groupe (UUID)",
             "description_failed": "Échec de l'accès direct. Vérifiez l'URL ou l'ID et réessayez.",
-            "cancel": "Annuler",
-            "ok": "OK",
             "message": {
                 "opening": "Ouverture..."
             }

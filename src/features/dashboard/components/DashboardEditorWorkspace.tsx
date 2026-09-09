@@ -9,6 +9,11 @@ import type {
     DashboardRow
 } from '@/repositories/dashboardRepository';
 import { Button } from '@/ui/shadcn/button';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
@@ -79,30 +84,19 @@ function LayoutPreview({
 }
 
 function LayoutButton({
-    active,
     direction,
-    label,
-    onClick
+    label
 }: {
-    active: boolean;
     direction: 'single' | DashboardDirection;
     label: string;
-    onClick: () => void;
 }) {
     return (
         <Tooltip>
             <TooltipTrigger
                 render={
-                    <Button
-                        type="button"
-                        variant={active ? 'secondary' : 'ghost'}
-                        size="icon-sm"
-                        aria-label={label}
-                        aria-pressed={active}
-                        onClick={onClick}
-                    >
+                    <ToggleGroupItem aria-label={label} value={direction}>
                         <LayoutPreview direction={direction} />
-                    </Button>
+                    </ToggleGroupItem>
                 }
             />
             <TooltipContent>{label}</TooltipContent>
@@ -192,24 +186,35 @@ function DashboardEditorRow({
                     {t('view.dashboard.label.row')} {rowIndex + 1}
                 </div>
                 <div className="flex items-center gap-1">
-                    <LayoutButton
-                        active={layout === 'single'}
-                        direction="single"
-                        label={t('dashboard.actions.add_full_row')}
-                        onClick={() => setLayout('single')}
-                    />
-                    <LayoutButton
-                        active={layout === 'horizontal'}
-                        direction="horizontal"
-                        label={t('dashboard.actions.add_split_row')}
-                        onClick={() => setLayout('horizontal')}
-                    />
-                    <LayoutButton
-                        active={layout === 'vertical'}
-                        direction="vertical"
-                        label={t('dashboard.actions.add_vertical_row')}
-                        onClick={() => setLayout('vertical')}
-                    />
+                    <ToggleGroup
+                        variant="outline"
+                        size="sm"
+                        value={[layout]}
+                        onValueChange={(values) => {
+                            const next = values[0];
+                            if (
+                                next === 'single' ||
+                                next === 'horizontal' ||
+                                next === 'vertical'
+                            )
+                                setLayout(next);
+                        }}
+                    >
+                        <LayoutButton
+                            direction="single"
+                            label={t('dashboard.actions.add_full_row')}
+                        />
+                        <ToggleGroupSeparator />
+                        <LayoutButton
+                            direction="horizontal"
+                            label={t('dashboard.actions.add_split_row')}
+                        />
+                        <ToggleGroupSeparator />
+                        <LayoutButton
+                            direction="vertical"
+                            label={t('dashboard.actions.add_vertical_row')}
+                        />
+                    </ToggleGroup>
                     <Tooltip>
                         <TooltipTrigger
                             render={

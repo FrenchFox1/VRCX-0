@@ -1,5 +1,11 @@
+import { Fragment } from 'react';
+
 import { Toggle } from '@/ui/shadcn/toggle';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 export function OptionToggle({
     label,
@@ -48,15 +54,17 @@ export function OptionSegmented<T extends string>({
             }}
             className="shrink-0"
         >
-            {options.map((option) => (
-                <ToggleGroupItem
-                    key={option.value}
-                    value={option.value}
-                    aria-label={option.label}
-                    className="text-xs"
-                >
-                    {option.label}
-                </ToggleGroupItem>
+            {options.map((option, index) => (
+                <Fragment key={option.value}>
+                    {index > 0 ? <ToggleGroupSeparator /> : null}
+                    <ToggleGroupItem
+                        value={option.value}
+                        aria-label={option.label}
+                        className="text-xs"
+                    >
+                        {option.label}
+                    </ToggleGroupItem>
+                </Fragment>
             ))}
         </ToggleGroup>
     );

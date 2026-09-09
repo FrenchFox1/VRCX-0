@@ -47,8 +47,11 @@ describe('DateRangeFilter tooltip composition', () => {
         );
         expect(onChange).toHaveBeenCalledWith('2026-09-01', '2026-09-02');
         expect(document.querySelector('button button')).toBeNull();
+        await user.click(trigger);
         await user.click(
-            screen.getByRole('button', { name: 'common.actions.clear' })
+            within(await screen.findByRole('dialog')).getByRole('button', {
+                name: 'common.actions.clear'
+            })
         );
         expect(onChange).toHaveBeenLastCalledWith('', '');
     });

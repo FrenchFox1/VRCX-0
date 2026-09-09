@@ -56,7 +56,11 @@ import {
 } from '@/ui/shadcn/select';
 import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 import { Textarea } from '@/ui/shadcn/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 type ImportKind = FavoriteEntityKind;
 type ImportLocation = FavoriteImportLocation;
@@ -511,6 +515,7 @@ export function FavoriteImportPage() {
                         onValueChange={handleLocationChange}
                     >
                         <ToggleGroupItem value="remote">VRChat</ToggleGroupItem>
+                        <ToggleGroupSeparator />
                         <ToggleGroupItem value="local">
                             {t('dialog.favorite_import.label.local')}
                         </ToggleGroupItem>

@@ -24,6 +24,7 @@ import {
 import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
+import { useShellStore } from '@/state/shellStore';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -37,6 +38,7 @@ import {
     type SidebarFriendRecord
 } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
+import { SidebarLocationMenu } from './SidebarLocationMenu';
 
 function recordValue(value: unknown): Record<string, unknown> | null {
     return isRecord(value) ? value : null;
@@ -190,6 +192,7 @@ export function StaticSidebarLocation({
     traveling,
     hint = '',
     link = false,
+    actionMenu = false,
     showGroupLink = false,
     tooltips = true,
     metadata,
@@ -201,6 +204,7 @@ export function StaticSidebarLocation({
     traveling?: string | null;
     hint?: string | null;
     link?: boolean;
+    actionMenu?: boolean;
     showGroupLink?: boolean;
     tooltips?: boolean;
     metadata?: LocationMetadata | null;
@@ -209,6 +213,9 @@ export function StaticSidebarLocation({
     className?: string;
 }) {
     const { t } = useTranslation();
+    const sidebarWindowMode = useShellStore(
+        (state) => state.windowDisplayMode === 'sidebar'
+    );
     const currentLocation = sidebarLocationTarget(location, traveling);
     const parsedLocation = useMemo(
         () => parseLocation(currentLocation),
@@ -267,8 +274,9 @@ export function StaticSidebarLocation({
         openWorld(event);
     }
 
+    const showActionMenu = isLocationLink && actionMenu;
     const locationInteractionProps: HTMLAttributes<HTMLSpanElement> =
-        isLocationLink
+        isLocationLink && !(showActionMenu && sidebarWindowMode)
             ? {
                   role: 'button',
                   tabIndex: 0,
@@ -323,6 +331,44 @@ export function StaticSidebarLocation({
         );
     }
 
+    const locationLabel = (
+        <span
+            {...locationInteractionProps}
+            className={cn(
+                'x-location inline-flex max-w-full min-w-0 flex-nowrap items-center truncate overflow-hidden text-left',
+                isLocationLink
+                    ? 'hover:text-primary cursor-pointer text-inherit underline-offset-4'
+                    : 'cursor-default'
+            )}
+        >
+            {locationSentinel(location) === 'traveling' ? (
+                <Spinner
+                    aria-hidden="true"
+                    aria-label={undefined}
+                    role="presentation"
+                    className="mr-1 size-3.5 shrink-0"
+                />
+            ) : null}
+            <span className="min-w-0 flex-1 truncate">
+                <span>{text}</span>
+                {showInstanceName ? (
+                    <span className="ml-1">{`\u00b7 #${instanceName}`}</span>
+                ) : null}
+                {showGroupLink && metadata?.groupName ? (
+                    <span
+                        role="button"
+                        tabIndex={0}
+                        className="hover:text-primary focus-visible:ring-ring/50 ml-0.5 cursor-pointer text-left font-normal text-inherit focus-visible:ring-[3px] focus-visible:outline-none"
+                        onClick={openGroup}
+                        onKeyDown={openGroupFromKeyboard}
+                    >
+                        ({String(metadata.groupName)})
+                    </span>
+                ) : null}
+            </span>
+        </span>
+    );
+
     return (
         <span
             className={cn(
@@ -335,40 +381,19 @@ export function StaticSidebarLocation({
                 disabled={!tooltips || !tooltipContent || showInstanceName}
                 content={tooltipContent}
             >
-                <span
-                    {...locationInteractionProps}
-                    className={cn(
-                        'x-location inline-flex max-w-full min-w-0 flex-nowrap items-center truncate overflow-hidden text-left',
-                        isLocationLink
-                            ? 'hover:text-primary cursor-pointer text-inherit underline-offset-4'
-                            : 'cursor-default'
+                <span className="inline-flex max-w-full min-w-0">
+                    {showActionMenu ? (
+                        <SidebarLocationMenu
+                            openOnClick={sidebarWindowMode}
+                            location={currentLocation}
+                            instanceClosed={Boolean(metadata?.isClosed)}
+                            onOpen={openWorld}
+                        >
+                            {locationLabel}
+                        </SidebarLocationMenu>
+                    ) : (
+                        locationLabel
                     )}
-                >
-                    {locationSentinel(location) === 'traveling' ? (
-                        <Spinner
-                            aria-hidden="true"
-                            aria-label={undefined}
-                            role="presentation"
-                            className="mr-1 size-3.5 shrink-0"
-                        />
-                    ) : null}
-                    <span className="min-w-0 flex-1 truncate">
-                        <span>{text}</span>
-                        {showInstanceName ? (
-                            <span className="ml-1">{`\u00b7 #${instanceName}`}</span>
-                        ) : null}
-                        {showGroupLink && metadata?.groupName ? (
-                            <span
-                                role="button"
-                                tabIndex={0}
-                                className="hover:text-primary focus-visible:ring-ring/50 ml-0.5 cursor-pointer text-left font-normal text-inherit focus-visible:ring-[3px] focus-visible:outline-none"
-                                onClick={openGroup}
-                                onKeyDown={openGroupFromKeyboard}
-                            >
-                                ({String(metadata.groupName)})
-                            </span>
-                        ) : null}
-                    </span>
                 </span>
             </StaticLocationTooltip>
             {metadata?.isClosed ? (

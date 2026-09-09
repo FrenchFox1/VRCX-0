@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppTable } from '@/components/data-table/appTable';
 import { LoadingState } from '@/components/layout/PageScaffold';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { Tabs, TabsContent } from '@/ui/shadcn/tabs';
 
 import {
     countPlayerListScopes,
@@ -188,28 +189,43 @@ export function PlayerListTableSection({
                     className="min-h-0 flex-1"
                 />
             ) : (
-                <>
+                <Tabs
+                    value={filterScope}
+                    onValueChange={(value) => {
+                        if (
+                            value === 'all' ||
+                            value === 'friend' ||
+                            value === 'favorite' ||
+                            value === 'restricted'
+                        )
+                            setFilterScope(value);
+                    }}
+                    className="flex min-h-0 flex-1 flex-col gap-0"
+                >
                     <PlayerListToolbar
                         counts={scopeCounts}
                         onQueryChange={setQuery}
                         onResetLayout={tableState.resetLayout}
-                        onScopeChange={setFilterScope}
                         query={query}
-                        scope={filterScope}
                         table={table}
                     />
-                    <PlayerListTableShell
-                        table={table}
-                        onResetLayout={tableState.resetLayout}
+                    <TabsContent
+                        value={filterScope}
+                        className="flex min-h-0 flex-1 flex-col"
                     >
-                        <PlayerListRows
+                        <PlayerListTableShell
                             table={table}
-                            hasRows={hasVisibleRows}
-                            emptyTitle={t('common.no_matching_records')}
-                            onOpenPlayer={onOpenPlayer}
-                        />
-                    </PlayerListTableShell>
-                </>
+                            onResetLayout={tableState.resetLayout}
+                        >
+                            <PlayerListRows
+                                table={table}
+                                hasRows={hasVisibleRows}
+                                emptyTitle={t('common.no_matching_records')}
+                                onOpenPlayer={onOpenPlayer}
+                            />
+                        </PlayerListTableShell>
+                    </TabsContent>
+                </Tabs>
             )}
         </div>
     );

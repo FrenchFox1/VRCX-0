@@ -4,9 +4,8 @@ import { useLocation, useNavigate } from 'react-router';
 
 import { AboutVrcxDialog } from '@/components/about/AboutDialog';
 import { OpenSourceNoticeDialog } from '@/components/hosts/system-dialogs/OpenSourceNoticeDialog';
-import { useDirectAccessAction } from '@/components/layout/directAccessAction';
+import { useQuickSearchActions } from '@/components/layout/useQuickSearchActions';
 import { useRightSidePanelVisibility } from '@/components/layout/useRightSidePanelVisibility';
-import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog';
 import { commands } from '@/platform/tauri/bindings';
 import { tauriEvents } from '@/platform/tauri/events';
 import { logoutFromReactShell } from '@/services/authExecutionService';
@@ -61,10 +60,8 @@ export function MacNativeMenuActionHost() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    const [quickSearchOpen, setQuickSearchOpen] = useState(false);
     const [aboutOpen, setAboutOpen] = useState(false);
     const [openSourceNoticeOpen, setOpenSourceNoticeOpen] = useState(false);
-    const { openDirectAccessFromClipboard } = useDirectAccessAction();
     const hostPlatform = useRuntimeStore(
         (state) => state.hostCapabilities.platform
     );
@@ -74,6 +71,8 @@ export function MacNativeMenuActionHost() {
     const sessionReady = useSessionStore(
         (state) => state.sessionPhase === 'ready'
     );
+    const { openQuickSearch, openDirectAccessFromClipboard } =
+        useQuickSearchActions();
     const notificationLayout = usePreferencesStore(
         (state) => state.notificationLayout
     );
@@ -211,7 +210,7 @@ export function MacNativeMenuActionHost() {
                     openNotificationSurface();
                     break;
                 case 'quick-search':
-                    setQuickSearchOpen(true);
+                    openQuickSearch();
                     break;
                 case 'direct-access':
                     openDirectAccessFromClipboard();
@@ -273,6 +272,7 @@ export function MacNativeMenuActionHost() {
             currentZoom,
             navigate,
             openDirectAccessFromClipboard,
+            openQuickSearch,
             openNotificationSurface,
             runLogout,
             runOpenDevtools,
@@ -320,12 +320,6 @@ export function MacNativeMenuActionHost() {
 
     return (
         <>
-            {sessionReady ? (
-                <QuickSearchDialog
-                    open={quickSearchOpen}
-                    onOpenChange={setQuickSearchOpen}
-                />
-            ) : null}
             <OpenSourceNoticeDialog
                 open={openSourceNoticeOpen}
                 onOpenChange={setOpenSourceNoticeOpen}

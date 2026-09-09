@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { useCriticalTask } from '@/lib/useCriticalTask';
 import shareCollectionRepository, {
     type ShareCollectionCreateResult
 } from '@/repositories/shareCollectionRepository';
@@ -324,6 +325,7 @@ export function FavoriteShareCollectionDialog({
         null
     );
     const [skippedWorldCount, setSkippedWorldCount] = useState(0);
+    useCriticalTask('favoriteCollectionShare', sharing);
     const shareWorlds = useMemo(
         () => buildShareCollectionWorldIds(items),
         [items]

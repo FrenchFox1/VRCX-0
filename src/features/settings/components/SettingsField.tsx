@@ -1,4 +1,5 @@
 import {
+    Fragment,
     Children,
     cloneElement,
     isValidElement,
@@ -17,7 +18,11 @@ import {
     FieldLabel,
     FieldTitle
 } from '@/ui/shadcn/field';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 type AttachableControlProps = {
     id?: string;
@@ -178,14 +183,16 @@ export function SegmentedPreference({
                 }
             }}
         >
-            {options.map((option) => (
-                <ToggleGroupItem
-                    key={option.value}
-                    value={option.value}
-                    aria-label={option.label}
-                >
-                    {option.label}
-                </ToggleGroupItem>
+            {options.map((option, index) => (
+                <Fragment key={option.value}>
+                    {index > 0 ? <ToggleGroupSeparator /> : null}
+                    <ToggleGroupItem
+                        value={option.value}
+                        aria-label={option.label}
+                    >
+                        {option.label}
+                    </ToggleGroupItem>
+                </Fragment>
             ))}
         </ToggleGroup>
     );

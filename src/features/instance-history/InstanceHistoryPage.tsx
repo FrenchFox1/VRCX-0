@@ -1,9 +1,4 @@
-import {
-    CalendarRangeIcon,
-    ChevronsUpDownIcon,
-    ChevronUpIcon,
-    UserRoundIcon
-} from 'lucide-react';
+import { ChevronsUpDownIcon, ChevronUpIcon, UserRoundIcon } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,16 +10,16 @@ import {
 } from '@/components/date-time-range-picker/DateTimeRangePicker';
 import { PreviousInstanceDetailsPanel } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import {
-    PageBody,
     PageScaffold,
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
 import {
+    toolbarSearchDateRangeTrigger,
     ToolbarActions,
     ToolbarRefreshButton,
     ToolbarSearch,
-    ToolbarSegmented,
+    ToolbarTabs,
     ToolbarStatus,
     ToolbarViewMenu,
     ToolbarViews
@@ -86,6 +81,8 @@ import {
 import { Separator } from '@/ui/shadcn/separator';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsContent } from '@/ui/shadcn/tabs';
+import { Tooltip } from '@/ui/shadcn/tooltip';
 
 import {
     buildInstanceHistorySearchParams,
@@ -110,26 +107,6 @@ const CHART_LOADING_INDICATOR_DELAY_MS = 150;
 
 function knownUserName(user: Partial<KnownUserOption> | null | undefined) {
     return user?.displayName || user?.username || user?.name || '';
-}
-
-function instanceHistoryDateRangeTrigger({
-    active,
-    label
-}: {
-    active: boolean;
-    label: string;
-}) {
-    return (
-        <Button
-            type="button"
-            variant={active ? 'secondary' : 'outline'}
-            aria-label={label}
-            className="max-w-56 shrink-0"
-        >
-            <CalendarRangeIcon data-icon="inline-start" />
-            <span className="truncate">{label}</span>
-        </Button>
-    );
 }
 
 export function InstanceHistoryPage({
@@ -544,25 +521,28 @@ export function InstanceHistoryPage({
     ];
 
     const dateRangeControl = (
-        <DateTimeRangePicker
-            value={dateRange}
-            onChange={handleDateRangeChange}
-            align="start"
-            renderTrigger={({ label }) =>
-                instanceHistoryDateRangeTrigger({
-                    active: dateRangeUserSet,
-                    label
-                })
-            }
-            placeholder={t('view.instance_history.label.date_range')}
-            startLabel={t('view.instance_history.label.start')}
-            endLabel={t('view.instance_history.label.end')}
-            clearLabel={t('common.actions.clear')}
-            confirmLabel={t('common.actions.confirm')}
-            formatValue={formatCompactDateTime}
-            minuteStep={15}
-            disabled={{ after: new Date() }}
-        />
+        <Tooltip>
+            <DateTimeRangePicker
+                value={dateRange}
+                onChange={handleDateRangeChange}
+                align="end"
+                renderTrigger={({ label, rangeLabel }) =>
+                    toolbarSearchDateRangeTrigger({
+                        active: dateRangeUserSet,
+                        label,
+                        rangeLabel
+                    })
+                }
+                placeholder={t('view.instance_history.label.date_range')}
+                startLabel={t('view.instance_history.label.start')}
+                endLabel={t('view.instance_history.label.end')}
+                clearLabel={t('common.actions.clear')}
+                confirmLabel={t('common.actions.confirm')}
+                formatValue={formatCompactDateTime}
+                minuteStep={15}
+                disabled={{ after: new Date() }}
+            />
+        </Tooltip>
     );
 
     const listVisibleRows = isDayMode ? rawDayRows : filteredRows;
@@ -589,341 +569,366 @@ export function InstanceHistoryPage({
 
     return (
         <PageScaffold embedded={embedded}>
-            <PageToolbar>
-                <PageToolbarRow>
-                    <ToolbarViews className="min-w-0 flex-wrap">
-                        <Popover
-                            open={targetPickerOpen}
-                            onOpenChange={setTargetPickerOpen}
-                        >
-                            <PopoverTrigger
-                                render={
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="w-48 shrink-0 justify-between"
-                                    >
-                                        <UserRoundIcon
-                                            data-icon="inline-start"
-                                            className="text-muted-foreground"
-                                        />
-                                        <span className="min-w-0 flex-1 truncate text-left">
-                                            {activeUserLabel}
-                                        </span>
-                                        <ChevronsUpDownIcon
-                                            data-icon="inline-end"
-                                            className="text-muted-foreground size-4"
-                                        />
-                                    </Button>
-                                }
-                            />
-                            <PopoverContent
-                                align="start"
-                                className="w-96 p-2"
-                                initialFocus={targetSearchInputRef}
+            <Tabs
+                value={mode}
+                onValueChange={changeMode}
+                className="flex min-h-0 flex-1 flex-col gap-0"
+            >
+                <PageToolbar>
+                    <PageToolbarRow>
+                        <ToolbarViews className="min-w-0 flex-wrap">
+                            <Popover
+                                open={targetPickerOpen}
+                                onOpenChange={setTargetPickerOpen}
                             >
-                                <div className="flex flex-col gap-2">
-                                    <Input
-                                        ref={targetSearchInputRef}
-                                        value={targetSearch}
-                                        onChange={(
-                                            event: ChangeEvent<HTMLInputElement>
-                                        ) =>
-                                            setTargetSearch(event.target.value)
-                                        }
-                                        placeholder={t(
-                                            'view.instance_history.placeholder.user'
-                                        )}
-                                    />
-                                    <ScrollArea className="h-72 rounded-md border">
-                                        <div className="flex flex-col gap-1 p-1 pr-2">
-                                            {targetOptions.map((option) => (
-                                                <Button
-                                                    key={option.value}
-                                                    type="button"
-                                                    variant="ghost"
-                                                    className="h-auto justify-start p-0"
-                                                    onClick={() => {
-                                                        applyTarget(
-                                                            option.value
-                                                        );
-                                                        setTargetPickerOpen(
-                                                            false
-                                                        );
-                                                    }}
-                                                >
-                                                    <UserPickerRow
-                                                        option={option}
-                                                        selected={
-                                                            option.value ===
-                                                            activeUserId
-                                                        }
-                                                    />
-                                                </Button>
-                                            ))}
-                                            {!targetOptions.length ? (
-                                                <div className="text-muted-foreground p-3 text-xs">
-                                                    {t(
-                                                        'empty_state.search_no_results'
-                                                    )}
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                    </ScrollArea>
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                        <Separator orientation="vertical" />
-                        <ToolbarSegmented
-                            value={mode}
-                            onValueChange={changeMode}
-                            options={[
-                                {
-                                    value: 'search',
-                                    label: t(
-                                        'view.instance_history.mode.search'
-                                    )
-                                },
-                                {
-                                    value: 'day',
-                                    label: t('view.instance_history.mode.day')
-                                }
-                            ]}
-                        />
-                        {isDayMode ? (
-                            <InstanceActivityDateControls
-                                selectedDate={resolvedSelectedDay}
-                                onSelectedDateChange={setSelectedDay}
-                                availableDates={availableDays}
-                                dataStatus={dayStatus}
-                            />
-                        ) : (
-                            <>
-                                {dateRangeControl}
-                                <ToolbarSearch
-                                    value={search}
-                                    onValueChange={setSearch}
-                                    className="ml-auto w-48 sm:w-56"
-                                    placeholder={t(
-                                        'dialog.previous_instances.search_placeholder'
-                                    )}
-                                />
-                            </>
-                        )}
-                    </ToolbarViews>
-
-                    <ToolbarActions>
-                        <ToolbarRefreshButton
-                            onRefresh={refresh}
-                            loading={visibleStatus === 'running'}
-                            disabled={!activeUserId}
-                        />
-                        {isDayMode ? null : (
-                            <ToolbarViewMenu contentClassName="p-3">
-                                <FieldGroup
-                                    onClick={(event) => event.stopPropagation()}
-                                >
-                                    <Field>
-                                        <FieldContent>
-                                            <FieldLabel>
-                                                {t(
-                                                    'dialog.previous_instances.label.sort_by'
-                                                )}
-                                            </FieldLabel>
-                                        </FieldContent>
-                                        <Select<InstanceHistorySortKey>
-                                            value={sortKey}
-                                            items={sortItems}
-                                            onValueChange={(value) => {
-                                                if (value) {
-                                                    selectSort(value, sortDesc);
-                                                }
-                                            }}
+                                <PopoverTrigger
+                                    render={
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-48 shrink-0 justify-between"
                                         >
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {sortItems.map((item) => (
-                                                        <SelectItem
-                                                            key={item.value}
-                                                            value={item.value}
-                                                        >
-                                                            {item.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-                                    <Field orientation="horizontal">
-                                        <FieldContent>
-                                            <FieldLabel htmlFor="instance-history-sort-desc">
-                                                {t(
-                                                    'dialog.previous_instances.label.sort_descending'
-                                                )}
-                                            </FieldLabel>
-                                        </FieldContent>
-                                        <Switch
-                                            id="instance-history-sort-desc"
-                                            checked={sortDesc}
-                                            onCheckedChange={(checked) =>
-                                                selectSort(sortKey, checked)
+                                            <UserRoundIcon
+                                                data-icon="inline-start"
+                                                className="text-muted-foreground"
+                                            />
+                                            <span className="min-w-0 flex-1 truncate text-left">
+                                                {activeUserLabel}
+                                            </span>
+                                            <ChevronsUpDownIcon
+                                                data-icon="inline-end"
+                                                className="text-muted-foreground size-4"
+                                            />
+                                        </Button>
+                                    }
+                                />
+                                <PopoverContent
+                                    align="start"
+                                    className="w-96 p-2"
+                                    initialFocus={targetSearchInputRef}
+                                >
+                                    <div className="flex flex-col gap-2">
+                                        <Input
+                                            ref={targetSearchInputRef}
+                                            value={targetSearch}
+                                            onChange={(
+                                                event: ChangeEvent<HTMLInputElement>
+                                            ) =>
+                                                setTargetSearch(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder={t(
+                                                'view.instance_history.placeholder.user'
+                                            )}
+                                        />
+                                        <ScrollArea className="h-72 rounded-md border">
+                                            <div className="flex flex-col gap-1 p-1 pr-2">
+                                                {targetOptions.map((option) => (
+                                                    <Button
+                                                        key={option.value}
+                                                        type="button"
+                                                        variant="ghost"
+                                                        className="h-auto justify-start p-0"
+                                                        onClick={() => {
+                                                            applyTarget(
+                                                                option.value
+                                                            );
+                                                            setTargetPickerOpen(
+                                                                false
+                                                            );
+                                                        }}
+                                                    >
+                                                        <UserPickerRow
+                                                            option={option}
+                                                            selected={
+                                                                option.value ===
+                                                                activeUserId
+                                                            }
+                                                        />
+                                                    </Button>
+                                                ))}
+                                                {!targetOptions.length ? (
+                                                    <div className="text-muted-foreground p-3 text-xs">
+                                                        {t(
+                                                            'empty_state.search_no_results'
+                                                        )}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </ScrollArea>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                            <Separator orientation="vertical" />
+                            <ToolbarTabs
+                                options={[
+                                    {
+                                        value: 'search',
+                                        label: t(
+                                            'view.instance_history.mode.search'
+                                        )
+                                    },
+                                    {
+                                        value: 'day',
+                                        label: t(
+                                            'view.instance_history.mode.day'
+                                        )
+                                    }
+                                ]}
+                            />
+                            {isDayMode ? (
+                                <InstanceActivityDateControls
+                                    selectedDate={resolvedSelectedDay}
+                                    onSelectedDateChange={setSelectedDay}
+                                    availableDates={availableDays}
+                                    dataStatus={dayStatus}
+                                />
+                            ) : null}
+                        </ToolbarViews>
+
+                        {isDayMode ? null : (
+                            <ToolbarSearch
+                                value={search}
+                                onValueChange={setSearch}
+                                placeholder={t(
+                                    'dialog.previous_instances.search_placeholder'
+                                )}
+                                trailing={dateRangeControl}
+                            />
+                        )}
+
+                        <ToolbarActions>
+                            <ToolbarRefreshButton
+                                onRefresh={refresh}
+                                loading={visibleStatus === 'running'}
+                                disabled={!activeUserId}
+                            />
+                            {isDayMode ? null : (
+                                <ToolbarViewMenu contentClassName="p-3">
+                                    <FieldGroup
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                    >
+                                        <Field>
+                                            <FieldContent>
+                                                <FieldLabel>
+                                                    {t(
+                                                        'dialog.previous_instances.label.sort_by'
+                                                    )}
+                                                </FieldLabel>
+                                            </FieldContent>
+                                            <Select<InstanceHistorySortKey>
+                                                value={sortKey}
+                                                items={sortItems}
+                                                onValueChange={(value) => {
+                                                    if (value) {
+                                                        selectSort(
+                                                            value,
+                                                            sortDesc
+                                                        );
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {sortItems.map(
+                                                            (item) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        item.value
+                                                                    }
+                                                                    value={
+                                                                        item.value
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </Field>
+                                        <Field orientation="horizontal">
+                                            <FieldContent>
+                                                <FieldLabel htmlFor="instance-history-sort-desc">
+                                                    {t(
+                                                        'dialog.previous_instances.label.sort_descending'
+                                                    )}
+                                                </FieldLabel>
+                                            </FieldContent>
+                                            <Switch
+                                                id="instance-history-sort-desc"
+                                                checked={sortDesc}
+                                                onCheckedChange={(checked) =>
+                                                    selectSort(sortKey, checked)
+                                                }
+                                            />
+                                        </Field>
+                                    </FieldGroup>
+                                </ToolbarViewMenu>
+                            )}
+                        </ToolbarActions>
+                    </PageToolbarRow>
+                    {visibleStatus === 'error' ? (
+                        <ToolbarStatus className="text-destructive">
+                            {visibleError}
+                        </ToolbarStatus>
+                    ) : null}
+                </PageToolbar>
+                <TabsContent
+                    value={mode}
+                    className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+                >
+                    <div className="flex min-h-0 flex-1 flex-col gap-3">
+                        {isDayMode ? (
+                            <div className="flex shrink-0 flex-col gap-3 rounded-md border p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex items-baseline gap-2 text-sm">
+                                        <span className="text-muted-foreground">
+                                            {t(
+                                                'view.charts.instance_activity.online_time'
+                                            )}
+                                        </span>
+                                        <span className="font-medium tabular-nums">
+                                            {timeToText(
+                                                displayedOnlineTime,
+                                                true
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <InstanceActivitySettingsPopover
+                                            barWidth={activitySettings.barWidth}
+                                            isSoloInstanceVisible={
+                                                activitySettings.isSoloInstanceVisible
+                                            }
+                                            isNoFriendInstanceVisible={
+                                                activitySettings.isNoFriendInstanceVisible
+                                            }
+                                            onBarWidthCommit={
+                                                activitySettings.handleBarWidthCommit
+                                            }
+                                            onSoloInstanceVisibleChange={
+                                                activitySettings.setSoloInstanceVisible
+                                            }
+                                            onNoFriendInstanceVisibleChange={
+                                                activitySettings.setNoFriendInstanceVisible
                                             }
                                         />
-                                    </Field>
-                                </FieldGroup>
-                            </ToolbarViewMenu>
-                        )}
-                    </ToolbarActions>
-                </PageToolbarRow>
-                {visibleStatus === 'error' ? (
-                    <ToolbarStatus className="text-destructive">
-                        {visibleError}
-                    </ToolbarStatus>
-                ) : null}
-            </PageToolbar>
-            <PageBody>
-                <div className="flex min-h-0 flex-1 flex-col gap-3">
-                    {isDayMode ? (
-                        <div className="flex shrink-0 flex-col gap-3 rounded-md border p-3">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div className="flex items-baseline gap-2 text-sm">
-                                    <span className="text-muted-foreground">
-                                        {t(
-                                            'view.charts.instance_activity.online_time'
-                                        )}
-                                    </span>
-                                    <span className="font-medium tabular-nums">
-                                        {timeToText(displayedOnlineTime, true)}
-                                    </span>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            aria-label={t(
+                                                activitySettings.isChartCollapsed
+                                                    ? 'view.instance_history.day.expand_chart'
+                                                    : 'view.instance_history.day.collapse_chart'
+                                            )}
+                                            onClick={() =>
+                                                activitySettings.setChartCollapsed(
+                                                    !activitySettings.isChartCollapsed
+                                                )
+                                            }
+                                        >
+                                            <ChevronUpIcon
+                                                data-icon="icon"
+                                                className={cn(
+                                                    'transition-transform duration-200 ease-out',
+                                                    activitySettings.isChartCollapsed &&
+                                                        'rotate-180'
+                                                )}
+                                            />
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <InstanceActivitySettingsPopover
-                                        barWidth={activitySettings.barWidth}
-                                        isSoloInstanceVisible={
-                                            activitySettings.isSoloInstanceVisible
-                                        }
-                                        isNoFriendInstanceVisible={
-                                            activitySettings.isNoFriendInstanceVisible
-                                        }
-                                        onBarWidthCommit={
-                                            activitySettings.handleBarWidthCommit
-                                        }
-                                        onSoloInstanceVisibleChange={
-                                            activitySettings.setSoloInstanceVisible
-                                        }
-                                        onNoFriendInstanceVisibleChange={
-                                            activitySettings.setNoFriendInstanceVisible
-                                        }
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        aria-label={t(
-                                            activitySettings.isChartCollapsed
-                                                ? 'view.instance_history.day.expand_chart'
-                                                : 'view.instance_history.day.collapse_chart'
-                                        )}
-                                        onClick={() =>
-                                            activitySettings.setChartCollapsed(
-                                                !activitySettings.isChartCollapsed
-                                            )
-                                        }
-                                    >
-                                        <ChevronUpIcon
-                                            data-icon="icon"
+                                {activityData.availableDatesStatus ===
+                                'error' ? (
+                                    <div className="text-destructive text-sm">
+                                        {activityData.availableDatesError ||
+                                            t(
+                                                'view.charts.error.instance_activity_failed_to_load'
+                                            )}
+                                    </div>
+                                ) : null}
+                                {activitySettings.isChartCollapsed ? null : dayStatus ===
+                                  'error' ? (
+                                    <div className="text-destructive text-sm">
+                                        {activityData.dataDetail ||
+                                            t(
+                                                'view.charts.error.instance_activity_failed_to_load'
+                                            )}
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <div
+                                            ref={
+                                                activityChartLifecycle.setMainChartElementRef
+                                            }
                                             className={cn(
-                                                'transition-transform duration-200 ease-out',
-                                                activitySettings.isChartCollapsed &&
-                                                    'rotate-180'
+                                                'min-h-24 w-full bg-transparent',
+                                                dayStatus === 'running' &&
+                                                    'pointer-events-none opacity-60'
                                             )}
                                         />
-                                    </Button>
-                                </div>
+                                        {dayStatus === 'running' &&
+                                        showChartLoadingIndicator ? (
+                                            <div className="text-muted-foreground pointer-events-none absolute inset-0 flex items-center justify-center gap-2 text-sm">
+                                                <Spinner className="size-4" />
+                                                {t(
+                                                    'view.charts.loading.loading_instance_activity'
+                                                )}
+                                            </div>
+                                        ) : null}
+                                        {dayStatus !== 'running' &&
+                                        !dayHasChartRows ? (
+                                            <div className="text-muted-foreground text-sm">
+                                                {t(
+                                                    'view.charts.empty.no_instance_activity_on_this_day'
+                                                )}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
                             </div>
-                            {activityData.availableDatesStatus === 'error' ? (
-                                <div className="text-destructive text-sm">
-                                    {activityData.availableDatesError ||
-                                        t(
-                                            'view.charts.error.instance_activity_failed_to_load'
-                                        )}
-                                </div>
-                            ) : null}
-                            {activitySettings.isChartCollapsed ? null : dayStatus ===
-                              'error' ? (
-                                <div className="text-destructive text-sm">
-                                    {activityData.dataDetail ||
-                                        t(
-                                            'view.charts.error.instance_activity_failed_to_load'
-                                        )}
-                                </div>
-                            ) : (
-                                <div className="relative">
-                                    <div
-                                        ref={
-                                            activityChartLifecycle.setMainChartElementRef
-                                        }
-                                        className={cn(
-                                            'min-h-24 w-full bg-transparent',
-                                            dayStatus === 'running' &&
-                                                'pointer-events-none opacity-60'
-                                        )}
-                                    />
-                                    {dayStatus === 'running' &&
-                                    showChartLoadingIndicator ? (
-                                        <div className="text-muted-foreground pointer-events-none absolute inset-0 flex items-center justify-center gap-2 text-sm">
-                                            <Spinner className="size-4" />
-                                            {t(
-                                                'view.charts.loading.loading_instance_activity'
-                                            )}
-                                        </div>
-                                    ) : null}
-                                    {dayStatus !== 'running' &&
-                                    !dayHasChartRows ? (
-                                        <div className="text-muted-foreground text-sm">
-                                            {t(
-                                                'view.charts.empty.no_instance_activity_on_this_day'
-                                            )}
-                                        </div>
-                                    ) : null}
-                                </div>
-                            )}
-                        </div>
-                    ) : null}
-                    <ResizablePanelGroup
-                        id="instance-history-layout"
-                        orientation="horizontal"
-                        className="min-h-0 flex-1"
-                    >
-                        <ResizablePanel
-                            id="instance-history-list"
-                            defaultSize={34}
-                            minSize={28}
-                            className="min-h-0 min-w-0 pr-2"
+                        ) : null}
+                        <ResizablePanelGroup
+                            id="instance-history-layout"
+                            orientation="horizontal"
+                            className="min-h-0 flex-1"
                         >
-                            <InstanceHistoryList
-                                {...instanceHistoryListProps}
-                            />
-                        </ResizablePanel>
-                        <ResizableHandle withHandle />
-                        <ResizablePanel
-                            id="instance-history-details"
-                            defaultSize={66}
-                            minSize={40}
-                            className="min-h-0 min-w-0 pl-2"
-                        >
-                            <PreviousInstanceDetailsPanel
-                                row={visibleDetailRow}
-                                showTitle
-                                className="h-full min-h-0"
-                            />
-                        </ResizablePanel>
-                    </ResizablePanelGroup>
-                </div>
-            </PageBody>
+                            <ResizablePanel
+                                id="instance-history-list"
+                                defaultSize={34}
+                                minSize={28}
+                                className="min-h-0 min-w-0 pr-2"
+                            >
+                                <InstanceHistoryList
+                                    {...instanceHistoryListProps}
+                                />
+                            </ResizablePanel>
+                            <ResizableHandle withHandle />
+                            <ResizablePanel
+                                id="instance-history-details"
+                                defaultSize={66}
+                                minSize={40}
+                                className="min-h-0 min-w-0 pl-2"
+                            >
+                                <PreviousInstanceDetailsPanel
+                                    row={visibleDetailRow}
+                                    showTitle
+                                    className="h-full min-h-0"
+                                />
+                            </ResizablePanel>
+                        </ResizablePanelGroup>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </PageScaffold>
     );
 }

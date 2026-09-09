@@ -118,9 +118,6 @@ export function TitleBarUpdateButton({ onClick }: { onClick: () => void }) {
         autoDownloadState === 'downloading' && hasMatchingDownloadedVersion;
     const progressPercent = clampUpdateProgress(downloadProgress);
     const pillWidth = useDownloadPillWidth(isDownloading);
-    const idleLabel = isDownloaded
-        ? t('nav_menu.update_downloaded')
-        : t('nav_menu.update');
 
     return (
         <HoverCard>
@@ -143,12 +140,12 @@ export function TitleBarUpdateButton({ onClick }: { onClick: () => void }) {
                     >
                         {isDownloading ? (
                             <DownloadPillContent
-                                label={t('nav_menu.update_downloading')}
+                                label={t('nav_menu.update')}
                                 size={formatUpdateDownloadSize(downloadedBytes)}
                                 progressPercent={progressPercent}
                             />
                         ) : (
-                            idleLabel
+                            t('nav_menu.update')
                         )}
                     </Button>
                 }

@@ -1,3 +1,5 @@
+import { normalizeUserRelationshipHistory } from '@/services/userDialogSessionCacheService';
+
 import {
     normalizeUserGroupMembershipRows,
     sortUserGroupRows,
@@ -454,6 +456,9 @@ export function buildUserDialogProfileSummary({
         friendNumber,
         estimatedOnlineDurationMs,
         presenceActivityAt,
-        friendedAt
+        friendedAt,
+        relationshipHistory: normalizeUserRelationshipHistory(
+            userStats.relationshipHistory
+        )
     };
 }

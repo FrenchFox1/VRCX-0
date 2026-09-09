@@ -62,6 +62,31 @@ afterEach(() => {
 });
 
 describe('FriendRow menus', () => {
+    it.each([false, true])(
+        'opens the profile on double click in sidebar mode (self: %s)',
+        async (isCurrentUser) => {
+            useShellStore.setState({ windowDisplayMode: 'sidebar' });
+            const user = userEvent.setup();
+            const onOpen = vi.fn();
+            render(
+                <FriendRow
+                    friend={friend}
+                    rowModel={{ isCurrentUser }}
+                    rowCommands={{ onOpen }}
+                />
+            );
+            await user.dblClick(
+                screen.getByRole('button', { name: /^Friend/ })
+            );
+            expect(onOpen).toHaveBeenCalledOnce();
+            await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+            expect(isSidebarAutoHideInteractionBlocked()).toBe(false);
+            await user.click(screen.getByRole('button', { name: /^Friend/ }));
+            expect(await screen.findAllByRole('menu')).toHaveLength(1);
+            expect(onOpen).toHaveBeenCalledOnce();
+        }
+    );
+
     it('opens the profile directly on left click in normal mode', async () => {
         const user = userEvent.setup();
         const onOpen = vi.fn();

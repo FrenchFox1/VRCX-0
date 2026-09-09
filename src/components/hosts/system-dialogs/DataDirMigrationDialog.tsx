@@ -4,6 +4,7 @@ import { FolderOpenIcon, TriangleAlertIcon } from 'lucide-react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useCriticalTask } from '@/lib/useCriticalTask';
 import { cn } from '@/lib/utils';
 import {
     dataDirMigrationErrorKey,
@@ -52,15 +53,16 @@ export function DataDirMigrationDialog() {
     );
     const [submitting, setSubmitting] = useState(false);
     const id = useId();
+    const running =
+        submitting ||
+        status.state === 'running' ||
+        status.state === 'cancelling';
+    useCriticalTask('dataDirMigration', running);
 
     if (!plan) {
         return null;
     }
 
-    const running =
-        submitting ||
-        status.state === 'running' ||
-        status.state === 'cancelling';
     const completed = status.state === 'completed';
     const insufficientSpace = plan.availableBytes < plan.requiredBytes;
     const canStart = mode !== 'migrate' || !insufficientSpace;

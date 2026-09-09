@@ -1,4 +1,4 @@
-import { CalendarRangeIcon, XIcon } from 'lucide-react';
+import { CalendarRangeIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { useTranslation } from 'react-i18next';
@@ -55,96 +55,65 @@ export function DateRangeFilter({
         : rangeLabel;
 
     return (
-        <div
-            role="group"
-            aria-label={rangeLabel}
-            className="flex shrink-0 items-center gap-0.5"
-        >
-            <Popover
-                open={dateFilterOpen}
-                onOpenChange={onDateFilterOpenChange}
-            >
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <PopoverTrigger
-                                render={
-                                    <InputGroupButton
-                                        variant={
-                                            hasRange ? 'secondary' : 'ghost'
-                                        }
-                                        size={hasRange ? 'xs' : 'icon-xs'}
-                                    />
-                                }
-                                aria-label={
-                                    hasRange ? `${rangeLabel}: ${label}` : label
-                                }
-                            />
-                        }
-                    >
-                        <CalendarRangeIcon data-icon="inline-start" />
-                        {hasRange ? (
-                            <span className="tabular-nums">{label}</span>
-                        ) : null}
-                    </TooltipTrigger>
-                    <TooltipContent>{label}</TooltipContent>
-                </Tooltip>
-                <PopoverContent
-                    className="w-auto"
-                    align="end"
-                    aria-label={rangeLabel}
+        <Popover open={dateFilterOpen} onOpenChange={onDateFilterOpenChange}>
+            <Tooltip>
+                <TooltipTrigger
+                    render={
+                        <PopoverTrigger
+                            render={
+                                <InputGroupButton
+                                    variant={hasRange ? 'secondary' : 'ghost'}
+                                    size="icon-xs"
+                                />
+                            }
+                            aria-label={
+                                hasRange ? `${rangeLabel}: ${label}` : label
+                            }
+                        />
+                    }
                 >
-                    <Calendar
-                        mode="range"
-                        numberOfMonths={2}
-                        defaultMonth={dateDraftRange?.from ?? todayDate}
-                        selected={dateDraftRange}
-                        disabled={{ after: todayDate }}
-                        onSelect={setDateDraftRange}
-                    />
-                    <div className="flex items-center justify-between gap-4 px-3 pb-3">
-                        <div className="text-muted-foreground min-w-0 text-xs">
-                            {[
-                                dateDraftFrom || '...',
-                                dateDraftTo || '...'
-                            ].join(' - ')}
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={onClearDateFilter}
-                            >
-                                {t('common.actions.clear')}
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={onApplyDateFilter}
-                            >
-                                {t('common.actions.confirm')}
-                            </Button>
-                        </div>
+                    <CalendarRangeIcon data-icon="icon" />
+                </TooltipTrigger>
+                <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
+            <PopoverContent
+                className="w-auto"
+                align="end"
+                aria-label={rangeLabel}
+            >
+                <Calendar
+                    mode="range"
+                    numberOfMonths={2}
+                    defaultMonth={dateDraftRange?.from ?? todayDate}
+                    selected={dateDraftRange}
+                    disabled={{ after: todayDate }}
+                    onSelect={setDateDraftRange}
+                />
+                <div className="flex items-center justify-between gap-4 px-3 pb-3">
+                    <div className="text-muted-foreground min-w-0 text-xs">
+                        {[dateDraftFrom || '...', dateDraftTo || '...'].join(
+                            ' - '
+                        )}
                     </div>
-                </PopoverContent>
-            </Popover>
-            {hasRange ? (
-                <Tooltip>
-                    <TooltipTrigger
-                        render={
-                            <InputGroupButton
-                                size="icon-xs"
-                                aria-label={t('common.actions.clear')}
-                                onClick={onClearDateFilter}
-                            />
-                        }
-                    >
-                        <XIcon />
-                    </TooltipTrigger>
-                    <TooltipContent>{t('common.actions.clear')}</TooltipContent>
-                </Tooltip>
-            ) : null}
-        </div>
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onClearDateFilter}
+                        >
+                            {t('common.actions.clear')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            onClick={onApplyDateFilter}
+                        >
+                            {t('common.actions.confirm')}
+                        </Button>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
     );
 }

@@ -36,6 +36,7 @@ export function StatusSegment({
     active = false,
     warn = false,
     showDot = true,
+    dimWhenInactive = false,
     label,
     value,
     children,
@@ -50,6 +51,7 @@ export function StatusSegment({
     active?: boolean;
     warn?: boolean;
     showDot?: boolean;
+    dimWhenInactive?: boolean;
     label: ReactNode;
     value?: ReactNode;
     children?: ReactNode;
@@ -75,7 +77,10 @@ export function StatusSegment({
             ) : null}
             <span
                 className={cn(
-                    'text-content-tertiary shrink-0 text-xs',
+                    'shrink-0 text-xs',
+                    dimWhenInactive && !active
+                        ? 'text-content-tertiary/55'
+                        : 'text-content-tertiary',
                     labelClassName
                 )}
             >

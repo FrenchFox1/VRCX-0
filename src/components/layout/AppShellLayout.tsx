@@ -157,56 +157,60 @@ export function AppShellLayout() {
     }
 
     return (
-        <AppSidebar sidebarWindowMode={sidebarWindowMode}>
-            <div
-                data-vrcx-0-surface="main-shell"
-                className="vrcx-0-main-shell flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
-            >
-                <div
-                    data-vrcx-0-surface="workspace"
-                    data-window-sidebar-mode={
-                        sidebarWindowMode ? 'true' : undefined
-                    }
-                    className="vrcx-0-workspace flex min-h-0 min-w-0 flex-1 overflow-hidden"
-                >
+        <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+            <div className="flex min-h-0 min-w-0 flex-1">
+                <AppSidebar sidebarWindowMode={sidebarWindowMode}>
                     <div
-                        data-vrcx-0-surface="main-content"
-                        className={cn(
-                            'vrcx-0-main-content flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
-                            sidebarWindowMode && 'hidden'
-                        )}
+                        data-vrcx-0-surface="main-shell"
+                        className="vrcx-0-main-shell flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
                     >
-                        <Outlet />
-                    </div>
-                    {sidePanelVisible ? (
-                        <>
-                            {sidebarWindowMode ? null : (
-                                <div
-                                    data-vrcx-0-resize="side-panel"
-                                    className="z-20 w-(--vrcx-0-side-panel-resizer-width) shrink-0 cursor-ew-resize bg-transparent select-none"
-                                    onPointerDown={startSidePanelResize}
-                                />
-                            )}
-                            <SidePanel
-                                ref={sidePanelElementRef}
-                                sidebarWindowMode={sidebarWindowMode}
+                        <div
+                            data-vrcx-0-surface="workspace"
+                            data-window-sidebar-mode={
+                                sidebarWindowMode ? 'true' : undefined
+                            }
+                            className="vrcx-0-workspace flex min-h-0 min-w-0 flex-1 overflow-hidden"
+                        >
+                            <div
+                                data-vrcx-0-surface="main-content"
                                 className={cn(
-                                    'shrink-0',
-                                    sidebarWindowMode && 'min-w-0'
+                                    'vrcx-0-main-content flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden',
+                                    sidebarWindowMode && 'hidden'
                                 )}
-                                style={{
-                                    width: sidebarWindowMode
-                                        ? '100%'
-                                        : getResponsiveSidePanelWidth(
-                                              sidePanelWidth
-                                          )
-                                }}
-                            />
-                        </>
-                    ) : null}
-                </div>
-                <AppStatusBar sidebarWindowMode={sidebarWindowMode} />
+                            >
+                                <Outlet />
+                            </div>
+                            {sidePanelVisible ? (
+                                <>
+                                    {sidebarWindowMode ? null : (
+                                        <div
+                                            data-vrcx-0-resize="side-panel"
+                                            className="z-20 w-(--vrcx-0-side-panel-resizer-width) shrink-0 cursor-ew-resize bg-transparent select-none"
+                                            onPointerDown={startSidePanelResize}
+                                        />
+                                    )}
+                                    <SidePanel
+                                        ref={sidePanelElementRef}
+                                        sidebarWindowMode={sidebarWindowMode}
+                                        className={cn(
+                                            'shrink-0',
+                                            sidebarWindowMode && 'min-w-0'
+                                        )}
+                                        style={{
+                                            width: sidebarWindowMode
+                                                ? '100%'
+                                                : getResponsiveSidePanelWidth(
+                                                      sidePanelWidth
+                                                  )
+                                        }}
+                                    />
+                                </>
+                            ) : null}
+                        </div>
+                    </div>
+                </AppSidebar>
             </div>
-        </AppSidebar>
+            <AppStatusBar sidebarWindowMode={sidebarWindowMode} />
+        </div>
     );
 }

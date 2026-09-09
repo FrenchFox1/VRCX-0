@@ -71,111 +71,85 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
 
     return (
         <PageScaffold embedded={embedded}>
-            <div className="flex h-full min-h-0 flex-col overflow-hidden">
-                <GameLogToolbar
-                    detail={
-                        rowsState.detail
-                            ? userFacingErrorMessage(
-                                  rowsState.detail,
-                                  'Failed to load the game log snapshot.'
-                              )
-                            : ''
-                    }
-                    filterModel={filters}
-                    refreshModel={{
-                        canRefresh: Boolean(rowsState.currentUserId),
-                        loadStatus: rowsState.loadStatus,
-                        onRefresh: filters.refreshGameLog
-                    }}
-                    table={table}
-                    sessionControls={{
-                        allOpen: sessionExpansion.allSessionsOpen,
-                        canToggle: sessionsVisible,
-                        onToggle: sessionExpansion.toggleAll
-                    }}
-                />
+            <GameLogToolbar
+                detail={
+                    rowsState.detail
+                        ? userFacingErrorMessage(
+                              rowsState.detail,
+                              'Failed to load the game log snapshot.'
+                          )
+                        : ''
+                }
+                filterModel={filters}
+                refreshModel={{
+                    canRefresh: Boolean(rowsState.currentUserId),
+                    loadStatus: rowsState.loadStatus,
+                    onRefresh: filters.refreshGameLog
+                }}
+                table={table}
+                sessionControls={{
+                    allOpen: sessionExpansion.allSessionsOpen,
+                    canToggle: sessionsVisible,
+                    onToggle: sessionExpansion.toggleAll
+                }}
+            />
 
-                {rowsState.gameLogDisabled ? (
-                    <Alert className="mb-3">
-                        <AlertTitle>
-                            {t('view.game_log.label.game_log_is_disabled')}
-                        </AlertTitle>
-                        <AlertDescription>
-                            {t(
-                                'view.game_log.action.enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity'
-                            )}
-                        </AlertDescription>
-                    </Alert>
-                ) : null}
+            {rowsState.gameLogDisabled ? (
+                <Alert className="mb-3">
+                    <AlertTitle>
+                        {t('view.game_log.label.game_log_is_disabled')}
+                    </AlertTitle>
+                    <AlertDescription>
+                        {t(
+                            'view.game_log.action.enable_game_log_ingestion_in_settings_before_this_page_can_load_local_vrchat_activity'
+                        )}
+                    </AlertDescription>
+                </Alert>
+            ) : null}
 
-                <PageBody>
-                    {isLoading ? (
-                        <LoadingState
-                            label={t(
-                                'view.game_log.loading.loading_the_game_log_snapshot'
-                            )}
-                        />
-                    ) : isError ? (
-                        <GameLogEmptyState
-                            title={t(
-                                'view.game_log.error.game_log_failed_to_load'
-                            )}
-                            description={
-                                rowsState.detail ||
-                                'The game log query did not complete.'
-                            }
-                        />
-                    ) : filters.viewMode === 'sessions' ? (
-                        hasSessions ? (
-                            <GameLogSessionAffinityContext
-                                value={annotations.affinity}
-                            >
-                                <GameLogSessionsView
-                                    sessions={rowsState.sessions}
-                                    defaultOpen={sessionExpansion.defaultOpen}
-                                    sessionOpenOverrides={
-                                        sessionExpansion.sessionOpenOverrides
-                                    }
-                                    onSessionOpenChange={
-                                        sessionExpansion.onSessionOpenChange
-                                    }
-                                    isGameRunning={isGameRunning}
-                                    hasMore={hasMoreSessions}
-                                    isLoadingMore={isLoadingMoreSessions}
-                                    autoFill={
-                                        Boolean(
-                                            filters.deferredSearchQuery.trim()
-                                        ) &&
-                                        !filters.sessionDateFrom &&
-                                        !filters.sessionDateTo
-                                    }
-                                    autoFillKey={`${filters.deferredSearchQuery}:${filters.sessionDateFrom}:${filters.sessionDateTo}:${filters.queryFilterTypes.join(',')}:${filters.favoritesOnly}`}
-                                    onLoadMore={tableState.loadMoreSessions}
-                                />
-                            </GameLogSessionAffinityContext>
-                        ) : (
-                            <GameLogEmptyState
-                                icon={emptyIcon}
-                                title={t(emptyTitleKey)}
-                                description={
-                                    filters.favoritesOnly &&
-                                    !rowsState.isFavoritesLoaded
-                                        ? t(
-                                              'view.game_log.description.favorites_are_still_hydrating'
-                                          )
-                                        : t(emptyDescriptionKey)
+            <PageBody>
+                {isLoading ? (
+                    <LoadingState
+                        label={t(
+                            'view.game_log.loading.loading_the_game_log_snapshot'
+                        )}
+                    />
+                ) : isError ? (
+                    <GameLogEmptyState
+                        title={t('view.game_log.error.game_log_failed_to_load')}
+                        description={
+                            rowsState.detail ||
+                            'The game log query did not complete.'
+                        }
+                    />
+                ) : filters.viewMode === 'sessions' ? (
+                    hasSessions ? (
+                        <GameLogSessionAffinityContext
+                            value={annotations.affinity}
+                        >
+                            <GameLogSessionsView
+                                sessions={rowsState.sessions}
+                                defaultOpen={sessionExpansion.defaultOpen}
+                                sessionOpenOverrides={
+                                    sessionExpansion.sessionOpenOverrides
                                 }
+                                onSessionOpenChange={
+                                    sessionExpansion.onSessionOpenChange
+                                }
+                                isGameRunning={isGameRunning}
+                                hasMore={hasMoreSessions}
+                                isLoadingMore={isLoadingMoreSessions}
+                                autoFill={
+                                    Boolean(
+                                        filters.deferredSearchQuery.trim()
+                                    ) &&
+                                    !filters.sessionDateFrom &&
+                                    !filters.sessionDateTo
+                                }
+                                autoFillKey={`${filters.deferredSearchQuery}:${filters.sessionDateFrom}:${filters.sessionDateTo}:${filters.queryFilterTypes.join(',')}:${filters.favoritesOnly}`}
+                                onLoadMore={tableState.loadMoreSessions}
                             />
-                        )
-                    ) : hasRows ? (
-                        <GameLogTableShell
-                            table={table}
-                            rows={rowsState.rows}
-                            pageCount={pageCount}
-                            pageSizes={tableState.pageSizes}
-                            setPagination={tableState.setPagination}
-                            setSessionLimit={tableState.setSessionLimit}
-                        />
+                        </GameLogSessionAffinityContext>
                     ) : (
                         <GameLogEmptyState
                             icon={emptyIcon}
@@ -189,9 +163,31 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                                     : t(emptyDescriptionKey)
                             }
                         />
-                    )}
-                </PageBody>
-            </div>
+                    )
+                ) : hasRows ? (
+                    <GameLogTableShell
+                        table={table}
+                        rows={rowsState.rows}
+                        pageCount={pageCount}
+                        pageSizes={tableState.pageSizes}
+                        setPagination={tableState.setPagination}
+                        setSessionLimit={tableState.setSessionLimit}
+                    />
+                ) : (
+                    <GameLogEmptyState
+                        icon={emptyIcon}
+                        title={t(emptyTitleKey)}
+                        description={
+                            filters.favoritesOnly &&
+                            !rowsState.isFavoritesLoaded
+                                ? t(
+                                      'view.game_log.description.favorites_are_still_hydrating'
+                                  )
+                                : t(emptyDescriptionKey)
+                        }
+                    />
+                )}
+            </PageBody>
             <PreviousInstancesTableDialog
                 open={previousInstancesDialog.open}
                 onOpenChange={previousInstancesDialog.setOpen}

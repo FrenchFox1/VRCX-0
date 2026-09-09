@@ -127,6 +127,7 @@ export function CurrentUserActionItems({
                     <CheckboxItem
                         key={option.value}
                         checked={friend?.status === option.value}
+                        closeOnClick
                         onClick={() => {
                             onChangeStatus?.(option.value);
                         }}

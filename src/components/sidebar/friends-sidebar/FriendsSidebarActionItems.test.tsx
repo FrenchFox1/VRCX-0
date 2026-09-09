@@ -28,7 +28,7 @@ const MenuItem = ({ children }: PropsWithChildren) => (
 );
 
 describe('CurrentUserActionItems', () => {
-    it('closes the context menu immediately when selecting a recent signature', () => {
+    it('closes the menu immediately when selecting a social status or recent signature', () => {
         const html = renderToStaticMarkup(
             <CurrentUserActionItems
                 friend={{
@@ -47,6 +47,13 @@ describe('CurrentUserActionItems', () => {
             />
         );
 
+        const checkboxItems = html.match(
+            /<button data-close-on-click[^>]*>.*?<\/button>/g
+        );
+        expect(checkboxItems).toHaveLength(5);
+        for (const item of checkboxItems ?? []) {
+            expect(item).toContain('data-close-on-click="true"');
+        }
         expect(html).toMatch(
             /data-close-on-click="true">.*?Previous signature.*?<\/button>/
         );

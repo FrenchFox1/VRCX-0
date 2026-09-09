@@ -196,10 +196,11 @@ pub fn run() {
 
     bootstrap::init_tls_crypto_provider();
     let _async_runtime = install_adaptive_tauri_async_runtime();
-    bootstrap::apply_linux_webkit_workaround();
+    bootstrap::linux_rendering::apply_webkit_workaround();
 
     let setup_app_data_dir = app_data_dir.clone();
     let builder = tauri::Builder::default()
+        .manage(bootstrap::linux_rendering::LinuxRenderingState::default())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // Spawn onto a worker thread so run_on_main_thread actually defers the window
             // rebuild; running it inline here would block the second instance and leave two

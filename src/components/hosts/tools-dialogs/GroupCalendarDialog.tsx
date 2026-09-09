@@ -53,7 +53,11 @@ import { Field, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Switch } from '@/ui/shadcn/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 import {
     buildEventsByDate,
@@ -525,6 +529,7 @@ export function GroupCalendarDialog({
                         <ToggleGroupItem value="timeline">
                             {t('dialog.group_calendar.calendar_view')}
                         </ToggleGroupItem>
+                        <ToggleGroupSeparator />
                         <ToggleGroupItem value="grid">
                             {t('dialog.group_calendar.list_view')}
                         </ToggleGroupItem>

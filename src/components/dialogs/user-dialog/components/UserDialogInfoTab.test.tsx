@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+    act,
+    cleanup,
+    fireEvent,
+    render,
+    screen,
+    within
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { UserDialogActivitySummaryPanel } from './UserDialogInfoTab';
@@ -16,6 +24,120 @@ vi.mock('react-i18next', async (importOriginal) => ({
 afterEach(cleanup);
 
 describe('UserDialogActivitySummaryPanel', () => {
+    it('shows the relationship timeline without navigating on click', async () => {
+        const onOpenFeed = vi.fn();
+        const onOpenInstanceHistory = vi.fn();
+        const history = [
+            {
+                rowId: 3,
+                type: 'Unfriend' as const,
+                created_at: '2026-09-01T00:00:00Z'
+            },
+            {
+                rowId: 2,
+                type: 'Friend' as const,
+                created_at: '2026-01-01T00:00:00Z'
+            },
+            {
+                rowId: 1,
+                type: 'Unfriend' as const,
+                created_at: '2025-01-01T00:00:00Z'
+            }
+        ];
+        render(
+            <UserDialogActivitySummaryPanel
+                friendedAt="2024-01-01T00:00:00Z"
+                relationshipHistory={history}
+                onOpenFeed={onOpenFeed}
+                onOpenInstanceHistory={onOpenInstanceHistory}
+                isCurrentUser={false}
+                isFriend={false}
+                lastSeen={undefined}
+                presenceActivityAt={undefined}
+                profile={{ id: 'usr_test' }}
+                userTimeSpent={0}
+                userJoinCount={0}
+            />
+        );
+        const trigger = screen.getByRole('button', {
+            name: /dialog.user.info.unfriended/
+        });
+        expect(trigger.textContent).toContain('2026');
+        expect(trigger.textContent).not.toContain('2024');
+        fireEvent.click(trigger);
+        const popup = await screen.findByRole('dialog', {
+            name: 'dialog.user.info.relationship_history'
+        });
+        expect(
+            within(popup)
+                .getAllByRole('listitem')
+                .map((row) => row.querySelector('time')?.dateTime)
+        ).toEqual(history.map((row) => row.created_at));
+        expect(
+            within(popup).getAllByText('view.friend_log.filters.Unfriend')
+        ).toHaveLength(2);
+        expect(
+            within(popup).getByText('view.friend_log.filters.Friend')
+        ).toBeTruthy();
+        expect(onOpenFeed).not.toHaveBeenCalled();
+        expect(onOpenInstanceHistory).not.toHaveBeenCalled();
+    });
+
+    it('opens a single relationship event only after clicking', async () => {
+        const user = userEvent.setup();
+        render(
+            <UserDialogActivitySummaryPanel
+                friendedAt={undefined}
+                relationshipHistory={[
+                    {
+                        rowId: 1,
+                        type: 'Friend',
+                        created_at: '2026-09-01T00:00:00Z'
+                    }
+                ]}
+                isCurrentUser={false}
+                isFriend
+                lastSeen={undefined}
+                presenceActivityAt={undefined}
+                profile={{ id: 'usr_test' }}
+                userTimeSpent={0}
+                userJoinCount={0}
+            />
+        );
+        const trigger = screen.getByRole('button', {
+            name: /dialog.user.info.friended/
+        });
+        await user.hover(trigger);
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 400));
+        });
+        expect(screen.queryByRole('dialog')).toBeNull();
+        await user.click(trigger);
+        const popup = await screen.findByRole('dialog', {
+            name: 'dialog.user.info.relationship_history'
+        });
+        expect(within(popup).getAllByRole('listitem')).toHaveLength(1);
+    });
+
+    it('does not offer an empty relationship popup', () => {
+        render(
+            <UserDialogActivitySummaryPanel
+                friendedAt={undefined}
+                relationshipHistory={[]}
+                isCurrentUser={false}
+                isFriend={false}
+                lastSeen={undefined}
+                presenceActivityAt={undefined}
+                profile={{ id: 'usr_test' }}
+                userTimeSpent={0}
+                userJoinCount={0}
+            />
+        );
+        expect(
+            screen.queryByRole('button', { name: /dialog.user.info.friended/ })
+        ).toBeNull();
+    });
+
     it('opens instance history from join count but not time together', () => {
         const onOpenInstanceHistory = vi.fn();
 

@@ -9,7 +9,6 @@ import {
     ToolbarFilterChips,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
-import { cn } from '@/lib/utils';
 import type { FeedFilterType } from '@/repositories/feedRepository';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
@@ -101,7 +100,7 @@ function FeedTypeFilterMenu({
                     types: summary
                 })}
             >
-                {summary}
+                {t('view.feed.columns.types')}
                 <ChevronDownIcon data-icon="inline-end" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
@@ -180,74 +179,58 @@ export const FeedToolbar = memo(function FeedToolbar({
     return (
         <PageToolbar className="@container/feed-toolbar">
             <PageToolbarRow>
-                <ToolbarViews className="min-w-0 flex-initial flex-wrap">
+                <ToolbarViews className="min-w-0 flex-wrap">
                     <FeedViewModeToggle
                         value="table"
                         onValueChange={onViewModeChange}
                     />
-                    <div className="@min-4xl/feed-toolbar:hidden">
-                        <FeedTypeFilterMenu
-                            activeFilters={activeFilters}
-                            favoritesOnly={favoritesOnly}
-                            favoritesOnlyDisabled={scopedUserIds.length > 0}
-                            feedFilterTypes={feedFilterTypes}
-                            onClearFeedFilters={onClearFeedFilters}
-                            onToggleFavoritesOnly={onToggleFavoritesOnly}
-                            onToggleFeedFilter={onToggleFeedFilter}
-                        />
-                    </div>
-                    <div className="hidden max-w-full min-w-0 @min-4xl/feed-toolbar:block">
-                        <ToolbarFilterChips
-                            value={activeFilters}
-                            onValueChange={onFeedFiltersChange}
-                            allLabel={t('view.feed.toolbar.all_types')}
-                            leading={{
-                                label: t(
-                                    'view.feed.toolbar.grouped_friends_only'
-                                ),
-                                icon: StarIcon,
-                                pressed: favoritesOnly,
-                                disabled: scopedUserIds.length > 0,
-                                onPressedChange: onToggleFavoritesOnly
-                            }}
-                            options={feedFilterTypes.map((filter) => ({
-                                value: filter,
-                                label: t(`view.feed.filters.${filter}`)
-                            }))}
-                        />
-                    </div>
-                </ToolbarViews>
-                <div
-                    className={cn(
-                        'ml-auto flex min-w-0 grow items-center gap-2',
-                        dateFrom || dateTo
-                            ? 'max-w-96 basis-96'
-                            : 'max-w-80 basis-64'
-                    )}
-                >
-                    <FeedSearchBox
-                        isSearching={isSearching}
-                        scopedUserIds={scopedUserIds}
-                        searchDraft={searchDraft}
-                        onClearSearch={onClearSearch}
-                        onCommitSearch={onCommitSearch}
-                        onScopeChange={onScopeChange}
-                        onSearchDraftChange={onSearchDraftChange}
-                        dateFilter={
-                            <DateRangeFilter
-                                label={t('view.feed.date_range')}
-                                onChange={onDateRangeChange}
-                                dateFrom={dateFrom}
-                                dateTo={dateTo}
-                            />
-                        }
+                    <ToolbarFilterChips
+                        value={activeFilters}
+                        onValueChange={onFeedFiltersChange}
+                        leading={{
+                            label: t('view.feed.toolbar.grouped_friends_only'),
+                            icon: StarIcon,
+                            pressed: favoritesOnly,
+                            disabled: scopedUserIds.length > 0,
+                            onPressedChange: onToggleFavoritesOnly
+                        }}
+                        options={feedFilterTypes.map((filter) => ({
+                            value: filter,
+                            label: t(`view.feed.filters.${filter}`)
+                        }))}
                     />
-                    <ToolbarActions>
-                        {feedPersistenceDisabled ? (
-                            <FeedPersistenceDisabledIndicator />
-                        ) : null}
-                    </ToolbarActions>
-                </div>
+                    <FeedTypeFilterMenu
+                        activeFilters={activeFilters}
+                        favoritesOnly={favoritesOnly}
+                        favoritesOnlyDisabled={scopedUserIds.length > 0}
+                        feedFilterTypes={feedFilterTypes}
+                        onClearFeedFilters={onClearFeedFilters}
+                        onToggleFavoritesOnly={onToggleFavoritesOnly}
+                        onToggleFeedFilter={onToggleFeedFilter}
+                    />
+                </ToolbarViews>
+                <FeedSearchBox
+                    isSearching={isSearching}
+                    scopedUserIds={scopedUserIds}
+                    searchDraft={searchDraft}
+                    onClearSearch={onClearSearch}
+                    onCommitSearch={onCommitSearch}
+                    onScopeChange={onScopeChange}
+                    onSearchDraftChange={onSearchDraftChange}
+                    dateFilter={
+                        <DateRangeFilter
+                            label={t('view.feed.date_range')}
+                            onChange={onDateRangeChange}
+                            dateFrom={dateFrom}
+                            dateTo={dateTo}
+                        />
+                    }
+                />
+                <ToolbarActions>
+                    {feedPersistenceDisabled ? (
+                        <FeedPersistenceDisabledIndicator />
+                    ) : null}
+                </ToolbarActions>
             </PageToolbarRow>
         </PageToolbar>
     );

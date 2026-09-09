@@ -18,7 +18,6 @@ export function MacOverlayTitleBar() {
         actions,
         isSessionReady,
         openQuickSearch,
-        quickSearchDialog,
         sidebarWindowModeButton,
         notificationAction,
         themeToggleAction
@@ -61,7 +60,6 @@ export function MacOverlayTitleBar() {
                     actions
                 )}
             </header>
-            {quickSearchDialog}
         </>
     );
 }

@@ -50,6 +50,7 @@ import {
     resolveTrustNameColour,
     type SidebarFriendRecord
 } from './friendsSidebarModel';
+import { useSidebarMenuDoubleClick } from './useSidebarMenuDoubleClick';
 
 export function resolveFriendRowDisplay(
     friend: SidebarFriendRecord | null | undefined,
@@ -303,9 +304,13 @@ export function FriendRow({
             recentActionVersion={recentActionVersion}
         />
     );
+    const doubleClick = useSidebarMenuDoubleClick(() => onOpen?.());
     const rowButton = sidebarWindowMode ? (
-        <DropdownMenu>
-            <DropdownMenuTrigger render={podButton} />
+        <DropdownMenu {...doubleClick.menuProps}>
+            <DropdownMenuTrigger
+                render={podButton}
+                {...doubleClick.triggerProps}
+            />
             <DropdownMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
                 {menuItems}
             </DropdownMenuContent>

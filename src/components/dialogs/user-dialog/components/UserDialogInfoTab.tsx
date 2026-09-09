@@ -7,6 +7,15 @@ import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import {
+    Timeline,
+    TimelineDate,
+    TimelineHeader,
+    TimelineIndicator,
+    TimelineItem,
+    TimelineSeparator,
+    TimelineTitle
+} from '@/components/reui/timeline';
 import { TranslatableText } from '@/components/translation/TranslatableText';
 import type { EntityRecord } from '@/domain/entities/shared';
 import type { UserProfileEntity } from '@/domain/entities/user';
@@ -17,6 +26,7 @@ import {
     openExternalLink
 } from '@/services/entityMediaService';
 import type { UserDialogPreviousInstance } from '@/services/userDialogSessionCacheService';
+import type { UserDialogRelationshipEvent } from '@/services/userDialogSessionCacheService';
 import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -26,6 +36,12 @@ import {
     CardHeader,
     CardTitle
 } from '@/ui/shadcn/card';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTitle,
+    PopoverTrigger
+} from '@/ui/shadcn/popover';
 import { Separator } from '@/ui/shadcn/separator';
 
 import { EntityDialogTabContent } from '../../EntityDialogScaffold';
@@ -108,6 +124,7 @@ export type UserDialogProfileLinksSectionProps = {
 
 export type UserDialogActivitySummarySectionProps = {
     friendedAt: string | null | undefined;
+    relationshipHistory?: UserDialogRelationshipEvent[];
     isCurrentUser: boolean;
     isFriend: boolean;
     lastSeen: string | null | undefined;
@@ -643,8 +660,95 @@ function UserDialogBioPanel({ profile, bioLinks }: UserDialogBioSectionProps) {
     );
 }
 
+function UserRelationshipStat({
+    friendedAt,
+    history
+}: {
+    friendedAt: string | null | undefined;
+    history: UserDialogRelationshipEvent[];
+}) {
+    const { i18n, t } = useTranslation();
+    const locale = i18n.resolvedLanguage || i18n.language;
+    const latest = history[0];
+    const stat = (
+        <InfoStat
+            label={t(
+                latest?.type === 'Unfriend'
+                    ? 'dialog.user.info.unfriended'
+                    : 'dialog.user.info.friended'
+            )}
+            value={formatLocalizedActivityDate(
+                latest?.created_at || friendedAt,
+                locale
+            )}
+            subtle
+        />
+    );
+    if (!latest) {
+        return stat;
+    }
+    return (
+        <Popover>
+            <PopoverTrigger
+                render={
+                    <Button
+                        variant="ghost"
+                        className="group/info-stat h-auto w-full justify-start p-0 text-left"
+                    />
+                }
+            >
+                <div className="min-w-0 flex-1">{stat}</div>
+                <ChevronRightIcon
+                    aria-hidden="true"
+                    className="text-muted-foreground mr-2 shrink-0 opacity-70 transition-transform group-hover/info-stat:translate-x-0.5"
+                />
+            </PopoverTrigger>
+            <PopoverContent
+                align="end"
+                className="w-64 max-w-[calc(100vw-2rem)] gap-3 p-3"
+            >
+                <PopoverTitle className="text-xs">
+                    {t('dialog.user.info.relationship_history')}
+                </PopoverTitle>
+                <Timeline
+                    value={0}
+                    className="max-h-72 overflow-y-auto overscroll-contain"
+                    render={<ol />}
+                >
+                    {history.map((entry, index) => (
+                        <TimelineItem
+                            key={entry.rowId}
+                            step={index + 1}
+                            render={<li />}
+                            className="group-data-[orientation=vertical]/timeline:ms-5 group-data-[orientation=vertical]/timeline:not-last:pb-3"
+                        >
+                            <TimelineHeader>
+                                <TimelineTitle className="text-xs">
+                                    {t(`view.friend_log.filters.${entry.type}`)}
+                                </TimelineTitle>
+                                <TimelineDate
+                                    dateTime={entry.created_at}
+                                    className="mt-0.5 mb-0 font-normal group-data-[orientation=vertical]/timeline:max-sm:h-auto"
+                                >
+                                    {formatLocalizedActivityDate(
+                                        entry.created_at,
+                                        locale
+                                    )}
+                                </TimelineDate>
+                            </TimelineHeader>
+                            <TimelineIndicator className="size-2 group-data-[orientation=vertical]/timeline:top-1 group-data-[orientation=vertical]/timeline:-left-3.5" />
+                            <TimelineSeparator className="group-data-[orientation=vertical]/timeline:-left-3.5 group-data-[orientation=vertical]/timeline:h-[calc(100%-0.75rem)] group-data-[orientation=vertical]/timeline:translate-y-3.5" />
+                        </TimelineItem>
+                    ))}
+                </Timeline>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
 export function UserDialogActivitySummaryPanel({
     friendedAt,
+    relationshipHistory = [],
     isCurrentUser,
     isFriend,
     lastSeen,
@@ -705,13 +809,9 @@ export function UserDialogActivitySummaryPanel({
                             value={formatStatsDuration(userTimeSpent)}
                             subtle
                         />
-                        <InfoStat
-                            label={t('dialog.user.info.friended')}
-                            value={formatLocalizedActivityDate(
-                                friendedAt,
-                                dateLocale
-                            )}
-                            subtle
+                        <UserRelationshipStat
+                            friendedAt={friendedAt}
+                            history={relationshipHistory}
                         />
                     </>
                 )}
@@ -774,6 +874,9 @@ export function UserDialogInfoTab({
                     />
                     <UserDialogActivitySummaryPanel
                         friendedAt={activitySummarySection.friendedAt}
+                        relationshipHistory={
+                            activitySummarySection.relationshipHistory
+                        }
                         isCurrentUser={activitySummarySection.isCurrentUser}
                         isFriend={activitySummarySection.isFriend}
                         lastSeen={activitySummarySection.lastSeen}

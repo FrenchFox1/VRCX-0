@@ -184,19 +184,19 @@ export function SidePanelSelfHeader() {
     };
 
     return (
-        <div className="vrcx-0-side-panel-self ml-2 flex shrink-0 flex-col py-2 pr-1.5 pl-2">
+        <div className="vrcx-0-side-panel-self ml-2 flex shrink-0 flex-col pt-4 pr-1.5 pb-2 pl-2">
             <ContextMenu>
                 <ContextMenuTrigger
                     render={
                         <div className="flex w-full min-w-0 items-center gap-2.5 p-1.5">
                             <button
                                 type="button"
-                                aria-label={displayName}
+                                aria-label={`${displayName} · ${statusLabel}`}
                                 className="focus-visible:ring-ring shrink-0 cursor-pointer rounded-full outline-none focus-visible:ring-2"
                                 onClick={openSelf}
                             >
                                 <UserStatusAvatar
-                                    className="size-13"
+                                    className="size-10"
                                     imageUrl={imageUrl}
                                     statusDotClassName={resolveSidebarStatusDotClassName(
                                         selfRow,
@@ -294,18 +294,27 @@ export function SidePanelSelfHeader() {
                                                     }}
                                                 >
                                                     {statusDescription ||
-                                                        editDescriptionLabel}
+                                                        t(
+                                                            'dialog.user.action.edit_social_status'
+                                                        )}
                                                 </button>
                                             }
                                         />
                                         <TooltipContent>
                                             {statusDescription ||
-                                                editDescriptionLabel}
+                                                t(
+                                                    'dialog.user.action.edit_social_status'
+                                                )}
                                         </TooltipContent>
                                     </Tooltip>
                                 )}
-                                <div className="text-content-tertiary flex h-4 min-w-0 items-center text-xs leading-4">
-                                    {showLocationSubline ? (
+                                {showLocationSubline ? (
+                                    <div
+                                        className="text-content-tertiary flex h-4 min-w-0 items-center text-xs leading-4"
+                                        onContextMenu={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                    >
                                         <StaticSidebarLocation
                                             location={displayLocation}
                                             traveling={displayTraveling}
@@ -319,12 +328,8 @@ export function SidePanelSelfHeader() {
                                                 ageGatedInstancesVisible
                                             }
                                         />
-                                    ) : (
-                                        <span className="truncate">
-                                            {statusLabel}
-                                        </span>
-                                    )}
-                                </div>
+                                    </div>
+                                ) : null}
                             </div>
                             <SidePanelSelfAccountMenu />
                         </div>

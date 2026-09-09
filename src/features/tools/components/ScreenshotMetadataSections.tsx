@@ -7,7 +7,6 @@ import {
     ListIcon,
     PanelRightCloseIcon,
     PanelRightOpenIcon,
-    SearchIcon,
     Trash2Icon,
     UploadIcon,
     UsersIcon,
@@ -28,7 +27,7 @@ import {
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
-    ToolbarActions,
+    ToolbarSearch,
     ToolbarSegmented,
     ToolbarStatus,
     ToolbarViews
@@ -41,11 +40,6 @@ import {
     CardHeader,
     CardTitle
 } from '@/ui/shadcn/card';
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput
-} from '@/ui/shadcn/input-group';
 import {
     Select,
     SelectContent,
@@ -239,35 +233,6 @@ export function ScreenshotSearchToolbar({
                             {selectedPathIndex + 1}/{searchNavigationCount}
                         </ToolbarStatus>
                     ) : null}
-                </ToolbarViews>
-
-                <ToolbarActions className="w-full max-w-full flex-wrap justify-end sm:ml-auto sm:w-auto">
-                    <InputGroup className="min-w-48 flex-1 sm:w-72 sm:flex-none">
-                        <InputGroupAddon>
-                            <SearchIcon />
-                        </InputGroupAddon>
-                        <InputGroupInput
-                            value={searchQuery}
-                            placeholder={t(
-                                'dialog.screenshot_metadata.search_placeholder'
-                            )}
-                            aria-label={t(
-                                'dialog.screenshot_metadata.search_placeholder'
-                            )}
-                            onChange={(event) =>
-                                onSearchQueryChange(event.target.value)
-                            }
-                            onKeyDown={(event) => {
-                                if (event.key === 'Enter') {
-                                    event.preventDefault();
-                                    onSearch();
-                                }
-                            }}
-                        />
-                        <InputGroupAddon align="inline-end">
-                            <KeyboardShortcut keys="Enter" />
-                        </InputGroupAddon>
-                    </InputGroup>
                     <Select
                         value={searchType}
                         items={SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => ({
@@ -276,7 +241,7 @@ export function ScreenshotSearchToolbar({
                         }))}
                         onValueChange={onSearchTypeChange}
                     >
-                        <SelectTrigger className="w-full sm:w-52">
+                        <SelectTrigger className="max-w-56 min-w-40 shrink-0">
                             <SelectValue
                                 placeholder={t(
                                     'dialog.screenshot_metadata.search_type_placeholder'
@@ -298,10 +263,18 @@ export function ScreenshotSearchToolbar({
                             </SelectGroup>
                         </SelectContent>
                     </Select>
-                    <Button onClick={onSearch}>
-                        {t('common.actions.search')}
-                    </Button>
-                </ToolbarActions>
+                </ToolbarViews>
+
+                <ToolbarSearch
+                    value={searchQuery}
+                    onValueChange={onSearchQueryChange}
+                    onCommit={onSearch}
+                    onClear={onClearSearch}
+                    commitOnBlur={false}
+                    placeholder={t(
+                        'dialog.screenshot_metadata.search_placeholder'
+                    )}
+                />
             </PageToolbarRow>
         </PageToolbar>
     );

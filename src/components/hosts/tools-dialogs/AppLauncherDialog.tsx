@@ -5,7 +5,7 @@ import {
     PlusIcon,
     Trash2Icon
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -66,7 +66,11 @@ import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Separator } from '@/ui/shadcn/separator';
 import { Switch } from '@/ui/shadcn/switch';
 import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 const MAX_LAUNCH_DELAY_SECONDS = 4_294_967_295;
 const EMPTY_APP_LAUNCHER_ENTRIES: AppLauncherEntry[] = [];
@@ -936,14 +940,16 @@ function ToggleField<Value extends string>({
                     }
                 }}
             >
-                {options.map((option) => (
-                    <ToggleGroupItem
-                        key={option.value}
-                        value={option.value}
-                        className="flex-1"
-                    >
-                        {option.label}
-                    </ToggleGroupItem>
+                {options.map((option, index) => (
+                    <Fragment key={option.value}>
+                        {index > 0 ? <ToggleGroupSeparator /> : null}
+                        <ToggleGroupItem
+                            value={option.value}
+                            className="flex-1"
+                        >
+                            {option.label}
+                        </ToggleGroupItem>
+                    </Fragment>
                 ))}
             </ToggleGroup>
         </Field>

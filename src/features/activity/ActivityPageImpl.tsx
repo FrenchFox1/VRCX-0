@@ -7,7 +7,6 @@ import { getDisplayDayLabels } from '@/components/dialogs/user-dialog/userActivi
 import {
     EmptyState,
     LoadingState,
-    PageBody,
     PageScaffold,
     PageToolbar,
     PageToolbarRow
@@ -15,7 +14,7 @@ import {
 import {
     ToolbarActions,
     ToolbarRefreshButton,
-    ToolbarSegmented,
+    ToolbarTabs,
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
 import type { ActivityCompanionOrder } from '@/repositories/activityPageRepository';
@@ -24,6 +23,7 @@ import { getResolvedThemeMode } from '@/services/themeService';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
+import { Tabs, TabsContent } from '@/ui/shadcn/tabs';
 
 import {
     ACTIVITY_PAGE_COMPANION_ORDER_KEY,
@@ -161,105 +161,119 @@ export function ActivityPageImpl() {
 
     return (
         <PageScaffold>
-            <PageToolbar>
-                <PageToolbarRow>
-                    <ToolbarSegmented
-                        value={range}
-                        onValueChange={onRangeChange}
-                        options={rangeOptions}
-                    />
-                    <ToolbarActions>
-                        <ToolbarRefreshButton
-                            onRefresh={refresh}
-                            loading={loading}
-                        />
-                    </ToolbarActions>
-                </PageToolbarRow>
-            </PageToolbar>
-            <PageBody className="overflow-y-auto">
-                <div className="activity-skin" ref={setSkinElement}>
-                    {error ? (
-                        <EmptyState
-                            icon={ActivityIcon}
-                            title={t('view.activity.error.failed_to_load')}
-                            description={error}
-                        />
-                    ) : loading && !view ? (
-                        <LoadingState />
-                    ) : !hasAnyActivity(view) ? (
-                        <EmptyState
-                            icon={ActivityIcon}
-                            title={t('view.activity.empty.title')}
-                            description={t('view.activity.empty.description')}
-                        />
-                    ) : view ? (
-                        <div
-                            key={range}
-                            className="mx-auto max-w-[120rem] [columns:1] gap-3 pb-4 [column-fill:balance] min-[1600px]:[columns:3] xl:[columns:2]"
-                        >
-                            <Staggered index={0}>
-                                <ActivityTimeExhibit
-                                    summary={view.summary}
-                                    series={view.series}
-                                    isDarkMode={isDarkMode}
-                                />
-                            </Staggered>
-                            <Staggered index={1}>
-                                <ActivityRhythmExhibit
-                                    rawBuckets={heatmap.rawBuckets}
-                                    normalizedBuckets={
-                                        heatmap.normalizedBuckets
-                                    }
-                                    displayDayLabels={displayDayLabels}
-                                    weekStartsOn={weekStartsOn}
-                                    isDarkMode={isDarkMode}
-                                    palette={palette}
-                                />
-                            </Staggered>
-                            <Staggered index={2}>
-                                <ActivityWorldsExhibit
-                                    worlds={view.worlds}
-                                    homeWorldId={homeWorldId}
-                                    showHomeWorld={showHomeWorld}
-                                    onShowHomeWorldChange={
-                                        onShowHomeWorldChange
-                                    }
-                                />
-                            </Staggered>
-                            <Staggered index={3}>
-                                <ActivityPeopleExhibit
-                                    people={view.people}
-                                    order={companionOrder}
-                                    pending={
-                                        view.people.order !== companionOrder
-                                    }
-                                    onOrderChange={onCompanionOrderChange}
-                                />
-                            </Staggered>
-                            <Staggered index={4}>
-                                <ActivityAccessExhibit
-                                    slices={view.accessSplit}
-                                />
-                            </Staggered>
-                            {range === 'all' ? (
-                                <Staggered index={5}>
-                                    <ActivityAvatarsExhibit
-                                        rows={avatarUsage}
+            <Tabs
+                value={range}
+                onValueChange={(value) => {
+                    const option = rangeOptions.find(
+                        (entry) => entry.value === value
+                    );
+                    if (option) {
+                        onRangeChange(option.value);
+                    }
+                }}
+                className="flex min-h-0 flex-1 flex-col gap-0"
+            >
+                <PageToolbar>
+                    <PageToolbarRow>
+                        <ToolbarTabs options={rangeOptions} />
+                        <ToolbarActions>
+                            <ToolbarRefreshButton
+                                onRefresh={refresh}
+                                loading={loading}
+                            />
+                        </ToolbarActions>
+                    </PageToolbarRow>
+                </PageToolbar>
+                <TabsContent
+                    value={range}
+                    className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
+                >
+                    <div className="activity-skin" ref={setSkinElement}>
+                        {error ? (
+                            <EmptyState
+                                icon={ActivityIcon}
+                                title={t('view.activity.error.failed_to_load')}
+                                description={error}
+                            />
+                        ) : loading && !view ? (
+                            <LoadingState />
+                        ) : !hasAnyActivity(view) ? (
+                            <EmptyState
+                                icon={ActivityIcon}
+                                title={t('view.activity.empty.title')}
+                                description={t(
+                                    'view.activity.empty.description'
+                                )}
+                            />
+                        ) : view ? (
+                            <div
+                                key={range}
+                                className="mx-auto max-w-[120rem] [columns:1] gap-3 pb-4 [column-fill:balance] min-[1600px]:[columns:3] xl:[columns:2]"
+                            >
+                                <Staggered index={0}>
+                                    <ActivityTimeExhibit
+                                        summary={view.summary}
+                                        series={view.series}
+                                        isDarkMode={isDarkMode}
                                     />
                                 </Staggered>
-                            ) : null}
-                            <p className="text-muted-foreground break-inside-avoid px-1 pt-1 text-xs">
-                                {t('view.activity.caveat.recorded_since', {
-                                    date: view.coverage.firstSourceAt.slice(
-                                        0,
-                                        10
-                                    )
-                                })}
-                            </p>
-                        </div>
-                    ) : null}
-                </div>
-            </PageBody>
+                                <Staggered index={1}>
+                                    <ActivityRhythmExhibit
+                                        rawBuckets={heatmap.rawBuckets}
+                                        normalizedBuckets={
+                                            heatmap.normalizedBuckets
+                                        }
+                                        displayDayLabels={displayDayLabels}
+                                        weekStartsOn={weekStartsOn}
+                                        isDarkMode={isDarkMode}
+                                        palette={palette}
+                                    />
+                                </Staggered>
+                                <Staggered index={2}>
+                                    <ActivityWorldsExhibit
+                                        worlds={view.worlds}
+                                        homeWorldId={homeWorldId}
+                                        showHomeWorld={showHomeWorld}
+                                        onShowHomeWorldChange={
+                                            onShowHomeWorldChange
+                                        }
+                                    />
+                                </Staggered>
+                                <Staggered index={3}>
+                                    <ActivityPeopleExhibit
+                                        people={view.people}
+                                        order={companionOrder}
+                                        pending={
+                                            view.people.order !== companionOrder
+                                        }
+                                        onOrderChange={onCompanionOrderChange}
+                                    />
+                                </Staggered>
+                                <Staggered index={4}>
+                                    <ActivityAccessExhibit
+                                        slices={view.accessSplit}
+                                    />
+                                </Staggered>
+                                {range === 'all' ? (
+                                    <Staggered index={5}>
+                                        <ActivityAvatarsExhibit
+                                            rows={avatarUsage}
+                                        />
+                                    </Staggered>
+                                ) : null}
+                                <p className="text-muted-foreground break-inside-avoid px-1 pt-1 text-xs">
+                                    {t('view.activity.caveat.recorded_since', {
+                                        date: view.coverage.firstSourceAt.slice(
+                                            0,
+                                            10
+                                        )
+                                    })}
+                                </p>
+                            </div>
+                        ) : null}
+                    </div>
+                </TabsContent>
+            </Tabs>
         </PageScaffold>
     );
 }

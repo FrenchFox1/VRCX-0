@@ -481,7 +481,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                                                         ? ''
                                                                         : undefined
                                                                 }
-                                                                className="h-auto w-full flex-col justify-center gap-0.5 px-0 py-1.5 data-active:bg-(--vrcx-0-toolbar-item-selected-surface) sm:h-auto"
+                                                                className="data-active:bg-secondary h-auto w-full flex-col justify-center gap-0.5 px-0 py-1.5 sm:h-auto"
                                                             />
                                                         }
                                                     />

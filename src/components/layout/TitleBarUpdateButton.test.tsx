@@ -125,7 +125,7 @@ describe('TitleBarUpdateButton', () => {
         expect(html).toContain('data-variant="secondary"');
     });
 
-    it('uses the ready label and primary variant for a downloaded matching update', () => {
+    it('keeps the update label and primary variant for a downloaded matching update', () => {
         mocks.updateLoop.autoDownloadState = 'downloaded';
         mocks.updateLoop.downloadedVersion = '2.7.0';
         mocks.updateLoop.downloadProgress = 100;
@@ -136,7 +136,8 @@ describe('TitleBarUpdateButton', () => {
             })
         );
 
-        expect(html).toContain('Restart');
+        expect(html).toContain('Update');
+        expect(html).not.toContain('Restart');
         expect(html).toContain('data-variant="default"');
     });
 
@@ -152,7 +153,8 @@ describe('TitleBarUpdateButton', () => {
             })
         );
 
-        expect(html).toContain('Downloading…');
+        expect(html).toContain('Update');
+        expect(html).not.toContain('Downloading…');
         expect(html).toContain('12 MB');
         expect(html).toContain('42%');
     });

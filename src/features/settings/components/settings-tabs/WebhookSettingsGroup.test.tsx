@@ -140,6 +140,7 @@ vi.mock('@/ui/shadcn/toggle-group', async () => {
     type MockProps = React.PropsWithChildren;
 
     return {
+        ToggleGroupSeparator: () => null,
         ToggleGroup: ({ children }: MockProps) =>
             React.createElement('div', null, children),
         ToggleGroupItem: ({ children }: MockProps) =>

@@ -4,7 +4,7 @@ import {
     MonitorIcon,
     RectangleGogglesIcon,
     SettingsIcon,
-    ShieldIcon,
+    StarIcon,
     UserIcon
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -366,7 +366,7 @@ function DashboardInstancePlayersTable({
                                                 variant="default"
                                                 className="px-1.5"
                                             >
-                                                <HeartIcon className="size-3 fill-current" />
+                                                <StarIcon className="size-3 fill-current" />
                                             </Badge>
                                         ) : null}
                                         {row.isFriend ? (
@@ -374,7 +374,7 @@ function DashboardInstancePlayersTable({
                                                 variant="secondary"
                                                 className="px-1.5"
                                             >
-                                                <ShieldIcon className="size-3" />
+                                                <HeartIcon className="size-3" />
                                             </Badge>
                                         ) : null}
                                         {!row.isFavorite && !row.isFriend ? (

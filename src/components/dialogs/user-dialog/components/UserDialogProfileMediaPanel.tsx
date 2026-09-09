@@ -1,4 +1,4 @@
-import { ImageIcon, XIcon } from 'lucide-react';
+import { CheckIcon, ImageIcon, XIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -12,13 +12,16 @@ import {
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TileShell } from '@/components/tile/TileShell';
 import { cn } from '@/lib/utils';
 import type { MediaFileTag } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/mediaRepository';
 import { toast } from '@/services/toastService';
-import { TILE_SELECTED } from '@/shared/constants/selectableTile';
+import {
+    TILE_CHECK,
+    TILE_CHECK_ANCHOR
+} from '@/shared/constants/selectableTile';
 import { extractFileId } from '@/shared/utils/fileUtils';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
 import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
@@ -115,18 +118,18 @@ function ProfileMediaThumbnail({
         mutatingKey === `${section.fieldName}:clear`;
 
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            className={cn(
-                'relative min-w-0 overflow-hidden rounded-lg border p-0',
-                'shrink-0',
-                section.cardClass,
-                isCurrent && TILE_SELECTED
-            )}
-            title={`${t(section.useKey)}: ${displayName || file.id}`}
-            disabled={disabled || isMutating || isCurrent}
-            onClick={() => onUse(section.fieldName, file.id)}
+        <TileShell
+            selected={isCurrent}
+            className={cn('shrink-0 p-0', section.cardClass)}
+            render={
+                <Button
+                    type="button"
+                    variant="ghost"
+                    title={`${t(section.useKey)}: ${displayName || file.id}`}
+                    disabled={disabled || isMutating || isCurrent}
+                    onClick={() => onUse(section.fieldName, file.id)}
+                />
+            }
         >
             <div className="bg-muted text-muted-foreground flex size-full items-center justify-center overflow-hidden">
                 {imageUrl ? (
@@ -141,14 +144,15 @@ function ProfileMediaThumbnail({
                 )}
             </div>
             {isCurrent ? (
-                <Badge
-                    variant="secondary"
-                    className="bg-background/80 absolute top-1 left-1"
+                <span
+                    role="img"
+                    aria-label={t('dialog.gallery_icons.current')}
+                    className={cn(TILE_CHECK, TILE_CHECK_ANCHOR)}
                 >
-                    {t('dialog.gallery_icons.current')}
-                </Badge>
+                    <CheckIcon className="size-3" />
+                </span>
             ) : null}
-        </Button>
+        </TileShell>
     );
 }
 

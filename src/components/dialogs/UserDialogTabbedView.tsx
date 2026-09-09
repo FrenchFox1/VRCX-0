@@ -408,7 +408,8 @@ export function UserDialogTabbedView({
         friendNumber,
         estimatedOnlineDurationMs,
         presenceActivityAt,
-        friendedAt
+        friendedAt,
+        relationshipHistory
     } = buildUserDialogProfileSummary({
         profile,
         userStats: {
@@ -667,6 +668,7 @@ export function UserDialogTabbedView({
             lastSeen,
             memo,
             friendedAt,
+            relationshipHistory,
             presenceActivityAt,
             profile,
             representedGroup,

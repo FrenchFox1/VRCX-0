@@ -50,12 +50,6 @@ vi.mock('@/ui/shadcn/dialog', () => ({
     DialogTitle: ({ children }: PropsWithChildren) => <h1>{children}</h1>,
     DialogDescription: ({ children }: PropsWithChildren) => <p>{children}</p>
 }));
-vi.mock('@/ui/shadcn/tabs', () => ({
-    Tabs: ({ children }: PropsWithChildren) => <div>{children}</div>,
-    TabsContent: ({ children }: PropsWithChildren) => <div>{children}</div>,
-    TabsList: ({ children }: PropsWithChildren) => <div>{children}</div>,
-    TabsTrigger: ({ children }: PropsWithChildren) => <div>{children}</div>
-}));
 
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 
@@ -78,6 +72,28 @@ afterEach(() => {
 });
 
 describe('export dialog data lifetime', () => {
+    it('switches export format without reloading the friend data', async () => {
+        render(<ExportFriendsListDialog open onOpenChange={vi.fn()} />);
+        const csv = 'UserID,DisplayName,LocalNote\nusr_one,One,memo';
+        await screen.findByDisplayValue(csv, { normalizer: (value) => value });
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'dialog.export_friends_list.json'
+            })
+        );
+        expect(screen.getByRole('textbox')).toHaveProperty(
+            'value',
+            JSON.stringify({ friends: ['usr_one'] }, null, 4)
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'dialog.export_friends_list.csv'
+            })
+        );
+        expect(screen.getByRole('textbox')).toHaveProperty('value', csv);
+        expect(mocks.getUserMemoMap).toHaveBeenCalledTimes(1);
+    });
+
     it('keeps export text during the close animation, releases it afterwards and reloads on reopen', async () => {
         const onOpenChange = vi.fn();
         const view = render(

@@ -815,6 +815,7 @@
         "search_direct_access": "Link oder ID einfügen",
         "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
         "search_open_direct": "Diesen Link bzw. diese ID öffnen",
+        "search_clipboard_detected": "Link oder ID in der Zwischenablage erkannt. Mit Enter öffnen.",
         "search_joined_groups": "Beigetretene Gruppen",
         "refresh_tooltip": "Freunde aktualisieren",
         "refresh_available_in_seconds": "Kürzlich synchronisiert. Bitte in {count} Sek. erneut versuchen.",
@@ -827,12 +828,12 @@
         "filter_no_results": "Keine Treffer",
         "self_more_actions": "Mehr",
         "switch_account": "Konto wechseln",
-        "favorite": "FAVORITEN",
-        "same_instance": "GLEICHE INSTANZ",
-        "you_are_here": "DU BIST HIER",
-        "online": "ONLINE",
-        "active": "AKTIV",
-        "offline": "OFFLINE",
+        "favorite": "Favoriten",
+        "same_instance": "Gleiche Instanz",
+        "you_are_here": "Du bist hier",
+        "online": "Online",
+        "active": "Aktiv",
+        "offline": "Offline",
         "pending_offline": "Möglicherweise offline",
         "status_menu": {
             "clear_description": "Statusbeschreibung löschen",
@@ -1540,9 +1541,8 @@
                 "moderation_snapshot_failed_to_load": "Moderationsverlauf konnte nicht geladen werden"
             },
             "label": {
-                "showing": "Zeige",
-                "of": "von",
                 "moderation_row": "Moderationseintrag",
+                "back_to_top": "Nach oben",
                 "moderation_rows": "Moderationseinträge",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "Erweitere die Typfilter oder die Suchanfrage, um mehr Ergebnisse zu sehen"
             },
@@ -2208,7 +2208,7 @@
             },
             "feedback": {
                 "title": "Feedback senden",
-                "description": "Feedback wird anonym gesendet. Wir lesen jede Nachricht, können aber nicht direkt antworten.",
+                "description": "Feedback wird standardmäßig anonym gesendet. Wir lesen jede Nachricht. Wenn du eine Antwort möchtest, gib bitte deine E-Mail-Adresse im Feedback an.",
                 "privacy_note": "Es werden keine Kontodaten übermittelt.",
                 "placeholder": "Erzähl uns, was gut läuft, was nicht, oder was du dir wünschst…",
                 "submit": "Senden",
@@ -3716,6 +3716,8 @@
                 "last_activity": "Letzte Aktivität",
                 "date_joined": "Beigetreten am",
                 "friended": "Befreundet seit",
+                "unfriended": "Freundschaft beendet",
+                "relationship_history": "Freundschaftsverlauf",
                 "avatar_cloning": "Avatar-Klonen",
                 "booping": "Boopen",
                 "avatar_cloning_allow": "Erlaubt",
@@ -4974,8 +4976,8 @@
             "msg_test_failed": "Ungültiger YouTube-API-Schlüssel"
         },
         "translation_api": {
-            "header": "Konfiguration des Übersetzungsanbieters",
-            "description": "Wähle und konfiguriere den Anbieter für Inhaltsübersetzungen.",
+            "header": "Übersetzungsanbieter",
+            "description": "Anbieter für Inhaltsübersetzungen konfigurieren.",
             "guide": "Anleitung",
             "mode": "Anbieter",
             "mode_google": "Google Translate",
@@ -4989,7 +4991,7 @@
             "openai": {
                 "model": "Modellname",
                 "prompt_optional": "Prompt (optional)",
-                "prompt_optional_description": "Optionaler System-Prompt. Stelle sicher, dass die Variable für die Zielsprache {targetLang} enthalten ist.",
+                "prompt_optional_description": "Optionaler System-Prompt. Muss die Variable {targetLang} enthalten.",
                 "connection": "LLM-Endpoint",
                 "connection_description": "Es werden nur OpenAI-kompatible Endpoints unterstützt.",
                 "connection_placeholder": "Endpoint auswählen",
@@ -5277,7 +5279,7 @@
                 "stable": "Stabil",
                 "beta": "Beta",
                 "description": "VRCX-0 sucht nur im derzeit installierten Kanal nach Updates.",
-                "switch_description": "Um zu {channel} zu wechseln, lade die neueste Version dieses Kanals von GitHub herunter und installiere sie.",
+                "switch_description": "Um zu {channel} zu wechseln, lade die neueste Version dieses Kanals herunter und installiere sie.",
                 "download_stable": "Neueste stabile Version herunterladen",
                 "download_beta": "Neueste Beta herunterladen",
                 "no_release": "In diesem Kanal ist keine Version verfügbar."
@@ -5500,10 +5502,7 @@
         },
         "direct_access_omni": {
             "header": "Direktzugriff",
-            "description": "Gib eine Nutzer-/Welt-/Instanz-/Avatar-/Gruppen-URL oder -ID (UUID) ein",
             "description_failed": "Direktzugriff fehlgeschlagen. Überprüfe die URL oder ID und versuche es erneut.",
-            "cancel": "Abbrechen",
-            "ok": "OK",
             "message": {
                 "opening": "Wird geöffnet..."
             }
@@ -6324,5 +6323,16 @@
             "themes": "Designs",
             "themes_description": "Verwaltung von Design-Quellen und eigenem CSS."
         }
+    },
+    "linux_rendering": {
+        "title": "Hardwarebeschleunigung (experimentell)",
+        "description": "Wird nach einem Neustart von VRCX-0 wirksam. Bestätigen Sie nach dem Aktivieren innerhalb von 30 Sekunden nach dem Start; andernfalls wird die Beschleunigung deaktiviert und VRCX-0 neu gestartet.",
+        "saved": "Gespeichert. Starten Sie VRCX-0 neu, um die Änderung zu übernehmen.",
+        "restart_now": "Jetzt neu starten",
+        "confirm_title": "Wird die Oberfläche korrekt dargestellt?",
+        "confirm_description": "Ohne Bestätigung innerhalb von 30 Sekunden nach dem Start deaktiviert VRCX-0 die Hardwarebeschleunigung und startet neu.",
+        "restore": "Wiederherstellen und neu starten",
+        "keep": "Darstellung korrekt, beibehalten",
+        "failed": "Die Darstellungseinstellung konnte nicht geändert werden. Versuche es erneut."
     }
 }

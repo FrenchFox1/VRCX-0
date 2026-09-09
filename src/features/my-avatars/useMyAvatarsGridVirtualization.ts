@@ -15,7 +15,7 @@ import type {
     MyAvatarsViewMode
 } from './myAvatarsTypes';
 
-const MY_AVATARS_GRID_HORIZONTAL_INSET = 12;
+const MY_AVATARS_GRID_HORIZONTAL_INSET = 8;
 
 export function useMyAvatarsGridVirtualization({
     deferredSearchQuery,
@@ -61,8 +61,9 @@ export function useMyAvatarsGridVirtualization({
         densityConfig,
         gridGap,
         gridMinWidth,
+        gridPadding,
         gridColumnCount,
-        gridRowHeight
+        cellHeight
     } = getMyAvatarsGridMetrics({
         gridDensity,
         width: Math.max(
@@ -70,24 +71,25 @@ export function useMyAvatarsGridVirtualization({
             gridScrollMetrics.width - MY_AVATARS_GRID_HORIZONTAL_INSET
         )
     });
-    const gridRows = useMemo(
+    const positionedRows = useMemo(
         () =>
             buildMyAvatarsGridRows({
                 avatars: filteredAvatars,
+                cellHeight,
                 gridColumnCount,
-                gridRowHeight
+                gridGap
             }),
-        [filteredAvatars, gridColumnCount, gridRowHeight]
+        [cellHeight, filteredAvatars, gridColumnCount, gridGap]
     );
     const visibleGridRows = useMemo(
         () =>
             getVisibleMyAvatarsGridRows({
-                gridRows,
+                gridRows: positionedRows.rows,
                 scrollTop: gridScrollMetrics.scrollTop,
                 viewportHeight: gridScrollMetrics.viewportHeight
             }),
         [
-            gridRows,
+            positionedRows.rows,
             gridScrollMetrics.scrollTop,
             gridScrollMetrics.viewportHeight
         ]
@@ -98,8 +100,9 @@ export function useMyAvatarsGridVirtualization({
         gridGap,
         gridColumnCount,
         gridMinWidth,
+        gridPadding,
         gridScrollRef,
-        gridTotalHeight: gridRows.length * gridRowHeight,
+        gridTotalHeight: positionedRows.totalHeight,
         visibleGridRows
     };
 }

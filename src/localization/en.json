@@ -502,7 +502,7 @@
             "doNotDisturbUntilStopped": "Until turned off",
             "doNotDisturbTurnOff": "Turn off",
             "rebuildUi": "Reload UI",
-            "sidebarMode": "Sidebar mode",
+            "sidebarMode": "Sidebar Mode",
             "disableTheme": "Disable Theme",
             "exit": "Exit"
         },
@@ -815,6 +815,7 @@
         "search_direct_access": "Paste a link or ID",
         "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
         "search_open_direct": "Open this link or ID",
+        "search_clipboard_detected": "Link or ID detected in clipboard. Press Enter to open.",
         "search_joined_groups": "Joined Groups",
         "refresh_tooltip": "Refresh friends",
         "refresh_available_in_seconds": "Recently synced. Please try again in {count} sec.",
@@ -827,12 +828,12 @@
         "filter_no_results": "No matches",
         "self_more_actions": "More",
         "switch_account": "Switch Account",
-        "favorite": "FAVORITES",
-        "same_instance": "SAME INSTANCE",
-        "you_are_here": "YOU ARE HERE",
-        "online": "ONLINE",
-        "active": "ACTIVE",
-        "offline": "OFFLINE",
+        "favorite": "Favorites",
+        "same_instance": "Same instance",
+        "you_are_here": "You are here",
+        "online": "Online",
+        "active": "Active",
+        "offline": "Offline",
         "pending_offline": "Possibly Offline",
         "status_menu": {
             "clear_description": "Clear Status Description",
@@ -1540,9 +1541,8 @@
                 "moderation_snapshot_failed_to_load": "Couldn't load moderation history"
             },
             "label": {
-                "showing": "Showing",
-                "of": "of",
                 "moderation_row": "moderation row",
+                "back_to_top": "Back to top",
                 "moderation_rows": "moderation rows",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "Broaden the type filters or search query to see more results"
             },
@@ -2208,7 +2208,7 @@
             },
             "feedback": {
                 "title": "Send feedback",
-                "description": "Feedback is submitted anonymously. We read every message, but can't reply directly.",
+                "description": "Feedback is anonymous by default. We read every message. If you need a reply, please include your email address in your feedback.",
                 "privacy_note": "No account info is attached.",
                 "placeholder": "Tell us what's working, what's not, or what you'd like to see...",
                 "submit": "Send",
@@ -3716,6 +3716,8 @@
                 "last_activity": "Last Activity",
                 "date_joined": "Date Joined",
                 "friended": "Friended",
+                "unfriended": "Unfriended",
+                "relationship_history": "Friendship history",
                 "avatar_cloning": "Avatar Cloning",
                 "booping": "Booping",
                 "avatar_cloning_allow": "Allowed",
@@ -5018,8 +5020,8 @@
             "msg_test_failed": "Invalid YouTube API key"
         },
         "translation_api": {
-            "header": "Translation Provider Configuration",
-            "description": "Choose and configure the provider used for content translation.",
+            "header": "Translation Provider",
+            "description": "Configure the provider used for content translation.",
             "guide": "Guide",
             "mode": "Provider",
             "mode_google": "Google Translate",
@@ -5033,7 +5035,7 @@
             "openai": {
                 "model": "Model Name",
                 "prompt_optional": "Prompt (Optional)",
-                "prompt_optional_description": "Optional system prompt. Make sure to include the target language variable {targetLang}.",
+                "prompt_optional_description": "Optional system prompt. Must include the {targetLang} variable.",
                 "connection": "LLM Endpoint",
                 "connection_description": "Only OpenAI-compatible endpoints are supported.",
                 "connection_placeholder": "Select an endpoint",
@@ -5321,7 +5323,7 @@
                 "stable": "Stable",
                 "beta": "Beta",
                 "description": "VRCX-0 only checks for updates in the installed channel.",
-                "switch_description": "To switch to {channel}, download and install its latest release from GitHub.",
+                "switch_description": "To switch to {channel}, download and install its latest release.",
                 "download_stable": "Download latest Stable",
                 "download_beta": "Download latest Beta",
                 "no_release": "No release is available in this channel."
@@ -5544,10 +5546,7 @@
         },
         "direct_access_omni": {
             "header": "Direct Access",
-            "description": "Enter a User/World/Instance/Avatar/Group URL or ID (UUID)",
             "description_failed": "Direct access failed. Check the URL or ID and try again.",
-            "cancel": "Cancel",
-            "ok": "OK",
             "message": {
                 "opening": "Opening..."
             }
@@ -6372,5 +6371,16 @@
             "themes": "Themes",
             "themes_description": "Theme source and custom CSS management."
         }
+    },
+    "linux_rendering": {
+        "title": "Hardware acceleration (experimental)",
+        "description": "Applies after restarting VRCX-0. After enabling, confirm within 30 seconds of startup; otherwise acceleration is turned off and VRCX-0 restarts.",
+        "saved": "Saved. Restart VRCX-0 to apply.",
+        "restart_now": "Restart now",
+        "confirm_title": "Is the interface displaying correctly?",
+        "confirm_description": "Without confirmation within 30 seconds of startup, VRCX-0 turns off hardware acceleration and restarts.",
+        "restore": "Restore and restart",
+        "keep": "Display is normal, keep",
+        "failed": "Could not change the rendering setting. Please try again."
     }
 }

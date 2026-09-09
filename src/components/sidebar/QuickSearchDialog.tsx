@@ -6,12 +6,11 @@ import {
     UsersIcon,
     UsersRoundIcon
 } from 'lucide-react';
-import { useState, type KeyboardEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { cn } from '@/lib/utils';
-import { directAccessParse } from '@/services/directAccessService';
 import { triggerToolByKey } from '@/services/toolActionService';
 import { setRgb } from '@/services/vrcx0CssLayerService';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -37,6 +36,7 @@ import {
     normalizeSearchValue,
     USER_QUERY_MIN_LENGTH
 } from './quick-search/quickSearchResultModel';
+import { useClipboardDirectAccess } from './quick-search/useClipboardDirectAccess';
 import { useDirectAccessCandidate } from './quick-search/useDirectAccessCandidate';
 import { useQuickSearchHistory } from './quick-search/useQuickSearchHistory';
 import { useQuickSearchResults } from './quick-search/useQuickSearchResults';
@@ -50,10 +50,22 @@ import { ResultGroup } from './QuickSearchResults';
 
 export function QuickSearchDialog({
     open,
-    onOpenChange
+    onOpenChange,
+    onOpenChangeComplete,
+    query,
+    onQueryChange,
+    retryInput = '',
+    clipboardSession = 0,
+    onDirectAccess
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onOpenChangeComplete?: (open: boolean) => void;
+    query: string;
+    onQueryChange: (query: string) => void;
+    retryInput?: string;
+    clipboardSession?: number;
+    onDirectAccess: (input: string) => void;
 }) {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
@@ -61,10 +73,17 @@ export function QuickSearchDialog({
         (state) => state.auth.currentUserEndpoint
     );
     const navigate = useNavigate();
-    const [query, setQuery] = useState('');
     const normalizedQuery = normalizeSearchQuery(query);
     const directAccessInput = normalizeSearchValue(query);
-    const canDirectAccess = useDirectAccessCandidate(directAccessInput);
+    const detectedDirectAccess = useDirectAccessCandidate(directAccessInput);
+    const canDirectAccess =
+        detectedDirectAccess ||
+        Boolean(retryInput && directAccessInput === retryInput);
+    const dismissClipboard = useClipboardDirectAccess(
+        open && !retryInput,
+        clipboardSession,
+        onDirectAccess
+    );
     const showSearchOverview = normalizedQuery.length < USER_QUERY_MIN_LENGTH;
     const navCommands = useNavCommands(normalizedQuery);
     const results = useQuickSearchResults({
@@ -92,7 +111,7 @@ export function QuickSearchDialog({
 
     const selectResult = useQuickSearchSelectResult({
         onOpenChange,
-        setQuery,
+        setQuery: onQueryChange,
         onResultOpened: history.remember
     });
     function handleSearchCommand(event: KeyboardEvent<HTMLInputElement>) {
@@ -107,22 +126,17 @@ export function QuickSearchDialog({
         event.preventDefault();
         event.stopPropagation();
         setRgb(value === '/rgb-mode:on');
-        setQuery('');
+        onQueryChange('');
         onOpenChange(false);
     }
 
     function selectDirectAccess() {
-        const input = directAccessInput;
-        onOpenChange(false);
-        setQuery('');
-        directAccessParse(input).catch((error: unknown) => {
-            console.warn('Direct access failed:', error);
-        });
+        onDirectAccess(directAccessInput);
     }
 
     async function selectNavCommand(item: QuickSearchNavCommand) {
         onOpenChange(false);
-        setQuery('');
+        onQueryChange('');
         if (item.target.type === 'path') {
             navigate(item.target.path);
             return;
@@ -133,12 +147,8 @@ export function QuickSearchDialog({
     return (
         <Dialog
             open={open}
-            onOpenChange={(nextOpen) => {
-                onOpenChange(nextOpen);
-                if (!nextOpen) {
-                    setQuery('');
-                }
-            }}
+            onOpenChange={onOpenChange}
+            onOpenChangeComplete={onOpenChangeComplete}
         >
             <DialogContent
                 showCloseButton={false}
@@ -159,9 +169,14 @@ export function QuickSearchDialog({
                         aria-label={t('side_panel.search_input_placeholder')}
                         placeholder={t('side_panel.search_input_placeholder')}
                         onKeyDownCapture={handleSearchCommand}
-                        onValueChange={setQuery}
+                        onCompositionStart={dismissClipboard}
+                        onValueChange={(value) => {
+                            dismissClipboard();
+                            onQueryChange(value);
+                        }}
                     />
                     <CommandList
+                        onPointerMove={dismissClipboard}
                         className={cn(
                             'max-h-[min(400px,50vh)]',
                             showSearchOverview && 'max-h-none'

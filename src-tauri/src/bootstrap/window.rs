@@ -233,6 +233,7 @@ pub(super) fn create_main_window(
 
     let mut builder = WebviewWindowBuilder::from_config(app, window_config)?;
     let state = app.state::<AppState>();
+    super::linux_rendering::resolve(app, &state);
     #[cfg(target_os = "windows")]
     {
         let system_frame = state
@@ -459,10 +460,10 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
         let menu = Menu::new(app)?;
         menu.append(&open_item)?;
         menu.append(&background_item)?;
+        menu.append(&sidebar_mode_item)?;
         menu.append(&do_not_disturb_menu)?;
         #[cfg(target_os = "linux")]
         menu.append(&rebuild_ui_item)?;
-        menu.append(&sidebar_mode_item)?;
         if community_theme_enabled {
             menu.append(&disable_theme_item)?;
         }

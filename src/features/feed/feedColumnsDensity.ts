@@ -41,7 +41,7 @@ const DENSITY_CONFIGS: Record<FeedColumnDensity, FeedColumnDensityConfig> =
             rowPaddingClassName: 'px-2 py-1',
             contentGapClassName: 'gap-0.5',
             topRowGapClassName: 'gap-1.5',
-            userLinkClassName: 'h-5 text-xs',
+            userLinkClassName: 'h-5 text-[13px]',
             detailClassName: 'text-xs leading-4'
         }),
         dense: Object.freeze({
@@ -54,7 +54,7 @@ const DENSITY_CONFIGS: Record<FeedColumnDensity, FeedColumnDensityConfig> =
             rowPaddingClassName: 'px-2 py-1',
             contentGapClassName: 'gap-0.5',
             topRowGapClassName: 'gap-1.5',
-            userLinkClassName: 'h-5 text-xs',
+            userLinkClassName: 'h-5 text-[13px]',
             detailClassName: 'text-xs leading-4'
         })
     });

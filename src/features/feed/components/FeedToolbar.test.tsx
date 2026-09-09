@@ -95,72 +95,76 @@ function renderFilters(userIds: string[] = []) {
 }
 
 describe('Feed toolbar filters', () => {
-    it('labels the icon-only grouped-friends toggle on hover and keyboard focus', async () => {
+    it('surfaces grouped friends from the type menu as a removable chip', async () => {
         const user = userEvent.setup();
         renderFilters();
-        const toggle = screen.getByRole('button', {
-            name: 'Grouped friends only'
-        });
-
-        expect(toggle.textContent).toBe('');
-        expect(toggle.getAttribute('aria-pressed')).toBe('false');
-        await user.hover(toggle);
-        expect(
-            (await screen.findByText('Grouped friends only')).hasAttribute(
-                'data-open'
-            )
-        ).toBe(true);
-        await user.unhover(toggle);
-        await user.click(toggle);
-        expect(toggle.getAttribute('aria-pressed')).toBe('true');
-
-        await user.tab();
-        expect(document.activeElement).not.toBe(toggle);
-        await user.tab({ shift: true });
-        expect(document.activeElement).toBe(toggle);
-        expect(
-            (await screen.findByText('Grouped friends only')).hasAttribute(
-                'data-open'
-            )
-        ).toBe(true);
-        await user.keyboard(' ');
-        expect(toggle.getAttribute('aria-pressed')).toBe('false');
-    });
-
-    it('shares multi-selection between the expanded buttons and the summary menu', async () => {
-        const user = userEvent.setup();
-        renderFilters();
-        const avatar = screen.getByRole('button', { name: 'Avatar' });
-        const location = screen.getByRole('button', { name: 'Location' });
-        const all = screen.getByRole('button', { name: 'All' });
 
         expect(
-            screen.getByRole('button', { name: 'Type: All' }).textContent
-        ).toBe('All');
-        expect(all.getAttribute('aria-pressed')).toBe('true');
-        await user.click(avatar);
-        await user.click(location);
-        expect(avatar.getAttribute('aria-pressed')).toBe('true');
-        expect(location.getAttribute('aria-pressed')).toBe('true');
-        expect(
-            screen.getByRole('button', { name: 'Type: Location +1' })
-                .textContent
-        ).toBe('Location +1');
+            screen.queryByRole('button', { name: 'Grouped friends only' })
+        ).toBeNull();
+
+        await user.click(screen.getByRole('button', { name: 'Type: All' }));
         await user.click(
-            screen.getByRole('button', { name: 'Type: Location +1' })
-        );
-        await user.click(
-            await screen.findByRole('menuitemcheckbox', { name: 'Location' })
+            await screen.findByRole('menuitemcheckbox', {
+                name: 'Grouped friends only'
+            })
         );
         await user.keyboard('{Escape}');
 
-        expect(location.getAttribute('aria-pressed')).toBe('false');
+        const chip = screen.getByRole('button', {
+            name: 'Grouped friends only'
+        });
+        expect(chip.textContent).toBe('');
+        expect(chip.getAttribute('aria-pressed')).toBe('true');
+        await user.hover(chip);
+        expect(
+            (await screen.findByText('Grouped friends only')).hasAttribute(
+                'data-open'
+            )
+        ).toBe(true);
+        await user.unhover(chip);
+
+        await user.click(chip);
+        expect(
+            screen.queryByRole('button', { name: 'Grouped friends only' })
+        ).toBeNull();
+    });
+
+    it('shows chips only for active types and keeps them in sync with the menu', async () => {
+        const user = userEvent.setup();
+        renderFilters();
+
+        expect(screen.queryByRole('button', { name: 'Avatar' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'All' })).toBeNull();
+        const menu = screen.getByRole('button', { name: 'Type: All' });
+        expect(menu.textContent).toBe('Types');
+
+        await user.click(menu);
+        await user.click(
+            await screen.findByRole('menuitemcheckbox', { name: 'Avatar' })
+        );
+        await user.click(
+            screen.getByRole('menuitemcheckbox', { name: 'Location' })
+        );
+        await user.keyboard('{Escape}');
+
+        const avatar = screen.getByRole('button', { name: 'Avatar' });
+        const location = screen.getByRole('button', { name: 'Location' });
         expect(avatar.getAttribute('aria-pressed')).toBe('true');
-        await user.click(all);
-        expect(avatar.getAttribute('aria-pressed')).toBe('false');
-        expect(screen.getByRole('button', { name: 'Type: All' })).toBeTruthy();
-        await user.keyboard('{ArrowRight} ');
         expect(location.getAttribute('aria-pressed')).toBe('true');
+        expect(
+            screen.getByRole('button', { name: 'Type: Location +1' })
+        ).toBeTruthy();
+
+        await user.click(location);
+        expect(screen.queryByRole('button', { name: 'Location' })).toBeNull();
+        expect(
+            screen.getByRole('button', { name: 'Type: Avatar' })
+        ).toBeTruthy();
+
+        await user.click(screen.getByRole('button', { name: 'Avatar' }));
+        expect(screen.queryByRole('button', { name: 'Avatar' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Type: All' })).toBeTruthy();
     });
 
     it('keeps multi-select open and summarizes selections in the established type order', async () => {
@@ -231,14 +235,19 @@ describe('Feed toolbar filters', () => {
         });
     });
 
-    it('keeps grouped friends one-click and clears it when a specific friend scope arrives', async () => {
+    it('clears grouped friends when a specific friend scope arrives', async () => {
         const user = userEvent.setup();
         const view = renderFilters();
-        const toggle = screen.getByRole('button', {
-            name: 'Grouped friends only'
-        });
-        await user.click(toggle);
-        expect(toggle.getAttribute('aria-pressed')).toBe('true');
+        await user.click(screen.getByRole('button', { name: 'Type: All' }));
+        await user.click(
+            await screen.findByRole('menuitemcheckbox', {
+                name: 'Grouped friends only'
+            })
+        );
+        await user.keyboard('{Escape}');
+        expect(
+            screen.getByRole('button', { name: 'Grouped friends only' })
+        ).toBeTruthy();
 
         view.rerender(
             <I18nextProvider i18n={i18n}>
@@ -246,8 +255,9 @@ describe('Feed toolbar filters', () => {
             </I18nextProvider>
         );
 
-        expect(toggle.getAttribute('aria-pressed')).toBe('false');
-        expect(toggle.hasAttribute('disabled')).toBe(true);
+        expect(
+            screen.queryByRole('button', { name: 'Grouped friends only' })
+        ).toBeNull();
         expect(screen.getByRole('button', { name: 'Date range' })).toBeTruthy();
     });
 });
@@ -349,11 +359,6 @@ describe('Feed compound search', { timeout: 10_000 }, () => {
         expect(
             screen.getByRole('status', { name: 'Applied friends' }).textContent
         ).toBe('usr_scoped');
-        const dates = within(screen.getByRole('group', { name: 'Date range' }));
-        const clearDates = dates.getByRole('button', {
-            name: en.common.actions.clear
-        });
-
         await user.click(search);
         await user.keyboard('{Enter}');
         expect(
@@ -362,7 +367,12 @@ describe('Feed compound search', { timeout: 10_000 }, () => {
         expect(
             screen.getByRole('status', { name: 'Applied dates' }).textContent
         ).toBe('2026-08-10/2026-08-12');
-        await user.click(clearDates);
+        await user.click(screen.getByRole('button', { name: /^Date range/ }));
+        await user.click(
+            within(
+                await screen.findByRole('dialog', { name: 'Date range' })
+            ).getByRole('button', { name: en.common.actions.clear })
+        );
         expect(
             screen.getByRole('status', { name: 'Applied dates' }).textContent
         ).toBe('/');

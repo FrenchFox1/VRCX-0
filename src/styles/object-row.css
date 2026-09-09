@@ -4,7 +4,7 @@
         min-width: 0;
         overflow: hidden;
         border: 1px solid var(--object-border);
-        border-radius: var(--radius-lg);
+        border-radius: var(--object-radius);
         background: var(--object-surface);
         color: var(--content-secondary);
         transition-property:

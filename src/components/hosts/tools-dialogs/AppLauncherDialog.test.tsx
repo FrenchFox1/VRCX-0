@@ -83,6 +83,7 @@ vi.mock('@/ui/shadcn/switch', () => ({
 }));
 
 vi.mock('@/ui/shadcn/toggle-group', () => ({
+    ToggleGroupSeparator: () => null,
     ToggleGroup: ({ children }: PropsWithChildren) => <div>{children}</div>,
     ToggleGroupItem: ({
         children,

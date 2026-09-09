@@ -13,6 +13,11 @@ import {
     openUserDialog,
     openWorldDialog
 } from '@/services/dialogService';
+import {
+    TILE_SELECT_BOX,
+    TILE_SELECT_TOGGLE,
+    TILE_SELECT_TOGGLE_VISIBLE
+} from '@/shared/constants/selectableTile';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import { resolveFriendPresenceLocation } from '@/shared/utils/location';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -228,16 +233,15 @@ const FavoriteCard = memo(function FavoriteCard({
         <span
             role="presentation"
             className={cn(
-                'absolute top-2 left-2 z-20',
-                'opacity-0 transition-opacity',
-                'group-hover/fav-card:opacity-100 group-has-[:focus-visible]/fav-card:opacity-100',
-                selected && 'opacity-100'
+                TILE_SELECT_TOGGLE,
+                selected && TILE_SELECT_TOGGLE_VISIBLE
             )}
             onClickCapture={handleCheckboxClickCapture}
             onClick={stopCardInteraction}
             onKeyDown={stopCardInteraction}
         >
             <Checkbox
+                className={TILE_SELECT_BOX}
                 aria-label={`${t('common.actions.select')} ${itemLabel}`}
                 checked={selected}
                 onClick={stopCardInteraction}

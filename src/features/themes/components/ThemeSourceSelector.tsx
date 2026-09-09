@@ -1,11 +1,15 @@
 import { useTranslation } from 'react-i18next';
 
+import { ToolbarSegmented } from '@/components/layout/ToolbarControls';
 import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 import { THEME_MODE_OPTIONS, themeModeLabel } from '../themeHelpers';
 import type { useThemesController } from '../useThemesController';
-import { ThemeSourceButton } from './ThemesPageParts';
 
 type ThemeSourceSelectorProps = Pick<
     ReturnType<typeof useThemesController>,
@@ -47,26 +51,32 @@ export function ThemeSourceSelector({
                         </div>
                     ) : null}
                 </div>
-                <div className="bg-muted/30 flex min-w-0 flex-wrap gap-1 rounded-lg p-1">
-                    <ThemeSourceButton
-                        active={visibleSource === 'built-in'}
+                <ToggleGroup
+                    variant="outline"
+                    size="sm"
+                    value={[visibleSource]}
+                >
+                    <ToggleGroupItem
+                        value="built-in"
                         onClick={selectBuiltInSource}
                     >
                         {t('view.themes.source.built_in')}
-                    </ThemeSourceButton>
-                    <ThemeSourceButton
-                        active={visibleSource === 'background'}
+                    </ToggleGroupItem>
+                    <ToggleGroupSeparator />
+                    <ToggleGroupItem
+                        value="background"
                         onClick={selectBackgroundSource}
                     >
                         {t('view.themes.source.background')}
-                    </ThemeSourceButton>
-                    <ThemeSourceButton
-                        active={visibleSource === 'community'}
+                    </ToggleGroupItem>
+                    <ToggleGroupSeparator />
+                    <ToggleGroupItem
+                        value="community"
                         onClick={selectCommunitySource}
                     >
                         {t('view.themes.source.community')}
-                    </ThemeSourceButton>
-                </div>
+                    </ToggleGroupItem>
+                </ToggleGroup>
             </div>
 
             {visibleSource === 'built-in' ? (
@@ -74,22 +84,14 @@ export function ThemeSourceSelector({
                     <div className="text-muted-foreground text-xs">
                         {t('view.themes.source.built_in_description')}
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                        {THEME_MODE_OPTIONS.map((mode) => (
-                            <Button
-                                key={mode}
-                                type="button"
-                                size="sm"
-                                variant={
-                                    themeMode === mode ? 'default' : 'outline'
-                                }
-                                className="h-7"
-                                onClick={() => updateThemeMode(mode)}
-                            >
-                                {themeModeLabel(mode, t)}
-                            </Button>
-                        ))}
-                    </div>
+                    <ToolbarSegmented
+                        value={themeMode}
+                        onValueChange={updateThemeMode}
+                        options={THEME_MODE_OPTIONS.map((mode) => ({
+                            value: mode,
+                            label: themeModeLabel(mode, t)
+                        }))}
+                    />
                 </div>
             ) : null}
         </div>

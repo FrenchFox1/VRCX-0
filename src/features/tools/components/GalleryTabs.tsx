@@ -36,10 +36,7 @@ export function GalleryTabs({
             onValueChange={onActiveTabChange}
             className="min-h-0 flex-1"
         >
-            <TabsList
-                variant="underline"
-                className="flex h-auto w-full flex-wrap justify-start"
-            >
+            <TabsList className="max-w-full flex-wrap justify-start">
                 {TAB_ORDER.map((tab: GalleryTab) => {
                     const definition = tab === 'prints' ? null : FILE_TABS[tab];
                     return (

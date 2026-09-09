@@ -19,8 +19,8 @@ describe('myAvatarsGrid', () => {
 
         expect(narrow.gridColumnCount).toBe(1);
         expect(wide.gridColumnCount).toBeGreaterThan(narrow.gridColumnCount);
-        expect(wide.gridGap).toBe(8);
-        expect(wide.gridMinWidth).toBe(180);
+        expect(wide.gridGap).toBe(4);
+        expect(wide.gridMinWidth).toBe(184);
     });
 
     it('fits more columns when the user selects a denser grid', () => {
@@ -34,10 +34,25 @@ describe('myAvatarsGrid', () => {
         });
 
         expect(dense.gridColumnCount).toBeGreaterThan(standard.gridColumnCount);
-        expect(dense.gridMinWidth).toBe(125);
+        expect(dense.gridMinWidth).toBe(129);
     });
 
-    it('groups avatars into stable virtual rows for the current column count', () => {
+    it('sizes grid cells from the shared 4:3 avatar image ratio', () => {
+        const metrics = getMyAvatarsGridMetrics({
+            gridDensity: 'standard',
+            width: 800
+        });
+        const columnWidth =
+            (800 - metrics.gridGap * (metrics.gridColumnCount - 1)) /
+            metrics.gridColumnCount;
+        const cardWidth = columnWidth - metrics.gridPadding * 2;
+
+        expect(metrics.cellHeight).toBe(
+            Math.round(cardWidth / (4 / 3)) + metrics.gridPadding * 2
+        );
+    });
+
+    it('groups avatars into stable virtual rows and drops the trailing gap', () => {
         const avatars = [
             { id: 'avtr_1' },
             { id: 'avtr_2' },
@@ -49,26 +64,30 @@ describe('myAvatarsGrid', () => {
         expect(
             buildMyAvatarsGridRows({
                 avatars,
+                cellHeight: 240,
                 gridColumnCount: 2,
-                gridRowHeight: 240
-            })
+                gridGap: 8
+            }).rows
         ).toEqual([
             {
                 key: 'grid-row:0',
                 avatars: [{ id: 'avtr_1' }, { id: 'avtr_2' }],
+                cellHeight: 240,
                 top: 0,
-                height: 240
+                height: 248
             },
             {
                 key: 'grid-row:2',
                 avatars: [{ id: 'avtr_3' }, { id: 'avtr_4' }],
-                top: 240,
-                height: 240
+                cellHeight: 240,
+                top: 248,
+                height: 248
             },
             {
                 key: 'grid-row:4',
                 avatars: [{ id: 'avtr_5' }],
-                top: 480,
+                cellHeight: 240,
+                top: 496,
                 height: 240
             }
         ]);
@@ -79,9 +98,10 @@ describe('myAvatarsGrid', () => {
             avatars: Array.from({ length: 20 }, (_, index) => ({
                 id: `avtr_${index}`
             })),
+            cellHeight: 200,
             gridColumnCount: 2,
-            gridRowHeight: 200
-        });
+            gridGap: 0
+        }).rows;
 
         const visibleRows = getVisibleMyAvatarsGridRows({
             gridRows,

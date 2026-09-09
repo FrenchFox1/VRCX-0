@@ -1,5 +1,4 @@
 import { BadgeCheckIcon, DownloadIcon, ExternalLinkIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { CommunityThemeManifest } from '@/domain/themes/types';
@@ -20,29 +19,6 @@ export function ThemeTags({ tags }: { tags: string[] }) {
                 </Badge>
             ))}
         </div>
-    );
-}
-
-export function ThemeSourceButton({
-    active,
-    children,
-    onClick
-}: {
-    active: boolean;
-    children: ReactNode;
-    onClick: () => void;
-}) {
-    return (
-        <Button
-            type="button"
-            variant={active ? 'default' : 'outline'}
-            size="sm"
-            className="h-7 justify-start gap-1.5 rounded-md px-2.5"
-            onClick={onClick}
-        >
-            {active ? <BadgeCheckIcon data-icon="inline-start" /> : null}
-            {children}
-        </Button>
     );
 }
 

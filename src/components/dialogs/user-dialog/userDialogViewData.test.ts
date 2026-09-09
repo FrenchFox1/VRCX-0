@@ -258,6 +258,7 @@ describe('userDialogViewData', () => {
         expect(summary.mutualFriendCount).toBe(4);
         expect(summary.friendNumber).toBe(42);
         expect(summary.presenceActivityAt).toBe('2026-01-03T04:05:06');
+        expect(summary.relationshipHistory).toEqual([]);
     });
 
     it('merges current-user API history with locally observed names', () => {

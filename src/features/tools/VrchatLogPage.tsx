@@ -74,27 +74,26 @@ export function VrchatLogPage() {
     return (
         <PageScaffold className="vrchat-log-page flex-1" flushBottom>
             {header}
+            <VrchatLogToolbar
+                selectedFileName={selectedFileName}
+                setSelectedFileName={setSelectedFileName}
+                files={files}
+                isFilesLoading={isFilesLoading}
+                selectedFile={selectedFile}
+                isEntriesLoading={isEntriesLoading}
+                refresh={refresh}
+                followLatest={followLatest}
+                setFollowLatest={setFollowLatest}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                levels={levels}
+                toggleLevel={toggleLevel}
+                categoryOptions={categoryOptions}
+                selectedCategories={selectedCategories}
+                setSelectedCategories={setSelectedCategories}
+                toggleCategory={toggleCategory}
+            />
             <PageBody>
-                <VrchatLogToolbar
-                    selectedFileName={selectedFileName}
-                    setSelectedFileName={setSelectedFileName}
-                    files={files}
-                    isFilesLoading={isFilesLoading}
-                    selectedFile={selectedFile}
-                    isEntriesLoading={isEntriesLoading}
-                    refresh={refresh}
-                    followLatest={followLatest}
-                    setFollowLatest={setFollowLatest}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    levels={levels}
-                    toggleLevel={toggleLevel}
-                    categoryOptions={categoryOptions}
-                    selectedCategories={selectedCategories}
-                    setSelectedCategories={setSelectedCategories}
-                    toggleCategory={toggleCategory}
-                />
-
                 {error ? (
                     <div className="border-destructive/40 bg-destructive/10 text-destructive-foreground rounded-md border p-3 text-sm">
                         {error}

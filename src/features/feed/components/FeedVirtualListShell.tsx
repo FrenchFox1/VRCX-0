@@ -167,7 +167,7 @@ function FeedVirtualListRow({
         >
             <div
                 data-feed-list-summary=""
-                className="grid h-[var(--vrcx-0-table-row-height)] items-center gap-2 border-b border-[var(--vrcx-0-table-divider)] px-[var(--vrcx-0-table-cell-padding-inline)] py-[var(--vrcx-0-table-cell-padding-block)] hover:bg-[var(--vrcx-0-table-row-hover-surface)]"
+                className="grid h-[var(--vrcx-0-table-row-height)] items-center gap-2 border-b border-[var(--vrcx-0-table-divider)] px-[var(--vrcx-0-table-cell-padding-inline)] py-[var(--vrcx-0-table-cell-padding-block)] text-sm hover:bg-[var(--vrcx-0-table-row-hover-surface)]"
                 style={layout}
             >
                 <Button

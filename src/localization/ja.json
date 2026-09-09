@@ -765,7 +765,7 @@
             "inactive": "無効",
             "unsupported": "この環境ではグローバルショートカットを利用できません。",
             "record": "キーの組み合わせを押してください",
-            "record_description": "CtrlまたはAltと、英字・数字・ファンクションキーを組み合わせてください。Escでキャンセルできます。入力中は現在のショートカットを押してもウィンドウは非表示になりません。",
+            "record_description": "Ctrl または Alt と、英字・数字・ファンクションキーを組み合わせてください。Esc でキャンセルできます。入力中はショートカットが一時的に無効になります。",
             "startup_failed": "グローバルショートカットを有効にできませんでした。他のアプリが使用している可能性があります。",
             "error": {
                 "inUse": "このショートカットはすでに使用されています。別の組み合わせを選んでください。",
@@ -815,6 +815,7 @@
         "search_direct_access": "リンクやIDを貼り付け",
         "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
         "search_open_direct": "このリンク・IDを開く",
+        "search_clipboard_detected": "クリップボードにリンクまたはIDがあります。Enterで開く",
         "search_joined_groups": "参加したグループ",
         "refresh_tooltip": "フレンドを更新",
         "refresh_available_in_seconds": "同期したばかりです。あと {count} 秒後にもう一度お試しください",
@@ -1536,9 +1537,8 @@
                 "moderation_snapshot_failed_to_load": "モデレーション履歴を読み込めませんでした"
             },
             "label": {
-                "showing": "表示中",
-                "of": "/",
                 "moderation_row": "モデレーション記録",
+                "back_to_top": "先頭に戻る",
                 "moderation_rows": "モデレーション記録",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "種類フィルターまたは検索条件を広げると、さらに結果を表示できます"
             },
@@ -2204,7 +2204,7 @@
             },
             "feedback": {
                 "title": "フィードバックを送信",
-                "description": "フィードバックは匿名で送信されます。すべてのメッセージに目を通しますが、直接返信することはできません。",
+                "description": "フィードバックは匿名で送信されます。すべてのメッセージに目を通しています。返信が必要な場合は、メールアドレスも書いてください。",
                 "privacy_note": "アカウント情報は含まれません。",
                 "placeholder": "使い心地、改善してほしい点、ほしい機能などを教えてください…",
                 "submit": "送信",
@@ -2830,7 +2830,7 @@
                         "header": "コンテンツの翻訳",
                         "enable": "有効化する",
                         "translation_api_key": "プロバイダー設定",
-                        "enable_tooltip": "必要に応じてユーザーの自己紹介とワールドの説明を翻訳します。"
+                        "enable_tooltip": "ユーザーの自己紹介やワールドの説明を翻訳します。"
                     },
                     "screenshot_helper": {
                         "header": "スクリーンショット ヘルパー",
@@ -3122,7 +3122,7 @@
                 "invalid_credentials": "ユーザー名、メールアドレス、またはパスワードが正しくありません。",
                 "missing_credentials": "有効なログイン情報がありません。もう一度ログインしてください。",
                 "session_verification_required": "このセッションには追加の認証が必要です。手動でログインしてください。",
-                "two_factor_unavailable": "このアカウントには二要素認証が必要ですが、対応する認証方法が見つかりませんでした。",
+                "two_factor_unavailable": "このアカウントは二要素認証が必要ですが、使える認証方法がありませんでした。",
                 "saved_credentials_invalid": "保存されたログイン情報は無効になりました。保存済みアカウントを削除しました。もう一度ログインしてください。",
                 "new_location_login": "新しい場所からログインしているようです！VRChat からのメールが届いていないか確認してください。",
                 "failed_to_authenticate": "認証に失敗しました",
@@ -3711,6 +3711,8 @@
                 "last_activity": "最終活動時間",
                 "date_joined": "アカウント作成日",
                 "friended": "フレンドになった日",
+                "unfriended": "フレンド解除日時",
+                "relationship_history": "フレンド履歴",
                 "avatar_cloning": "アバタークローン",
                 "booping": "つっつき",
                 "avatar_cloning_allow": "許可",
@@ -4285,7 +4287,7 @@
                 "uncompressed_size": "非圧縮サイズ",
                 "texture_memory": "テクスチャメモリー",
                 "analysis_loading": "詳細なパフォーマンス分析を取得しています…",
-                "analysis_pending": "詳細なパフォーマンス分析はまだ完了していません。アバターを更新してもう一度お試しください。",
+                "analysis_pending": "パフォーマンス分析の準備ができていません。アバターを更新してもう一度お試しください。",
                 "analysis_unavailable": "このプラットフォームの詳細なパフォーマンス分析はありません。",
                 "yes": "はい",
                 "no": "いいえ",
@@ -5004,8 +5006,8 @@
             "msg_test_failed": "YouTube API キーが無効です"
         },
         "translation_api": {
-            "header": "翻訳サービスプロバイダー設定",
-            "description": "コンテンツの翻訳に使用するプロバイダーを選択して設定します。",
+            "header": "翻訳プロバイダー設定",
+            "description": "翻訳に使うプロバイダーを設定します。",
             "guide": "設定方法",
             "mode": "翻訳サービスプロバイダー",
             "mode_google": "Google 翻訳",
@@ -5019,9 +5021,9 @@
             "openai": {
                 "model": "モデル名",
                 "prompt_optional": "プロンプト (オプション)",
-                "prompt_optional_description": "任意のシステムプロンプトです。対象言語の変数 {targetLang} を必ず含めてください。",
+                "prompt_optional_description": "任意のシステムプロンプトです。変数 {targetLang} を必ず含めてください。",
                 "connection": "LLM エンドポイント",
-                "connection_description": "OpenAI 互換エンドポイントのみ対応しています。",
+                "connection_description": "OpenAI 互換エンドポイントのみ使えます。",
                 "connection_placeholder": "エンドポイントを選択",
                 "reasoning_effort": "推論の深さ",
                 "reasoning_effort_provider_default": "プロバイダーのデフォルト"
@@ -5305,10 +5307,10 @@
                 "stable": "安定版",
                 "beta": "ベータ版",
                 "description": "VRCX-0 は、現在インストールされているチャンネルの更新のみ確認します。",
-                "switch_description": "{channel}に切り替えるには、GitHub から最新リリースをダウンロードしてインストールしてください。",
+                "switch_description": "{channel}に切り替えるには、最新リリースをダウンロードしてインストールします。",
                 "download_stable": "最新の安定版をダウンロード",
                 "download_beta": "最新のベータ版をダウンロード",
-                "no_release": "このチャンネルには利用可能なリリースがありません。"
+                "no_release": "このチャンネルにリリースはありません。"
             }
         },
         "change_log": {
@@ -5528,10 +5530,7 @@
         },
         "direct_access_omni": {
             "header": "ダイレクトアクセス",
-            "description": "ユーザーまたはワールド、インスタンス、アバター、グループURLもしくはID (UUID) を入力してください。",
             "description_failed": "ダイレクトアクセスに失敗しました。URLまたはIDを確認して再試行してください。",
-            "cancel": "キャンセル",
-            "ok": "OK",
             "message": {
                 "opening": "開いています..."
             }
@@ -6356,5 +6355,16 @@
             "themes": "テーマ",
             "themes_description": "テーマソースとカスタム CSS の管理です。"
         }
+    },
+    "linux_rendering": {
+        "title": "ハードウェアアクセラレーション（試験的）",
+        "description": "VRCX-0 を再起動すると反映されます。オンにしたあとは、起動から 30 秒以内に表示を確認してください。確認がないとハードウェアアクセラレーションをオフにして再起動します。",
+        "saved": "保存しました。VRCX-0 を再起動すると反映されます。",
+        "restart_now": "今すぐ再起動",
+        "confirm_title": "画面は正常に表示されていますか？",
+        "confirm_description": "起動から 30 秒以内に確認がないと、VRCX-0 はハードウェアアクセラレーションをオフにして再起動します。",
+        "restore": "互換モードに戻して再起動",
+        "keep": "正常に表示されているので保存",
+        "failed": "描画設定を変更できませんでした。もう一度お試しください。"
     }
 }

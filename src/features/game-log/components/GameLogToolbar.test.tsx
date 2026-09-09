@@ -159,7 +159,12 @@ describe('GameLogToolbar', () => {
 
         await user.click(
             screen.getByRole('button', {
-                name: `${dateRangeLabel}: common.actions.clear`
+                name: new RegExp(`^${dateRangeLabel}: `)
+            })
+        );
+        await user.click(
+            within(screen.getByRole('dialog')).getByRole('button', {
+                name: 'common.actions.clear'
             })
         );
         expect(props.filterModel.setSessionDateTimeRange).toHaveBeenCalledWith({

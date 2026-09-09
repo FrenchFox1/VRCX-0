@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -24,7 +25,11 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 import {
     AutomationSplitLayout,
@@ -303,10 +308,9 @@ export function TimeRulesTab({
                             multiple
                             variant="outline"
                             size="sm"
-                            spacing={1}
                             disabled={disabled}
                             value={(selectedTimeWindow.days || []).map(String)}
-                            className="flex flex-wrap"
+                            className="flex overflow-x-auto"
                             onValueChange={(values) =>
                                 update(selectedRule.id, (current) =>
                                     updateTimeWindow(current, {
@@ -317,14 +321,18 @@ export function TimeRulesTab({
                                 )
                             }
                         >
-                            {dayOptions.map((day) => (
-                                <ToggleGroupItem
-                                    key={day.value}
-                                    value={String(day.value)}
-                                    disabled={disabled}
-                                >
-                                    {t(day.labelKey)}
-                                </ToggleGroupItem>
+                            {dayOptions.map((day, index) => (
+                                <Fragment key={day.value}>
+                                    {index > 0 ? (
+                                        <ToggleGroupSeparator />
+                                    ) : null}
+                                    <ToggleGroupItem
+                                        value={String(day.value)}
+                                        disabled={disabled}
+                                    >
+                                        {t(day.labelKey)}
+                                    </ToggleGroupItem>
+                                </Fragment>
                             ))}
                         </ToggleGroup>
                     </Field>

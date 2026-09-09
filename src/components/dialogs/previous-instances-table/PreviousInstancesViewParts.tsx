@@ -23,6 +23,7 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import { ToolbarSegmented } from '@/components/layout/ToolbarControls';
 import { Location } from '@/components/Location';
 import type { LoadStatus } from '@/domain/shared/types';
 import {
@@ -60,7 +61,6 @@ import {
 } from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { PreviousInstanceInfoChart } from './PreviousInstanceInfoChart';
@@ -399,7 +399,9 @@ export function PreviousInstanceDetailsPanel({
     );
     const instanceStartMs = createdTime(row);
     const visitWindow = previousInstanceVisitWindow(row);
-    const [detailsViewMode, setDetailsViewMode] = useState('players');
+    const [detailsViewMode, setDetailsViewMode] = useState<
+        'players' | 'timeline'
+    >('players');
     const [infoData, setInfoData] = useState<{
         status: LoadStatus;
         error: string;
@@ -667,20 +669,26 @@ export function PreviousInstanceDetailsPanel({
                         </dd>
                     </div>
                 </dl>
-                <Tabs
-                    value={detailsViewMode}
-                    onValueChange={setDetailsViewMode}
-                    className="min-h-0 flex-1 gap-0"
-                >
+                <div className="flex min-h-0 flex-1 flex-col gap-0">
                     <div className="flex shrink-0 items-center justify-between gap-3">
-                        <TabsList variant="underline">
-                            <TabsTrigger value="players">
-                                {t('dialog.previous_instances.table_view')}
-                            </TabsTrigger>
-                            <TabsTrigger value="timeline">
-                                {t('dialog.previous_instances.chart_view')}
-                            </TabsTrigger>
-                        </TabsList>
+                        <ToolbarSegmented
+                            value={detailsViewMode}
+                            onValueChange={setDetailsViewMode}
+                            options={[
+                                {
+                                    value: 'players',
+                                    label: t(
+                                        'dialog.previous_instances.table_view'
+                                    )
+                                },
+                                {
+                                    value: 'timeline',
+                                    label: t(
+                                        'dialog.previous_instances.chart_view'
+                                    )
+                                }
+                            ]}
+                        />
                         <span className="text-muted-foreground text-xs">
                             {t(
                                 'dialog.previous_instances.label.players_count',
@@ -710,148 +718,145 @@ export function PreviousInstanceDetailsPanel({
                                         'pointer-events-none opacity-60'
                                 )}
                             >
-                                <TabsContent
-                                    value="players"
-                                    className="min-h-0 overflow-auto pt-2"
-                                >
-                                    <div className="app-data-table vrcx-0-data-table min-h-0">
-                                        <Table>
-                                            <TableHeader className="vrcx-0-table-header sticky top-0">
-                                                <DataTableHeaderRow>
-                                                    <DataTableHead>
-                                                        {t(
-                                                            'table.previous_instances.display_name'
-                                                        )}
-                                                    </DataTableHead>
-                                                    <DataTableHead
-                                                        className={`w-20 ${DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}`}
-                                                    >
-                                                        {t(
-                                                            'dialog.world.info.visits'
-                                                        )}
-                                                    </DataTableHead>
-                                                    <DataTableHead className="w-32">
-                                                        {t(
-                                                            'table.previous_instances.joined'
-                                                        )}
-                                                    </DataTableHead>
-                                                    <DataTableHead className="w-32">
-                                                        {t(
-                                                            'table.previous_instances.left'
-                                                        )}
-                                                    </DataTableHead>
-                                                    <DataTableHead
-                                                        className={`w-28 ${DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}`}
-                                                    >
-                                                        {t(
-                                                            'table.previous_instances.time'
-                                                        )}
-                                                    </DataTableHead>
-                                                </DataTableHeaderRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {infoData.players.length ? (
-                                                    infoData.players.map(
-                                                        (player, index) => (
-                                                            <DataTableRow
-                                                                key={`${playerDisplayName(player)}:${playerUserId(player)}:${index}`}
-                                                            >
-                                                                <DataTableCell className="align-top">
-                                                                    <PreviousInstancePlayerNameButton
-                                                                        player={
-                                                                            player
-                                                                        }
-                                                                        displayName={resolvePlayerDisplayName(
-                                                                            player
-                                                                        )}
-                                                                        knownUser={
-                                                                            knownPlayersById[
-                                                                                playerUserId(
-                                                                                    player
-                                                                                )
-                                                                            ]
-                                                                        }
-                                                                        isFriend={Boolean(
-                                                                            friendsById[
-                                                                                playerUserId(
-                                                                                    player
-                                                                                )
-                                                                            ]
-                                                                        )}
-                                                                        isFavorite={favoriteIdSet.has(
-                                                                            playerUserId(
-                                                                                player
-                                                                            )
-                                                                        )}
-                                                                    />
-                                                                </DataTableCell>
-                                                                <DataTableCell
-                                                                    className={`${DATA_TABLE_NUMERIC_CELL_CLASS_NAME} align-top text-xs`}
-                                                                >
-                                                                    {String(
-                                                                        player?.count ||
-                                                                            '-'
-                                                                    )}
-                                                                </DataTableCell>
-                                                                <DataTableCell className="text-muted-foreground align-top text-xs tabular-nums">
-                                                                    {playerJoinTimestamp(
-                                                                        player,
-                                                                        instanceStartMs
-                                                                    )}
-                                                                </DataTableCell>
-                                                                <DataTableCell className="text-muted-foreground align-top text-xs tabular-nums">
-                                                                    {playerLeaveTimestamp(
-                                                                        player,
-                                                                        instanceStartMs
-                                                                    )}
-                                                                </DataTableCell>
-                                                                <DataTableCell
-                                                                    className={`${DATA_TABLE_NUMERIC_CELL_CLASS_NAME} align-top text-xs`}
-                                                                >
-                                                                    {Number(
-                                                                        player?.time ||
-                                                                            0
-                                                                    ) > 0
-                                                                        ? timeToText(
-                                                                              Number(
-                                                                                  player.time
-                                                                              )
-                                                                          )
-                                                                        : '-'}
-                                                                </DataTableCell>
-                                                            </DataTableRow>
-                                                        )
-                                                    )
-                                                ) : infoData.status ===
-                                                  'running' ? null : (
-                                                    <DataTableRow>
-                                                        <DataTableCell
-                                                            colSpan={5}
-                                                            className="py-6 text-center"
+                                {detailsViewMode === 'players' ? (
+                                    <div className="min-h-0 flex-1 overflow-auto pt-2">
+                                        <div className="app-data-table vrcx-0-data-table min-h-0">
+                                            <Table>
+                                                <TableHeader className="vrcx-0-table-header sticky top-0">
+                                                    <DataTableHeaderRow>
+                                                        <DataTableHead>
+                                                            {t(
+                                                                'table.previous_instances.display_name'
+                                                            )}
+                                                        </DataTableHead>
+                                                        <DataTableHead
+                                                            className={`w-20 ${DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}`}
                                                         >
                                                             {t(
-                                                                'dialog.previous_instances.empty.no_player_detail_rows_for_this_instance'
+                                                                'dialog.world.info.visits'
                                                             )}
-                                                        </DataTableCell>
-                                                    </DataTableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
+                                                        </DataTableHead>
+                                                        <DataTableHead className="w-32">
+                                                            {t(
+                                                                'table.previous_instances.joined'
+                                                            )}
+                                                        </DataTableHead>
+                                                        <DataTableHead className="w-32">
+                                                            {t(
+                                                                'table.previous_instances.left'
+                                                            )}
+                                                        </DataTableHead>
+                                                        <DataTableHead
+                                                            className={`w-28 ${DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}`}
+                                                        >
+                                                            {t(
+                                                                'table.previous_instances.time'
+                                                            )}
+                                                        </DataTableHead>
+                                                    </DataTableHeaderRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {infoData.players.length ? (
+                                                        infoData.players.map(
+                                                            (player, index) => (
+                                                                <DataTableRow
+                                                                    key={`${playerDisplayName(player)}:${playerUserId(player)}:${index}`}
+                                                                >
+                                                                    <DataTableCell className="align-top">
+                                                                        <PreviousInstancePlayerNameButton
+                                                                            player={
+                                                                                player
+                                                                            }
+                                                                            displayName={resolvePlayerDisplayName(
+                                                                                player
+                                                                            )}
+                                                                            knownUser={
+                                                                                knownPlayersById[
+                                                                                    playerUserId(
+                                                                                        player
+                                                                                    )
+                                                                                ]
+                                                                            }
+                                                                            isFriend={Boolean(
+                                                                                friendsById[
+                                                                                    playerUserId(
+                                                                                        player
+                                                                                    )
+                                                                                ]
+                                                                            )}
+                                                                            isFavorite={favoriteIdSet.has(
+                                                                                playerUserId(
+                                                                                    player
+                                                                                )
+                                                                            )}
+                                                                        />
+                                                                    </DataTableCell>
+                                                                    <DataTableCell
+                                                                        className={`${DATA_TABLE_NUMERIC_CELL_CLASS_NAME} align-top text-xs`}
+                                                                    >
+                                                                        {String(
+                                                                            player?.count ||
+                                                                                '-'
+                                                                        )}
+                                                                    </DataTableCell>
+                                                                    <DataTableCell className="text-muted-foreground align-top text-xs tabular-nums">
+                                                                        {playerJoinTimestamp(
+                                                                            player,
+                                                                            instanceStartMs
+                                                                        )}
+                                                                    </DataTableCell>
+                                                                    <DataTableCell className="text-muted-foreground align-top text-xs tabular-nums">
+                                                                        {playerLeaveTimestamp(
+                                                                            player,
+                                                                            instanceStartMs
+                                                                        )}
+                                                                    </DataTableCell>
+                                                                    <DataTableCell
+                                                                        className={`${DATA_TABLE_NUMERIC_CELL_CLASS_NAME} align-top text-xs`}
+                                                                    >
+                                                                        {Number(
+                                                                            player?.time ||
+                                                                                0
+                                                                        ) > 0
+                                                                            ? timeToText(
+                                                                                  Number(
+                                                                                      player.time
+                                                                                  )
+                                                                              )
+                                                                            : '-'}
+                                                                    </DataTableCell>
+                                                                </DataTableRow>
+                                                            )
+                                                        )
+                                                    ) : infoData.status ===
+                                                      'running' ? null : (
+                                                        <DataTableRow>
+                                                            <DataTableCell
+                                                                colSpan={5}
+                                                                className="py-6 text-center"
+                                                            >
+                                                                {t(
+                                                                    'dialog.previous_instances.empty.no_player_detail_rows_for_this_instance'
+                                                                )}
+                                                            </DataTableCell>
+                                                        </DataTableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     </div>
-                                </TabsContent>
-                                <TabsContent
-                                    value="timeline"
-                                    className="max-h-[52vh] min-h-0 overflow-auto pt-2"
-                                >
-                                    <PreviousInstanceInfoChart
-                                        rows={infoData.details}
-                                        visitWindow={visitWindow}
-                                    />
-                                </TabsContent>
+                                ) : (
+                                    <div className="max-h-[52vh] min-h-0 flex-1 overflow-auto pt-2">
+                                        <PreviousInstanceInfoChart
+                                            rows={infoData.details}
+                                            visitWindow={visitWindow}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
-                </Tabs>
+                </div>
             </div>
         </div>
     );

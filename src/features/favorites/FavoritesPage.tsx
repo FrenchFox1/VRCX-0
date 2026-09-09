@@ -155,12 +155,7 @@ function FavoritesPage({
     }, [kind]);
 
     return (
-        <PageScaffold
-            embedded={embedded}
-            flushBottom
-            embeddedClassName="p-4"
-            className="flex-1"
-        >
+        <PageScaffold embedded={embedded} flushBottom className="flex-1">
             <FavoritesToolbar
                 kind={kind}
                 sortValue={layout.sortValue}

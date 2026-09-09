@@ -10,12 +10,15 @@ import type {
     MyAvatarsGridRow
 } from './myAvatarsTypes';
 
+export const MY_AVATARS_IMAGE_ASPECT_RATIO = 4 / 3;
+
+const MY_AVATARS_GRID_CARD_PADDING = 2;
+
 const MY_AVATARS_GRID_DENSITY_CONFIGS = Object.freeze({
     standard: Object.freeze({
         value: 'standard',
         gridGap: 8,
         gridMinWidth: 180,
-        imageHeightRatio: 0.66,
         overlayPaddingX: 8,
         overlayPaddingY: 7,
         overlayPaddingTop: 24,
@@ -24,14 +27,12 @@ const MY_AVATARS_GRID_DENSITY_CONFIGS = Object.freeze({
         nameFontSize: 13,
         nameLineHeight: 1.15,
         tagFontSize: 9,
-        maxVisibleTags: 2,
-        rowPaddingY: 4
+        maxVisibleTags: 2
     }),
     compact: Object.freeze({
         value: 'compact',
         gridGap: 7,
         gridMinWidth: 150,
-        imageHeightRatio: 0.64,
         overlayPaddingX: 7,
         overlayPaddingY: 6,
         overlayPaddingTop: 22,
@@ -40,14 +41,12 @@ const MY_AVATARS_GRID_DENSITY_CONFIGS = Object.freeze({
         nameFontSize: 12,
         nameLineHeight: 1.12,
         tagFontSize: 8,
-        maxVisibleTags: 1,
-        rowPaddingY: 3
+        maxVisibleTags: 1
     }),
     dense: Object.freeze({
         value: 'dense',
         gridGap: 6,
         gridMinWidth: 125,
-        imageHeightRatio: 0.6,
         overlayPaddingX: 6,
         overlayPaddingY: 5,
         overlayPaddingTop: 18,
@@ -56,8 +55,7 @@ const MY_AVATARS_GRID_DENSITY_CONFIGS = Object.freeze({
         nameFontSize: 11,
         nameLineHeight: 1.1,
         tagFontSize: 8,
-        maxVisibleTags: 0,
-        rowPaddingY: 3
+        maxVisibleTags: 0
     })
 });
 
@@ -77,47 +75,43 @@ export function getMyAvatarsGridMetrics({
     width
 }: MyAvatarsGridMetricsInput) {
     const densityConfig = getMyAvatarsGridDensityConfig(gridDensity);
-    const gridGap = densityConfig.gridGap;
-    const gridMinWidth = densityConfig.gridMinWidth;
+    const gridPadding = MY_AVATARS_GRID_CARD_PADDING;
+    const gridInset = gridPadding * 2;
+    const gridGap = Math.max(0, densityConfig.gridGap - gridInset);
+    const gridMinWidth = densityConfig.gridMinWidth + gridInset;
     const gridColumnCount = Math.max(
         1,
         Math.floor((width + gridGap) / (gridMinWidth + gridGap)) || 1
     );
     const gridColumnWidth =
-        width > 0
-            ? Math.max(
-                  gridMinWidth,
-                  (width - gridGap * Math.max(0, gridColumnCount - 1)) /
-                      gridColumnCount
-              )
-            : gridMinWidth;
-    const gridRowHeight = Math.ceil(
-        gridColumnWidth * densityConfig.imageHeightRatio +
-            densityConfig.rowPaddingY +
-            gridGap
-    );
+        (width - gridGap * (gridColumnCount - 1)) / gridColumnCount;
+    const cardWidth = Math.max(0, gridColumnWidth - gridInset);
+    const cardHeight = Math.round(cardWidth / MY_AVATARS_IMAGE_ASPECT_RATIO);
+    const cellHeight = cardHeight + gridInset;
 
     return {
         densityConfig,
         gridGap,
         gridMinWidth,
+        gridPadding,
         gridColumnCount,
-        gridColumnWidth,
-        gridRowHeight
+        cellHeight
     };
 }
 
 type BuildMyAvatarsGridRowsInput = {
     avatars: readonly MyAvatarRow[] | null | undefined;
+    cellHeight: number;
     gridColumnCount: number;
-    gridRowHeight: number;
+    gridGap: number;
 };
 
 export function buildMyAvatarsGridRows({
     avatars,
+    cellHeight,
     gridColumnCount,
-    gridRowHeight
-}: BuildMyAvatarsGridRowsInput): MyAvatarsGridRow[] {
+    gridGap
+}: BuildMyAvatarsGridRowsInput) {
     const rows: Omit<MyAvatarsGridRow, 'top'>[] = [];
     const visibleAvatars = Array.isArray(avatars) ? avatars : [];
     for (
@@ -125,13 +119,15 @@ export function buildMyAvatarsGridRows({
         index < visibleAvatars.length;
         index += gridColumnCount
     ) {
+        const isLastRow = index + gridColumnCount >= visibleAvatars.length;
         rows.push({
             key: `grid-row:${index}`,
             avatars: visibleAvatars.slice(index, index + gridColumnCount),
-            height: gridRowHeight
+            cellHeight,
+            height: cellHeight + (isLastRow ? 0 : gridGap)
         });
     }
-    return positionKnownSizeRows(rows).rows;
+    return positionKnownSizeRows(rows);
 }
 
 type VisibleMyAvatarsGridRowsInput = {

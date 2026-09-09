@@ -83,7 +83,7 @@ export function useMyAvatarsColumns({
                             <Button
                                 type="button"
                                 variant="ghost"
-                                className="bg-muted h-6 w-10 overflow-hidden rounded-sm border p-0"
+                                className="bg-muted h-6 w-8 overflow-hidden rounded-sm border p-0"
                                 aria-label={t(
                                     'view.my_avatars.dynamic.open_value',
                                     { value: avatarName }

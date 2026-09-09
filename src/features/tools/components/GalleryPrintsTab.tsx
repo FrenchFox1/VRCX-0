@@ -1,13 +1,12 @@
 import {
     AlertTriangleIcon,
     ImageIcon,
-    RefreshCwIcon,
     StarIcon,
     StarOffIcon,
     Trash2Icon,
     UploadIcon
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useTileSelectionState } from '@/lib/useTileSelectionState';
@@ -21,7 +20,11 @@ import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import { TabsContent } from '@/ui/shadcn/tabs';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 import type { GalleryBulkCommands } from '../galleryTypes';
 import { GallerySelectionBar } from './GallerySelectionBar';
@@ -243,35 +246,32 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                             variant="outline"
                             size="sm"
                         >
-                            {PRINT_FAVORITE_FILTERS.map((filter) => (
-                                <ToggleGroupItem key={filter} value={filter}>
-                                    {t(`view.tools.prints_filter.${filter}`)}
-                                </ToggleGroupItem>
+                            {PRINT_FAVORITE_FILTERS.map((filter, index) => (
+                                <Fragment key={filter}>
+                                    {index > 0 ? (
+                                        <ToggleGroupSeparator />
+                                    ) : null}
+                                    <ToggleGroupItem value={filter}>
+                                        {t(
+                                            `view.tools.prints_filter.${filter}`
+                                        )}
+                                    </ToggleGroupItem>
+                                </Fragment>
                             ))}
                         </ToggleGroup>
                     }
                     actions={
-                        <>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onRefresh('prints')}
-                            >
-                                <RefreshCwIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.refresh')}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={
-                                    !isVrcPlusSupporter || Boolean(uploadingTab)
-                                }
-                                onClick={() => onBeginUpload('prints')}
-                            >
-                                <UploadIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.upload')}
-                            </Button>
-                        </>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={
+                                !isVrcPlusSupporter || Boolean(uploadingTab)
+                            }
+                            onClick={() => onBeginUpload('prints')}
+                        >
+                            <UploadIcon data-icon="inline-start" />
+                            {t('dialog.gallery_icons.upload')}
+                        </Button>
                     }
                 />
                 {noticeMessage ? (

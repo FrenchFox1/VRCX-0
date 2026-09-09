@@ -1,4 +1,5 @@
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, MapPinIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { cn } from '@/lib/utils';
@@ -77,10 +78,15 @@ export function FriendSectionHeader({
                     >
                         <span className="min-w-0 flex-1 truncate text-left">
                             {title}
-                            {count !== null && count !== undefined
-                                ? ` \u2014 ${count}`
-                                : ''}
                         </span>
+                        {count !== null && count !== undefined ? (
+                            <Badge
+                                variant="outline"
+                                className="text-muted-foreground shrink-0 font-normal tabular-nums"
+                            >
+                                {count}
+                            </Badge>
+                        ) : null}
                         <ChevronDownIcon
                             data-icon="inline-end"
                             className={cn(
@@ -110,24 +116,26 @@ export function InstanceHeaderRow({
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
 }) {
+    const { t } = useTranslation();
+
     return (
-        <div
-            className={cn(
-                'mb-1 flex min-w-0 items-center px-1.5 text-xs',
-                isCurrentInstance
-                    ? 'text-foreground font-medium'
-                    : 'text-muted-foreground'
-            )}
-        >
+        <div className="text-muted-foreground mb-1 flex min-w-0 items-center px-1.5 text-xs">
             <StaticSidebarLocation
                 className="min-w-0 flex-1 text-xs"
                 location={location}
                 link
+                actionMenu
                 showGroupLink
                 metadata={metadata}
                 showInstanceIdInLocation={showInstanceIdInLocation}
                 ageGatedInstancesVisible={ageGatedInstancesVisible}
             />
+            {isCurrentInstance ? (
+                <MapPinIcon
+                    className="ml-1 size-3 shrink-0"
+                    aria-label={t('side_panel.you_are_here')}
+                />
+            ) : null}
             <Badge variant="outline" className="ml-1.5">
                 {count}
             </Badge>

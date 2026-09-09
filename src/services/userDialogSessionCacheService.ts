@@ -11,10 +11,38 @@ export type UserDialogPreviousDisplayNameSources = {
     gameLog: UserDialogPreviousDisplayName[];
 };
 
+export type UserDialogRelationshipEvent = {
+    rowId: number;
+    type: 'Friend' | 'Unfriend';
+    created_at: string;
+};
+
+export function normalizeUserRelationshipHistory(
+    source: unknown
+): UserDialogRelationshipEvent[] {
+    if (!Array.isArray(source)) {
+        return [];
+    }
+    return source.flatMap((entry) => {
+        const row = record(entry);
+        if (
+            (row.type !== 'Friend' && row.type !== 'Unfriend') ||
+            typeof row.created_at !== 'string' ||
+            typeof row.rowId !== 'number'
+        ) {
+            return [];
+        }
+        return [
+            { rowId: row.rowId, type: row.type, created_at: row.created_at }
+        ];
+    });
+}
+
 export type UserDialogStats = {
     timeSpent: number;
     lastSeen: string;
     friendedAt: string;
+    relationshipHistory: UserDialogRelationshipEvent[];
     joinCount: number;
     previousDisplayNames: UserDialogPreviousDisplayName[];
     previousDisplayNameSources?: UserDialogPreviousDisplayNameSources;
@@ -32,6 +60,7 @@ export const DEFAULT_USER_STATS = Object.freeze({
     timeSpent: 0,
     lastSeen: '',
     friendedAt: '',
+    relationshipHistory: [],
     joinCount: 0,
     previousDisplayNames: []
 });
@@ -91,6 +120,9 @@ function cloneUserStats(source: unknown = DEFAULT_USER_STATS): UserDialogStats {
         timeSpent: Number(stats.timeSpent) || 0,
         lastSeen: normalizeString(stats.lastSeen),
         friendedAt: normalizeString(stats.friendedAt),
+        relationshipHistory: normalizeUserRelationshipHistory(
+            stats.relationshipHistory
+        ),
         joinCount: Number(stats.joinCount) || 0,
         previousDisplayNames,
         ...(previousDisplayNameSources ? { previousDisplayNameSources } : {})

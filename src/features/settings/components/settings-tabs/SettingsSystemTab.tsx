@@ -5,6 +5,7 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { LinuxRenderingSetting } from '../LinuxRenderingSetting';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
@@ -121,6 +122,7 @@ export function SettingsSystemTabContent({
                     />
                 </Field>
                 {isWindows ? <TrayShortcutSetting /> : null}
+                {hostPlatform === 'linux' ? <LinuxRenderingSetting /> : null}
                 <Field
                     label={t(
                         'view.settings.general.application.background_mode',

@@ -9,7 +9,7 @@ import {
     Settings2Icon,
     XIcon
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -26,7 +26,12 @@ import {
     InputGroupInput
 } from '@/ui/shadcn/input-group';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import { TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 type ToolbarSlotProps = {
@@ -142,6 +147,31 @@ export type ToolbarSegmentOption<TValue extends string> = {
     icon?: LucideIcon;
 };
 
+export function ToolbarTabs<TValue extends string>({
+    options
+}: {
+    options: readonly ToolbarSegmentOption<TValue>[];
+}) {
+    return (
+        <TabsList className="max-w-full shrink-0 overflow-x-auto">
+            {options.map((option) => {
+                const Icon = option.icon;
+                return (
+                    <TabsTrigger key={option.value} value={option.value}>
+                        {Icon ? <Icon data-icon="inline-start" /> : null}
+                        {option.label}
+                        {option.count === undefined ? null : (
+                            <span className="text-content-tertiary text-[11px] leading-none font-medium tabular-nums">
+                                {option.count}
+                            </span>
+                        )}
+                    </TabsTrigger>
+                );
+            })}
+        </TabsList>
+    );
+}
+
 export function ToolbarSegmented<TValue extends string>({
     value,
     onValueChange,
@@ -155,8 +185,7 @@ export function ToolbarSegmented<TValue extends string>({
 }) {
     return (
         <ToggleGroup
-            variant="default"
-            spacing={0.5}
+            variant="outline"
             value={value ? [value] : []}
             onValueChange={(next) => {
                 const selected = options.find(
@@ -166,21 +195,14 @@ export function ToolbarSegmented<TValue extends string>({
                     onValueChange(selected.value);
                 }
             }}
-            className={cn(
-                'vrcx-0-segmented-control shrink-0',
-                iconOnly && 'vrcx-0-icon-segmented-control'
-            )}
+            className="shrink-0"
         >
-            {options.map((option) => {
+            {options.map((option, index) => {
                 const Icon = option.icon;
                 const item = (
                     <ToggleGroupItem
-                        key={option.value}
                         value={option.value}
                         aria-label={option.label}
-                        className={
-                            iconOnly ? 'vrcx-0-icon-segmented-item' : undefined
-                        }
                     >
                         {Icon ? <Icon data-icon="inline-start" /> : null}
                         {iconOnly ? null : option.label}
@@ -192,58 +214,49 @@ export function ToolbarSegmented<TValue extends string>({
                     </ToggleGroupItem>
                 );
 
-                if (!iconOnly) {
-                    return item;
-                }
-
                 return (
-                    <Tooltip key={option.value}>
-                        <TooltipTrigger render={item} />
-                        <TooltipContent>{option.label}</TooltipContent>
-                    </Tooltip>
+                    <Fragment key={option.value}>
+                        {index > 0 ? <ToggleGroupSeparator /> : null}
+                        {iconOnly ? (
+                            <Tooltip>
+                                <TooltipTrigger render={item} />
+                                <TooltipContent>{option.label}</TooltipContent>
+                            </Tooltip>
+                        ) : (
+                            item
+                        )}
+                    </Fragment>
                 );
             })}
         </ToggleGroup>
     );
 }
 
-export function toolbarDateRangeTrigger({
+export function toolbarSearchDateRangeTrigger({
     active,
-    label
+    label,
+    rangeLabel
 }: {
     active: boolean;
     label: string;
+    rangeLabel: string;
 }) {
-    if (!active) {
-        return (
-            <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label={label}
-                data-vrcx-0-control="toolbar"
-                className="vrcx-0-toolbar-control"
-            >
-                <CalendarRangeIcon data-icon="icon" />
-            </Button>
-        );
-    }
-
     return (
-        <Button
-            type="button"
-            variant="secondary"
-            aria-label={label}
-            data-vrcx-0-control="toolbar"
-            className="vrcx-0-toolbar-control vrcx-0-toolbar-control-active max-w-56 shrink-0"
+        <TooltipTrigger
+            render={
+                <InputGroupButton
+                    variant={active ? 'secondary' : 'ghost'}
+                    size="icon-xs"
+                    aria-label={active ? `${rangeLabel}: ${label}` : label}
+                />
+            }
         >
-            <CalendarRangeIcon data-icon="inline-start" />
-            <span className="truncate">{label}</span>
-        </Button>
+            <CalendarRangeIcon data-icon="icon" />
+            <TooltipContent>{label}</TooltipContent>
+        </TooltipTrigger>
     );
 }
 
-const ALL_CHIP_VALUE = '__all__';
 const LEADING_CHIP_VALUE = '__leading__';
 
 export type ToolbarFilterChipsLeading = {
@@ -258,39 +271,38 @@ export function ToolbarFilterChips<TValue extends string>({
     value,
     onValueChange,
     options,
-    allLabel,
     leading
 }: {
     value: readonly TValue[];
     onValueChange: (value: TValue[]) => void;
     options: readonly { value: TValue; label: string }[];
-    allLabel: string;
     leading?: ToolbarFilterChipsLeading;
 }) {
-    const typePressed: string[] = value.length ? [...value] : [ALL_CHIP_VALUE];
-    const pressed = leading?.pressed
-        ? [LEADING_CHIP_VALUE, ...typePressed]
-        : typePressed;
+    const visibleOptions = options.filter((option) =>
+        value.includes(option.value)
+    );
+    const leadingPressed = Boolean(leading?.pressed);
     const LeadingIcon = leading?.icon;
+
+    if (!leadingPressed && !visibleOptions.length) {
+        return null;
+    }
+
+    const pressed = leadingPressed
+        ? [LEADING_CHIP_VALUE, ...value]
+        : [...value];
 
     return (
         <ToggleGroup
             multiple
             variant="default"
-            spacing={0.5}
             value={pressed}
             onValueChange={(next) => {
-                if (leading) {
-                    const nextLeadingPressed =
-                        next.includes(LEADING_CHIP_VALUE);
-                    if (nextLeadingPressed !== leading.pressed) {
-                        leading.onPressedChange(nextLeadingPressed);
+                if (leading && leadingPressed) {
+                    if (!next.includes(LEADING_CHIP_VALUE)) {
+                        leading.onPressedChange(false);
                         return;
                     }
-                }
-                if (next.includes(ALL_CHIP_VALUE) && value.length) {
-                    onValueChange([]);
-                    return;
                 }
                 const picked: TValue[] = [];
                 for (const entry of next) {
@@ -303,9 +315,9 @@ export function ToolbarFilterChips<TValue extends string>({
                 }
                 onValueChange(picked.length === options.length ? [] : picked);
             }}
-            className="vrcx-0-segmented-control vrcx-0-filter-chips max-w-full shrink-0 overflow-x-auto"
+            className="max-w-full shrink-0 overflow-x-auto"
         >
-            {leading && LeadingIcon ? (
+            {leadingPressed && leading && LeadingIcon ? (
                 <Tooltip>
                     <TooltipTrigger
                         render={
@@ -316,9 +328,7 @@ export function ToolbarFilterChips<TValue extends string>({
                             >
                                 <LeadingIcon
                                     data-icon="icon"
-                                    className={cn(
-                                        leading.pressed && 'fill-current'
-                                    )}
+                                    className="fill-current"
                                 />
                             </ToggleGroupItem>
                         }
@@ -326,10 +336,7 @@ export function ToolbarFilterChips<TValue extends string>({
                     <TooltipContent>{leading.label}</TooltipContent>
                 </Tooltip>
             ) : null}
-            <ToggleGroupItem value={ALL_CHIP_VALUE} aria-label={allLabel}>
-                {allLabel}
-            </ToggleGroupItem>
-            {options.map((option) => (
+            {visibleOptions.map((option) => (
                 <ToggleGroupItem
                     key={option.value}
                     value={option.value}
@@ -349,7 +356,8 @@ function ToolbarTooltipButton({
     variant,
     disabled,
     loading = false,
-    filled = false
+    filled = false,
+    pressed
 }: {
     icon: LucideIcon;
     label: string;
@@ -358,6 +366,7 @@ function ToolbarTooltipButton({
     disabled: boolean;
     loading?: boolean;
     filled?: boolean;
+    pressed?: boolean;
 }) {
     return (
         <Tooltip>
@@ -368,6 +377,7 @@ function ToolbarTooltipButton({
                         variant={variant}
                         size="icon"
                         aria-label={label}
+                        aria-pressed={pressed}
                         data-vrcx-0-control="toolbar"
                         className={cn(
                             variant === 'ghost'
@@ -418,6 +428,7 @@ export function ToolbarToggleButton({
             variant={active ? 'secondary' : 'outline'}
             disabled={disabled}
             filled={active && fillWhenActive}
+            pressed={active}
         />
     );
 }

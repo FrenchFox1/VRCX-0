@@ -4,6 +4,7 @@ import { CommunityThemeSafetyHost } from '@/components/hosts/CommunityThemeSafet
 import { DialogHost } from '@/components/hosts/DialogHost';
 import { FriendProfileLoadHost } from '@/components/hosts/FriendProfileLoadHost';
 import { LaunchDialogHost } from '@/components/hosts/LaunchDialogHost';
+import { LinuxRenderingTrialHost } from '@/components/hosts/LinuxRenderingTrialHost';
 import { ModalHost } from '@/components/hosts/ModalHost';
 import { NotificationHost } from '@/components/hosts/NotificationHost';
 import { PostUpdateChangelogToastHost } from '@/components/hosts/PostUpdateChangelogToastHost';
@@ -20,6 +21,7 @@ export function GlobalHosts() {
             <BackgroundRouteResumeHost />
             <ModalHost />
             <DialogHost />
+            <LinuxRenderingTrialHost />
             <FriendProfileLoadHost />
             <NotificationHost />
             <VrcNotificationCenterHost />

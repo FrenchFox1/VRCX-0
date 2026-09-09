@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ToolbarSegmented } from '@/components/layout/ToolbarControls';
 import type { FriendRosterById } from '@/domain/friends/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
@@ -13,7 +14,6 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { ToolTextarea } from './ToolsDialogControls';
 import { csvEscape, getFriendIds, getUserMemoMap } from './toolsDialogUtils';
@@ -97,7 +97,7 @@ export function ExportFriendsListDialog({
     );
     const [csv, setCsv] = useState('');
     const [json, setJson] = useState('');
-    const [tab, setTab] = useState('csv');
+    const [format, setFormat] = useState<'csv' | 'json'>('csv');
 
     useEffect(() => {
         if (!open) {
@@ -160,22 +160,26 @@ export function ExportFriendsListDialog({
                         {t('dialog.export_friends_list.description')}
                     </DialogDescription>
                 </DialogHeader>
-                <Tabs value={tab} onValueChange={setTab}>
-                    <TabsList>
-                        <TabsTrigger value="csv">
-                            {t('dialog.export_friends_list.csv')}
-                        </TabsTrigger>
-                        <TabsTrigger value="json">
-                            {t('dialog.export_friends_list.json')}
-                        </TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="csv">
-                        <ToolTextarea value={csv} />
-                    </TabsContent>
-                    <TabsContent value="json">
-                        <ToolTextarea value={json} />
-                    </TabsContent>
-                </Tabs>
+                <div className="flex flex-col gap-2">
+                    <ToolbarSegmented
+                        value={format}
+                        onValueChange={setFormat}
+                        options={[
+                            {
+                                value: 'csv',
+                                label: t('dialog.export_friends_list.csv')
+                            },
+                            {
+                                value: 'json',
+                                label: t('dialog.export_friends_list.json')
+                            }
+                        ]}
+                    />
+                    <ToolTextarea
+                        key={format}
+                        value={format === 'csv' ? csv : json}
+                    />
+                </div>
             </DialogContent>
         </Dialog>
     );

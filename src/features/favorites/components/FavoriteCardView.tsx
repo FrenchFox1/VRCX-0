@@ -14,10 +14,10 @@ import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TileShell } from '@/components/tile/TileShell';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import { cn } from '@/lib/utils';
-import { TILE_SELECTED } from '@/shared/constants/selectableTile';
 import { Button } from '@/ui/shadcn/button';
 
 import type { FavoritesDensityConfig } from '../favoritesDensity';
@@ -82,11 +82,9 @@ export function FavoriteCardView({
             item.isUnavailable && item.kind === 'world' && Boolean(item.id);
 
         return (
-            <div
-                className={cn(
-                    'group/fav-card hover:bg-muted flex h-full w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-lg border text-sm transition-colors',
-                    selected && TILE_SELECTED
-                )}
+            <TileShell
+                selected={selected}
+                className="group/tile flex h-full w-full cursor-pointer flex-col text-sm"
                 {...interactions.shell}
             >
                 <div
@@ -121,7 +119,7 @@ export function FavoriteCardView({
                         <span
                             className={cn(
                                 'bg-background/55 text-foreground/75 absolute top-1.5 left-1.5 z-10 flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs font-normal tabular-nums backdrop-blur-[2px] transition-opacity',
-                                'group-hover/fav-card:opacity-0',
+                                'group-hover/tile:opacity-0',
                                 selected && 'opacity-0'
                             )}
                         >
@@ -195,17 +193,15 @@ export function FavoriteCardView({
                     )}
                     {slots.groupLabel}
                 </div>
-            </div>
+            </TileShell>
         );
     }
 
     if (!isFriend && density.value === 'compact') {
         return (
-            <div
-                className={cn(
-                    'object-row object-row--interactive object-row--focusable group/fav-card flex h-full w-full cursor-pointer text-sm',
-                    selected && TILE_SELECTED
-                )}
+            <TileShell
+                selected={selected}
+                className="object-row object-row--interactive object-row--focusable group/tile flex h-full w-full cursor-pointer text-sm"
                 {...interactions.shell}
             >
                 {slots.selection}
@@ -273,16 +269,14 @@ export function FavoriteCardView({
                 >
                     {slots.actions}
                 </div>
-            </div>
+            </TileShell>
         );
     }
 
     return (
-        <div
-            className={cn(
-                'group/fav-card hover:bg-muted relative flex h-full w-full min-w-0 cursor-pointer items-center gap-2 overflow-hidden rounded-lg border px-2.5 py-2 text-sm transition-colors',
-                selected && TILE_SELECTED
-            )}
+        <TileShell
+            selected={selected}
+            className="object-row object-row--interactive object-row--focusable group/tile flex h-full w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-sm"
             {...interactions.shell}
         >
             {slots.selection}
@@ -331,7 +325,7 @@ export function FavoriteCardView({
                 <div className="flex min-w-0 items-center gap-1.5">
                     <UserHoverCard {...friendHoverCard}>
                         <span
-                            className="truncate font-medium"
+                            className="object-row__title truncate"
                             style={
                                 item.titleColor
                                     ? { color: item.titleColor }
@@ -353,7 +347,7 @@ export function FavoriteCardView({
                 {friendShowsLocation ? (
                     <div
                         role="presentation"
-                        className="text-muted-foreground truncate text-xs"
+                        className="object-row__meta truncate"
                         onClick={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
                     >
@@ -372,7 +366,7 @@ export function FavoriteCardView({
                         />
                     </div>
                 ) : (
-                    <div className="text-muted-foreground truncate text-xs">
+                    <div className="object-row__meta truncate">
                         {showPlayerCountBadge ? (
                             <>
                                 <span className="inline-flex items-baseline gap-1">
@@ -387,9 +381,9 @@ export function FavoriteCardView({
                 )}
                 {slots.groupLabel}
             </div>
-            <div className="flex size-8 shrink-0 items-center justify-center">
+            <div className="object-row__context-action flex size-8 shrink-0 items-center justify-center">
                 {slots.actions}
             </div>
-        </div>
+        </TileShell>
     );
 }

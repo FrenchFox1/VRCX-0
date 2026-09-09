@@ -68,7 +68,6 @@ export type MyAvatarsGridDensityConfig = {
     value: MyAvatarsGridDensity;
     gridGap: number;
     gridMinWidth: number;
-    imageHeightRatio: number;
     overlayPaddingX: number;
     overlayPaddingY: number;
     overlayPaddingTop: number;
@@ -78,12 +77,12 @@ export type MyAvatarsGridDensityConfig = {
     nameLineHeight: number;
     tagFontSize: number;
     maxVisibleTags: number;
-    rowPaddingY: number;
 };
 
 export type MyAvatarsGridRow = {
     key: string;
     top: number;
     height: number;
+    cellHeight: number;
     avatars: MyAvatarRow[];
 };

@@ -815,6 +815,7 @@
         "search_direct_access": "Cole um link ou ID",
         "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
         "search_open_direct": "Abrir este link ou ID",
+        "search_clipboard_detected": "Link ou ID detectado na área de transferência. Pressione Enter para abrir.",
         "search_joined_groups": "Grupos Participados",
         "refresh_tooltip": "Atualizar amigos",
         "refresh_available_in_seconds": "Sincronizado recentemente. Tente novamente em {count} s.",
@@ -827,12 +828,12 @@
         "filter_no_results": "Nenhuma correspondência",
         "self_more_actions": "Mais",
         "switch_account": "Trocar de conta",
-        "favorite": "FAVORITOS",
-        "same_instance": "MESMA INSTÂNCIA",
-        "you_are_here": "VOCÊ ESTÁ AQUI",
-        "online": "ONLINE",
-        "active": "ATIVO",
-        "offline": "OFFLINE",
+        "favorite": "Favoritos",
+        "same_instance": "Mesma instância",
+        "you_are_here": "Você está aqui",
+        "online": "Online",
+        "active": "Ativo",
+        "offline": "Offline",
         "pending_offline": "Ficando Offline",
         "status_menu": {
             "clear_description": "Limpar descrição de status",
@@ -1540,9 +1541,8 @@
                 "moderation_snapshot_failed_to_load": "Não foi possível carregar o histórico de moderação"
             },
             "label": {
-                "showing": "Exibindo",
-                "of": "de",
                 "moderation_row": "registro de moderação",
+                "back_to_top": "Voltar ao topo",
                 "moderation_rows": "registros de moderação",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "Amplie os filtros de tipo ou a busca para ver mais resultados"
             },
@@ -2208,7 +2208,7 @@
             },
             "feedback": {
                 "title": "Enviar feedback",
-                "description": "O feedback é enviado de forma anónima. Lemos todas as mensagens, mas não podemos responder diretamente.",
+                "description": "O feedback é enviado de forma anónima por predefinição. Lemos todas as mensagens. Se precisares de uma resposta, inclui o teu endereço de e-mail no feedback.",
                 "privacy_note": "Não é incluída nenhuma informação da conta.",
                 "placeholder": "Diga-nos o que funciona, o que não funciona ou o que gostaria de ver…",
                 "submit": "Enviar",
@@ -3717,6 +3717,8 @@
                 "last_activity": "Última Atividade",
                 "date_joined": "Data de Entrada",
                 "friended": "Amizade feita",
+                "unfriended": "Amizade desfeita",
+                "relationship_history": "Histórico de amizade",
                 "avatar_cloning": "Clonagem de Avatar",
                 "booping": "Booping",
                 "avatar_cloning_allow": "Permitido",
@@ -4975,8 +4977,8 @@
             "msg_test_failed": "Chave da API do YouTube inválida"
         },
         "translation_api": {
-            "header": "Configuração do provedor de tradução",
-            "description": "Escolha e configure o provedor usado para tradução de conteúdo.",
+            "header": "Provedor de tradução",
+            "description": "Configure o provedor usado para tradução de conteúdo.",
             "guide": "Guia",
             "mode": "Provedor",
             "mode_google": "Google Tradutor",
@@ -4990,7 +4992,7 @@
             "openai": {
                 "model": "Nome do Modelo",
                 "prompt_optional": "Prompt (Opcional)",
-                "prompt_optional_description": "Prompt de sistema opcional. Certifique-se de incluir a variável de idioma de destino {targetLang}.",
+                "prompt_optional_description": "Prompt de sistema opcional. Deve incluir a variável {targetLang}.",
                 "connection": "Endpoint LLM",
                 "connection_description": "Somente endpoints compatíveis com OpenAI são suportados.",
                 "connection_placeholder": "Selecione um endpoint",
@@ -5278,7 +5280,7 @@
                 "stable": "Estável",
                 "beta": "Beta",
                 "description": "O VRCX-0 verifica atualizações apenas no canal instalado.",
-                "switch_description": "Para mudar para {channel}, baixe e instale a versão mais recente desse canal pelo GitHub.",
+                "switch_description": "Para mudar para {channel}, baixe e instale a versão mais recente desse canal.",
                 "download_stable": "Baixar a versão estável mais recente",
                 "download_beta": "Baixar a versão Beta mais recente",
                 "no_release": "Não há nenhuma versão disponível neste canal."
@@ -5501,10 +5503,7 @@
         },
         "direct_access_omni": {
             "header": "Acesso Direto",
-            "description": "Insira uma URL ou ID (UUID) de Usuário/Mundo/Instância/Avatar/Grupo",
             "description_failed": "Falha no acesso direto. Verifique a URL ou o ID e tente novamente.",
-            "cancel": "Cancelar",
-            "ok": "OK",
             "message": {
                 "opening": "Abrindo..."
             }
@@ -6325,5 +6324,16 @@
             "themes": "Temas",
             "themes_description": "Gerenciamento de fonte de temas e CSS personalizado."
         }
+    },
+    "linux_rendering": {
+        "title": "Aceleração por hardware (experimental)",
+        "description": "Aplicado após reiniciar o VRCX-0. Depois de ativar, confirme em até 30 segundos após a inicialização; caso contrário, a aceleração é desativada e o VRCX-0 reinicia.",
+        "saved": "Salvo. Reinicie o VRCX-0 para aplicar.",
+        "restart_now": "Reiniciar agora",
+        "confirm_title": "A interface está sendo exibida corretamente?",
+        "confirm_description": "Sem confirmação em até 30 segundos após a inicialização, o VRCX-0 desativa a aceleração de hardware e reinicia.",
+        "restore": "Restaurar e reiniciar",
+        "keep": "Exibição normal, manter",
+        "failed": "Não foi possível alterar a configuração gráfica. Tente novamente."
     }
 }

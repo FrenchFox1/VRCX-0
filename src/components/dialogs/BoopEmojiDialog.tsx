@@ -4,13 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TileShell } from '@/components/tile/TileShell';
 import { cn } from '@/lib/utils';
 import mediaRepository from '@/repositories/mediaRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import {
     TILE_CHECK,
-    TILE_MOTION_STANDALONE,
-    TILE_SELECTED
+    TILE_CHECK_ANCHOR,
+    TILE_MOTION_STANDALONE
 } from '@/shared/constants/selectableTile';
 import { vrchatDefaultEmojis } from '@/shared/constants/vrchatDefaultEmojis';
 import { isRecord } from '@/shared/utils/record';
@@ -89,22 +90,25 @@ function EmojiChoice({
     onClick: () => void;
 }) {
     return (
-        <button
-            type="button"
-            aria-label={label}
-            aria-pressed={selected}
-            disabled={disabled}
+        <TileShell
+            selected={selected}
             className={cn(
-                'focus-visible:border-ring focus-visible:ring-ring/50 relative flex min-w-0 flex-col items-center gap-2 rounded-lg border bg-clip-padding p-2.5 text-center outline-none select-none focus-visible:ring-3 disabled:pointer-events-none disabled:opacity-50',
+                'focus-visible:border-ring focus-visible:ring-ring/50 flex flex-col items-center gap-2 bg-clip-padding p-2.5 text-center outline-none select-none focus-visible:ring-3 disabled:pointer-events-none disabled:opacity-50',
                 TILE_MOTION_STANDALONE,
-                'border-border bg-card/40 pointer-fine:hover:bg-muted/60',
-                imageOnly && 'aspect-square justify-center p-3',
-                selected && TILE_SELECTED
+                imageOnly && 'aspect-square justify-center p-3'
             )}
-            onClick={onClick}
+            render={
+                <button
+                    type="button"
+                    aria-label={label}
+                    aria-pressed={selected}
+                    disabled={disabled}
+                    onClick={onClick}
+                />
+            }
         >
             {selected ? (
-                <span className={TILE_CHECK}>
+                <span className={cn(TILE_CHECK, TILE_CHECK_ANCHOR)}>
                     <CheckIcon className="size-3" aria-hidden="true" />
                 </span>
             ) : null}
@@ -138,7 +142,7 @@ function EmojiChoice({
                     {label}
                 </span>
             )}
-        </button>
+        </TileShell>
     );
 }
 
@@ -265,10 +269,7 @@ export function BoopEmojiDialog({
                         }}
                     >
                         <div className="flex min-h-8 items-center justify-between gap-3">
-                            <TabsList
-                                variant="underline"
-                                className="relative h-8 justify-start p-0"
-                            >
+                            <TabsList className="justify-start">
                                 <TabsTrigger
                                     value="default"
                                     className="min-w-28 flex-none px-3"

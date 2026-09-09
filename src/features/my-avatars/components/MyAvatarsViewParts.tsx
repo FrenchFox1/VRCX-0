@@ -3,6 +3,7 @@ import {
     MoreHorizontalIcon,
     RectangleGogglesIcon
 } from 'lucide-react';
+import { Fragment } from 'react';
 import type {
     ComponentProps,
     Dispatch,
@@ -34,7 +35,11 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
@@ -257,7 +262,6 @@ export function MyAvatarFilterPopover({
                         <ToggleGroup
                             variant="outline"
                             size="sm"
-                            spacing={1}
                             value={
                                 releaseStatusFilter ? [releaseStatusFilter] : []
                             }
@@ -267,20 +271,28 @@ export function MyAvatarFilterPopover({
                                     onReleaseStatusChange(next);
                                 }
                             }}
-                            className="grid w-full grid-cols-3"
+                            className="w-full [&>[data-slot=toggle]]:min-w-0 [&>[data-slot=toggle]]:flex-1"
                         >
-                            {MY_AVATARS_RELEASE_STATUS_OPTIONS.map((option) => (
-                                <ToggleGroupItem
-                                    key={option}
-                                    value={option}
-                                    aria-label={visibilityFilterLabel(option)}
-                                    className="w-full min-w-0 justify-center px-2"
-                                >
-                                    <span className="truncate">
-                                        {visibilityFilterLabel(option)}
-                                    </span>
-                                </ToggleGroupItem>
-                            ))}
+                            {MY_AVATARS_RELEASE_STATUS_OPTIONS.map(
+                                (option, index) => (
+                                    <Fragment key={option}>
+                                        {index > 0 ? (
+                                            <ToggleGroupSeparator />
+                                        ) : null}
+                                        <ToggleGroupItem
+                                            value={option}
+                                            aria-label={visibilityFilterLabel(
+                                                option
+                                            )}
+                                            className="w-full min-w-0 justify-center px-2"
+                                        >
+                                            <span className="truncate">
+                                                {visibilityFilterLabel(option)}
+                                            </span>
+                                        </ToggleGroupItem>
+                                    </Fragment>
+                                )
+                            )}
                         </ToggleGroup>
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -290,7 +302,6 @@ export function MyAvatarFilterPopover({
                         <ToggleGroup
                             variant="outline"
                             size="sm"
-                            spacing={1}
                             value={platformFilter ? [platformFilter] : []}
                             onValueChange={(nextValue) => {
                                 const next = nextValue[0];
@@ -298,23 +309,29 @@ export function MyAvatarFilterPopover({
                                     onPlatformChange(next);
                                 }
                             }}
-                            className="grid w-full grid-cols-4"
+                            className="w-full [&>[data-slot=toggle]]:min-w-0 [&>[data-slot=toggle]]:flex-1"
                         >
-                            {MY_AVATARS_PLATFORM_OPTIONS.map((option) => {
-                                const label = platformFilterLabel(option);
-                                return (
-                                    <ToggleGroupItem
-                                        key={option}
-                                        value={option}
-                                        aria-label={label}
-                                        className="w-full min-w-0 justify-center px-2"
-                                    >
-                                        <span className="truncate">
-                                            {label}
-                                        </span>
-                                    </ToggleGroupItem>
-                                );
-                            })}
+                            {MY_AVATARS_PLATFORM_OPTIONS.map(
+                                (option, index) => {
+                                    const label = platformFilterLabel(option);
+                                    return (
+                                        <Fragment key={option}>
+                                            {index > 0 ? (
+                                                <ToggleGroupSeparator />
+                                            ) : null}
+                                            <ToggleGroupItem
+                                                value={option}
+                                                aria-label={label}
+                                                className="w-full min-w-0 justify-center px-2"
+                                            >
+                                                <span className="truncate">
+                                                    {label}
+                                                </span>
+                                            </ToggleGroupItem>
+                                        </Fragment>
+                                    );
+                                }
+                            )}
                         </ToggleGroup>
                     </div>
                     {allTags.length ? (
@@ -394,7 +411,6 @@ export function GridSettingsMenu({
                     <ToggleGroup
                         variant="outline"
                         size="sm"
-                        spacing={1}
                         value={gridDensity ? [gridDensity] : []}
                         onValueChange={(nextValue) => {
                             const next = nextValue[0];
@@ -402,20 +418,26 @@ export function GridSettingsMenu({
                                 onGridDensityChange(next);
                             }
                         }}
-                        className="grid w-full grid-cols-3"
+                        className="w-full [&>[data-slot=toggle]]:min-w-0 [&>[data-slot=toggle]]:flex-1"
                     >
-                        {MY_AVATARS_GRID_DENSITY_OPTIONS.map((option) => (
-                            <ToggleGroupItem
-                                key={option.value}
-                                value={option.value}
-                                aria-label={t(option.labelKey)}
-                                className="w-full min-w-0 justify-center px-2"
-                            >
-                                <span className="truncate">
-                                    {t(option.labelKey)}
-                                </span>
-                            </ToggleGroupItem>
-                        ))}
+                        {MY_AVATARS_GRID_DENSITY_OPTIONS.map(
+                            (option, index) => (
+                                <Fragment key={option.value}>
+                                    {index > 0 ? (
+                                        <ToggleGroupSeparator />
+                                    ) : null}
+                                    <ToggleGroupItem
+                                        value={option.value}
+                                        aria-label={t(option.labelKey)}
+                                        className="w-full min-w-0 justify-center px-2"
+                                    >
+                                        <span className="truncate">
+                                            {t(option.labelKey)}
+                                        </span>
+                                    </ToggleGroupItem>
+                                </Fragment>
+                            )
+                        )}
                     </ToggleGroup>
                 </Field>
             </FieldGroup>

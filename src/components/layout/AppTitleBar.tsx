@@ -71,7 +71,6 @@ export function AppTitleBar() {
     const {
         isSessionReady,
         actions,
-        quickSearchDialog,
         openQuickSearch,
         sidebarWindowModeButton,
         notificationAction,
@@ -168,7 +167,6 @@ export function AppTitleBar() {
                     </TitleBarWindowButton>
                 </div>
             </header>
-            {quickSearchDialog}
         </>
     );
 }

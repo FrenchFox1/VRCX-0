@@ -123,16 +123,16 @@ export function VrchatLogToolbar({
                 </ToolbarViews>
 
                 <ToolbarActions>
+                    <ToolbarRefreshButton
+                        onRefresh={refresh}
+                        loading={isFilesLoading || isEntriesLoading}
+                    />
                     <ToolbarIconButton
                         icon={ArrowDownToLineIcon}
                         active={followLatest}
                         disabled={!selectedFileName}
                         label={t('view.tools.vrchat_log.follow_latest')}
                         onClick={() => setFollowLatest((value) => !value)}
-                    />
-                    <ToolbarRefreshButton
-                        onRefresh={refresh}
-                        loading={isFilesLoading || isEntriesLoading}
                     />
                 </ToolbarActions>
             </PageToolbarRow>

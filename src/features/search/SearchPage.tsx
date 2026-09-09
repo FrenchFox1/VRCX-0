@@ -23,7 +23,6 @@ export function SearchPage({ embedded = false }: { embedded?: boolean } = {}) {
             >
                 <SearchPageToolbar
                     activeTab={filters.activeTab}
-                    onActiveTabChange={filters.setActiveTab}
                     searchText={filters.searchText}
                     onSearchTextChange={filters.setSearchText}
                     onSearch={results.handleSearch}

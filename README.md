@@ -42,6 +42,14 @@ Grab the file for your platform from the [latest release](https://github.com/Map
 
 You only need to do this once — VRCX-0 updates itself from then on.
 
+On Linux, **Settings → System → Hardware acceleration (experimental)** is off
+by default and applies after a restart. After enabling, confirm that the interface
+works within 30 seconds of startup; otherwise acceleration is turned off and
+VRCX-0 restarts. If the application crashes or is forcibly closed before
+confirmation, the next launch also starts with acceleration off. Setting
+`WEBKIT_DISABLE_DMABUF_RENDERER` yourself hides the option and leaves the
+rendering mode entirely to your environment.
+
 ## Highlights
 
 - **Years of history won't slow it down** — data that makes VRCX visibly

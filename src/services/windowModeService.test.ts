@@ -31,6 +31,8 @@ vi.mock('./sidebarAutoHideService', () => ({
     suspendSidebarAutoHide: mocks.suspendSidebarAutoHide
 }));
 
+import { useCriticalTaskStore } from '@/state/criticalTaskStore';
+import { useDialogStore } from '@/state/dialogStore';
 import { useShellStore } from '@/state/shellStore';
 
 import {
@@ -78,7 +80,9 @@ function createGeometry(
 
 beforeEach(() => {
     window.localStorage.clear();
+    useDialogStore.getState().clearDialogState();
     useShellStore.setState({ windowDisplayMode: 'normal' });
+    useCriticalTaskStore.setState({ activeTasks: [] });
     Object.values(mocks).forEach((mock) => mock.mockReset());
     mocks.suspendSidebarAutoHide.mockResolvedValue(undefined);
     mocks.getWindowGeometry.mockResolvedValue(null);
@@ -91,6 +95,53 @@ beforeEach(() => {
 });
 
 describe('windowModeService', () => {
+    it.each(['normal', 'sidebar'] as const)(
+        'closes the main dialog and trail immediately when switching from %s without closing a later dialog',
+        async (mode) => {
+            useShellStore.setState({ windowDisplayMode: mode });
+            useDialogStore
+                .getState()
+                .setDialogTrail(
+                    { kind: 'world', entityId: 'wrld_old', title: 'Old world' },
+                    [{ kind: 'user', entityId: 'usr_old', title: 'Old user' }]
+                );
+            mocks.getWindowGeometry.mockResolvedValue(createGeometry());
+
+            const transition =
+                mode === 'normal'
+                    ? enterSidebarWindowMode()
+                    : restoreNormalWindowMode();
+
+            expect(useDialogStore.getState().activeDialog).toBeNull();
+            expect(useDialogStore.getState().breadcrumbs).toEqual([]);
+            const nextDialog = {
+                kind: 'user',
+                entityId: 'usr_new',
+                title: 'New user'
+            };
+            useDialogStore.getState().openDialog(nextDialog);
+            await transition;
+            expect(useDialogStore.getState().activeDialog).toEqual(nextDialog);
+        }
+    );
+
+    it.each(['normal', 'sidebar'] as const)(
+        'keeps the main dialog when already in %s mode',
+        async (mode) => {
+            useShellStore.setState({ windowDisplayMode: mode });
+            const dialog = {
+                kind: 'user',
+                entityId: 'usr_current',
+                title: 'Current user'
+            };
+            useDialogStore.getState().openDialog(dialog);
+            await (mode === 'normal'
+                ? restoreNormalWindowMode()
+                : enterSidebarWindowMode());
+            expect(useDialogStore.getState().activeDialog).toEqual(dialog);
+        }
+    );
+
     it('reveals and suspends auto-hide before reading geometry, then resumes it', async () => {
         useShellStore.setState({ windowDisplayMode: 'sidebar' });
         mocks.getWindowGeometry.mockResolvedValue(createGeometry());
@@ -407,5 +458,45 @@ describe('remembered window display mode', () => {
         restoreSidebarWindowModeAfterLogin();
 
         expect(useShellStore.getState().windowDisplayMode).toBe('normal');
+    });
+
+    it('keeps the full window while a critical task is running', async () => {
+        const dialog = {
+            kind: 'user',
+            entityId: 'usr_current',
+            title: 'Current user'
+        };
+        useDialogStore.getState().openDialog(dialog);
+        useCriticalTaskStore
+            .getState()
+            .setCriticalTaskActive('databaseUpgrade', true);
+
+        await enterSidebarWindowMode();
+
+        expect(useShellStore.getState().windowDisplayMode).toBe('normal');
+        expect(mocks.getWindowGeometry).not.toHaveBeenCalled();
+        expect(mocks.suspendSidebarAutoHide).not.toHaveBeenCalled();
+        expect(useDialogStore.getState().activeDialog).toEqual(dialog);
+    });
+
+    it('defers the post-login sidebar restore until the critical task ends', async () => {
+        useShellStore.getState().setWindowDisplayMode('sidebar');
+        mocks.getWindowGeometry.mockResolvedValue(createGeometry());
+        leaveSidebarWindowModeForLogin();
+        await Promise.resolve();
+        await Promise.resolve();
+        useCriticalTaskStore
+            .getState()
+            .setCriticalTaskActive('databaseUpgrade', true);
+
+        restoreSidebarWindowModeAfterLogin();
+        expect(useShellStore.getState().windowDisplayMode).toBe('normal');
+
+        useCriticalTaskStore
+            .getState()
+            .setCriticalTaskActive('databaseUpgrade', false);
+        restoreSidebarWindowModeAfterLogin();
+
+        expect(useShellStore.getState().windowDisplayMode).toBe('sidebar');
     });
 });

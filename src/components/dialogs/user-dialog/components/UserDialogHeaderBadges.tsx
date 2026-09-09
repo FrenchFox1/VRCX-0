@@ -18,7 +18,11 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Separator } from '@/ui/shadcn/separator';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { formatStatsDate } from '../userDialogRows';
@@ -426,14 +430,13 @@ export function UserDialogHeaderMediaBadges({
                                         <ToggleGroup
                                             variant="outline"
                                             size="sm"
-                                            spacing={1}
                                             value={
                                                 visibilityValue
                                                     ? [visibilityValue]
                                                     : []
                                             }
                                             aria-label={visibilityLabel}
-                                            className="grid w-full grid-cols-2"
+                                            className="w-full [&>[data-slot=toggle]]:min-w-0 [&>[data-slot=toggle]]:flex-1"
                                             onValueChange={(value) => {
                                                 const nextValue =
                                                     value[0] ?? '';
@@ -476,6 +479,7 @@ export function UserDialogHeaderMediaBadges({
                                                     {visibleLabel}
                                                 </span>
                                             </ToggleGroupItem>
+                                            <ToggleGroupSeparator />
                                             <ToggleGroupItem
                                                 value="hidden"
                                                 aria-label={hiddenLabel}

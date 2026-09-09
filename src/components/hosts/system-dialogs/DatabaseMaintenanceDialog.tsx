@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { IndeterminateProgress } from '@/components/IndeterminateProgress';
+import { useCriticalTask } from '@/lib/useCriticalTask';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     Dialog,
@@ -13,6 +14,7 @@ import {
 export function DatabaseMaintenanceDialog() {
     const { t } = useTranslation();
     const active = useRuntimeStore((state) => state.databaseMaintenanceActive);
+    useCriticalTask('databaseMaintenance', active);
 
     return (
         <Dialog open={active} onOpenChange={() => undefined}>

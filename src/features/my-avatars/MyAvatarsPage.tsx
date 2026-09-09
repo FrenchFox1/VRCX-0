@@ -121,6 +121,7 @@ export function MyAvatarsPage({
                             gridGap={grid.gridGap}
                             gridColumnCount={grid.gridColumnCount}
                             gridMinWidth={grid.gridMinWidth}
+                            gridPadding={grid.gridPadding}
                             savingTagsAvatarId={actions.savingTagsAvatarId}
                             updatingAvatarId={actions.updatingAvatarId}
                             uploadingImageAvatarId={

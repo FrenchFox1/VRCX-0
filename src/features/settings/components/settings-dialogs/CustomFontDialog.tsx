@@ -38,7 +38,7 @@ import {
 import { Input } from '@/ui/shadcn/input';
 import { InputGroupAddon } from '@/ui/shadcn/input-group';
 import { Skeleton } from '@/ui/shadcn/skeleton';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 type FontFamilyComboboxProps = {
     controlId: string;
@@ -188,8 +188,7 @@ export function CustomFontDialog({
         });
     }
 
-    function handleModeChange(nextValue: readonly string[]) {
-        const nextMode = nextValue[0];
+    function handleModeChange(nextMode: string) {
         if (nextMode === 'installed' || nextMode === 'css') {
             setMode(nextMode);
         }
@@ -217,7 +216,11 @@ export function CustomFontDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="min-h-0 overflow-y-auto pr-1">
+                <Tabs
+                    value={mode}
+                    onValueChange={handleModeChange}
+                    className="min-h-0 overflow-y-auto pr-1"
+                >
                     <FieldGroup>
                         <Field>
                             <FieldTitle>
@@ -225,13 +228,8 @@ export function CustomFontDialog({
                                     'view.settings.appearance.appearance.font_family_custom_mode_label'
                                 )}
                             </FieldTitle>
-                            <ToggleGroup
-                                variant="outline"
-                                value={[mode]}
-                                onValueChange={handleModeChange}
-                                className="grid w-full grid-cols-2"
-                            >
-                                <ToggleGroupItem
+                            <TabsList className="w-full">
+                                <TabsTrigger
                                     value="installed"
                                     disabled={installedModeUnavailable}
                                 >
@@ -239,14 +237,14 @@ export function CustomFontDialog({
                                     {t(
                                         'view.settings.appearance.appearance.font_family_custom_mode_installed'
                                     )}
-                                </ToggleGroupItem>
-                                <ToggleGroupItem value="css">
+                                </TabsTrigger>
+                                <TabsTrigger value="css">
                                     <CodeXmlIcon data-icon="inline-start" />
                                     {t(
                                         'view.settings.appearance.appearance.font_family_custom_mode_css'
                                     )}
-                                </ToggleGroupItem>
-                            </ToggleGroup>
+                                </TabsTrigger>
+                            </TabsList>
                         </Field>
 
                         {noDetectedFonts ? (
@@ -264,97 +262,101 @@ export function CustomFontDialog({
                             </Alert>
                         ) : null}
 
-                        {mode === 'installed' ? (
-                            <FieldGroup className="gap-4">
-                                <FontFamilyCombobox
-                                    controlId="settings-custom-font-primary"
-                                    label={t(
-                                        'view.settings.appearance.appearance.font_family_custom_primary'
-                                    )}
-                                    description={t(
-                                        'view.settings.appearance.appearance.font_family_custom_primary_description'
-                                    )}
-                                    placeholder={t(
-                                        'view.settings.appearance.appearance.font_family_custom_search_placeholder'
-                                    )}
-                                    emptyLabel={t(
-                                        'view.settings.appearance.appearance.font_family_custom_no_results'
-                                    )}
-                                    value={draft.primary}
-                                    options={options}
-                                    loading={
-                                        fontOptionsLoading && !options.length
-                                    }
-                                    allowClear={false}
-                                    onChange={(value) =>
-                                        updateDraft({ primary: value })
-                                    }
-                                />
-                                <FontFamilyCombobox
-                                    controlId="settings-custom-font-secondary"
-                                    label={t(
-                                        'view.settings.appearance.appearance.font_family_custom_secondary'
-                                    )}
-                                    description={t(
-                                        'view.settings.appearance.appearance.font_family_custom_secondary_description'
-                                    )}
-                                    placeholder={t(
-                                        'view.settings.appearance.appearance.font_family_custom_search_optional_placeholder'
-                                    )}
-                                    emptyLabel={t(
-                                        'view.settings.appearance.appearance.font_family_custom_no_results'
-                                    )}
-                                    value={draft.secondary}
-                                    options={options}
-                                    loading={
-                                        fontOptionsLoading && !options.length
-                                    }
-                                    allowClear
-                                    onChange={(value) =>
-                                        updateDraft({ secondary: value })
-                                    }
-                                />
-                            </FieldGroup>
-                        ) : (
-                            <Field>
-                                <FieldContent>
-                                    <FieldLabel htmlFor="settings-custom-font-override">
-                                        {t(
-                                            'view.settings.appearance.appearance.font_family_custom_override'
+                        <TabsContent value={mode}>
+                            {mode === 'installed' ? (
+                                <FieldGroup className="gap-4">
+                                    <FontFamilyCombobox
+                                        controlId="settings-custom-font-primary"
+                                        label={t(
+                                            'view.settings.appearance.appearance.font_family_custom_primary'
                                         )}
-                                    </FieldLabel>
+                                        description={t(
+                                            'view.settings.appearance.appearance.font_family_custom_primary_description'
+                                        )}
+                                        placeholder={t(
+                                            'view.settings.appearance.appearance.font_family_custom_search_placeholder'
+                                        )}
+                                        emptyLabel={t(
+                                            'view.settings.appearance.appearance.font_family_custom_no_results'
+                                        )}
+                                        value={draft.primary}
+                                        options={options}
+                                        loading={
+                                            fontOptionsLoading &&
+                                            !options.length
+                                        }
+                                        allowClear={false}
+                                        onChange={(value) =>
+                                            updateDraft({ primary: value })
+                                        }
+                                    />
+                                    <FontFamilyCombobox
+                                        controlId="settings-custom-font-secondary"
+                                        label={t(
+                                            'view.settings.appearance.appearance.font_family_custom_secondary'
+                                        )}
+                                        description={t(
+                                            'view.settings.appearance.appearance.font_family_custom_secondary_description'
+                                        )}
+                                        placeholder={t(
+                                            'view.settings.appearance.appearance.font_family_custom_search_optional_placeholder'
+                                        )}
+                                        emptyLabel={t(
+                                            'view.settings.appearance.appearance.font_family_custom_no_results'
+                                        )}
+                                        value={draft.secondary}
+                                        options={options}
+                                        loading={
+                                            fontOptionsLoading &&
+                                            !options.length
+                                        }
+                                        allowClear
+                                        onChange={(value) =>
+                                            updateDraft({ secondary: value })
+                                        }
+                                    />
+                                </FieldGroup>
+                            ) : (
+                                <Field>
+                                    <FieldContent>
+                                        <FieldLabel htmlFor="settings-custom-font-override">
+                                            {t(
+                                                'view.settings.appearance.appearance.font_family_custom_override'
+                                            )}
+                                        </FieldLabel>
+                                        <FieldDescription>
+                                            {t(
+                                                'view.settings.appearance.appearance.font_family_custom_override_description'
+                                            )}
+                                        </FieldDescription>
+                                    </FieldContent>
+                                    <Input
+                                        id="settings-custom-font-override"
+                                        value={draft.override}
+                                        name="customFontOverride"
+                                        placeholder={t(
+                                            'view.settings.appearance.appearance.font_family_custom_override_placeholder'
+                                        )}
+                                        onChange={(event) =>
+                                            updateDraft({
+                                                override: event.target.value
+                                            })
+                                        }
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                handleSave();
+                                            }
+                                        }}
+                                    />
                                     <FieldDescription>
                                         {t(
-                                            'view.settings.appearance.appearance.font_family_custom_override_description'
+                                            'view.settings.appearance.appearance.font_family_custom_override_hint'
                                         )}
                                     </FieldDescription>
-                                </FieldContent>
-                                <Input
-                                    id="settings-custom-font-override"
-                                    value={draft.override}
-                                    name="customFontOverride"
-                                    placeholder={t(
-                                        'view.settings.appearance.appearance.font_family_custom_override_placeholder'
-                                    )}
-                                    onChange={(event) =>
-                                        updateDraft({
-                                            override: event.target.value
-                                        })
-                                    }
-                                    onKeyDown={(event) => {
-                                        if (event.key === 'Enter') {
-                                            event.preventDefault();
-                                            handleSave();
-                                        }
-                                    }}
-                                />
-                                <FieldDescription>
-                                    {t(
-                                        'view.settings.appearance.appearance.font_family_custom_override_hint'
-                                    )}
-                                </FieldDescription>
-                            </Field>
-                        )}
+                                </Field>
+                            )}
+                        </TabsContent>
 
                         <Field>
                             <FieldTitle>
@@ -377,7 +379,7 @@ export function CustomFontDialog({
                             </div>
                         </Field>
                     </FieldGroup>
-                </div>
+                </Tabs>
 
                 <DialogFooter>
                     <Button

@@ -219,16 +219,13 @@ export function GroupModerationWorkspace({
                 }}
                 className="min-h-0 flex-1 gap-0"
             >
-                <TabsList
-                    variant="underline"
-                    className="h-auto w-full shrink-0 justify-start overflow-x-auto rounded-none border-b px-0 pb-1"
-                >
+                <TabsList className="max-w-full justify-start overflow-x-auto">
                     {moderationTabs.map((tab) => (
                         <TabsTrigger
                             key={tab.value}
                             value={tab.value}
                             disabled={tab.disabled}
-                            className="flex-none rounded-none px-3"
+                            className="flex-none px-3"
                         >
                             {tab.label}
                         </TabsTrigger>

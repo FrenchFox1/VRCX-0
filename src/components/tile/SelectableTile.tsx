@@ -7,15 +7,16 @@ import {
     TILE_BADGE,
     TILE_BUSY_OVERLAY,
     TILE_CHECK,
+    TILE_CHECK_ANCHOR,
     TILE_LABEL,
     TILE_LOCKED,
     TILE_MOTION,
-    TILE_SELECTED,
-    TILE_SHELL,
     TILE_SURFACE
 } from '@/shared/constants/selectableTile';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
+
+import { TileShell } from './TileShell';
 
 export function SelectableTile({
     label,
@@ -53,21 +54,25 @@ export function SelectableTile({
     onClick: () => void;
 }) {
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            aria-disabled={inert || undefined}
-            aria-label={hint ? `${label}. ${hint}` : label}
-            aria-pressed={isCurrent}
-            title={hint ? `${label} — ${hint}` : label}
-            onClick={inert ? undefined : onClick}
+        <TileShell
+            selected={isCurrent}
             className={cn(
-                TILE_SHELL,
+                'group/tile h-auto w-full p-0 aria-disabled:cursor-not-allowed',
                 TILE_MOTION,
                 aspectClassName,
-                isCurrent && TILE_SELECTED,
                 locked && TILE_LOCKED
             )}
+            render={
+                <Button
+                    type="button"
+                    variant="ghost"
+                    aria-disabled={inert || undefined}
+                    aria-label={hint ? `${label}. ${hint}` : label}
+                    aria-pressed={isCurrent}
+                    title={hint ? `${label} — ${hint}` : label}
+                    onClick={inert ? undefined : onClick}
+                />
+            }
         >
             <div
                 className={cn(TILE_SURFACE, surfaceClassName)}
@@ -90,7 +95,7 @@ export function SelectableTile({
             {showLabel ? <span className={TILE_LABEL}>{label}</span> : null}
             {badge ? <span className={TILE_BADGE}>{badge}</span> : null}
             {isCurrent ? (
-                <span className={TILE_CHECK}>
+                <span className={cn(TILE_CHECK, TILE_CHECK_ANCHOR)}>
                     <CheckIcon className="size-3" />
                 </span>
             ) : null}
@@ -99,6 +104,6 @@ export function SelectableTile({
                     <Spinner className="size-5" />
                 </span>
             ) : null}
-        </Button>
+        </TileShell>
     );
 }

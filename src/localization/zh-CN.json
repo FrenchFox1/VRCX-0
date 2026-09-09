@@ -815,6 +815,7 @@
         "search_direct_access": "粘贴链接或 ID",
         "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
         "search_open_direct": "打开这个链接或 ID",
+        "search_clipboard_detected": "检测到剪贴板链接或 ID，按回车打开",
         "search_joined_groups": "我加入的群组",
         "refresh_tooltip": "刷新好友列表",
         "refresh_available_in_seconds": "你刚刚才同步过，请 {count} 秒后再试",
@@ -1540,9 +1541,8 @@
                 "moderation_snapshot_failed_to_load": "玩家管理记录加载失败"
             },
             "label": {
-                "showing": "显示",
-                "of": "/",
                 "moderation_row": "玩家管理记录",
+                "back_to_top": "回到顶部",
                 "moderation_rows": "玩家管理记录",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "放宽类型筛选或搜索词以查看更多结果"
             },
@@ -2208,7 +2208,7 @@
             },
             "feedback": {
                 "title": "发送反馈",
-                "description": "反馈将匿名提交。我们会阅读每一条消息，但无法直接回复。",
+                "description": "反馈默认匿名提交。我们会阅读每一条消息。如需回复，请在反馈中附上你的邮箱。",
                 "privacy_note": "不会附带任何账号信息。",
                 "placeholder": "告诉我们哪些好用、哪些不好用，或者你希望看到什么新功能……",
                 "submit": "发送",
@@ -3717,6 +3717,8 @@
                 "last_activity": "最后活动时间",
                 "date_joined": "账号创建日期",
                 "friended": "添加为好友的时间",
+                "unfriended": "解除好友的时间",
+                "relationship_history": "好友关系记录",
                 "avatar_cloning": "是否允许克隆模型",
                 "booping": "是否允许戳一戳",
                 "avatar_cloning_allow": "允许",
@@ -5019,8 +5021,8 @@
             "msg_test_failed": "无效的 YouTube API 密钥"
         },
         "translation_api": {
-            "header": "翻译提供商配置",
-            "description": "选择并配置用于内容翻译的提供商。",
+            "header": "翻译提供商设置",
+            "description": "设置翻译使用的提供商。",
             "guide": "查看教程（英语）",
             "mode": "提供商",
             "mode_google": "Google 翻译",
@@ -5034,7 +5036,7 @@
             "openai": {
                 "model": "模型名称",
                 "prompt_optional": "提示词（可选）",
-                "prompt_optional_description": "可选的系统提示词。请务必包含目标语言变量 {targetLang}。",
+                "prompt_optional_description": "可选的系统提示词，必须包含变量 {targetLang}。",
                 "connection": "LLM 端点",
                 "connection_description": "仅支持 OpenAI 兼容端点。",
                 "connection_placeholder": "选择一个端点",
@@ -5322,7 +5324,7 @@
                 "stable": "正式版",
                 "beta": "测试版",
                 "description": "VRCX-0 只会检查当前安装通道中的更新。",
-                "switch_description": "要切换到{channel}，请从 GitHub 下载并安装该通道的最新版本。",
+                "switch_description": "切换到{channel}需要下载并安装该通道的最新版本。",
                 "download_stable": "下载最新正式版",
                 "download_beta": "下载最新测试版",
                 "no_release": "此通道暂无可用版本。"
@@ -5545,10 +5547,7 @@
         },
         "direct_access_omni": {
             "header": "直接打开",
-            "description": "输入玩家 / 世界 / 房间 / 模型链接 或 UUID",
             "description_failed": "打开内容失败，请检查链接或 ID 后重试。",
-            "cancel": "取消",
-            "ok": "确定",
             "message": {
                 "opening": "正在打开..."
             }
@@ -6373,5 +6372,16 @@
             "themes": "主题",
             "themes_description": "主题来源和自定义 CSS 管理。"
         }
+    },
+    "linux_rendering": {
+        "title": "硬件加速（实验性）",
+        "description": "重启 VRCX-0 后生效。开启后请在启动后的 30 秒内确认显示正常，否则将自动关闭硬件加速并重启。",
+        "saved": "已保存，重启 VRCX-0 后生效。",
+        "restart_now": "立即重启",
+        "confirm_title": "界面显示正常吗？",
+        "confirm_description": "启动后 30 秒内未确认，VRCX-0 将关闭硬件加速并重启。",
+        "restore": "恢复兼容模式并重启",
+        "keep": "显示正常，保留",
+        "failed": "无法更改渲染设置，请重试。"
     }
 }

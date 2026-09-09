@@ -19,7 +19,7 @@ import {
     resolveProfileDecorationTypeLabelKey
 } from '@/domain/entities/inventory';
 import { cn } from '@/lib/utils';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import {
     PROFILE_DECORATION_SLOTS,
@@ -87,7 +87,13 @@ export function UserDialogProfileDecorationsPanel({
         : 'size-full object-cover';
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <Tabs
+            value={activeSlot}
+            onValueChange={(value) => {
+                if (isProfileDecorationPanel(value)) setActiveSlot(value);
+            }}
+            className="flex min-h-0 flex-1 flex-col gap-3"
+        >
             <PageToolbar>
                 <PageToolbarRow className="items-center">
                     <PageBackButton
@@ -101,19 +107,7 @@ export function UserDialogProfileDecorationsPanel({
                     </PageHeader>
                 </PageToolbarRow>
             </PageToolbar>
-            <ToggleGroup
-                variant="outline"
-                size="sm"
-                spacing={1}
-                value={[activeSlot]}
-                onValueChange={(value) => {
-                    const nextSlot = value[0];
-                    if (nextSlot && isProfileDecorationPanel(nextSlot)) {
-                        setActiveSlot(nextSlot);
-                    }
-                }}
-                className="flex flex-wrap justify-start"
-            >
+            <TabsList className="max-w-full justify-start overflow-x-auto">
                 {[...PROFILE_DECORATION_SLOTS, 'background'].map((slot) => {
                     const label =
                         slot === 'background'
@@ -123,17 +117,16 @@ export function UserDialogProfileDecorationsPanel({
                                       ''
                               );
                     return (
-                        <ToggleGroupItem
-                            key={slot}
-                            value={slot}
-                            aria-label={label}
-                        >
+                        <TabsTrigger key={slot} value={slot} aria-label={label}>
                             {label}
-                        </ToggleGroupItem>
+                        </TabsTrigger>
                     );
                 })}
-            </ToggleGroup>
-            <div className="min-h-0 flex-1 overflow-y-auto p-1">
+            </TabsList>
+            <TabsContent
+                value={activeSlot}
+                className="min-h-0 flex-1 overflow-y-auto p-1"
+            >
                 {isBackground ? (
                     <UserDialogProfileBackgroundPicker
                         profile={profile}
@@ -194,7 +187,7 @@ export function UserDialogProfileDecorationsPanel({
                         ) : null}
                     </div>
                 )}
-            </div>
-        </div>
+            </TabsContent>
+        </Tabs>
     );
 }

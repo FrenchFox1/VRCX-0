@@ -1,5 +1,4 @@
 import {
-    CheckCircle2Icon,
     CheckIcon,
     EyeIcon,
     GlobeIcon,
@@ -17,8 +16,9 @@ import { useTranslation } from 'react-i18next';
 
 import { AvatarPlatformDots } from '@/components/avatars/AvatarPlatformDots';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { TileShell } from '@/components/tile/TileShell';
 import { cn } from '@/lib/utils';
-import { TILE_SELECTED } from '@/shared/constants/selectableTile';
+import { TILE_CHECK } from '@/shared/constants/selectableTile';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -218,30 +218,29 @@ export function MyAvatarGridCard({
         <ContextMenu>
             <ContextMenuTrigger
                 render={
-                    <div className="group/card relative min-w-0">
-                        <Button
-                            type="button"
-                            variant="outline"
+                    <div className="group/card relative h-full min-w-0">
+                        <TileShell
+                            selected={isActive}
                             className={cn(
-                                'h-auto min-w-0 flex-col items-stretch overflow-hidden p-0 text-left font-normal whitespace-normal',
-                                disabled && 'cursor-not-allowed opacity-60',
-                                isActive && TILE_SELECTED
+                                'h-full flex-col items-stretch p-0 text-left font-normal whitespace-normal',
+                                disabled && 'cursor-not-allowed opacity-60'
                             )}
-                            aria-disabled={!canWear}
-                            tabIndex={disabled ? -1 : undefined}
-                            onClick={() => {
-                                if (!canWear) {
-                                    return;
-                                }
-                                onAction('wear', avatar);
-                            }}
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    aria-disabled={!canWear}
+                                    tabIndex={disabled ? -1 : undefined}
+                                    onClick={() => {
+                                        if (!canWear) {
+                                            return;
+                                        }
+                                        onAction('wear', avatar);
+                                    }}
+                                />
+                            }
                         >
-                            <div
-                                className="bg-muted relative w-full overflow-hidden"
-                                style={{
-                                    aspectRatio: `${1 / densityConfig.imageHeightRatio}`
-                                }}
-                            >
+                            <div className="bg-muted relative size-full overflow-hidden">
                                 {avatar?.thumbnailImageUrl ? (
                                     <FadeInImage
                                         src={avatar.thumbnailImageUrl}
@@ -261,8 +260,8 @@ export function MyAvatarGridCard({
                                 )}
                                 <div className="absolute top-1 left-1 flex max-w-[calc(100%-2rem)] flex-col items-start gap-1">
                                     {isActive ? (
-                                        <span className="bg-primary text-primary-foreground grid size-5 place-items-center rounded-full shadow-sm">
-                                            <CheckCircle2Icon className="size-3.5" />
+                                        <span className={TILE_CHECK}>
+                                            <CheckIcon className="size-3" />
                                         </span>
                                     ) : null}
                                     {tags.length ? (
@@ -362,7 +361,7 @@ export function MyAvatarGridCard({
                                     </span>
                                 </div>
                             </div>
-                        </Button>
+                        </TileShell>
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 render={

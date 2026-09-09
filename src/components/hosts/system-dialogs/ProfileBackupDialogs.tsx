@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateTime } from '@/lib/dateTime';
+import { useCriticalTask } from '@/lib/useCriticalTask';
 import {
     profileBackupErrorKey,
     profileRestoreFailureKey
@@ -147,6 +148,7 @@ export function ProfileBackupDialogs() {
     );
     const restoreActionPending = useRef(false);
     const isBusy = restoreFlow === 'validating' || restoreFlow === 'preparing';
+    useCriticalTask('profileRestore', isBusy);
 
     useEffect(() => {
         const outcome = status.lastOutcome;

@@ -301,15 +301,12 @@ function PhotoGalleryRows({
             onValueChange={setActiveGallery}
             className="gap-2"
         >
-            <TabsList
-                variant="underline"
-                className="h-auto w-full justify-start overflow-x-auto rounded-none border-b px-0 pb-1"
-            >
+            <TabsList className="max-w-full justify-start overflow-x-auto">
                 {galleryEntries.map(({ gallery, rows: galleryRows }) => (
                     <TabsTrigger
                         key={gallery.id}
                         value={gallery.id}
-                        className="flex-none rounded-none px-3"
+                        className="flex-none px-3"
                     >
                         <span className="font-bold">
                             {gallery.name || 'Gallery'}

@@ -95,8 +95,8 @@ describe('MyGroupCard', () => {
 
         const card = container.querySelector('button[aria-pressed="true"]');
         expect(card?.className).toContain('h-full');
-        expect(card?.className).toContain('rounded-lg');
-        expect(card?.className).toContain('ring-primary');
+        expect(card?.className).toContain('rounded-object');
+        expect(card?.className).toContain('ring-object-selected-border');
 
         const order = screen.getByText('3');
         expect(order.className).toContain('top-1');

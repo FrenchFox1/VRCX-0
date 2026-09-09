@@ -23,17 +23,17 @@ import {
 import {
     EmptyState,
     LoadingState,
-    PageBody,
     PageScaffold,
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
 import {
-    toolbarDateRangeTrigger,
+    toolbarSearchDateRangeTrigger,
     ToolbarActions,
+    ToolbarOverflowMenu,
     ToolbarRefreshButton,
     ToolbarSearch,
-    ToolbarSegmented,
+    ToolbarTabs,
     ToolbarViews,
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
@@ -52,7 +52,10 @@ import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
+import { DropdownMenuGroup, DropdownMenuItem } from '@/ui/shadcn/dropdown-menu';
 import { Separator } from '@/ui/shadcn/separator';
+import { Tabs, TabsContent } from '@/ui/shadcn/tabs';
+import { Tooltip } from '@/ui/shadcn/tooltip';
 
 import { BrowseHistoryCard } from './BrowseHistoryCard';
 import {
@@ -350,149 +353,179 @@ export function BrowseHistoryPage() {
 
     return (
         <PageScaffold>
-            <PageToolbar>
-                <PageToolbarRow>
-                    <ToolbarViews className="flex-wrap">
-                        <ToolbarSegmented
-                            value={filter}
-                            onValueChange={setFilter}
-                            options={filterOptions}
-                        />
-                        <DateTimeRangePicker
-                            value={dateRange}
-                            onChange={setDateRange}
-                            align="start"
-                            renderTrigger={toolbarDateRangeTrigger}
-                            placeholder={t('browse_history.date_range')}
-                            startLabel={t('browse_history.date_range_start')}
-                            endLabel={t('browse_history.date_range_end')}
-                            clearLabel={t('common.actions.clear')}
-                            confirmLabel={t('common.actions.confirm')}
-                            formatValue={formatCompactDateTime}
-                            minuteStep={15}
-                            disabled={{ after: todayDate }}
-                        />
-                    </ToolbarViews>
-                    <ToolbarSearch
-                        value={search}
-                        onValueChange={setSearch}
-                        placeholder={t('browse_history.search_placeholder')}
-                    />
-                    <ToolbarActions>
-                        <ToolbarRefreshButton
-                            onRefresh={() =>
-                                setReloadNonce((value) => value + 1)
+            <Tabs
+                value={filter}
+                onValueChange={(value) => {
+                    const option = filterOptions.find(
+                        (entry) => entry.value === value
+                    );
+                    if (option) setFilter(option.value);
+                }}
+                className="flex min-h-0 flex-1 flex-col gap-0"
+            >
+                <PageToolbar>
+                    <PageToolbarRow>
+                        <ToolbarViews className="flex-wrap">
+                            <ToolbarTabs options={filterOptions} />
+                        </ToolbarViews>
+                        <ToolbarSearch
+                            value={search}
+                            onValueChange={setSearch}
+                            placeholder={t('browse_history.search_placeholder')}
+                            trailing={
+                                <Tooltip>
+                                    <DateTimeRangePicker
+                                        value={dateRange}
+                                        onChange={setDateRange}
+                                        align="end"
+                                        renderTrigger={
+                                            toolbarSearchDateRangeTrigger
+                                        }
+                                        placeholder={t(
+                                            'browse_history.date_range'
+                                        )}
+                                        startLabel={t(
+                                            'browse_history.date_range_start'
+                                        )}
+                                        endLabel={t(
+                                            'browse_history.date_range_end'
+                                        )}
+                                        clearLabel={t('common.actions.clear')}
+                                        confirmLabel={t(
+                                            'common.actions.confirm'
+                                        )}
+                                        formatValue={formatCompactDateTime}
+                                        minuteStep={15}
+                                        disabled={{ after: todayDate }}
+                                    />
+                                </Tooltip>
                             }
-                            loading={loading || refreshing}
-                            disabled={!ownerUserId}
                         />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={!items.length}
-                            onClick={() => void clearHistory()}
+                        <ToolbarActions>
+                            <ToolbarRefreshButton
+                                onRefresh={() =>
+                                    setReloadNonce((value) => value + 1)
+                                }
+                                loading={loading || refreshing}
+                                disabled={!ownerUserId}
+                            />
+                            <ToolbarOverflowMenu>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        disabled={!items.length}
+                                        onClick={() => void clearHistory()}
+                                    >
+                                        <Trash2Icon data-icon="inline-start" />
+                                        {t(
+                                            filter === 'all'
+                                                ? 'browse_history.actions.clear_all'
+                                                : 'browse_history.actions.clear_kind'
+                                        )}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </ToolbarOverflowMenu>
+                        </ToolbarActions>
+                    </PageToolbarRow>
+                </PageToolbar>
+                <TabsContent
+                    value={filter}
+                    className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+                >
+                    {loading ? (
+                        <LoadingState label={t('browse_history.loading')} />
+                    ) : loadError ? (
+                        <EmptyState
+                            icon={FootprintsIcon}
+                            title={t('browse_history.load_error')}
                         >
-                            <Trash2Icon />
-                            {t(
-                                filter === 'all'
-                                    ? 'browse_history.actions.clear_all'
-                                    : 'browse_history.actions.clear_kind'
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                    setReloadNonce((value) => value + 1)
+                                }
+                            >
+                                {t('common.action.retry')}
+                            </Button>
+                        </EmptyState>
+                    ) : !items.length ? (
+                        <EmptyState
+                            icon={FootprintsIcon}
+                            title={t(
+                                isFiltered
+                                    ? 'browse_history.no_results_title'
+                                    : 'browse_history.empty_title'
                             )}
-                        </Button>
-                    </ToolbarActions>
-                </PageToolbarRow>
-            </PageToolbar>
-            <PageBody>
-                {loading ? (
-                    <LoadingState label={t('browse_history.loading')} />
-                ) : loadError ? (
-                    <EmptyState
-                        icon={FootprintsIcon}
-                        title={t('browse_history.load_error')}
-                    >
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setReloadNonce((value) => value + 1)}
-                        >
-                            {t('common.action.retry')}
-                        </Button>
-                    </EmptyState>
-                ) : !items.length ? (
-                    <EmptyState
-                        icon={FootprintsIcon}
-                        title={t(
-                            isFiltered
-                                ? 'browse_history.no_results_title'
-                                : 'browse_history.empty_title'
-                        )}
-                        description={t(
-                            isFiltered
-                                ? 'browse_history.no_results_description'
-                                : 'browse_history.empty_description'
-                        )}
-                    />
-                ) : (
-                    <div
-                        ref={viewportRef}
-                        className={cn(
-                            'min-h-0 flex-1 overflow-y-auto pr-1 transition-opacity duration-150 ease-out',
-                            refreshing && 'pointer-events-none opacity-60'
-                        )}
-                    >
+                            description={t(
+                                isFiltered
+                                    ? 'browse_history.no_results_description'
+                                    : 'browse_history.empty_description'
+                            )}
+                        />
+                    ) : (
                         <div
-                            className="relative"
-                            style={{ height: positioned.totalHeight }}
+                            ref={viewportRef}
+                            className={cn(
+                                'min-h-0 flex-1 overflow-y-auto pr-1 transition-opacity duration-150 ease-out',
+                                refreshing && 'pointer-events-none opacity-60'
+                            )}
                         >
-                            {visibleRows.map((row) => (
-                                <div
-                                    key={row.key}
-                                    className={cn(
-                                        'absolute right-0 left-0',
-                                        row.kind === 'cards' && 'grid'
-                                    )}
-                                    style={{
-                                        top: row.top,
-                                        height: row.height,
-                                        ...(row.kind === 'cards'
-                                            ? {
-                                                  gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-                                                  gap: BROWSE_HISTORY_GRID_GAP
-                                              }
-                                            : {})
-                                    }}
-                                >
-                                    {row.kind === 'heading' ? (
-                                        <div className="flex h-full items-center gap-3 px-1">
-                                            <h2 className="text-muted-foreground shrink-0 text-xs font-medium tracking-wide tabular-nums">
-                                                {dayLabel(row.dayKey)}
-                                            </h2>
-                                            <Separator className="flex-1 opacity-60" />
-                                        </div>
-                                    ) : (
-                                        row.items.map(
-                                            (item: BrowseHistoryItemOutput) => (
-                                                <BrowseHistoryCard
-                                                    key={`${item.entityKind}:${item.entityId}`}
-                                                    item={item}
-                                                    onRemove={removeItem}
-                                                />
+                            <div
+                                className="relative"
+                                style={{ height: positioned.totalHeight }}
+                            >
+                                {visibleRows.map((row) => (
+                                    <div
+                                        key={row.key}
+                                        className={cn(
+                                            'absolute right-0 left-0',
+                                            row.kind === 'cards' && 'grid'
+                                        )}
+                                        style={{
+                                            top: row.top,
+                                            height: row.height,
+                                            ...(row.kind === 'cards'
+                                                ? {
+                                                      gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                                                      gap: BROWSE_HISTORY_GRID_GAP
+                                                  }
+                                                : {})
+                                        }}
+                                    >
+                                        {row.kind === 'heading' ? (
+                                            <div className="flex h-full items-center gap-3 px-1">
+                                                <h2 className="text-muted-foreground shrink-0 text-xs font-medium tracking-wide tabular-nums">
+                                                    {dayLabel(row.dayKey)}
+                                                </h2>
+                                                <Separator className="flex-1 opacity-60" />
+                                            </div>
+                                        ) : (
+                                            row.items.map(
+                                                (
+                                                    item: BrowseHistoryItemOutput
+                                                ) => (
+                                                    <BrowseHistoryCard
+                                                        key={`${item.entityKind}:${item.entityId}`}
+                                                        item={item}
+                                                        onRemove={removeItem}
+                                                    />
+                                                )
                                             )
-                                        )
-                                    )}
-                                </div>
-                            ))}
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            {loadingMore ? (
+                                <p className="text-muted-foreground py-2 text-center text-xs">
+                                    {t('browse_history.loading')}
+                                </p>
+                            ) : null}
                         </div>
-                        {loadingMore ? (
-                            <p className="text-muted-foreground py-2 text-center text-xs">
-                                {t('browse_history.loading')}
-                            </p>
-                        ) : null}
-                    </div>
-                )}
-            </PageBody>
+                    )}
+                </TabsContent>
+            </Tabs>
         </PageScaffold>
     );
 }

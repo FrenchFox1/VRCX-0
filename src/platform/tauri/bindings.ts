@@ -2372,6 +2372,17 @@ const generatedCommands = {
     async appRestartApplication(): Promise<null> {
         return await TAURI_INVOKE('app__restart_application');
     },
+    async appGetLinuxRendering(): Promise<LinuxRenderingSnapshot | null> {
+        return await TAURI_INVOKE('app__get_linux_rendering');
+    },
+    async appSetLinuxRendering(
+        enabled: boolean
+    ): Promise<LinuxRenderingSnapshot> {
+        return await TAURI_INVOKE('app__set_linux_rendering', { enabled });
+    },
+    async appConfirmLinuxRendering(): Promise<LinuxRenderingSnapshot> {
+        return await TAURI_INVOKE('app__confirm_linux_rendering');
+    },
     async appExitApplication(): Promise<null> {
         return await TAURI_INVOKE('app__exit_application');
     },
@@ -4986,6 +4997,10 @@ export type LegacyVrcxMigrationStatus = {
     reason?: string | null;
 };
 export type LinuxPackageKind = 'unknown' | 'appimage' | 'deb' | 'rpm';
+export type LinuxRenderingSnapshot = {
+    enabled: boolean;
+    needsConfirmation: boolean;
+};
 export type LlmEndpointDetectModelsInput = {
     id: string | null;
     baseUrl: string | null;

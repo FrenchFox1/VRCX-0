@@ -58,6 +58,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 function scopeUsesFavoriteGroups(scope: OverlayActivityScope) {
     return scope === 'selectedFavorites';
@@ -480,22 +481,24 @@ function OverlayActivityFilterDialog({
                     <DialogDescription>{t(descriptionKey)}</DialogDescription>
                 </DialogHeader>
 
-                <div className="grid h-[min(62vh,36rem)] min-h-0 grid-cols-[18rem_minmax(0,1fr)] gap-5 overflow-hidden">
+                <Tabs
+                    orientation="vertical"
+                    value={selectedCategory}
+                    onValueChange={(value) => {
+                        const category = activityCategories.find(
+                            (entry) => entry === value
+                        );
+                        if (category) setSelectedCategory(category);
+                    }}
+                    className="grid h-[min(62vh,36rem)] min-h-0 grid-cols-[18rem_minmax(0,1fr)] gap-5 overflow-hidden"
+                >
                     <ScrollArea className="h-full border-r pr-3">
-                        <FieldGroup className="gap-1">
+                        <TabsList className="h-fit w-full gap-1">
                             {activityCategories.map((category) => (
-                                <Button
+                                <TabsTrigger
                                     key={category}
-                                    type="button"
-                                    variant={
-                                        selectedCategory === category
-                                            ? 'secondary'
-                                            : 'ghost'
-                                    }
+                                    value={category}
                                     className="h-auto w-full justify-between gap-3 px-3 py-2.5 text-left whitespace-normal"
-                                    onClick={() =>
-                                        setSelectedCategory(category)
-                                    }
                                 >
                                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
                                         <span className="font-medium">
@@ -510,12 +513,15 @@ function OverlayActivityFilterDialog({
                                         </span>
                                     </span>
                                     <ChevronRightIcon data-icon="inline-end" />
-                                </Button>
+                                </TabsTrigger>
                             ))}
-                        </FieldGroup>
+                        </TabsList>
                     </ScrollArea>
 
-                    <div className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
+                    <TabsContent
+                        value={selectedCategory}
+                        className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3"
+                    >
                         <div className="flex items-start justify-between gap-4 border-b pb-3">
                             <div className="flex min-w-0 flex-col gap-1">
                                 <div className="font-semibold">
@@ -724,8 +730,8 @@ function OverlayActivityFilterDialog({
                                 })}
                             </FieldGroup>
                         </ScrollArea>
-                    </div>
-                </div>
+                    </TabsContent>
+                </Tabs>
 
                 <DialogFooter className="sm:justify-between">
                     <Button

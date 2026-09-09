@@ -147,6 +147,7 @@ export function UserDialogTabsSection({
         lastSeen,
         memo,
         friendedAt,
+        relationshipHistory,
         presenceActivityAt,
         profile,
         representedGroup,
@@ -285,6 +286,7 @@ export function UserDialogTabsSection({
     };
     const activitySummarySection: UserDialogActivitySummarySectionProps = {
         friendedAt,
+        relationshipHistory,
         isCurrentUser,
         isFriend,
         lastSeen,

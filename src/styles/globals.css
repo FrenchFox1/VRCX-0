@@ -111,6 +111,9 @@
     --object-surface-hover: var(--state-hover-surface);
     --object-border: var(--stroke-subtle);
     --object-border-hover: var(--stroke-default);
+    --object-radius: var(--radius-xl);
+    --object-selected-border: var(--primary);
+    --object-selected-surface: var(--state-selected-surface);
     --status-online: #2ed319;
     --status-joinme: #00b8ff;
     --status-busy: #c80928;
@@ -201,12 +204,15 @@
         transparent
     );
     --vrcx-0-table-sticky-edge: var(--stroke-strong);
-    --vrcx-0-table-header-height: 2.5rem;
+    --vrcx-0-table-header-height: 2rem;
     --vrcx-0-table-row-height: 2.5rem;
     --vrcx-0-table-cell-padding-inline: 0.75rem;
     --vrcx-0-main-content-gutter: 0.75rem;
+    --vrcx-0-main-content-gutter-top: 0.375rem;
+    --vrcx-0-main-content-gutter-bottom: 0.625rem;
+    --vrcx-0-main-content-gutter-collapsed: 0.25rem;
     --vrcx-0-main-content-radius: 0.625rem;
-    --vrcx-0-main-content-edge: var(--stroke-subtle);
+    --vrcx-0-main-content-edge: var(--stroke-default);
     --vrcx-0-main-content-highlight: transparent;
     --vrcx-0-main-content-lift: 0 0 #0000;
     --vrcx-0-workspace-divider: color-mix(
@@ -214,7 +220,6 @@
         var(--foreground) 4%,
         transparent
     );
-    --vrcx-0-page-toolbar-border: var(--stroke-subtle);
     --vrcx-0-main-content-preferred-min-width: 45rem;
     --vrcx-0-side-panel-min-width: 15rem;
     --vrcx-0-side-panel-resizer-width: 0.5rem;
@@ -231,7 +236,7 @@
 
 :root.is-compact-table,
 .is-compact-table {
-    --vrcx-0-table-header-height: 2rem;
+    --vrcx-0-table-header-height: 1.75rem;
     --vrcx-0-table-row-height: 2rem;
     --vrcx-0-table-cell-padding-inline: 0.5rem;
     --vrcx-0-table-cell-padding-block: 0.25rem;
@@ -248,6 +253,16 @@
             var(--foreground) 10%,
             transparent
         );
+        --stroke-default: color-mix(
+            in oklch,
+            var(--foreground) 12%,
+            transparent
+        );
+        --stroke-strong: color-mix(
+            in oklch,
+            var(--foreground) 20%,
+            transparent
+        );
         --surface-panel: color-mix(
             in oklch,
             var(--background) 96%,
@@ -255,7 +270,7 @@
         );
         --surface-raised: color-mix(
             in oklch,
-            var(--background) 93%,
+            var(--background) 90.5%,
             var(--foreground)
         );
         --vrcx-0-app-surface: color-mix(in oklch, var(--background) 85%, black);
@@ -266,7 +281,7 @@
         );
         --vrcx-0-main-content-highlight: color-mix(
             in oklch,
-            var(--foreground) 6%,
+            var(--foreground) 10%,
             transparent
         );
         --vrcx-0-main-content-lift: 0 8px 20px -10px rgb(0 0 0 / 0.65);
@@ -306,6 +321,8 @@
     --sidebar-border: var(--stroke-subtle);
     --sidebar-ring: oklch(0.556 0 0);
     --stroke-subtle: color-mix(in oklch, var(--foreground) 10%, transparent);
+    --stroke-default: color-mix(in oklch, var(--foreground) 12%, transparent);
+    --stroke-strong: color-mix(in oklch, var(--foreground) 20%, transparent);
     --surface-panel: color-mix(
         in oklch,
         var(--background) 96%,
@@ -313,7 +330,7 @@
     );
     --surface-raised: color-mix(
         in oklch,
-        var(--background) 93%,
+        var(--background) 90.5%,
         var(--foreground)
     );
     --vrcx-0-app-surface: color-mix(in oklch, var(--background) 85%, black);
@@ -324,7 +341,7 @@
     );
     --vrcx-0-main-content-highlight: color-mix(
         in oklch,
-        var(--foreground) 6%,
+        var(--foreground) 10%,
         transparent
     );
     --vrcx-0-main-content-lift: 0 8px 20px -10px rgb(0 0 0 / 0.65);
@@ -378,6 +395,11 @@
     --color-content-disabled: var(--content-disabled);
     --color-object-surface: var(--object-surface);
     --color-object-surface-hover: var(--object-surface-hover);
+    --radius-object: var(--object-radius);
+    --color-object-border: var(--object-border);
+    --color-object-border-hover: var(--object-border-hover);
+    --color-object-selected-border: var(--object-selected-border);
+    --color-object-selected-surface: var(--object-selected-surface);
     --color-popover: var(--popover);
     --color-popover-foreground: var(--popover-foreground);
     --color-primary: var(--primary);
@@ -796,12 +818,19 @@
     .vrcx-0-workspace {
         position: relative;
         margin: var(--vrcx-0-main-content-gutter);
+        margin-top: var(--vrcx-0-main-content-gutter-top);
+        margin-bottom: var(--vrcx-0-main-content-gutter-bottom);
         border-radius: var(--vrcx-0-main-content-radius);
         background: var(--vrcx-0-main-content-surface);
         box-shadow:
             inset 0 1px 0 var(--vrcx-0-main-content-highlight),
             0 0 0 1px var(--vrcx-0-main-content-edge),
             var(--vrcx-0-main-content-lift);
+    }
+
+    .vrcx-0-sidebar-layout:has([data-slot='sidebar'][data-state='collapsed'])
+        .vrcx-0-workspace {
+        margin-left: var(--vrcx-0-main-content-gutter-collapsed);
     }
 
     .vrcx-0-workspace[data-window-sidebar-mode='true'] {
@@ -915,25 +944,7 @@
     }
 
     .vrcx-0-page-toolbar {
-        margin-block-end: 0.75rem;
-        padding-block-end: 0.75rem;
-        border-block-end: 1px solid var(--vrcx-0-page-toolbar-border);
-    }
-
-    .vrcx-0-page-toolbar:has(+ .vrcx-0-page-toolbar) {
-        margin-block-end: 0;
-        padding-block-end: 0.5rem;
-        border-block-end-width: 0;
-    }
-
-    .vrcx-0-page-scaffold > .vrcx-0-page-toolbar {
-        margin-inline: calc(var(--vrcx-0-page-pad) * -1);
-        padding-inline: var(--vrcx-0-page-pad);
-    }
-
-    .vrcx-0-page-scaffold > .vrcx-0-page-toolbar:first-child {
-        margin-block-start: calc(var(--vrcx-0-page-pad) * -1);
-        padding-block-start: var(--vrcx-0-page-pad);
+        margin-block-end: 0.5rem;
     }
 
     .vrcx-0-side-panel[data-window-sidebar-mode='true'] {
@@ -1030,48 +1041,6 @@
         color: var(--content-primary);
         background: var(--surface-interactive-hover);
         border-color: var(--stroke-strong);
-    }
-
-    [data-slot='toggle-group'].vrcx-0-segmented-control {
-        padding: 0.125rem;
-        background: var(--vrcx-0-toolbar-group-surface);
-        border: 1px solid var(--vrcx-0-toolbar-group-border);
-    }
-
-    [data-slot='toggle-group'].vrcx-0-segmented-control.vrcx-0-filter-chips {
-        padding-inline: 0;
-        background: transparent;
-        border-color: transparent;
-    }
-
-    [data-slot='toggle-group'].vrcx-0-segmented-control
-        > [data-slot='toggle-group-item'] {
-        color: var(--vrcx-0-toolbar-item-foreground);
-        background: transparent;
-        border: 0;
-    }
-
-    [data-slot='toggle-group'].vrcx-0-segmented-control
-        > [data-slot='toggle-group-item']:hover {
-        color: var(--content-primary);
-        background: var(--vrcx-0-toolbar-item-hover-surface);
-    }
-
-    [data-slot='toggle-group'].vrcx-0-segmented-control
-        > [data-slot='toggle-group-item']:is(
-            [aria-pressed='true'],
-            [data-pressed]
-        ) {
-        color: var(--vrcx-0-toolbar-item-selected-foreground);
-        background: var(--vrcx-0-toolbar-item-selected-surface);
-    }
-
-    [data-slot='toggle-group'].vrcx-0-segmented-control
-        > [data-slot='toggle-group-item']:is(
-            [aria-pressed='true'],
-            [data-pressed]
-        ):hover {
-        background: var(--vrcx-0-toolbar-item-selected-hover-surface);
     }
 
     .app-data-table {
@@ -1504,30 +1473,6 @@
 }
 
 @layer utilities {
-    [data-slot='toggle-group'].vrcx-0-icon-segmented-control
-        > .vrcx-0-icon-segmented-item {
-        background: transparent !important;
-    }
-
-    [data-slot='toggle-group'].vrcx-0-icon-segmented-control
-        > .vrcx-0-icon-segmented-item
-        > svg {
-        color: var(--content-primary);
-        opacity: 0.4;
-    }
-
-    [data-slot='toggle-group'].vrcx-0-icon-segmented-control
-        > .vrcx-0-icon-segmented-item:hover
-        > svg {
-        opacity: 0.68;
-    }
-
-    [data-slot='toggle-group'].vrcx-0-icon-segmented-control
-        > .vrcx-0-icon-segmented-item:is([aria-pressed='true'], [data-pressed])
-        > svg {
-        opacity: 1;
-    }
-
     :is(
             [data-slot='dropdown-menu-content'],
             [data-slot='dropdown-menu-sub-content'],

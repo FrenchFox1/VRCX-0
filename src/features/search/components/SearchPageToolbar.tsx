@@ -6,7 +6,7 @@ import {
     ToolbarActions,
     ToolbarOverflowMenu,
     ToolbarSearch,
-    ToolbarSegmented,
+    ToolbarTabs,
     ToolbarViewMenu,
     ToolbarViews,
     type ToolbarSegmentOption
@@ -222,7 +222,6 @@ function SearchViewOptionsMenu({
 
 export function SearchPageToolbar({
     activeTab,
-    onActiveTabChange,
     searchText,
     onSearchTextChange,
     onSearch,
@@ -230,7 +229,6 @@ export function SearchPageToolbar({
     viewOptions
 }: {
     activeTab: SearchActiveTab;
-    onActiveTabChange: (value: SearchActiveTab) => void;
     searchText: string;
     onSearchTextChange: (value: string) => void;
     onSearch: () => void;
@@ -253,11 +251,7 @@ export function SearchPageToolbar({
         <PageToolbar>
             <PageToolbarRow>
                 <ToolbarViews>
-                    <ToolbarSegmented
-                        value={activeTab}
-                        onValueChange={onActiveTabChange}
-                        options={tabOptions}
-                    />
+                    <ToolbarTabs options={tabOptions} />
                 </ToolbarViews>
 
                 <ToolbarSearch

@@ -105,7 +105,10 @@ export const FeedSearchBox = memo(function FeedSearchBox({
     const anchorRef = useComboboxAnchor();
 
     return (
-        <InputGroup ref={anchorRef} className="h-auto min-h-8 flex-1">
+        <InputGroup
+            ref={anchorRef}
+            className="h-auto min-h-8 w-40 shrink-0 sm:w-64"
+        >
             <Combobox
                 multiple
                 filter={null}

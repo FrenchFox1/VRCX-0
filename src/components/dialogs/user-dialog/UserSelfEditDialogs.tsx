@@ -1,4 +1,5 @@
 import { BookmarkIcon, HistoryIcon, PlusIcon, XIcon } from 'lucide-react';
+import { Fragment } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -48,7 +49,11 @@ import {
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Separator } from '@/ui/shadcn/separator';
 import { Textarea } from '@/ui/shadcn/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 
 import type { useCurrentUserSocialStatusDialog } from './useCurrentUserSocialStatusDialog';
 import {
@@ -241,8 +246,7 @@ export function UserSocialStatusDialog({
                         <ToggleGroup
                             variant="outline"
                             value={draft.status ? [draft.status] : []}
-                            spacing={2}
-                            className="w-full flex-wrap"
+                            className="w-full overflow-x-auto"
                             aria-label={t('dialog.user.label.social_status')}
                             onValueChange={(value) => {
                                 const nextStatus = normalizeSelfStatusInput(
@@ -257,28 +261,32 @@ export function UserSocialStatusDialog({
                                 }));
                             }}
                         >
-                            {statusOptions.map((option) => {
+                            {statusOptions.map((option, index) => {
                                 return (
-                                    <ToggleGroupItem
-                                        key={option.value}
-                                        value={option.value}
-                                        aria-label={option.label}
-                                        disabled={busy}
-                                        className="h-9 min-w-0 flex-1 basis-[calc(50%-0.25rem)] justify-center gap-2 px-2 sm:basis-0"
-                                    >
-                                        <i
-                                            className={userStatusIndicatorClassName(
-                                                option.value,
-                                                {
-                                                    showOffline: true,
-                                                    className: 'shrink-0'
-                                                }
-                                            )}
-                                        />
-                                        <span className="min-w-0 truncate">
-                                            {option.label}
-                                        </span>
-                                    </ToggleGroupItem>
+                                    <Fragment key={option.value}>
+                                        {index > 0 ? (
+                                            <ToggleGroupSeparator />
+                                        ) : null}
+                                        <ToggleGroupItem
+                                            value={option.value}
+                                            aria-label={option.label}
+                                            disabled={busy}
+                                            className="h-9 min-w-0 flex-1 basis-[calc(50%-0.25rem)] justify-center gap-2 px-2 sm:basis-0"
+                                        >
+                                            <i
+                                                className={userStatusIndicatorClassName(
+                                                    option.value,
+                                                    {
+                                                        showOffline: true,
+                                                        className: 'shrink-0'
+                                                    }
+                                                )}
+                                            />
+                                            <span className="min-w-0 truncate">
+                                                {option.label}
+                                            </span>
+                                        </ToggleGroupItem>
+                                    </Fragment>
                                 );
                             })}
                         </ToggleGroup>

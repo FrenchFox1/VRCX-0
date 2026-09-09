@@ -41,6 +41,7 @@ describe('userDialogSessionCacheService', () => {
             timeSpent: 0,
             lastSeen: '',
             friendedAt: '',
+            relationshipHistory: [],
             joinCount: 0,
             previousDisplayNames: []
         });
@@ -64,6 +65,7 @@ describe('userDialogSessionCacheService', () => {
             timeSpent: 12345,
             lastSeen: '2026-01-02T03:04:05.000Z',
             friendedAt: '',
+            relationshipHistory: [],
             joinCount: 7,
             previousDisplayNames: [{ displayName: 'Old Name' }]
         });
@@ -96,6 +98,7 @@ describe('userDialogSessionCacheService', () => {
             timeSpent: 2000,
             lastSeen: '2026-01-02T03:04:05.000Z',
             friendedAt: '',
+            relationshipHistory: [],
             joinCount: 3,
             previousDisplayNames: [{ displayName: 'Original' }],
             previousDisplayNameSources: {
@@ -103,6 +106,25 @@ describe('userDialogSessionCacheService', () => {
                 gameLog: [{ displayName: 'Game Log Name' }]
             }
         });
+    });
+
+    it('keeps relationship history isolated from caller and dialog edits', () => {
+        const key = dialogTargetKey('https://api.example.test', 'usr_target');
+        const history = [
+            { rowId: 12, type: 'Unfriend', created_at: '2026-09-01T00:00:00Z' }
+        ];
+        cacheUserStats(key, { relationshipHistory: history });
+        history[0].type = 'Friend';
+        const firstRead = readCachedUserStats(key);
+        firstRead.relationshipHistory[0].created_at = 'changed';
+        firstRead.relationshipHistory.push({
+            rowId: 1,
+            type: 'Friend',
+            created_at: ''
+        });
+        expect(readCachedUserStats(key).relationshipHistory).toEqual([
+            { rowId: 12, type: 'Unfriend', created_at: '2026-09-01T00:00:00Z' }
+        ]);
     });
 
     it('shows the original previous instance list when a dialog-local list is edited then reopened', () => {
