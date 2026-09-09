@@ -1555,7 +1555,7 @@
                 "accept": "受け入れる",
                 "invite": "招待する",
                 "decline": "断る",
-                "delete_log": "ログを削除",
+                "delete_log": "通知を削除",
                 "decline_with_message": "返信を添えて断る"
             },
             "filters": {
@@ -1655,6 +1655,10 @@
                     "moderation": "モデレーション",
                     "other": "その他"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "閉じる",
+                "unsubscribe_announcements": "購読を解除"
             }
         },
         "friend_list": {

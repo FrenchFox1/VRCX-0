@@ -1538,7 +1538,7 @@
                 "accept": "수락",
                 "invite": "초대",
                 "decline": "거절",
-                "delete_log": "로그 삭제",
+                "delete_log": "알림 삭제",
                 "decline_with_message": "메시지로 거절"
             },
             "filters": {
@@ -1638,6 +1638,10 @@
                     "moderation": "중재",
                     "other": "기타"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "닫기",
+                "unsubscribe_announcements": "구독 해제"
             }
         },
         "friend_list": {

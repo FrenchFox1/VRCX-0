@@ -1561,7 +1561,7 @@
                 "accept": "Принять",
                 "invite": "Приглашение",
                 "decline": "Отклонить",
-                "delete_log": "Удалить журнал",
+                "delete_log": "Удалить уведомление",
                 "decline_with_message": "Отклонить с сообщением"
             },
             "filters": {
@@ -1661,6 +1661,10 @@
                     "moderation": "Модерация",
                     "other": "Прочее"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Скрыть",
+                "unsubscribe_announcements": "Отписаться"
             }
         },
         "friend_list": {

@@ -143,10 +143,24 @@ export function shouldShowDeleteLog(
     return type !== 'friendRequest' && type !== 'ignoredFriendRequest';
 }
 
+const RESPONSE_TEXT_KEYS: Record<string, string> = {
+    'acknowledge and dismiss this notification':
+        'view.notification.responses.acknowledge_and_dismiss',
+    "unsubscribe from this group's announcements":
+        'view.notification.responses.unsubscribe_announcements'
+};
+
 export function getResponseLabel(
-    response: NotificationResponse | null | undefined
+    response: NotificationResponse | null | undefined,
+    t: TFunction
 ) {
-    return response?.text || response?.type || 'Respond';
+    const text = String(response?.text || '').trim();
+    const localizedKey =
+        RESPONSE_TEXT_KEYS[text.replaceAll('\u2019', "'").toLowerCase()];
+    if (localizedKey) {
+        return t(localizedKey);
+    }
+    return text || response?.type || 'Respond';
 }
 
 function getCachedInstanceLocation(instance: GroupInstanceRecord) {

@@ -1561,7 +1561,7 @@
                 "accept": "Přijmout",
                 "invite": "Pozvat",
                 "decline": "Odmítnout",
-                "delete_log": "Smazat záznam",
+                "delete_log": "Smazat upozornění",
                 "decline_with_message": "Odmítnout se zprávou"
             },
             "filters": {
@@ -1661,6 +1661,10 @@
                     "moderation": "Moderace",
                     "other": "Ostatní"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Zavřít",
+                "unsubscribe_announcements": "Zrušit odběr"
             }
         },
         "friend_list": {

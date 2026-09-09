@@ -1559,7 +1559,7 @@
                 "accept": "Annehmen",
                 "invite": "Einladen",
                 "decline": "Ablehnen",
-                "delete_log": "Protokoll löschen",
+                "delete_log": "Benachrichtigung löschen",
                 "decline_with_message": "Mit Nachricht ablehnen"
             },
             "filters": {
@@ -1659,6 +1659,10 @@
                     "moderation": "Moderation",
                     "other": "Sonstiges"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Ausblenden",
+                "unsubscribe_announcements": "Abbestellen"
             }
         },
         "friend_list": {

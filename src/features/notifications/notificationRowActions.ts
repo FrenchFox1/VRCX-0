@@ -228,7 +228,7 @@ export function buildOrderedActions({
     for (const response of responses) {
         actions.push({
             key: `response:${response?.type}:${response?.text || response?.data || ''}`,
-            label: getResponseLabel(response),
+            label: getResponseLabel(response, t),
             Icon: getResponseIcon(response, type),
             onClick: () =>
                 handlers.onSendNotificationResponse(notification, response)

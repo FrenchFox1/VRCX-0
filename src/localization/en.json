@@ -1559,7 +1559,7 @@
                 "accept": "Accept",
                 "invite": "Invite",
                 "decline": "Decline",
-                "delete_log": "Delete log",
+                "delete_log": "Delete notification",
                 "decline_with_message": "Decline with message"
             },
             "filters": {
@@ -1659,6 +1659,10 @@
                     "moderation": "Moderation",
                     "other": "Other"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Dismiss",
+                "unsubscribe_announcements": "Unsubscribe"
             }
         },
         "friend_list": {

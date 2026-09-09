@@ -1559,7 +1559,7 @@
                 "accept": "接受",
                 "invite": "邀請",
                 "decline": "拒絕",
-                "delete_log": "刪除紀錄",
+                "delete_log": "刪除通知",
                 "decline_with_message": "拒絕並附上訊息"
             },
             "filters": {
@@ -1659,6 +1659,10 @@
                     "moderation": "管理",
                     "other": "其他"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "忽略",
+                "unsubscribe_announcements": "取消訂閱"
             }
         },
         "friend_list": {

@@ -1559,7 +1559,7 @@
                 "accept": "Aceitar",
                 "invite": "Convidar",
                 "decline": "Recusar",
-                "delete_log": "Excluir registro",
+                "delete_log": "Excluir notificação",
                 "decline_with_message": "Recusar com mensagem"
             },
             "filters": {
@@ -1659,6 +1659,10 @@
                     "moderation": "Moderação",
                     "other": "Outros"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Dispensar",
+                "unsubscribe_announcements": "Cancelar inscrição"
             }
         },
         "friend_list": {
