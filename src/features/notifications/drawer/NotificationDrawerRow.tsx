@@ -18,7 +18,6 @@ import { HoverCard, HoverCardTrigger } from '@/ui/shadcn/hover-card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
-    NotificationActionButton,
     NotificationEmojiPreview,
     NotificationIconDisc,
     NotificationPersonAvatar
@@ -31,7 +30,11 @@ import {
     openSender,
     shouldShowDeleteLog
 } from '../notificationCenterUtils';
-import { buildOrderedActions, usesAvatar } from '../notificationRowActions';
+import {
+    buildOrderedActions,
+    PRIMARY_ACTION_KEYS,
+    usesAvatar
+} from '../notificationRowActions';
 import {
     type NotificationActor,
     toNotificationViewModel
@@ -166,9 +169,9 @@ export function NotificationDrawerRow({
                 render={
                     <div className="group hover:bg-accent/50 border-border/50 relative flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0">
                         <div className="flex shrink-0 items-start gap-1.5">
-                            <span className="mt-1.5 flex w-1.5 shrink-0 justify-center">
+                            <span className="mt-1.5 flex w-2 shrink-0 justify-center">
                                 {showUnreadDot ? (
-                                    <span className="bg-primary size-1.5 rounded-full">
+                                    <span className="bg-primary size-2 rounded-full">
                                         <span className="sr-only">
                                             {t('view.notification.feed.unread')}
                                         </span>
@@ -246,20 +249,6 @@ export function NotificationDrawerRow({
                                         </Badge>
                                     )}
                                 </div>
-                                {relativeTime ? (
-                                    <Tooltip>
-                                        <TooltipTrigger
-                                            render={
-                                                <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
-                                                    {relativeTime}
-                                                </span>
-                                            }
-                                        />
-                                        <TooltipContent>
-                                            {absoluteTime}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                ) : null}
                                 <div className="absolute -top-1 right-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100">
                                     {hasMenu ? (
                                         <DropdownMenu>
@@ -364,54 +353,78 @@ export function NotificationDrawerRow({
                                     ) : null}
                                 </div>
                             ) : null}
-                            {hasLocation ||
+                            {relativeTime ||
+                            hasLocation ||
                             isQueueReady ||
                             inlineActions.length > 0 ? (
-                                <div className="mt-1.5 flex items-center gap-2">
+                                <div className="mt-2 flex items-center gap-2">
+                                    {relativeTime ? (
+                                        <Tooltip>
+                                            <TooltipTrigger
+                                                render={
+                                                    <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
+                                                        {relativeTime}
+                                                    </span>
+                                                }
+                                            />
+                                            <TooltipContent>
+                                                {absoluteTime}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    ) : null}
                                     <div className="min-w-0 flex-1 truncate text-xs">
                                         <NotificationLocationLine
                                             notification={notification}
                                         />
                                     </div>
-                                    <div className="flex shrink-0 items-center gap-1">
-                                        {isQueueReady ? (
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-7 gap-1 px-2 text-xs font-medium text-[var(--status-askme)] hover:text-[var(--status-askme)]"
-                                                style={{
-                                                    backgroundColor:
-                                                        STATUS_ASKME_TINT
-                                                }}
-                                                onClick={() =>
-                                                    handlers.onJoinQueueReady(
-                                                        notification
-                                                    )
-                                                }
-                                            >
-                                                {t(
-                                                    'side_panel.notification_center.join_now'
-                                                )}
-                                                {countdownLabel ? (
-                                                    <span className="tabular-nums">
-                                                        {countdownLabel}
-                                                    </span>
-                                                ) : null}
-                                            </Button>
-                                        ) : null}
-                                        <div className="flex items-center gap-1 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100">
+                                    {isQueueReady ||
+                                    inlineActions.length > 0 ? (
+                                        <div className="flex shrink-0 items-center gap-1.5">
+                                            {isQueueReady ? (
+                                                <Button
+                                                    type="button"
+                                                    size="xs"
+                                                    variant="ghost"
+                                                    className="font-medium text-[var(--status-askme)] hover:text-[var(--status-askme)]"
+                                                    style={{
+                                                        backgroundColor:
+                                                            STATUS_ASKME_TINT
+                                                    }}
+                                                    onClick={() =>
+                                                        handlers.onJoinQueueReady(
+                                                            notification
+                                                        )
+                                                    }
+                                                >
+                                                    {t(
+                                                        'side_panel.notification_center.join_now'
+                                                    )}
+                                                    {countdownLabel ? (
+                                                        <span className="tabular-nums">
+                                                            {countdownLabel}
+                                                        </span>
+                                                    ) : null}
+                                                </Button>
+                                            ) : null}
                                             {inlineActions.map((action) => (
-                                                <NotificationActionButton
+                                                <Button
                                                     key={action.key}
-                                                    label={action.label}
+                                                    type="button"
+                                                    size="xs"
+                                                    variant={
+                                                        PRIMARY_ACTION_KEYS.has(
+                                                            action.key
+                                                        )
+                                                            ? 'default'
+                                                            : 'outline'
+                                                    }
                                                     onClick={action.onClick}
                                                 >
-                                                    <action.Icon data-icon="icon" />
-                                                </NotificationActionButton>
+                                                    {action.label}
+                                                </Button>
                                             ))}
                                         </div>
-                                    </div>
+                                    ) : null}
                                 </div>
                             ) : null}
                         </div>
