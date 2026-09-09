@@ -167,8 +167,8 @@ describe('NotificationDrawerRow', () => {
     });
 
     it.each(['group.announcement', 'group.event.created'])(
-        'keeps %s response actions in the menu without inline buttons',
-        async (type) => {
+        'renders %s response actions as inline buttons',
+        (type) => {
             const response = {
                 type: 'link',
                 text: 'View group',
@@ -183,17 +183,7 @@ describe('NotificationDrawerRow', () => {
             };
             const handlers = renderNotification(notification, false);
 
-            expect(
-                screen.queryByRole('button', { name: 'View group' })
-            ).toBeNull();
-            fireEvent.click(
-                screen.getByRole('button', {
-                    name: 'side_panel.notification_center.more_actions'
-                })
-            );
-            fireEvent.click(
-                await screen.findByRole('menuitem', { name: 'View group' })
-            );
+            fireEvent.click(screen.getByRole('button', { name: 'View group' }));
             expect(handlers.onSendNotificationResponse).toHaveBeenCalledWith(
                 notification,
                 response

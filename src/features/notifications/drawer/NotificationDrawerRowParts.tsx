@@ -12,7 +12,6 @@ import {
 } from '../components/NotificationRowParts';
 import {
     getFriendMessage,
-    getGroupDisplayName,
     getHoverTitle,
     isFriendNotification,
     isGroupNotification
@@ -94,7 +93,6 @@ export function NotificationHoverContent({
 }) {
     const groupNotification = isGroupNotification(notification);
     const friendNotification = isFriendNotification(notification);
-    const groupDisplayName = getGroupDisplayName(notification);
     const hoverTitle = getHoverTitle(notification);
     const friendMessage = getFriendMessage(notification);
     const fallbackTitle = senderName || notification?.type || 'Notification';
@@ -114,7 +112,7 @@ export function NotificationHoverContent({
                                 imageUrl={actorImageUrl}
                             />
                         }
-                        title={groupDisplayName || fallbackTitle}
+                        title={fallbackTitle}
                         typeLabel={typeLabel}
                     />
                     {hoverTitle ? (

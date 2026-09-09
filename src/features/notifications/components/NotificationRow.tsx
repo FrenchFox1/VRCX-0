@@ -32,7 +32,6 @@ import {
 } from '../notificationViewModel';
 import { useNotificationActorImage } from '../useNotificationActorImage';
 import {
-    NotificationActionButton,
     NotificationEmojiPreview,
     NotificationIconDisc,
     NotificationPersonAvatar
@@ -202,126 +201,122 @@ export function NotificationRow({
                         ) : null}
                     </div>
                 ) : null}
-                {locationLine || linkButton ? (
-                    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5">
+                <div className="mt-0.5 flex items-center gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-x-3">
+                        <Tooltip>
+                            <TooltipTrigger
+                                render={
+                                    <span className="text-muted-foreground/60 shrink-0 text-xs tabular-nums">
+                                        {clockLabel}
+                                    </span>
+                                }
+                            />
+                            <TooltipContent>{absoluteLabel}</TooltipContent>
+                        </Tooltip>
+                        {view.expired ? (
+                            <span className="border-border/60 text-muted-foreground/70 shrink-0 rounded-full border px-1.5 py-px text-[11px] leading-4">
+                                {t('view.notification.feed.expired')}
+                            </span>
+                        ) : null}
                         {locationLine}
                         {linkButton}
                     </div>
-                ) : null}
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
-                <div className="flex items-center gap-2">
                     {inlineActions.length > 0 ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex shrink-0 items-center gap-1.5">
                             {inlineActions.map((action) => (
-                                <span
+                                <Button
                                     key={action.key}
-                                    className={cn(
-                                        'transition-opacity duration-150 ease-out',
-                                        !PRIMARY_ACTION_KEYS.has(action.key) &&
-                                            'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
-                                    )}
+                                    type="button"
+                                    size="xs"
+                                    variant={
+                                        PRIMARY_ACTION_KEYS.has(action.key)
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    onClick={action.onClick}
                                 >
-                                    <NotificationActionButton
-                                        label={action.label}
-                                        onClick={action.onClick}
-                                    >
-                                        <action.Icon data-icon="icon" />
-                                    </NotificationActionButton>
-                                </span>
+                                    {action.label}
+                                </Button>
                             ))}
                         </div>
                     ) : null}
-                    {view.expired ? (
-                        <span className="border-border/60 text-muted-foreground/70 rounded-full border px-1.5 py-px text-[11px] leading-4">
-                            {t('view.notification.feed.expired')}
-                        </span>
-                    ) : null}
-                    <Tooltip>
-                        <TooltipTrigger
-                            render={
-                                <span className="text-muted-foreground/60 text-xs tabular-nums">
-                                    {clockLabel}
-                                </span>
-                            }
-                        />
-                        <TooltipContent>{absoluteLabel}</TooltipContent>
-                    </Tooltip>
-                    <span className="flex size-6 shrink-0 items-center justify-center">
-                        {hasMenu ? (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger
-                                    render={
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-xs"
-                                            aria-label={t(
-                                                'side_panel.notification_center.more_actions'
-                                            )}
+                </div>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
+                <span className="flex size-6 shrink-0 items-center justify-center">
+                    {hasMenu ? (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        aria-label={t(
+                                            'side_panel.notification_center.more_actions'
+                                        )}
+                                    >
+                                        <MoreHorizontalIcon data-icon="icon" />
+                                    </Button>
+                                }
+                            />
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuGroup>
+                                    {showMenuMarkRead ? (
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                handlers.onMarkSeen(
+                                                    notification
+                                                )
+                                            }
                                         >
-                                            <MoreHorizontalIcon data-icon="icon" />
-                                        </Button>
-                                    }
-                                />
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuGroup>
-                                        {showMenuMarkRead ? (
+                                            <CheckCheckIcon data-icon="inline-start" />
+                                            {t(
+                                                'view.notification.action.mark_seen'
+                                            )}
+                                        </DropdownMenuItem>
+                                    ) : null}
+                                    {overflowActions.map((action) => (
+                                        <DropdownMenuItem
+                                            key={action.key}
+                                            onClick={action.onClick}
+                                        >
+                                            <action.Icon data-icon="inline-start" />
+                                            {action.label}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuGroup>
+                                {showDelete ? (
+                                    <>
+                                        {showMenuMarkRead ||
+                                        overflowActions.length > 0 ? (
+                                            <DropdownMenuSeparator />
+                                        ) : null}
+                                        <DropdownMenuGroup>
                                             <DropdownMenuItem
-                                                onClick={() =>
-                                                    handlers.onMarkSeen(
-                                                        notification
+                                                variant="destructive"
+                                                onClick={(event) =>
+                                                    handlers.onDeleteNotification(
+                                                        notification,
+                                                        {
+                                                            skipConfirm:
+                                                                event.shiftKey
+                                                        }
                                                     )
                                                 }
                                             >
-                                                <CheckCheckIcon data-icon="inline-start" />
+                                                <Trash2Icon data-icon="inline-start" />
                                                 {t(
-                                                    'view.notification.action.mark_seen'
+                                                    'view.notification.actions.delete_log'
                                                 )}
                                             </DropdownMenuItem>
-                                        ) : null}
-                                        {overflowActions.map((action) => (
-                                            <DropdownMenuItem
-                                                key={action.key}
-                                                onClick={action.onClick}
-                                            >
-                                                <action.Icon data-icon="inline-start" />
-                                                {action.label}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuGroup>
-                                    {showDelete ? (
-                                        <>
-                                            {showMenuMarkRead ||
-                                            overflowActions.length > 0 ? (
-                                                <DropdownMenuSeparator />
-                                            ) : null}
-                                            <DropdownMenuGroup>
-                                                <DropdownMenuItem
-                                                    variant="destructive"
-                                                    onClick={(event) =>
-                                                        handlers.onDeleteNotification(
-                                                            notification,
-                                                            {
-                                                                skipConfirm:
-                                                                    event.shiftKey
-                                                            }
-                                                        )
-                                                    }
-                                                >
-                                                    <Trash2Icon data-icon="inline-start" />
-                                                    {t(
-                                                        'view.notification.actions.delete_log'
-                                                    )}
-                                                </DropdownMenuItem>
-                                            </DropdownMenuGroup>
-                                        </>
-                                    ) : null}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        ) : null}
-                    </span>
-                </div>
+                                        </DropdownMenuGroup>
+                                    </>
+                                ) : null}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    ) : null}
+                </span>
                 {view.media && !mediaFailed ? (
                     <button
                         type="button"

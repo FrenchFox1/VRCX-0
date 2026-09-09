@@ -134,12 +134,7 @@ export function NotificationDrawerRow({
         handlers,
         t
     });
-    let inlineActionCount = 2;
-    if (isBroadcast) {
-        inlineActionCount = 0;
-    } else if (notification.type === 'friendRequest') {
-        inlineActionCount = 3;
-    }
+    const inlineActionCount = notification.type === 'friendRequest' ? 3 : 2;
     const inlineActions = orderedActions.slice(0, inlineActionCount);
     const overflowActions = orderedActions.slice(inlineActionCount);
     const showMenuMarkRead = isUnseen && notification.type !== 'friendRequest';
