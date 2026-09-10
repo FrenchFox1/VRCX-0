@@ -16,6 +16,7 @@ import {
 } from '@/components/data-table/dataTablePersistence';
 import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
 import {
+    DATA_TABLE_EMPTY_VALUE,
     DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME,
     DataTableCell,
@@ -255,7 +256,11 @@ export function InstanceOwnerCell({
     );
 
     if (!userId) {
-        return <span className="text-muted-foreground">-</span>;
+        return (
+            <span className="text-content-tertiary">
+                {DATA_TABLE_EMPTY_VALUE}
+            </span>
+        );
     }
 
     return (
@@ -294,7 +299,11 @@ function PreviousInstancePlayerNameButton({
     const canOpenUser = Boolean(userId || displayName);
 
     if (!canOpenUser) {
-        return <span className="text-muted-foreground">-</span>;
+        return (
+            <span className="text-content-tertiary">
+                {DATA_TABLE_EMPTY_VALUE}
+            </span>
+        );
     }
 
     return (
@@ -424,7 +433,7 @@ function usePreviousInstancePlayerColumns({
                     </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => (
-                    <span className="text-muted-foreground tabular-nums">
+                    <span className="tabular-nums">
                         {playerJoinTimestamp(row.original, instanceStartMs)}
                     </span>
                 )
@@ -441,7 +450,7 @@ function usePreviousInstancePlayerColumns({
                     </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => (
-                    <span className="text-muted-foreground tabular-nums">
+                    <span className="tabular-nums">
                         {playerLeaveTimestamp(row.original, instanceStartMs)}
                     </span>
                 )

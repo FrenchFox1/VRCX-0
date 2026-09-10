@@ -110,7 +110,6 @@ function toLocalLong(date: Date, dateFormat: string, hour12: boolean) {
         year: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
-        second: '2-digit',
         hourCycle: hour12 ? 'h12' : 'h23'
     });
 }
