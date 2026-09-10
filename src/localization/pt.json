@@ -5796,7 +5796,8 @@
             "rows_per_page": "Linhas por página",
             "previous": "Anterior",
             "next": "Próxima",
-            "more_pages": "Mais páginas"
+            "more_pages": "Mais páginas",
+            "page_number": "Página {page}"
         },
         "feed": {
             "date": "Data",

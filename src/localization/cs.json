@@ -5799,7 +5799,8 @@
             "rows_per_page": "Řádků na stránku",
             "previous": "Předchozí",
             "next": "Další",
-            "more_pages": "Další stránky"
+            "more_pages": "Další stránky",
+            "page_number": "Stránka {page}"
         },
         "feed": {
             "date": "Datum",

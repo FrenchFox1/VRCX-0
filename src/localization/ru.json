@@ -5800,7 +5800,8 @@
             "rows_per_page": "Строки на страницу",
             "previous": "Предыдущий",
             "next": "Далее",
-            "more_pages": "Больше страниц"
+            "more_pages": "Больше страниц",
+            "page_number": "Страница {page}"
         },
         "feed": {
             "date": "Дата",

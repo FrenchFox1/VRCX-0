@@ -5795,7 +5795,8 @@
             "rows_per_page": "Zeilen pro Seite",
             "previous": "Zurück",
             "next": "Weiter",
-            "more_pages": "Weitere Seiten"
+            "more_pages": "Weitere Seiten",
+            "page_number": "Seite {page}"
         },
         "feed": {
             "date": "Datum",

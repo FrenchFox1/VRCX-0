@@ -5843,7 +5843,8 @@
             "rows_per_page": "Rows per page",
             "previous": "Previous",
             "next": "Next",
-            "more_pages": "More pages"
+            "more_pages": "More pages",
+            "page_number": "Page {page}"
         },
         "feed": {
             "date": "Date",

@@ -5733,7 +5733,8 @@
             "rows_per_page": "페이지당 행 수",
             "previous": "이전",
             "next": "다음",
-            "more_pages": "더 많은 페이지"
+            "more_pages": "더 많은 페이지",
+            "page_number": "{page}페이지"
         },
         "feed": {
             "date": "날짜",

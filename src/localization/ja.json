@@ -5827,7 +5827,8 @@
             "rows_per_page": "ページあたりの行数",
             "previous": "前",
             "next": "次",
-            "more_pages": "さらにページを読み込む"
+            "more_pages": "さらにページを読み込む",
+            "page_number": "{page} ページ目"
         },
         "feed": {
             "date": "日付",
