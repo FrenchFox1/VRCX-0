@@ -48,7 +48,7 @@ export function SearchUserTabPanel({
             className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                     {isLoading ? (
                         <SearchLoadingState />
                     ) : results.length > 0 ? (
@@ -103,7 +103,7 @@ export function SearchWorldTabPanel({
             className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                     {isLoading ? (
                         <SearchLoadingState />
                     ) : results.length > 0 ? (
@@ -156,7 +156,7 @@ export function SearchAvatarTabPanel({
             className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                     {isLoading ? (
                         <SearchLoadingState />
                     ) : results.length > 0 ? (
@@ -208,7 +208,10 @@ export function SearchGroupTabPanel({
             keepMounted
             className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
-            <div className="min-h-0 flex-1 overflow-y-auto" style={{ flex: 9 }}>
+            <div
+                className="flex min-h-0 flex-1 flex-col overflow-y-auto"
+                style={{ flex: 9 }}
+            >
                 {isLoading ? (
                     <SearchLoadingState />
                 ) : results.length > 0 ? (
