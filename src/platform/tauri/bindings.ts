@@ -6541,12 +6541,15 @@ export type VrchatLogEntriesReadInput = {
     offset: number | null;
     limit: number | null;
     query: string | null;
+    queryCaseSensitive: boolean | null;
+    queryRegex: boolean | null;
     levels: string[] | null;
     categories: string[] | null;
 };
 export type VrchatLogEntriesReadOutput = {
     fileName: string;
     entries: VrchatLogEntryOutput[];
+    levelCounts: VrchatLogLevelCountOutput[] | null;
     offset: number;
     nextOffset: number | null;
     totalEntries: number;
@@ -6573,12 +6576,15 @@ export type VrchatLogFileOutput = {
     size: number;
     latest: boolean;
 };
+export type VrchatLogLevelCountOutput = { level: string; count: number };
 export type VrchatLogTailReadInput = {
     fileName: string | null;
     afterLineNumber: number | null;
     fileSize: number | null;
     limit: number | null;
     query: string | null;
+    queryCaseSensitive: boolean | null;
+    queryRegex: boolean | null;
     levels: string[] | null;
     categories: string[] | null;
 };
