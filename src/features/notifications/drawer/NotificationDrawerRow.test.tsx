@@ -166,6 +166,33 @@ describe('NotificationDrawerRow', () => {
         expect(handlers.onMarkSeen).toHaveBeenCalledWith(notification);
     });
 
+    it('drops mark as read when the notification offers a dismiss response', async () => {
+        const notification: NotificationRow = {
+            id: 'not_dismissable',
+            type: 'group.announcement',
+            title: 'Weekly meetup',
+            responses: [{ type: 'delete', icon: 'check', text: 'Dismiss' }],
+            seen: false
+        };
+        renderNotification(notification);
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'side_panel.notification_center.more_actions'
+            })
+        );
+        expect(
+            await screen.findByRole('menuitem', {
+                name: 'view.notification.actions.delete_log'
+            })
+        ).toBeTruthy();
+        expect(
+            screen.queryByRole('menuitem', {
+                name: 'side_panel.notification_center.mark_as_read'
+            })
+        ).toBeNull();
+    });
+
     it.each(['group.announcement', 'group.event.created'])(
         'renders %s response actions as inline buttons',
         (type) => {

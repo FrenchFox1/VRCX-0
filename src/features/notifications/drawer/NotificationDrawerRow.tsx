@@ -26,6 +26,7 @@ import {
     formatNotificationTime,
     getNotificationMessage,
     getSenderName,
+    hasDismissResponse,
     isNotificationExpired,
     openSender,
     shouldShowDeleteLog
@@ -137,7 +138,10 @@ export function NotificationDrawerRow({
     const inlineActionCount = notification.type === 'friendRequest' ? 3 : 2;
     const inlineActions = orderedActions.slice(0, inlineActionCount);
     const overflowActions = orderedActions.slice(inlineActionCount);
-    const showMenuMarkRead = isUnseen && notification.type !== 'friendRequest';
+    const showMenuMarkRead =
+        isUnseen &&
+        notification.type !== 'friendRequest' &&
+        !hasDismissResponse(notification);
     const showDelete = Boolean(shouldShowDeleteLog(notification));
     const hasMenu =
         showMenuMarkRead || overflowActions.length > 0 || showDelete;

@@ -19,7 +19,11 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { openSender, shouldShowDeleteLog } from '../notificationCenterUtils';
+import {
+    hasDismissResponse,
+    openSender,
+    shouldShowDeleteLog
+} from '../notificationCenterUtils';
 import {
     buildOrderedActions,
     getNotificationLinkIcon,
@@ -87,7 +91,9 @@ export function NotificationRow({
     const inlineActions = orderedActions.slice(0, inlineActionCount);
     const overflowActions = orderedActions.slice(inlineActionCount);
     const showMenuMarkRead =
-        view.unseen && notification.type !== 'friendRequest';
+        view.unseen &&
+        notification.type !== 'friendRequest' &&
+        !hasDismissResponse(notification);
     const showDelete = Boolean(shouldShowDeleteLog(notification));
     const hasMenu =
         showMenuMarkRead || overflowActions.length > 0 || showDelete;
