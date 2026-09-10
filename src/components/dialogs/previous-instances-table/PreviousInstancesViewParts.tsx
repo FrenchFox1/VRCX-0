@@ -371,6 +371,7 @@ function usePreviousInstancePlayerColumns({
                 size: 220,
                 meta: {
                     label: t('table.previous_instances.display_name'),
+                    stretch: true,
                     tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 header: () => (

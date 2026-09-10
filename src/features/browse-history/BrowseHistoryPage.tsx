@@ -1,11 +1,4 @@
-import {
-    FootprintsIcon,
-    Globe2Icon,
-    PersonStandingIcon,
-    Trash2Icon,
-    UserRoundIcon,
-    UsersRoundIcon
-} from 'lucide-react';
+import { FootprintsIcon, Trash2Icon } from 'lucide-react';
 import {
     useCallback,
     useDeferredValue,
@@ -252,26 +245,10 @@ export function BrowseHistoryPage() {
     const filterOptions = useMemo<ToolbarSegmentOption<HistoryFilter>[]>(
         () => [
             { value: 'all', label: t('browse_history.filter.all') },
-            {
-                value: 'user',
-                label: t('browse_history.filter.user'),
-                icon: UserRoundIcon
-            },
-            {
-                value: 'world',
-                label: t('browse_history.filter.world'),
-                icon: Globe2Icon
-            },
-            {
-                value: 'avatar',
-                label: t('browse_history.filter.avatar'),
-                icon: PersonStandingIcon
-            },
-            {
-                value: 'group',
-                label: t('browse_history.filter.group'),
-                icon: UsersRoundIcon
-            }
+            { value: 'user', label: t('browse_history.filter.user') },
+            { value: 'world', label: t('browse_history.filter.world') },
+            { value: 'avatar', label: t('browse_history.filter.avatar') },
+            { value: 'group', label: t('browse_history.filter.group') }
         ],
         [t]
     );
