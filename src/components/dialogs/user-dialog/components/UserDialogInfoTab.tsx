@@ -6,6 +6,7 @@ import { AvatarInfoLine } from '@/components/feed/FeedAvatarInfoLine';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
+import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import {
     Timeline,
@@ -27,7 +28,6 @@ import {
 } from '@/services/entityMediaService';
 import type { UserDialogPreviousInstance } from '@/services/userDialogSessionCacheService';
 import type { UserDialogRelationshipEvent } from '@/services/userDialogSessionCacheService';
-import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -641,15 +641,12 @@ function UserDialogBioPanel({ profile, bioLinks }: UserDialogBioSectionProps) {
                                     title={link}
                                     onClick={() => openExternalLink(link)}
                                 >
-                                    {getFaviconUrl(link) ? (
-                                        <FadeInImage
-                                            src={getFaviconUrl(link)}
-                                            alt=""
-                                            className="size-4"
-                                        />
-                                    ) : (
-                                        <ExternalLinkIcon data-icon="inline-start" />
-                                    )}
+                                    <BioLinkFavicon
+                                        link={link}
+                                        fallback={
+                                            <ExternalLinkIcon data-icon="inline-start" />
+                                        }
+                                    />
                                 </Button>
                             ))}
                         </div>

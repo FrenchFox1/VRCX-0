@@ -1729,7 +1729,8 @@
             "dynamic": {
                 "open_value": "Открыть {value}"
             },
-            "bulk_selected": "Выбрано: {count}"
+            "bulk_selected": "Выбрано: {count}",
+            "search_scope": "Искать в"
         },
         "charts": {
             "instance_activity": {

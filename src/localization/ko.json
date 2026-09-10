@@ -1706,7 +1706,8 @@
             "dynamic": {
                 "open_value": "{value} 열기"
             },
-            "bulk_selected": "{count}개 선택됨"
+            "bulk_selected": "{count}개 선택됨",
+            "search_scope": "검색 범위"
         },
         "charts": {
             "instance_activity": {

@@ -1723,7 +1723,8 @@
             "dynamic": {
                 "open_value": "{value}を開く"
             },
-            "bulk_selected": "{count} 件選択中"
+            "bulk_selected": "{count} 件選択中",
+            "search_scope": "検索対象"
         },
         "charts": {
             "instance_activity": {

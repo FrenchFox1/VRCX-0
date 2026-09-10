@@ -1729,7 +1729,8 @@
             "dynamic": {
                 "open_value": "Otevřít {value}"
             },
-            "bulk_selected": "Vybráno: {count}"
+            "bulk_selected": "Vybráno: {count}",
+            "search_scope": "Hledat v"
         },
         "charts": {
             "instance_activity": {

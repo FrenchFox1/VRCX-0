@@ -1727,7 +1727,8 @@
             "dynamic": {
                 "open_value": "Abrir {value}"
             },
-            "bulk_selected": "{count} seleccionados"
+            "bulk_selected": "{count} seleccionados",
+            "search_scope": "Buscar en"
         },
         "charts": {
             "instance_activity": {

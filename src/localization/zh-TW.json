@@ -1727,7 +1727,8 @@
             "dynamic": {
                 "open_value": "開啟 {value}"
             },
-            "bulk_selected": "已選 {count} 項"
+            "bulk_selected": "已選 {count} 項",
+            "search_scope": "搜尋範圍"
         },
         "charts": {
             "instance_activity": {

@@ -257,6 +257,31 @@ export function toolbarSearchDateRangeTrigger({
     );
 }
 
+export function toolbarSearchScopeTrigger({
+    active,
+    icon: Icon,
+    label
+}: {
+    active: boolean;
+    icon: LucideIcon;
+    label: string;
+}) {
+    return (
+        <TooltipTrigger
+            render={
+                <InputGroupButton
+                    variant={active ? 'secondary' : 'ghost'}
+                    size="icon-xs"
+                    aria-label={label}
+                />
+            }
+        >
+            <Icon data-icon="icon" />
+            <TooltipContent>{label}</TooltipContent>
+        </TooltipTrigger>
+    );
+}
+
 const LEADING_CHIP_VALUE = '__leading__';
 
 export type ToolbarFilterChipsLeading = {
@@ -402,34 +427,6 @@ function ToolbarTooltipButton({
             />
             <TooltipContent>{label}</TooltipContent>
         </Tooltip>
-    );
-}
-
-export function ToolbarToggleButton({
-    icon,
-    label,
-    onClick,
-    active = false,
-    disabled = false,
-    fillWhenActive = false
-}: {
-    icon: LucideIcon;
-    label: string;
-    onClick: () => void;
-    active?: boolean;
-    disabled?: boolean;
-    fillWhenActive?: boolean;
-}) {
-    return (
-        <ToolbarTooltipButton
-            icon={icon}
-            label={label}
-            onClick={onClick}
-            variant={active ? 'secondary' : 'outline'}
-            disabled={disabled}
-            filled={active && fillWhenActive}
-            pressed={active}
-        />
     );
 }
 
