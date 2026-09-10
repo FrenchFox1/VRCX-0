@@ -262,7 +262,7 @@ export function InstanceOwnerCell({
         <Button
             type="button"
             variant="ghost"
-            className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs"
+            className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs hover:bg-transparent"
             onClick={() =>
                 openUserDialog({
                     userId,

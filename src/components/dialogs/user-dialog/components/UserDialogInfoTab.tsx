@@ -548,7 +548,7 @@ function UserDialogProfileLinksPanel({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal text-inherit"
+                        className="hover:text-primary h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal text-inherit hover:bg-transparent"
                         onClick={() =>
                             openGroupDialog({
                                 groupId: representedGroup.groupId,

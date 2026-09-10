@@ -157,7 +157,7 @@ export function useMyAvatarsColumns({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary h-auto max-w-full p-0 text-left text-sm font-medium"
+                        className="hover:text-primary h-auto max-w-full p-0 text-left text-sm font-medium hover:bg-transparent"
                         onClick={() => openAvatarDetails(row.original)}
                     >
                         <span className="truncate">
