@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "Masquer la barre latérale des amis",
         "enter_sidebar_mode": "Mode Barre Latérale",
         "restore_full_window": "Retour en plein écran",
+        "always_on_top": "Toujours au premier plan",
         "zoom_in": "Zoom avant",
         "zoom_out": "Zoom arrière",
         "reset_zoom": "Réinitialiser le zoom",
@@ -1559,7 +1560,7 @@
                 "accept": "Accepter",
                 "invite": "Inviter",
                 "decline": "Décliner",
-                "delete_log": "Supprimer le journal",
+                "delete_log": "Supprimer les notifications",
                 "decline_with_message": "Décliner avec un message"
             },
             "filters": {
@@ -1659,6 +1660,10 @@
                     "moderation": "Modération",
                     "other": "Autre"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Supprimer",
+                "unsubscribe_announcements": "Se désabonner"
             }
         },
         "friend_list": {
@@ -1723,7 +1728,8 @@
             "dynamic": {
                 "open_value": "Ouvrir {value}"
             },
-            "bulk_selected": "{count} sélectionné(s)"
+            "bulk_selected": "{count} sélectionné(s)",
+            "search_scope": "Recherche dans : {scope}"
         },
         "charts": {
             "instance_activity": {
@@ -1941,13 +1947,12 @@
                 "title": "Visionneuse de journaux VRChat",
                 "latest": "le plus récent",
                 "file_placeholder": "Sélectionner un fichier journal",
-                "search_placeholder": "Rechercher un message, une catégorie ou une trace d'appels",
-                "follow_latest": "Suivre le plus récent",
+                "search_placeholder": "Rechercher les journaux",
+                "follow_latest": "Suivre",
                 "clear_categories": "Effacer les catégories",
                 "copy_selected": "Copier la sélection",
                 "copy_entry": "Copier la ligne",
                 "copy_message": "Copier le message",
-                "clear_selected": "Effacer la sélection",
                 "copied": "Texte du journal copié dans le presse-papiers",
                 "copy_failed": "Échec de la copie du texte du journal",
                 "continuation_count": "+{count} lignes",
@@ -1956,13 +1961,18 @@
                 "column_category": "Catégorie",
                 "column_message": "Message",
                 "loading": "Chargement des entrées du journal",
-                "load_more": "Charger plus",
+                "load_older": "Charger le plus ancien",
+                "matched_count": "{loaded} / {total} correspondants",
+                "match_case": "Respecter la case",
+                "use_regex": "Expression régulière",
+                "column_line": "Ligne",
+                "select_all": "Tout sélectionner",
+                "deselect_all": "Tout déselectionner",
                 "unavailable": "Le dossier de données VRChat est indisponible",
                 "no_files": "Aucun journal de sortie VRChat trouvé",
                 "no_files_description": "Lancez VRChat une fois et actualisez cette page après l'apparition de output_log_*.txt.",
                 "no_entries": "Aucune entrée ne correspond aux filtres actuels",
                 "no_entries_description": "Ajustez les niveaux, la catégorie ou le texte de recherche.",
-                "no_category": "Aucune catégorie",
                 "error_load_files": "Échec du chargement des fichiers journaux VRChat.",
                 "error_load_entries": "Échec du chargement des entrées du journal VRChat.",
                 "error_tail": "Échec de la lecture des nouvelles entrées du journal.",
@@ -4970,7 +4980,15 @@
             "scan_failed": "Échec de l'analyse de la bibliothèque de captures d'écran",
             "thumbnail_failed": "Miniature indisponible",
             "hide_details": "Masquer les informations",
-            "show_details": "Afficher les informations"
+            "show_details": "Afficher les informations",
+            "search_in": "Rechercher {scope}",
+            "grid_density": "Taille de la miniature",
+            "sort": "Trier",
+            "year_group": "Année {year}",
+            "sort_options": {
+                "captured_desc": "Les plus récents",
+                "captured_asc": "Les plus anciens"
+            }
         },
         "set_avatar_styles": {
             "header": "Définir les styles d'avatar",
@@ -5836,7 +5854,8 @@
             "rows_per_page": "Lignes par page",
             "previous": "Précédent",
             "next": "Suivant",
-            "more_pages": "Plus de pages"
+            "more_pages": "Plus de pages",
+            "page_number": "Page {page}"
         },
         "feed": {
             "date": "Date",
