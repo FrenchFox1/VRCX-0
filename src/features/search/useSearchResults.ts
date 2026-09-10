@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -300,6 +300,24 @@ export function useSearchResults({
         t,
         worldCategories
     ]);
+
+    const activeTabRef = useRef(activeTab);
+    useEffect(() => {
+        if (activeTabRef.current === activeTab) {
+            return;
+        }
+        activeTabRef.current = activeTab;
+        if (!searchText.trim()) {
+            return;
+        }
+        if (
+            activeTab === 'avatar' &&
+            !isAvatarSearchQueryLongEnough(searchText)
+        ) {
+            return;
+        }
+        handleSearch();
+    }, [activeTab, handleSearch, searchText]);
 
     const handleClearSearch = useCallback(() => {
         searchSequenceRef.current.user += 1;

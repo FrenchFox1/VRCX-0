@@ -70,6 +70,7 @@ export function ToolbarSearch({
     onCommit,
     commitOnBlur = true,
     disabled = false,
+    autoFocus = false,
     placeholder,
     ariaLabel,
     trailing,
@@ -81,6 +82,7 @@ export function ToolbarSearch({
     onCommit?: () => void;
     commitOnBlur?: boolean;
     disabled?: boolean;
+    autoFocus?: boolean;
     placeholder?: string;
     ariaLabel?: string;
     trailing?: ReactNode;
@@ -105,6 +107,7 @@ export function ToolbarSearch({
                 placeholder={resolvedPlaceholder}
                 aria-label={ariaLabel ?? resolvedPlaceholder}
                 disabled={disabled}
+                autoFocus={autoFocus}
                 onChange={(event) => onValueChange(event.target.value)}
                 onBlur={commitOnBlur ? onCommit : undefined}
                 onKeyDown={(event) => {
