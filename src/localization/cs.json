@@ -4938,7 +4938,15 @@
             "scan_failed": "Nepodařilo se prohledat knihovnu snímků obrazovky",
             "thumbnail_failed": "Náhled není k dispozici",
             "hide_details": "Skrýt informace",
-            "show_details": "Zobrazit informace"
+            "show_details": "Zobrazit informace",
+            "search_in": "Hledat {scope}",
+            "grid_density": "Velikost náhledu",
+            "sort": "Řazení",
+            "year_group": "Rok {year}",
+            "sort_options": {
+                "captured_desc": "Nejnovější",
+                "captured_asc": "Nejstarší"
+            }
         },
         "set_avatar_styles": {
             "header": "Nastavit styly avatara",

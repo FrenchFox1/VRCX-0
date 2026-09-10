@@ -4884,7 +4884,15 @@
             "feeling_lucky": "랜덤으로 한 장",
             "exporting_progress": "내보내는 중 {done}/{total}",
             "export_finalizing": "마무리하는 중",
-            "empty_folders_description": "VRChat에서 스크린샷을 저장한 후 새로고침하세요."
+            "empty_folders_description": "VRChat에서 스크린샷을 저장한 후 새로고침하세요.",
+            "search_in": "{scope} 검색",
+            "grid_density": "썸네일 크기",
+            "sort": "정렬",
+            "year_group": "{year}년",
+            "sort_options": {
+                "captured_desc": "최신순",
+                "captured_asc": "오래된순"
+            }
         },
         "set_avatar_styles": {
             "header": "아바타 스타일 설정",

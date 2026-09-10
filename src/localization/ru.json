@@ -4939,7 +4939,15 @@
             "scan_failed": "Не удалось сканировать библиотеку скриншотов",
             "thumbnail_failed": "Недоступный пальцем",
             "hide_details": "Скрыть информацию",
-            "show_details": "Показать информацию"
+            "show_details": "Показать информацию",
+            "search_in": "Поиск: {scope}",
+            "grid_density": "Размер миниатюр",
+            "sort": "Сортировка",
+            "year_group": "{year} год",
+            "sort_options": {
+                "captured_desc": "Новые",
+                "captured_asc": "Старые"
+            }
         },
         "set_avatar_styles": {
             "header": "Установить стили аватара",

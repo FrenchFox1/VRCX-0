@@ -4934,7 +4934,15 @@
             "scan_failed": "No se pudo escanear la biblioteca de capturas",
             "thumbnail_failed": "Miniatura no disponible",
             "hide_details": "Ocultar información",
-            "show_details": "Mostrar información"
+            "show_details": "Mostrar información",
+            "search_in": "Buscar {scope}",
+            "grid_density": "Tamaño de miniatura",
+            "sort": "Orden",
+            "year_group": "Año {year}",
+            "sort_options": {
+                "captured_desc": "Más recientes",
+                "captured_asc": "Más antiguas"
+            }
         },
         "set_avatar_styles": {
             "header": "Establecer estilos del avatar",

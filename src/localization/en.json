@@ -4978,7 +4978,15 @@
             "scan_failed": "Failed to scan screenshot library",
             "thumbnail_failed": "Thumbnail unavailable",
             "hide_details": "Hide info",
-            "show_details": "Show info"
+            "show_details": "Show info",
+            "search_in": "Search {scope}",
+            "grid_density": "Thumbnail size",
+            "sort": "Sort",
+            "year_group": "Year {year}",
+            "sort_options": {
+                "captured_desc": "Newest",
+                "captured_asc": "Oldest"
+            }
         },
         "set_avatar_styles": {
             "header": "Set Avatar Styles",

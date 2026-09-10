@@ -4970,7 +4970,15 @@
             "scan_failed": "掃描螢幕截圖圖庫失敗",
             "thumbnail_failed": "縮略圖無法使用",
             "hide_details": "隱藏圖片資訊",
-            "show_details": "顯示圖片資訊"
+            "show_details": "顯示圖片資訊",
+            "search_in": "搜尋{scope}",
+            "grid_density": "縮圖尺寸",
+            "sort": "排序",
+            "year_group": "{year} 年",
+            "sort_options": {
+                "captured_desc": "最新",
+                "captured_asc": "最早"
+            }
         },
         "set_avatar_styles": {
             "header": "設定角色風格",

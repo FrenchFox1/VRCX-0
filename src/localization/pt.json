@@ -4935,7 +4935,15 @@
             "scan_failed": "Falha ao verificar a biblioteca de capturas de tela",
             "thumbnail_failed": "Miniatura indisponível",
             "hide_details": "Ocultar informações",
-            "show_details": "Mostrar informações"
+            "show_details": "Mostrar informações",
+            "search_in": "Pesquisar {scope}",
+            "grid_density": "Tamanho da miniatura",
+            "sort": "Ordenar",
+            "year_group": "Ano {year}",
+            "sort_options": {
+                "captured_desc": "Mais recentes",
+                "captured_asc": "Mais antigas"
+            }
         },
         "set_avatar_styles": {
             "header": "Definir Estilos do Avatar",

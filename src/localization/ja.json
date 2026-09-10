@@ -4964,7 +4964,15 @@
             "scan_failed": "スクリーンショットライブラリのスキャンに失敗しました",
             "thumbnail_failed": "サムネイルを表示できません",
             "hide_details": "画像情報を隠す",
-            "show_details": "画像情報を表示"
+            "show_details": "画像情報を表示",
+            "search_in": "{scope}を検索",
+            "grid_density": "サムネイルサイズ",
+            "sort": "並び替え",
+            "year_group": "{year}年",
+            "sort_options": {
+                "captured_desc": "新しい順",
+                "captured_asc": "古い順"
+            }
         },
         "set_avatar_styles": {
             "header": "アバタースタイルを設定",

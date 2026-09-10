@@ -4934,7 +4934,15 @@
             "scan_failed": "Screenshot-Bibliothek konnte nicht gescannt werden",
             "thumbnail_failed": "Vorschaubild nicht verfügbar",
             "hide_details": "Bildinformationen ausblenden",
-            "show_details": "Bildinformationen einblenden"
+            "show_details": "Bildinformationen einblenden",
+            "search_in": "{scope} suchen",
+            "grid_density": "Vorschaugröße",
+            "sort": "Sortierung",
+            "year_group": "Jahr {year}",
+            "sort_options": {
+                "captured_desc": "Neueste",
+                "captured_asc": "Älteste"
+            }
         },
         "set_avatar_styles": {
             "header": "Avatar-Stile festlegen",

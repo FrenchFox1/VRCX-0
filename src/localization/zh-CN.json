@@ -4979,7 +4979,15 @@
             "scan_failed": "扫描截图图库失败",
             "thumbnail_failed": "缩略图不可用",
             "hide_details": "隐藏图片信息",
-            "show_details": "显示图片信息"
+            "show_details": "显示图片信息",
+            "search_in": "搜索{scope}",
+            "grid_density": "缩略图尺寸",
+            "sort": "排序",
+            "year_group": "{year} 年",
+            "sort_options": {
+                "captured_desc": "最新",
+                "captured_asc": "最早"
+            }
         },
         "set_avatar_styles": {
             "header": "设置模型风格",
