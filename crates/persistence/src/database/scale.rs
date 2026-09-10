@@ -71,8 +71,14 @@ pub fn database_scale_estimate(db: &DatabaseService) -> Result<DatabaseScaleEsti
 
 fn largest_friend_count(db: &DatabaseService) -> Result<Option<i64>, Error> {
     let mut largest = None;
-    for table in select_table_names(db, &format!("name GLOB 'usr*_{FRIEND_CURRENT_TABLE_SUFFIX}'"))? {
-        let rows = db.execute(&format!("SELECT COUNT(*) FROM {table}"), &Default::default())?;
+    for table in select_table_names(
+        db,
+        &format!("name GLOB 'usr*_{FRIEND_CURRENT_TABLE_SUFFIX}'"),
+    )? {
+        let rows = db.execute(
+            &format!("SELECT COUNT(*) FROM {table}"),
+            &Default::default(),
+        )?;
         let count = rows
             .first()
             .and_then(|row| row.first())
