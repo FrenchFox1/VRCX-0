@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "Ocultar barra lateral de amigos",
         "enter_sidebar_mode": "Modo de barra lateral",
         "restore_full_window": "Volver a la ventana completa",
+        "always_on_top": "Siempre visible",
         "zoom_in": "Acercar",
         "zoom_out": "Alejar",
         "reset_zoom": "Restablecer zoom",
@@ -1559,7 +1560,7 @@
                 "accept": "Aceptar",
                 "invite": "Invitar",
                 "decline": "Rechazar",
-                "delete_log": "Eliminar registro",
+                "delete_log": "Eliminar notificación",
                 "decline_with_message": "Rechazar con mensaje"
             },
             "filters": {
@@ -1659,6 +1660,10 @@
                     "moderation": "Moderación",
                     "other": "Otros"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Descartar",
+                "unsubscribe_announcements": "Cancelar suscripción"
             }
         },
         "friend_list": {
@@ -1723,7 +1728,8 @@
             "dynamic": {
                 "open_value": "Abrir {value}"
             },
-            "bulk_selected": "{count} seleccionados"
+            "bulk_selected": "{count} seleccionados",
+            "search_scope": "Buscar en"
         },
         "charts": {
             "instance_activity": {
@@ -1941,13 +1947,12 @@
                 "title": "Visor de registros de VRChat",
                 "latest": "más reciente",
                 "file_placeholder": "Selecciona un archivo de registro",
-                "search_placeholder": "Buscar mensaje, categoría o stack trace",
-                "follow_latest": "Seguir lo más reciente",
+                "search_placeholder": "Buscar en el registro",
+                "follow_latest": "Seguir",
                 "clear_categories": "Borrar categorías",
                 "copy_selected": "Copiar selección",
                 "copy_entry": "Copiar fila",
                 "copy_message": "Copiar mensaje",
-                "clear_selected": "Borrar selección",
                 "copied": "Texto del registro copiado al portapapeles",
                 "copy_failed": "No se pudo copiar el texto del registro",
                 "continuation_count": "+{count} líneas",
@@ -1956,13 +1961,18 @@
                 "column_category": "Categoría",
                 "column_message": "Mensaje",
                 "loading": "Cargando entradas del registro",
-                "load_more": "Cargar más",
+                "load_older": "Cargar anteriores",
+                "matched_count": "{loaded} / {total} coincidencias",
+                "match_case": "Distinguir mayúsculas",
+                "use_regex": "Expresión regular",
+                "column_line": "Línea",
+                "select_all": "Seleccionar todo",
+                "deselect_all": "Deseleccionar todo",
                 "unavailable": "La carpeta de datos de VRChat no está disponible",
                 "no_files": "No se encontraron registros de salida de VRChat",
                 "no_files_description": "Inicia VRChat una vez y actualiza esta página cuando aparezca output_log_*.txt.",
                 "no_entries": "Ninguna entrada coincide con los filtros actuales",
                 "no_entries_description": "Ajusta los niveles, la categoría o el texto de búsqueda.",
-                "no_category": "Sin categoría",
                 "error_load_files": "No se pudieron cargar los archivos de registro de VRChat.",
                 "error_load_entries": "No se pudieron cargar las entradas de registro de VRChat.",
                 "error_tail": "No se pudieron leer las nuevas entradas del registro.",
@@ -4928,7 +4938,15 @@
             "scan_failed": "No se pudo escanear la biblioteca de capturas",
             "thumbnail_failed": "Miniatura no disponible",
             "hide_details": "Ocultar información",
-            "show_details": "Mostrar información"
+            "show_details": "Mostrar información",
+            "search_in": "Buscar {scope}",
+            "grid_density": "Tamaño de miniatura",
+            "sort": "Orden",
+            "year_group": "Año {year}",
+            "sort_options": {
+                "captured_desc": "Más recientes",
+                "captured_asc": "Más antiguas"
+            }
         },
         "set_avatar_styles": {
             "header": "Establecer estilos del avatar",
@@ -4942,12 +4960,15 @@
             "header": "Config JSON de VRChat",
             "description1": "Estas opciones son solo para usuarios avanzados.",
             "description2": "Deja un campo vacío para usar el valor predeterminado. Es necesario reiniciar el juego para aplicar los cambios.",
-            "cache_size": "Tamaño de Caché:",
+            "cache_size": "Tamaño de caché",
+            "section_cache": "Caché",
+            "section_pictures": "Imágenes",
+            "section_camera": "Cámara",
             "refresh": "Actualizar",
             "delete_cache": "Eliminar Caché",
             "sweep_cache": "Limpiar Caché",
-            "max_cache_size": "Tamaño Máximo de Caché [GB] (mín 30)",
-            "cache_expiry_delay": "Expiración de Caché [Días] (mín 30)",
+            "max_cache_size": "Caché máxima (GB)",
+            "cache_expiry_delay": "Caducidad de caché (días)",
             "cache_directory": "Ubicación Personalizada de la Carpeta de Caché",
             "cache_location_changed": "Cambiar ubicación de la caché de VRChat",
             "old_cache_cleanup_description": "La caché anterior ocupa {size}. VRChat dejará de usarla tras el cambio. ¿Quieres limpiarla?",
@@ -5790,7 +5811,8 @@
             "rows_per_page": "Filas por página",
             "previous": "Anterior",
             "next": "Siguiente",
-            "more_pages": "Más páginas"
+            "more_pages": "Más páginas",
+            "page_number": "Página {page}"
         },
         "feed": {
             "date": "Fecha",

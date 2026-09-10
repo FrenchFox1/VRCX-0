@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "フレンドサイドバーを非表示",
         "enter_sidebar_mode": "サイドバーモード",
         "restore_full_window": "通常のウィンドウに戻す",
+        "always_on_top": "常に手前に表示",
         "zoom_in": "拡大",
         "zoom_out": "縮小",
         "reset_zoom": "ズームをリセット",
@@ -1555,7 +1556,7 @@
                 "accept": "受け入れる",
                 "invite": "招待する",
                 "decline": "断る",
-                "delete_log": "ログを削除",
+                "delete_log": "通知を削除",
                 "decline_with_message": "返信を添えて断る"
             },
             "filters": {
@@ -1655,6 +1656,10 @@
                     "moderation": "モデレーション",
                     "other": "その他"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "閉じる",
+                "unsubscribe_announcements": "購読を解除"
             }
         },
         "friend_list": {
@@ -1719,7 +1724,8 @@
             "dynamic": {
                 "open_value": "{value}を開く"
             },
-            "bulk_selected": "{count} 件選択中"
+            "bulk_selected": "{count} 件選択中",
+            "search_scope": "検索対象"
         },
         "charts": {
             "instance_activity": {
@@ -1937,13 +1943,12 @@
                 "title": "VRChat ログビューアー",
                 "latest": "最新",
                 "file_placeholder": "ログファイルを選択",
-                "search_placeholder": "メッセージ、カテゴリ、スタックを検索",
-                "follow_latest": "最新を追跡",
+                "search_placeholder": "ログを検索",
+                "follow_latest": "追跡",
                 "clear_categories": "カテゴリをクリア",
                 "copy_selected": "選択をコピー",
                 "copy_entry": "この行をコピー",
                 "copy_message": "メッセージをコピー",
-                "clear_selected": "選択をクリア",
                 "copied": "ログテキストをクリップボードにコピーしました",
                 "copy_failed": "ログテキストをコピーできませんでした",
                 "continuation_count": "+{count} 行",
@@ -1952,13 +1957,18 @@
                 "column_category": "カテゴリ",
                 "column_message": "メッセージ",
                 "loading": "ログエントリを読み込み中",
-                "load_more": "さらに読み込む",
+                "load_older": "過去分を読み込む",
+                "matched_count": "{loaded} / {total} 件が一致",
+                "match_case": "大文字と小文字を区別",
+                "use_regex": "正規表現",
+                "column_line": "行",
+                "select_all": "すべて選択",
+                "deselect_all": "選択を解除",
                 "unavailable": "VRChat データフォルダを使用できません",
                 "no_files": "VRChat output log が見つかりません",
                 "no_files_description": "VRChat を一度起動し、output_log_*.txt が作成された後でこのページを更新してください。",
                 "no_entries": "現在のフィルターに一致するエントリはありません",
                 "no_entries_description": "レベル、カテゴリ、検索テキストを調整してください。",
-                "no_category": "カテゴリなし",
                 "error_load_files": "VRChat ログファイルの読み込みに失敗しました。",
                 "error_load_entries": "VRChat ログエントリの読み込みに失敗しました。",
                 "error_tail": "新しいログエントリを読み込めませんでした。",
@@ -4958,7 +4968,15 @@
             "scan_failed": "スクリーンショットライブラリのスキャンに失敗しました",
             "thumbnail_failed": "サムネイルを表示できません",
             "hide_details": "画像情報を隠す",
-            "show_details": "画像情報を表示"
+            "show_details": "画像情報を表示",
+            "search_in": "{scope}を検索",
+            "grid_density": "サムネイルサイズ",
+            "sort": "並び替え",
+            "year_group": "{year}年",
+            "sort_options": {
+                "captured_desc": "新しい順",
+                "captured_asc": "古い順"
+            }
         },
         "set_avatar_styles": {
             "header": "アバタースタイルを設定",
@@ -4972,12 +4990,15 @@
             "header": "VRChat Config JSON",
             "description1": "これらのオプションは上級者向けです。",
             "description2": "デフォルトに設定するには空欄にしてください。設定を適用するにはゲームを再起動する必要があります。",
-            "cache_size": "キャッシュサイズ:",
+            "cache_size": "キャッシュ容量",
+            "section_cache": "キャッシュ",
+            "section_pictures": "画像",
+            "section_camera": "カメラ",
             "refresh": "更新",
             "delete_cache": "削除",
             "sweep_cache": "掃除",
-            "max_cache_size": "最大キャッシュサイズ [GB] (最小 30)",
-            "cache_expiry_delay": "キャッシュの有効期限 [日] (最小 30)",
+            "max_cache_size": "キャッシュ上限 (GB)",
+            "cache_expiry_delay": "キャッシュ保持 (日)",
             "cache_directory": "カスタムキャッシュフォルダ",
             "cache_location_changed": "VRChat のキャッシュ場所を変更",
             "old_cache_cleanup_description": "古いキャッシュは {size} 使用しています。場所の変更後は VRChat から使用されません。削除しますか？",
@@ -5822,7 +5843,8 @@
             "rows_per_page": "ページあたりの行数",
             "previous": "前",
             "next": "次",
-            "more_pages": "さらにページを読み込む"
+            "more_pages": "さらにページを読み込む",
+            "page_number": "{page} ページ目"
         },
         "feed": {
             "date": "日付",

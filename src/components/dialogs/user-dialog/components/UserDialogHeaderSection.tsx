@@ -912,7 +912,7 @@ export function UserDialogHeaderSection({
                         <Button
                             type="button"
                             variant="ghost"
-                            className="text-muted-foreground hover:text-primary h-auto max-h-24 w-full min-w-0 justify-start overflow-auto p-0 text-left text-sm whitespace-pre-wrap"
+                            className="text-muted-foreground hover:text-primary h-auto max-h-24 w-full min-w-0 justify-start overflow-auto p-0 text-left text-sm whitespace-pre-wrap hover:bg-transparent"
                             title={t('dialog.user.actions.edit_status')}
                             onClick={onEditSelfStatus}
                         >

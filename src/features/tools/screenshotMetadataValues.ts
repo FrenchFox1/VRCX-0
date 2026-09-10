@@ -457,11 +457,12 @@ export function searchResultToLibraryImage(
         ? Date.parse(result.creationDate)
         : Number.NaN;
     const createdAt = Number.isNaN(creationTime) ? null : creationTime;
+    const fileName = result.fileName || getFileNameFromPath(result.filePath);
 
     return {
         path: result.filePath,
         folderPath: getFolderPathFromPath(result.filePath),
-        fileName: result.fileName || getFileNameFromPath(result.filePath),
+        fileName,
         sizeBytes: result.fileSizeBytes,
         modifiedAt: createdAt ?? 0,
         createdAt,
@@ -469,7 +470,7 @@ export function searchResultToLibraryImage(
         height: result.height,
         worldId: result.metadata?.world?.id || null,
         worldName: result.metadata?.world?.name || null,
-        capturedAt: result.metadata?.timestamp || result.creationDate || null,
+        capturedAt: result.metadata?.timestamp || null,
         metadata: result.metadata,
         error: result.metadata?.error || null
     };

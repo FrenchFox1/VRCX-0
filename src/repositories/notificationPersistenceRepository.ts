@@ -58,7 +58,6 @@ export type NotificationRow = Omit<
         expiresAt?: string | null;
         displayLocation?: string;
         groupName?: string;
-        location?: string;
         senderDisplayName?: string;
         senderUserIcon?: string;
         worldName?: string;

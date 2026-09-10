@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "Hide Friends Sidebar",
         "enter_sidebar_mode": "Sidebar Mode",
         "restore_full_window": "Return to Full Window",
+        "always_on_top": "Always on Top",
         "zoom_in": "Zoom In",
         "zoom_out": "Zoom Out",
         "reset_zoom": "Reset Zoom",
@@ -1559,7 +1560,7 @@
                 "accept": "Accept",
                 "invite": "Invite",
                 "decline": "Decline",
-                "delete_log": "Delete log",
+                "delete_log": "Delete notification",
                 "decline_with_message": "Decline with message"
             },
             "filters": {
@@ -1659,6 +1660,10 @@
                     "moderation": "Moderation",
                     "other": "Other"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Dismiss",
+                "unsubscribe_announcements": "Unsubscribe"
             }
         },
         "friend_list": {
@@ -1723,7 +1728,8 @@
             "dynamic": {
                 "open_value": "Open {value}"
             },
-            "bulk_selected": "{count} selected"
+            "bulk_selected": "{count} selected",
+            "search_scope": "Search in"
         },
         "charts": {
             "instance_activity": {
@@ -1941,13 +1947,12 @@
                 "title": "VRChat Log Viewer",
                 "latest": "latest",
                 "file_placeholder": "Select a log file",
-                "search_placeholder": "Search message, category, or stack trace",
-                "follow_latest": "Follow latest",
+                "search_placeholder": "Search log",
+                "follow_latest": "Follow",
                 "clear_categories": "Clear categories",
                 "copy_selected": "Copy selected",
                 "copy_entry": "Copy row",
                 "copy_message": "Copy message",
-                "clear_selected": "Clear selected",
                 "copied": "Copied log text to clipboard",
                 "copy_failed": "Failed to copy log text",
                 "continuation_count": "+{count} lines",
@@ -1956,13 +1961,18 @@
                 "column_category": "Category",
                 "column_message": "Message",
                 "loading": "Loading log entries",
-                "load_more": "Load more",
+                "load_older": "Load older",
+                "matched_count": "{loaded} / {total} matched",
+                "match_case": "Match case",
+                "use_regex": "Regular expression",
+                "column_line": "Line",
+                "select_all": "Select all",
+                "deselect_all": "Deselect all",
                 "unavailable": "VRChat data folder is unavailable",
                 "no_files": "No VRChat output logs found",
                 "no_files_description": "Start VRChat once and refresh this page after output_log_*.txt appears.",
                 "no_entries": "No entries match the current filters",
                 "no_entries_description": "Adjust levels, category, or search text.",
-                "no_category": "No category",
                 "error_load_files": "Failed to load VRChat log files.",
                 "error_load_entries": "Failed to load VRChat log entries.",
                 "error_tail": "Failed to read new log entries.",
@@ -4972,7 +4982,15 @@
             "scan_failed": "Failed to scan screenshot library",
             "thumbnail_failed": "Thumbnail unavailable",
             "hide_details": "Hide info",
-            "show_details": "Show info"
+            "show_details": "Show info",
+            "search_in": "Search {scope}",
+            "grid_density": "Thumbnail size",
+            "sort": "Sort",
+            "year_group": "Year {year}",
+            "sort_options": {
+                "captured_desc": "Newest",
+                "captured_asc": "Oldest"
+            }
         },
         "set_avatar_styles": {
             "header": "Set Avatar Styles",
@@ -4986,12 +5004,15 @@
             "header": "VRChat Config JSON",
             "description1": "These options are for advanced users only.",
             "description2": "Leave a field empty to use the default value. A game restart is required to apply changes.",
-            "cache_size": "Cache Size:",
+            "cache_size": "Cache size",
+            "section_cache": "Cache",
+            "section_pictures": "Pictures",
+            "section_camera": "Camera",
             "refresh": "Refresh",
             "delete_cache": "Delete Cache",
             "sweep_cache": "Sweep Cache",
-            "max_cache_size": "Max Cache Size [GB] (min 30)",
-            "cache_expiry_delay": "Cache Expiry [Days] (min 30)",
+            "max_cache_size": "Max Cache Size (GB)",
+            "cache_expiry_delay": "Cache Expiry (Days)",
             "cache_directory": "Custom Cache Folder Location",
             "cache_location_changed": "Change VRChat cache location",
             "old_cache_cleanup_description": "The old cache uses {size}. VRChat will no longer use it after the location changes. Do you want to clean it up?",
@@ -5838,7 +5859,8 @@
             "rows_per_page": "Rows per page",
             "previous": "Previous",
             "next": "Next",
-            "more_pages": "More pages"
+            "more_pages": "More pages",
+            "page_number": "Page {page}"
         },
         "feed": {
             "date": "Date",

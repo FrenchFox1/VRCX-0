@@ -139,8 +139,6 @@ export function getNotificationLinkIcon(
     }
 }
 
-export const PRIMARY_ACTION_KEYS = new Set<string>(['accept', 'invite']);
-
 const MANUAL_BOOP_REPLY_RESPONSE = {
     icon: 'reply',
     type: 'reply'
@@ -228,7 +226,7 @@ export function buildOrderedActions({
     for (const response of responses) {
         actions.push({
             key: `response:${response?.type}:${response?.text || response?.data || ''}`,
-            label: getResponseLabel(response),
+            label: getResponseLabel(response, t),
             Icon: getResponseIcon(response, type),
             onClick: () =>
                 handlers.onSendNotificationResponse(notification, response)

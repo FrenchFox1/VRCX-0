@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "Скрыть боковую панель друзей",
         "enter_sidebar_mode": "Режим боковой панели",
         "restore_full_window": "Вернуться к полному окну",
+        "always_on_top": "Поверх всех окон",
         "zoom_in": "Увеличить",
         "zoom_out": "Уменьшить",
         "reset_zoom": "Перезагрузить",
@@ -1561,7 +1562,7 @@
                 "accept": "Принять",
                 "invite": "Приглашение",
                 "decline": "Отклонить",
-                "delete_log": "Удалить журнал",
+                "delete_log": "Удалить уведомление",
                 "decline_with_message": "Отклонить с сообщением"
             },
             "filters": {
@@ -1661,6 +1662,10 @@
                     "moderation": "Модерация",
                     "other": "Прочее"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Скрыть",
+                "unsubscribe_announcements": "Отписаться"
             }
         },
         "friend_list": {
@@ -1725,7 +1730,8 @@
             "dynamic": {
                 "open_value": "Открыть {value}"
             },
-            "bulk_selected": "Выбрано: {count}"
+            "bulk_selected": "Выбрано: {count}",
+            "search_scope": "Искать в"
         },
         "charts": {
             "instance_activity": {
@@ -1943,13 +1949,12 @@
                 "title": "VRChat Просмотр журнала",
                 "latest": "последний",
                 "file_placeholder": "Выбрать файл журнала",
-                "search_placeholder": "Поисковое сообщение, категория или след стопки",
-                "follow_latest": "Следить за последним",
+                "search_placeholder": "Поиск по логу",
+                "follow_latest": "Следить",
                 "clear_categories": "Четкие категории",
                 "copy_selected": "Копировать выбранное",
                 "copy_entry": "Копировать строки",
                 "copy_message": "Копировать сообщение",
-                "clear_selected": "Очистить выбранное",
                 "copied": "Скопированный текст журнала в буфер обмена",
                 "copy_failed": "Не удалось скопировать текст журнала",
                 "continuation_count": "+{count} строк",
@@ -1958,13 +1963,18 @@
                 "column_category": "Категория",
                 "column_message": "Сообщение",
                 "loading": "Загрузка записей в журнал",
-                "load_more": "Загрузить больше",
+                "load_older": "Загрузить ранние",
+                "matched_count": "{loaded} / {total} совпадений",
+                "match_case": "Учитывать регистр",
+                "use_regex": "Регулярное выражение",
+                "column_line": "Строка",
+                "select_all": "Выбрать всё",
+                "deselect_all": "Снять выделение",
                 "unavailable": "VRChat Папка данных отсутствует",
                 "no_files": "Нет VRChat Обнаружены журналы вывода",
                 "no_files_description": "Запуск VRChat Один раз и обновить эту страницу после выхода_log_*.txt.",
                 "no_entries": "Нет данных, соответствующих нынешним фильтрам",
                 "no_entries_description": "Скорректировать уровни, категорию или поисковый текст.",
-                "no_category": "Категория отсутствует",
                 "error_load_files": "Не удалось загрузить VRChat log файлы.",
                 "error_load_entries": "Не удалось загрузить VRChat Записи в журнале.",
                 "error_tail": "Не удалось прочитать новые записи журнала.",
@@ -4933,7 +4943,15 @@
             "scan_failed": "Не удалось сканировать библиотеку скриншотов",
             "thumbnail_failed": "Недоступный пальцем",
             "hide_details": "Скрыть информацию",
-            "show_details": "Показать информацию"
+            "show_details": "Показать информацию",
+            "search_in": "Поиск: {scope}",
+            "grid_density": "Размер миниатюр",
+            "sort": "Сортировка",
+            "year_group": "{year} год",
+            "sort_options": {
+                "captured_desc": "Новые",
+                "captured_asc": "Старые"
+            }
         },
         "set_avatar_styles": {
             "header": "Установить стили аватара",
@@ -4947,12 +4965,15 @@
             "header": "Настройки VRChat JSON",
             "description1": "Эти параметры предназначены только для опытных пользователей.",
             "description2": "Оставьте поле пустым для установки по умолчанию, для применения настроек необходимо перезапустить игру.",
-            "cache_size": "Размер кэша:",
+            "cache_size": "Размер кэша",
+            "section_cache": "Кэш",
+            "section_pictures": "Изображения",
+            "section_camera": "Камера",
             "refresh": "Обновить",
             "delete_cache": "Удалить кэш",
             "sweep_cache": "Удалить кэш",
-            "max_cache_size": "Макс. размер кэша [GB] (мин. 30)",
-            "cache_expiry_delay": "Срок действия кэша [Дни] (мин. 30)",
+            "max_cache_size": "Максимум кэша (ГБ)",
+            "cache_expiry_delay": "Срок хранения кэша (дни)",
             "cache_directory": "Местоположение папки кэша",
             "cache_location_changed": "Изменить расположение кэша VRChat",
             "old_cache_cleanup_description": "Старый кэш занимает {size}. После изменения VRChat больше не будет его использовать. Очистить его?",
@@ -5795,7 +5816,8 @@
             "rows_per_page": "Строки на страницу",
             "previous": "Предыдущий",
             "next": "Далее",
-            "more_pages": "Больше страниц"
+            "more_pages": "Больше страниц",
+            "page_number": "Страница {page}"
         },
         "feed": {
             "date": "Дата",

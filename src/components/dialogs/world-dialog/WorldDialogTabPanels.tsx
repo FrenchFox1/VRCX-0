@@ -122,7 +122,7 @@ function WorldScreenshotsGrid({
         viewportRef,
         visibleRows
     } = useScreenshotGalleryGrid({
-        compact: true,
+        density: 'compact',
         items: safeScreenshots,
         resetKey: worldId
     });

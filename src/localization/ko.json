@@ -721,6 +721,7 @@
         "hide_friends_sidebar": "친구 사이드바 숨기기",
         "enter_sidebar_mode": "사이드바 모드",
         "restore_full_window": "전체 창으로 돌아가기",
+        "always_on_top": "항상 위에 표시",
         "zoom_in": "확대",
         "zoom_out": "축소",
         "reset_zoom": "줌 재설정",
@@ -1538,7 +1539,7 @@
                 "accept": "수락",
                 "invite": "초대",
                 "decline": "거절",
-                "delete_log": "로그 삭제",
+                "delete_log": "알림 삭제",
                 "decline_with_message": "메시지로 거절"
             },
             "filters": {
@@ -1638,6 +1639,10 @@
                     "moderation": "중재",
                     "other": "기타"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "닫기",
+                "unsubscribe_announcements": "구독 해제"
             }
         },
         "friend_list": {
@@ -1702,7 +1707,8 @@
             "dynamic": {
                 "open_value": "{value} 열기"
             },
-            "bulk_selected": "{count}개 선택됨"
+            "bulk_selected": "{count}개 선택됨",
+            "search_scope": "검색 범위"
         },
         "charts": {
             "instance_activity": {
@@ -1914,13 +1920,12 @@
             "vrchat_log": {
                 "latest": "최신",
                 "file_placeholder": "로그 파일 선택",
-                "search_placeholder": "메시지, 카테고리 또는 스택 추적 검색",
-                "follow_latest": "최신 항목 따라가기",
+                "search_placeholder": "로그 검색",
+                "follow_latest": "따라가기",
                 "clear_categories": "카테고리 지우기",
                 "copy_selected": "선택 항목 복사",
                 "copy_entry": "행 복사",
                 "copy_message": "메시지 복사",
-                "clear_selected": "선택 항목 지우기",
                 "copied": "로그 텍스트를 클립보드에 복사했습니다.",
                 "copy_failed": "로그 텍스트를 복사하지 못했습니다.",
                 "column_time": "시간",
@@ -1928,10 +1933,15 @@
                 "column_category": "카테고리",
                 "column_message": "메시지",
                 "loading": "로그 항목 로드 중",
-                "load_more": "더 로드하기",
+                "load_older": "이전 항목 불러오기",
+                "matched_count": "{loaded} / {total} 일치",
+                "match_case": "대소문자 구분",
+                "use_regex": "정규식",
+                "column_line": "줄",
+                "select_all": "전체 선택",
+                "deselect_all": "전체 선택 해제",
                 "no_entries": "현재 필터와 일치하는 항목이 없습니다.",
                 "no_entries_description": "수준, 카테고리 또는 검색 텍스트를 조정합니다.",
-                "no_category": "카테고리 없음",
                 "error_tail": "새 로그 항목을 읽지 못했습니다.",
                 "title": "VRChat 로그 뷰어",
                 "continuation_count": "+{count} 라인",
@@ -4878,7 +4888,15 @@
             "feeling_lucky": "랜덤으로 한 장",
             "exporting_progress": "내보내는 중 {done}/{total}",
             "export_finalizing": "마무리하는 중",
-            "empty_folders_description": "VRChat에서 스크린샷을 저장한 후 새로고침하세요."
+            "empty_folders_description": "VRChat에서 스크린샷을 저장한 후 새로고침하세요.",
+            "search_in": "{scope} 검색",
+            "grid_density": "썸네일 크기",
+            "sort": "정렬",
+            "year_group": "{year}년",
+            "sort_options": {
+                "captured_desc": "최신순",
+                "captured_asc": "오래된순"
+            }
         },
         "set_avatar_styles": {
             "header": "아바타 스타일 설정",
@@ -4892,12 +4910,15 @@
             "header": "VRChat 설정 JSON",
             "description1": "이 설정은 전문가용입니다",
             "description2": "빈 값은 기본값으로 적용되며, VRChat 재시작 후에 설정이 반영됩니다",
-            "cache_size": "캐시 크기:",
+            "cache_size": "캐시 크기",
+            "section_cache": "캐시",
+            "section_pictures": "사진",
+            "section_camera": "카메라",
             "refresh": "새로고침",
             "delete_cache": "캐시 삭제",
             "sweep_cache": "캐시 정리",
-            "max_cache_size": "최대 캐시 크기 [GB] (최소 30)",
-            "cache_expiry_delay": "캐시 만료 일수 [Days] (최소 30)",
+            "max_cache_size": "최대 캐시 크기 (GB)",
+            "cache_expiry_delay": "캐시 보관 (일)",
             "cache_directory": "캐시 폴더 위치",
             "cache_location_changed": "VRChat 캐시 위치 변경",
             "old_cache_cleanup_description": "이전 캐시가 {size}를 사용 중입니다. 위치를 변경하면 VRChat에서 더 이상 사용하지 않습니다. 정리할까요?",
@@ -5728,7 +5749,8 @@
             "rows_per_page": "페이지당 행 수",
             "previous": "이전",
             "next": "다음",
-            "more_pages": "더 많은 페이지"
+            "more_pages": "더 많은 페이지",
+            "page_number": "{page}페이지"
         },
         "feed": {
             "date": "날짜",

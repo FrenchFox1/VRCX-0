@@ -27,7 +27,7 @@ export function homeWorldIdFrom(homeLocation: unknown): string {
     return value.startsWith('wrld_') ? value.split(':')[0] : '';
 }
 
-const ACTIVITY_RANGES = ['30', '90', '180', '365', 'all'] as const;
+const ACTIVITY_RANGES = ['all', '30', '90', '180', '365'] as const;
 
 export type ActivityRange = (typeof ACTIVITY_RANGES)[number];
 

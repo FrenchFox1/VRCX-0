@@ -68,9 +68,7 @@ export function isMyAvatarsPlatformFilter(
     );
 }
 export const MY_AVATARS_COLUMN_IDS = [
-    'thumbnail',
     'name',
-    'customTags',
     'platforms',
     'visibility',
     'timeSpent',
@@ -84,6 +82,7 @@ export const MY_AVATARS_COLUMN_IDS = [
 ];
 export const MY_AVATARS_DEFAULT_COLUMN_VISIBILITY: Record<string, boolean> =
     Object.freeze({
+        visibility: false,
         version: false,
         pcPerf: false,
         androidPerf: false,
@@ -108,7 +107,6 @@ const LEGACY_GRID_DENSITY_ALIASES: Readonly<
 });
 const SORT_COLUMN_IDS = [
     'name',
-    'customTags',
     'visibility',
     'timeSpent',
     'version',
@@ -308,9 +306,9 @@ export function sanitizeMyAvatarsColumnOrder(value: unknown): string[] {
 export function resolveMyAvatarsColumnOrder(value: unknown): string[] {
     const ordered = sanitizeMyAvatarsColumnOrder(value);
     return [
-        'thumbnail',
+        'name',
         ...ordered.filter(
-            (columnId) => columnId !== 'thumbnail' && columnId !== 'actions'
+            (columnId) => columnId !== 'name' && columnId !== 'actions'
         ),
         'actions'
     ];

@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "Skrýt postranní panel přátel",
         "enter_sidebar_mode": "Režim postranního panelu",
         "restore_full_window": "Zpět do celého okna",
+        "always_on_top": "Vždy navrchu",
         "zoom_in": "Přiblížit",
         "zoom_out": "Oddálit",
         "reset_zoom": "Obnovit přiblížení",
@@ -1561,7 +1562,7 @@
                 "accept": "Přijmout",
                 "invite": "Pozvat",
                 "decline": "Odmítnout",
-                "delete_log": "Smazat záznam",
+                "delete_log": "Smazat upozornění",
                 "decline_with_message": "Odmítnout se zprávou"
             },
             "filters": {
@@ -1661,6 +1662,10 @@
                     "moderation": "Moderace",
                     "other": "Ostatní"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Zavřít",
+                "unsubscribe_announcements": "Zrušit odběr"
             }
         },
         "friend_list": {
@@ -1725,7 +1730,8 @@
             "dynamic": {
                 "open_value": "Otevřít {value}"
             },
-            "bulk_selected": "Vybráno: {count}"
+            "bulk_selected": "Vybráno: {count}",
+            "search_scope": "Hledat v"
         },
         "charts": {
             "instance_activity": {
@@ -1943,13 +1949,12 @@
                 "title": "Prohlížeč záznamů VRChat",
                 "latest": "nejnovější",
                 "file_placeholder": "Vyberte soubor záznamu",
-                "search_placeholder": "Hledat zprávu, kategorii nebo stack trace",
-                "follow_latest": "Sledovat nejnovější",
+                "search_placeholder": "Hledat v logu",
+                "follow_latest": "Sledovat",
                 "clear_categories": "Vymazat kategorie",
                 "copy_selected": "Kopírovat vybrané",
                 "copy_entry": "Kopírovat řádek",
                 "copy_message": "Kopírovat zprávu",
-                "clear_selected": "Vymazat výběr",
                 "copied": "Text záznamu zkopírován do schránky",
                 "copy_failed": "Nepodařilo se zkopírovat text záznamu",
                 "continuation_count": "+{count} řádků",
@@ -1958,13 +1963,18 @@
                 "column_category": "Kategorie",
                 "column_message": "Zpráva",
                 "loading": "Načítání záznamů",
-                "load_more": "Načíst další",
+                "load_older": "Načíst starší",
+                "matched_count": "{loaded} / {total} shod",
+                "match_case": "Rozlišovat velikost písmen",
+                "use_regex": "Regulární výraz",
+                "column_line": "Řádek",
+                "select_all": "Vybrat vše",
+                "deselect_all": "Zrušit výběr",
                 "unavailable": "Datová složka VRChat není dostupná",
                 "no_files": "Nebyly nalezeny žádné výstupní záznamy VRChat",
                 "no_files_description": "Spusťte VRChat alespoň jednou a po vytvoření output_log_*.txt tuto stránku obnovte.",
                 "no_entries": "Žádné položky neodpovídají aktuálním filtrům",
                 "no_entries_description": "Upravte úrovně, kategorii nebo hledaný text.",
-                "no_category": "Bez kategorie",
                 "error_load_files": "Nepodařilo se načíst soubory záznamů VRChat.",
                 "error_load_entries": "Nepodařilo se načíst položky záznamů VRChat.",
                 "error_tail": "Nepodařilo se přečíst nové položky záznamu.",
@@ -4932,7 +4942,15 @@
             "scan_failed": "Nepodařilo se prohledat knihovnu snímků obrazovky",
             "thumbnail_failed": "Náhled není k dispozici",
             "hide_details": "Skrýt informace",
-            "show_details": "Zobrazit informace"
+            "show_details": "Zobrazit informace",
+            "search_in": "Hledat {scope}",
+            "grid_density": "Velikost náhledu",
+            "sort": "Řazení",
+            "year_group": "Rok {year}",
+            "sort_options": {
+                "captured_desc": "Nejnovější",
+                "captured_asc": "Nejstarší"
+            }
         },
         "set_avatar_styles": {
             "header": "Nastavit styly avatara",
@@ -4946,12 +4964,15 @@
             "header": "VRChat Config JSON",
             "description1": "Tyto možnosti jsou určeny pouze pro pokročilé uživatele.",
             "description2": "Leave field empty to set as default, game restart required to apply settings.",
-            "cache_size": "Velikost mezipaměti:",
+            "cache_size": "Velikost mezipaměti",
+            "section_cache": "Mezipaměť",
+            "section_pictures": "Obrázky",
+            "section_camera": "Kamera",
             "refresh": "Obnovit",
             "delete_cache": "Smazat mezipaměť",
             "sweep_cache": "Vyčistit mezipaměť",
-            "max_cache_size": "Max. velikost mezipaměti [GB] (min. 30)",
-            "cache_expiry_delay": "Vypršení platnosti mezipaměti [dny] (min. 30)",
+            "max_cache_size": "Maximum mezipaměti (GB)",
+            "cache_expiry_delay": "Platnost mezipaměti (dny)",
             "cache_directory": "Vlastní umístění složky mezipaměti",
             "cache_location_changed": "Změnit umístění mezipaměti VRChat",
             "old_cache_cleanup_description": "Stará mezipaměť zabírá {size}. Po změně ji VRChat již nebude používat. Chcete ji vyčistit?",
@@ -5794,7 +5815,8 @@
             "rows_per_page": "Řádků na stránku",
             "previous": "Předchozí",
             "next": "Další",
-            "more_pages": "Další stránky"
+            "more_pages": "Další stránky",
+            "page_number": "Stránka {page}"
         },
         "feed": {
             "date": "Datum",
