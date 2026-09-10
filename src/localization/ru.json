@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "Скрыть боковую панель друзей",
         "enter_sidebar_mode": "Режим боковой панели",
         "restore_full_window": "Вернуться к полному окну",
+        "always_on_top": "Поверх всех окон",
         "zoom_in": "Увеличить",
         "zoom_out": "Уменьшить",
         "reset_zoom": "Перезагрузить",

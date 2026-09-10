@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "フレンドサイドバーを非表示",
         "enter_sidebar_mode": "サイドバーモード",
         "restore_full_window": "通常のウィンドウに戻す",
+        "always_on_top": "常に手前に表示",
         "zoom_in": "拡大",
         "zoom_out": "縮小",
         "reset_zoom": "ズームをリセット",

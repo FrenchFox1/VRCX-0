@@ -342,6 +342,27 @@ export function initializeWindowDisplayMode(): Promise<void> {
     });
 }
 
+export function initializeWindowAlwaysOnTop(): Promise<void> {
+    if (!useShellStore.getState().windowAlwaysOnTop) {
+        return Promise.resolve();
+    }
+    return tauriClient.webview.setWindowAlwaysOnTop(true);
+}
+
+export function setWindowAlwaysOnTop(alwaysOnTop: boolean): Promise<void> {
+    const previous = useShellStore.getState().windowAlwaysOnTop;
+    if (previous === alwaysOnTop) {
+        return Promise.resolve();
+    }
+    useShellStore.getState().setWindowAlwaysOnTop(alwaysOnTop);
+    return tauriClient.webview
+        .setWindowAlwaysOnTop(alwaysOnTop)
+        .catch((error: unknown) => {
+            useShellStore.getState().setWindowAlwaysOnTop(previous);
+            throw error;
+        });
+}
+
 export function enterSidebarWindowMode(
     preferredWidth = DEFAULT_SIDEBAR_WINDOW_WIDTH
 ): Promise<void> {

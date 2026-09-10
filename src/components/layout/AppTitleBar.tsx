@@ -72,6 +72,7 @@ export function AppTitleBar() {
         isSessionReady,
         actions,
         openQuickSearch,
+        alwaysOnTopButton,
         sidebarWindowModeButton,
         notificationAction,
         themeToggleAction
@@ -129,6 +130,7 @@ export function AppTitleBar() {
                         ) : null}
                         {notificationAction}
                         {themeToggleAction}
+                        {alwaysOnTopButton}
                         {sidebarWindowModeButton}
                     </div>
                 ) : (

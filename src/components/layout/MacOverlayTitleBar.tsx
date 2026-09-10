@@ -18,6 +18,7 @@ export function MacOverlayTitleBar() {
         actions,
         isSessionReady,
         openQuickSearch,
+        alwaysOnTopButton,
         sidebarWindowModeButton,
         notificationAction,
         themeToggleAction
@@ -54,6 +55,7 @@ export function MacOverlayTitleBar() {
                         ) : null}
                         {notificationAction}
                         {themeToggleAction}
+                        {alwaysOnTopButton}
                         {sidebarWindowModeButton}
                     </div>
                 ) : (

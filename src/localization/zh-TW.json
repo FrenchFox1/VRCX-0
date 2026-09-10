@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "隱藏好友側邊欄",
         "enter_sidebar_mode": "側邊欄模式",
         "restore_full_window": "返回完整視窗",
+        "always_on_top": "視窗置頂",
         "zoom_in": "放大",
         "zoom_out": "縮小",
         "reset_zoom": "重設縮放",
