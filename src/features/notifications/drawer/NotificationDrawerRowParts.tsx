@@ -95,7 +95,7 @@ export function NotificationHoverContent({
     const friendNotification = isFriendNotification(notification);
     const hoverTitle = getHoverTitle(notification);
     const friendMessage = getFriendMessage(notification);
-    const fallbackTitle = senderName || notification?.type || 'Notification';
+    const fallbackTitle = senderName || 'Notification';
 
     return (
         <HoverCardContent

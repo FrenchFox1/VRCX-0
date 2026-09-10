@@ -8,6 +8,7 @@ import { formatClock, formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import type { NotificationRow as NotificationRecord } from '@/repositories/notificationPersistenceRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { getDismissResponse } from '@/shared/utils/notificationResponse';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -19,15 +20,10 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import {
-    hasDismissResponse,
-    openSender,
-    shouldShowDeleteLog
-} from '../notificationCenterUtils';
+import { openSender, shouldShowDeleteLog } from '../notificationCenterUtils';
 import {
     buildOrderedActions,
     getNotificationLinkIcon,
-    PRIMARY_ACTION_KEYS,
     type NotificationRowActionHandlers
 } from '../notificationRowActions';
 import {
@@ -36,6 +32,7 @@ import {
 } from '../notificationViewModel';
 import { useNotificationActorImage } from '../useNotificationActorImage';
 import {
+    NOTIFICATION_ROW_HOVER_REVEAL,
     NotificationEmojiPreview,
     NotificationIconDisc,
     NotificationPersonAvatar
@@ -74,7 +71,9 @@ export function NotificationRow({
         )
     });
     const actorName =
-        view.actor.name || t('view.notification.feed.unknown_sender');
+        view.actor.kind === 'system'
+            ? view.actor.name
+            : view.actor.name || t('view.notification.feed.unknown_sender');
     const actorImageUrl = useNotificationActorImage(view.actor);
     const clockLabel = formatClock(view.createdAt);
     const absoluteLabel = formatDateFilter(view.createdAt, 'long');
@@ -93,7 +92,7 @@ export function NotificationRow({
     const showMenuMarkRead =
         view.unseen &&
         notification.type !== 'friendRequest' &&
-        !hasDismissResponse(notification);
+        !getDismissResponse(notification.responses);
     const showDelete = Boolean(shouldShowDeleteLog(notification));
     const hasMenu =
         showMenuMarkRead || overflowActions.length > 0 || showDelete;
@@ -102,7 +101,7 @@ export function NotificationRow({
         <button
             type="button"
             className="shrink-0 transition-transform ease-out active:scale-[0.97] motion-safe:duration-150"
-            aria-label={actorName}
+            aria-label={actorName || typeLabel}
             onClick={() => openSender(notification, t)}
         >
             {view.actor.kind === 'user' ? (
@@ -143,52 +142,65 @@ export function NotificationRow({
         </Button>
     ) : null;
     const hasHeadline = Boolean(view.headline);
+    const body =
+        view.body === typeLabel || view.body === view.headline ? '' : view.body;
 
     return (
-        <div
-            className={cn(
-                'group flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors duration-150 ease-out',
-                view.unseen
-                    ? 'bg-[color-mix(in_srgb,var(--status-joinme)_8%,transparent)] hover:bg-[color-mix(in_srgb,var(--status-joinme)_14%,transparent)]'
-                    : 'hover:bg-muted/40'
-            )}
-        >
+        <div className="group hover:bg-muted/40 flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors duration-150 ease-out">
+            <span className="mt-1.5 flex w-2 shrink-0 justify-center">
+                {view.unseen ? (
+                    <span className="bg-primary size-2 rounded-full">
+                        <span className="sr-only">
+                            {t('view.notification.feed.unread')}
+                        </span>
+                    </span>
+                ) : null}
+            </span>
             {actorButton}
             <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex min-w-0 items-center gap-2">
-                    <button
-                        type="button"
+                    {actorName ? (
+                        <button
+                            type="button"
+                            className={cn(
+                                'max-w-56 truncate text-left font-medium transition-opacity duration-150 ease-out hover:opacity-70',
+                                hasHeadline
+                                    ? 'text-muted-foreground text-xs'
+                                    : 'text-sm'
+                            )}
+                            onClick={() => openSender(notification, t)}
+                        >
+                            {actorName}
+                        </button>
+                    ) : null}
+                    <span
                         className={cn(
-                            'max-w-56 truncate text-left font-medium transition-opacity duration-150 ease-out hover:opacity-70',
-                            hasHeadline
-                                ? 'text-muted-foreground text-xs'
-                                : 'text-sm'
+                            'min-w-0 truncate',
+                            actorName
+                                ? 'text-muted-foreground/60 shrink-0 text-xs'
+                                : 'text-sm font-medium'
                         )}
-                        onClick={() => openSender(notification, t)}
                     >
-                        {actorName}
-                    </button>
-                    <span className="text-muted-foreground/60 shrink-0 truncate text-xs">
                         {typeLabel}
                     </span>
                 </div>
                 {hasHeadline ? (
-                    <p className="text-foreground truncate text-sm font-medium">
+                    <p className="text-foreground line-clamp-2 text-sm font-medium">
                         {view.headline}
                     </p>
                 ) : null}
-                {view.body || view.emoji ? (
+                {body || view.emoji ? (
                     <div className="flex min-w-0 items-center gap-2">
-                        {view.body ? (
+                        {body ? (
                             <p
                                 className={cn(
-                                    'line-clamp-2 min-w-0 text-sm leading-snug break-words',
+                                    'line-clamp-2 min-w-0 text-xs leading-snug break-words',
                                     hasHeadline
                                         ? 'text-muted-foreground'
                                         : 'text-foreground/85'
                                 )}
                             >
-                                {view.body}
+                                {body}
                             </p>
                         ) : null}
                         {view.emoji ? (
@@ -228,17 +240,18 @@ export function NotificationRow({
                         {linkButton}
                     </div>
                     {inlineActions.length > 0 ? (
-                        <div className="flex shrink-0 items-center gap-1.5">
+                        <div
+                            className={cn(
+                                'flex shrink-0 items-center gap-1.5',
+                                NOTIFICATION_ROW_HOVER_REVEAL
+                            )}
+                        >
                             {inlineActions.map((action) => (
                                 <Button
                                     key={action.key}
                                     type="button"
                                     size="xs"
-                                    variant={
-                                        PRIMARY_ACTION_KEYS.has(action.key)
-                                            ? 'default'
-                                            : 'outline'
-                                    }
+                                    variant="ghost"
                                     onClick={action.onClick}
                                 >
                                     {action.label}
@@ -249,7 +262,12 @@ export function NotificationRow({
                 </div>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1.5 pt-0.5">
-                <span className="flex size-6 shrink-0 items-center justify-center">
+                <span
+                    className={cn(
+                        'flex size-6 shrink-0 items-center justify-center',
+                        NOTIFICATION_ROW_HOVER_REVEAL
+                    )}
+                >
                     {hasMenu ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger

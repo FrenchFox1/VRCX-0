@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
+import { getDismissResponse } from '@/shared/utils/notificationResponse';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -18,6 +19,7 @@ import { HoverCard, HoverCardTrigger } from '@/ui/shadcn/hover-card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
+    NOTIFICATION_ROW_HOVER_REVEAL,
     NotificationEmojiPreview,
     NotificationIconDisc,
     NotificationPersonAvatar
@@ -26,16 +28,11 @@ import {
     formatNotificationTime,
     getNotificationMessage,
     getSenderName,
-    hasDismissResponse,
     isNotificationExpired,
     openSender,
     shouldShowDeleteLog
 } from '../notificationCenterUtils';
-import {
-    buildOrderedActions,
-    PRIMARY_ACTION_KEYS,
-    usesAvatar
-} from '../notificationRowActions';
+import { buildOrderedActions, usesAvatar } from '../notificationRowActions';
 import {
     type NotificationActor,
     toNotificationViewModel
@@ -114,14 +111,15 @@ export function NotificationDrawerRow({
     const isBroadcast = view.template === 'broadcast';
     const senderName = isBroadcast
         ? view.actor.name || t('view.notification.feed.unknown_sender')
-        : String(getSenderName(notification) || '') ||
-          notification.type ||
-          t('nav_tooltip.notification');
+        : String(getSenderName(notification) || '');
     const headline = isBroadcast
         ? view.headline || String(notification.title || '').trim()
         : '';
     const message = isBoop || isBroadcast ? view.body : rawMessage;
-    const previewMessage = isBroadcast && message === headline ? '' : message;
+    const previewMessage =
+        message === typeLabel || (isBroadcast && message === headline)
+            ? ''
+            : message;
     const actor: NotificationActor =
         showAvatar || view.actor.kind === 'group'
             ? view.actor
@@ -141,7 +139,7 @@ export function NotificationDrawerRow({
     const showMenuMarkRead =
         isUnseen &&
         notification.type !== 'friendRequest' &&
-        !hasDismissResponse(notification);
+        !getDismissResponse(notification.responses);
     const showDelete = Boolean(shouldShowDeleteLog(notification));
     const hasMenu =
         showMenuMarkRead || overflowActions.length > 0 || showDelete;
@@ -180,7 +178,7 @@ export function NotificationDrawerRow({
                             <button
                                 type="button"
                                 className="shrink-0"
-                                aria-label={senderName}
+                                aria-label={senderName || typeLabel}
                                 onClick={() => openSender(notification, t)}
                             >
                                 {showAvatar ? (
@@ -204,23 +202,25 @@ export function NotificationDrawerRow({
                                 )}
                             >
                                 <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-                                    <button
-                                        type="button"
-                                        className={cn(
-                                            'max-w-full min-w-0 truncate text-left hover:underline',
-                                            isBroadcast
-                                                ? 'text-muted-foreground text-xs'
-                                                : 'text-sm',
-                                            !isBroadcast &&
-                                                showUnreadDot &&
-                                                'font-medium'
-                                        )}
-                                        onClick={() =>
-                                            openSender(notification, t)
-                                        }
-                                    >
-                                        {senderName}
-                                    </button>
+                                    {senderName ? (
+                                        <button
+                                            type="button"
+                                            className={cn(
+                                                'max-w-full min-w-0 truncate text-left hover:underline',
+                                                isBroadcast
+                                                    ? 'text-muted-foreground text-xs'
+                                                    : 'text-sm',
+                                                !isBroadcast &&
+                                                    showUnreadDot &&
+                                                    'font-medium'
+                                            )}
+                                            onClick={() =>
+                                                openSender(notification, t)
+                                            }
+                                        >
+                                            {senderName}
+                                        </button>
+                                    ) : null}
                                     {isBroadcast ? (
                                         <span className="text-muted-foreground shrink-0 text-xs">
                                             · {typeLabel}
@@ -248,7 +248,12 @@ export function NotificationDrawerRow({
                                         </Badge>
                                     )}
                                 </div>
-                                <div className="absolute -top-1 right-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100">
+                                <div
+                                    className={cn(
+                                        'absolute -top-1 right-0',
+                                        NOTIFICATION_ROW_HOVER_REVEAL
+                                    )}
+                                >
                                     {hasMenu ? (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger
@@ -378,7 +383,12 @@ export function NotificationDrawerRow({
                                     </div>
                                     {isQueueReady ||
                                     inlineActions.length > 0 ? (
-                                        <div className="flex shrink-0 items-center gap-1.5">
+                                        <div
+                                            className={cn(
+                                                'flex shrink-0 items-center gap-1.5',
+                                                NOTIFICATION_ROW_HOVER_REVEAL
+                                            )}
+                                        >
                                             {isQueueReady ? (
                                                 <Button
                                                     type="button"
@@ -410,13 +420,7 @@ export function NotificationDrawerRow({
                                                     key={action.key}
                                                     type="button"
                                                     size="xs"
-                                                    variant={
-                                                        PRIMARY_ACTION_KEYS.has(
-                                                            action.key
-                                                        )
-                                                            ? 'default'
-                                                            : 'outline'
-                                                    }
+                                                    variant="ghost"
                                                     onClick={action.onClick}
                                                 >
                                                     {action.label}
@@ -432,7 +436,7 @@ export function NotificationDrawerRow({
             />
             <NotificationHoverContent
                 notification={notification}
-                senderName={senderName}
+                senderName={senderName || typeLabel}
                 typeLabel={typeLabel}
                 message={message}
                 absoluteTime={absoluteTime}

@@ -166,6 +166,19 @@ describe('NotificationDrawerRow', () => {
         expect(handlers.onMarkSeen).toHaveBeenCalledWith(notification);
     });
 
+    it('hides a message that only restates the notification type', () => {
+        renderNotification({
+            id: 'not_instance_closed',
+            type: 'instance.closed',
+            message: 'view.notification.filters.instance.closed',
+            seen: false
+        });
+
+        expect(
+            screen.getAllByText('view.notification.filters.instance.closed')
+        ).toHaveLength(1);
+    });
+
     it('drops mark as read when the notification offers a dismiss response', async () => {
         const notification: NotificationRow = {
             id: 'not_dismissable',

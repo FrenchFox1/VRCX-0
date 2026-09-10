@@ -136,15 +136,6 @@ export function canDeclineNotification(
     );
 }
 
-export function hasDismissResponse(
-    notification: NotificationRow | null | undefined
-): boolean {
-    const responses = Array.isArray(notification?.responses)
-        ? notification.responses
-        : [];
-    return responses.some((response) => response?.type === 'delete');
-}
-
 export function shouldShowDeleteLog(
     notification: NotificationRow | null | undefined
 ) {
