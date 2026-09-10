@@ -5388,6 +5388,7 @@ export type NotificationListItemOutput = {
     data: JsonValue;
     responses: JsonValue;
     details: JsonValue;
+    location: string;
     expired: boolean;
 };
 export type NotificationListQueryInput = {
