@@ -7,11 +7,11 @@ import storageRepository from '@/repositories/storageRepository';
 export type VrchatLogLevel = 'Debug' | 'Warning' | 'Error';
 
 export const LOG_LEVELS: VrchatLogLevel[] = ['Debug', 'Warning', 'Error'];
-export const ALL_CATEGORY_VALUE = '__all__';
+const ALL_CATEGORY_VALUE = '__all__';
 export const PREFS_KEY = 'prefs';
 export const PAGE_LIMIT = 350;
 export const TAIL_LIMIT = 300;
-export const MAX_CLIENT_ENTRIES = 2500;
+const MAX_CLIENT_ENTRIES = 2500;
 export const FOLLOW_INTERVAL_MS = 2000;
 export const LOG_ROW_HEIGHT = 30;
 export const LOG_HEADER_HEIGHT = 30;
@@ -63,7 +63,7 @@ export function fileLabel(file: VrchatLogFileOutput, latestLabel: string) {
         : `${file.fileName} (${size})`;
 }
 
-export function formatBytes(value: number) {
+function formatBytes(value: number) {
     if (!Number.isFinite(value) || value <= 0) {
         return '0 B';
     }

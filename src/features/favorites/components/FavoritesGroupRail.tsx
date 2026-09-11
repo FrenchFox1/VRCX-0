@@ -563,4 +563,4 @@ const GroupRailSection = memo(function GroupRailSection({
     );
 });
 
-export { GroupMenu, GroupRailSection };
+export { GroupRailSection };

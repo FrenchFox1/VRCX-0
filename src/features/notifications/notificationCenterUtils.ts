@@ -69,7 +69,7 @@ export function getSenderName(
     );
 }
 
-export function getImageUrl(notification: NotificationRow | null | undefined) {
+function getImageUrl(notification: NotificationRow | null | undefined) {
     return (
         notification?.details?.imageUrl ||
         notification?.imageUrl ||
@@ -189,7 +189,7 @@ export function buildCachedInstanceMap(
     return map;
 }
 
-export function openNotificationLink(link: unknown) {
+function openNotificationLink(link: unknown) {
     const value = String(link || '').trim();
     if (!value) {
         return false;

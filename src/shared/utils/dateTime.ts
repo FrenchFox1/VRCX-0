@@ -316,4 +316,3 @@ export type {
     DateTimeFormatPreferences,
     TimeUnitLabels
 };
-export { normalizeDateLocale };

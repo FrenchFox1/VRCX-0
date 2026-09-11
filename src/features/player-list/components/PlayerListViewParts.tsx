@@ -394,7 +394,7 @@ export function PlayerListRows({
     ));
 }
 
-export function PlayerListEmptyRow({
+function PlayerListEmptyRow({
     table,
     title,
     description

@@ -100,8 +100,8 @@ export const SCREENSHOT_GALLERY_SCROLL_CONFIG_KEY =
 export const SCREENSHOT_SEARCH_LAYOUT_CONFIG_KEY =
     SCREENSHOT_GALLERY_CONFIG_KEYS.searchLayout;
 export const SCREENSHOT_GALLERY_SCROLL_SAVE_DELAY_MS = 500;
-export const MAX_SCREENSHOT_GALLERY_SCROLL_POSITIONS = 100;
-export const MAX_SCREENSHOT_GALLERY_SCROLL_TOP = 50_000_000;
+const MAX_SCREENSHOT_GALLERY_SCROLL_POSITIONS = 100;
+const MAX_SCREENSHOT_GALLERY_SCROLL_TOP = 50_000_000;
 
 export function normalizeGalleryScrollTop(value: unknown): number {
     const numeric = Number(value);
@@ -157,7 +157,7 @@ export function getGalleryFolderPathSet(
     );
 }
 
-export function getFolderLatestModifiedAt(folder: ScreenshotFolderInfo) {
+function getFolderLatestModifiedAt(folder: ScreenshotFolderInfo) {
     return folder.latestModifiedAt ?? 0;
 }
 
@@ -256,10 +256,7 @@ export function getDroppedScreenshotPath(event: {
     );
 }
 
-export function getScreenshotSearchSortValue(
-    row: ScreenshotSearchRow,
-    key: string
-) {
+function getScreenshotSearchSortValue(row: ScreenshotSearchRow, key: string) {
     if (key === 'dateTime') {
         return row.dateTime?.getTime() ?? 0;
     }
@@ -317,7 +314,7 @@ export function getFileNameFromPath(path: unknown) {
     );
 }
 
-export function resolveScreenshotMetadataDate(
+function resolveScreenshotMetadataDate(
     metadata: Partial<ScreenshotMetadata>,
     extra: ScreenshotExtraData,
     fileName: string

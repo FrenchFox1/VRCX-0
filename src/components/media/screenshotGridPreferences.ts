@@ -69,7 +69,7 @@ export const SCREENSHOT_GRID_SORT_OPTIONS = Object.freeze([
 export type ScreenshotGridSort =
     (typeof SCREENSHOT_GRID_SORT_OPTIONS)[number]['value'];
 
-export const DEFAULT_SCREENSHOT_GRID_SORT: ScreenshotGridSort = 'captured-desc';
+const DEFAULT_SCREENSHOT_GRID_SORT: ScreenshotGridSort = 'captured-desc';
 
 export function sanitizeScreenshotGridSort(value: unknown): ScreenshotGridSort {
     return SCREENSHOT_GRID_SORT_OPTIONS.some((option) => option.value === value)

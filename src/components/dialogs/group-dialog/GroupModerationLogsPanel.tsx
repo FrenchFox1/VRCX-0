@@ -207,7 +207,7 @@ function compactAuditLogDiffValue(value: unknown): string {
     return truncateAuditLogDiffText(String(value));
 }
 
-export function describeGroupAuditLogDataDiff(data: unknown): string[] | null {
+function describeGroupAuditLogDataDiff(data: unknown): string[] | null {
     if (!isAuditLogDiffShape(data)) {
         return null;
     }
@@ -368,7 +368,7 @@ export function createGroupAuditLogColumns(
     ];
 }
 
-export function GroupModerationLogsTable({
+function GroupModerationLogsTable({
     auditLogTypes,
     error,
     group,

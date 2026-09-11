@@ -5,7 +5,7 @@ import {
     STATUS_BAR_TOGGLE_IDLE
 } from './statusBarToggle';
 
-export type ProxyIndicatorTone = 'disabled' | 'direct' | 'enabled' | 'warning';
+type ProxyIndicatorTone = 'disabled' | 'direct' | 'enabled' | 'warning';
 
 export type ProxyIndicatorInput = {
     enabled: boolean;

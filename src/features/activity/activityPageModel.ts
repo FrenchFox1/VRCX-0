@@ -80,7 +80,7 @@ export function accessBucketLabelKey(access: string): string {
 const HOURS_PER_DAY = 24;
 const LATE_NIGHT_HOURS = [0, 1, 2, 3, 4, 5];
 
-export const MIN_ACCESS_SHARE_PERCENT = 1;
+const MIN_ACCESS_SHARE_PERCENT = 1;
 
 export function visibleAccessSlices(
     slices: readonly ActivityPageAccessSlice[]

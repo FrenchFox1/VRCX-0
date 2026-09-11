@@ -16,6 +16,7 @@ import {
     DataTableRow
 } from '@/components/data-table/DataTableView';
 import { LocationWorld } from '@/components/LocationWorld';
+import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import type { FriendRecordInput } from '@/domain/friends/types';
 import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
 import type { DashboardConfig } from '@/features/dashboard/dashboardConfig';
@@ -49,7 +50,7 @@ import {
 } from '../../dashboardRegistry';
 import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState';
 import { DashboardWidgetHeader } from './DashboardWidgetHeader';
-import { buildFavoriteIdSet, joinCompactParts } from './dashboardWidgetUtils';
+import { joinCompactParts } from './dashboardWidgetUtils';
 
 const ALL_COLUMNS = DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
     (column) => column.key

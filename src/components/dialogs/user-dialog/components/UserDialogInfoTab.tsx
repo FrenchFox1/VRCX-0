@@ -73,7 +73,7 @@ type PresenceModel = {
 type RepresentedGroup = NonNullable<
     Awaited<
         ReturnType<
-            typeof import('@/repositories/userProfileRepository').getRepresentedGroup
+            typeof import('@/repositories/userProfileRepository').default.getRepresentedGroup
         >
     >
 > & {
