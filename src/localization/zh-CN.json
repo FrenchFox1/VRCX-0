@@ -1855,13 +1855,10 @@
                 "rules_enabled": "{count} 条规则 · 开",
                 "rules_enabled_of_total": "{enabled}/{total} 条规则 · 开",
                 "rules_configured_off": "{count} 条规则 · 关",
-                "auto_reply_enabled": "开",
-                "apps_enabled": "{count} 个应用 · 开",
-                "apps_configured_off": "{count} 个应用 · 关",
                 "last_backup": "上次备份 {date}",
-                "automatic_backup_enabled": "自动备份 · 开",
-                "automatic_backup_configured_off": "自动备份 · 关",
-                "connections_configured": "{count} 个连接"
+                "connections_configured": "{count} 个连接",
+                "apps_count": "{count} 个应用",
+                "automatic_backup": "自动备份"
             },
             "quick_access": {
                 "header": "常用工具",

@@ -1855,13 +1855,10 @@
                 "rules_enabled": "{count} 條規則 · 開",
                 "rules_enabled_of_total": "{enabled}/{total} 條規則 · 開",
                 "rules_configured_off": "{count} 條規則 · 關",
-                "auto_reply_enabled": "開",
-                "apps_enabled": "{count} 個應用程式 · 開",
-                "apps_configured_off": "{count} 個應用程式 · 關",
                 "last_backup": "上次備份 {date}",
-                "automatic_backup_enabled": "自動備份 · 開",
-                "automatic_backup_configured_off": "自動備份 · 關",
-                "connections_configured": "{count} 個連線"
+                "connections_configured": "{count} 個連線",
+                "apps_count": "{count} 個應用程式",
+                "automatic_backup": "自動備份"
             },
             "quick_access": {
                 "header": "常用工具",

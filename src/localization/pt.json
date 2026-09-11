@@ -1855,13 +1855,10 @@
                 "rules_enabled": "{count} regras · Ativo",
                 "rules_enabled_of_total": "{enabled}/{total} regras · Ativo",
                 "rules_configured_off": "{count} regras · Inativo",
-                "auto_reply_enabled": "Ativo",
-                "apps_enabled": "{count} apps · Ativo",
-                "apps_configured_off": "{count} apps · Inativo",
                 "last_backup": "Backup {date}",
-                "automatic_backup_enabled": "Backup automático · Ativo",
-                "automatic_backup_configured_off": "Backup automático · Inativo",
-                "connections_configured": "{count} conexões"
+                "connections_configured": "{count} conexões",
+                "apps_count": "{count} apps",
+                "automatic_backup": "Backup automático"
             },
             "quick_access": {
                 "header": "Acesso rápido",

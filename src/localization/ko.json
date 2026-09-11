@@ -1834,13 +1834,10 @@
                 "rules_enabled": "규칙 {count}개 · 켜짐",
                 "rules_enabled_of_total": "규칙 {enabled}/{total}개 · 켜짐",
                 "rules_configured_off": "규칙 {count}개 · 꺼짐",
-                "auto_reply_enabled": "켜짐",
-                "apps_enabled": "앱 {count}개 · 켜짐",
-                "apps_configured_off": "앱 {count}개 · 꺼짐",
                 "last_backup": "마지막 백업 {date}",
-                "automatic_backup_enabled": "자동 백업 · 켜짐",
-                "automatic_backup_configured_off": "자동 백업 · 꺼짐",
-                "connections_configured": "연결 {count}개"
+                "connections_configured": "연결 {count}개",
+                "apps_count": "앱 {count}개",
+                "automatic_backup": "자동 백업"
             },
             "quick_access": {
                 "header": "빠른 액세스",

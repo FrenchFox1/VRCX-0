@@ -1855,13 +1855,10 @@
                 "rules_enabled": "{count} rules · On",
                 "rules_enabled_of_total": "{enabled}/{total} rules · On",
                 "rules_configured_off": "{count} rules · Off",
-                "auto_reply_enabled": "On",
-                "apps_enabled": "{count} apps · On",
-                "apps_configured_off": "{count} apps · Off",
                 "last_backup": "Backed up {date}",
-                "automatic_backup_enabled": "Auto backup · On",
-                "automatic_backup_configured_off": "Auto backup · Off",
-                "connections_configured": "{count} connections"
+                "connections_configured": "{count} connections",
+                "apps_count": "{count} apps",
+                "automatic_backup": "Auto backup"
             },
             "quick_access": {
                 "header": "Quick access",

@@ -1857,13 +1857,10 @@
                 "rules_enabled": "Правил: {count} · Вкл",
                 "rules_enabled_of_total": "Правил: {enabled}/{total} · Вкл",
                 "rules_configured_off": "Правил: {count} · Выкл",
-                "auto_reply_enabled": "Вкл",
-                "apps_enabled": "Приложений: {count} · Вкл",
-                "apps_configured_off": "Приложений: {count} · Выкл",
                 "last_backup": "Копия {date}",
-                "automatic_backup_enabled": "Автокопия · Вкл",
-                "automatic_backup_configured_off": "Автокопия · Выкл",
-                "connections_configured": "Подключений: {count}"
+                "connections_configured": "Подключений: {count}",
+                "apps_count": "Приложений: {count}",
+                "automatic_backup": "Автокопия"
             },
             "quick_access": {
                 "header": "Быстрый доступ",

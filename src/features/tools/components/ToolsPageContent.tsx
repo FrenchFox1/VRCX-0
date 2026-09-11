@@ -49,6 +49,7 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Switch } from '@/ui/shadcn/switch';
 
 import {
     getCatalogDragId,
@@ -148,7 +149,7 @@ function ToolRow({
             ref={itemRef}
             style={itemStyle}
             className={cn(
-                'group/tool bg-background grid h-9 grid-cols-[1.25rem_16rem_minmax(0,1fr)_1rem_auto_1.5rem] items-center gap-3 px-4 text-sm',
+                'group/tool bg-background grid h-9 grid-cols-[1.25rem_16rem_minmax(0,1fr)_auto_1.5rem] items-center gap-3 px-4 text-sm',
                 '[&:has([aria-expanded=true])]:bg-[var(--vrcx-0-table-row-hover-surface)]',
                 'has-[>button:focus-visible]:bg-[var(--vrcx-0-table-row-hover-surface)]',
                 editMode
@@ -160,7 +161,7 @@ function ToolRow({
         >
             <button
                 type="button"
-                className="col-span-5 grid h-full grid-cols-subgrid items-center gap-3 text-left outline-none"
+                className="col-span-3 grid h-full grid-cols-subgrid items-center gap-3 text-left outline-none"
                 aria-disabled={editMode ? true : undefined}
                 onClick={editMode ? undefined : onClick}
             >
@@ -172,26 +173,18 @@ function ToolRow({
                 <span className="text-muted-foreground truncate text-xs">
                     {description}
                 </span>
-                {isPinned ? (
-                    <PanelLeftIcon
-                        aria-label={sidebarShortcutLabel}
-                        className="text-muted-foreground size-4"
-                    />
-                ) : (
-                    <span aria-hidden="true" />
-                )}
-                <span
-                    className={cn(
-                        'flex items-center justify-end gap-1.5 text-xs whitespace-nowrap tabular-nums',
-                        status
-                            ? status.tone === 'active'
+            </button>
+            <div className="flex items-center justify-end gap-3">
+                {status?.label ? (
+                    <span
+                        className={cn(
+                            'flex items-center gap-1.5 text-xs whitespace-nowrap tabular-nums',
+                            status.tone === 'active'
                                 ? 'text-primary'
                                 : 'text-muted-foreground'
-                            : 'invisible'
-                    )}
-                >
-                    {status ? (
-                        <>
+                        )}
+                    >
+                        {status.toggle ? null : (
                             <span
                                 aria-hidden="true"
                                 className={cn(
@@ -201,11 +194,28 @@ function ToolRow({
                                         : 'bg-muted-foreground/70'
                                 )}
                             />
-                            {status.label}
-                        </>
-                    ) : null}
-                </span>
-            </button>
+                        )}
+                        {status.label}
+                    </span>
+                ) : null}
+                {status?.toggle ? (
+                    <Switch
+                        size="sm"
+                        checked={status.toggle.enabled}
+                        disabled={editMode}
+                        aria-label={title}
+                        onCheckedChange={(checked) => {
+                            void status.toggle?.setEnabled(checked);
+                        }}
+                    />
+                ) : null}
+                {isPinned ? (
+                    <PanelLeftIcon
+                        aria-label={sidebarShortcutLabel}
+                        className="text-muted-foreground size-4"
+                    />
+                ) : null}
+            </div>
             <div className="flex size-6 items-center justify-center">
                 {editMode ? (
                     <Button

@@ -1857,13 +1857,10 @@
                 "rules_enabled": "{count} pravidel · Zap",
                 "rules_enabled_of_total": "{enabled}/{total} pravidel · Zap",
                 "rules_configured_off": "{count} pravidel · Vyp",
-                "auto_reply_enabled": "Zap",
-                "apps_enabled": "{count} aplikací · Zap",
-                "apps_configured_off": "{count} aplikací · Vyp",
                 "last_backup": "Záloha {date}",
-                "automatic_backup_enabled": "Auto záloha · Zap",
-                "automatic_backup_configured_off": "Auto záloha · Vyp",
-                "connections_configured": "{count} připojení"
+                "connections_configured": "{count} připojení",
+                "apps_count": "{count} aplikací",
+                "automatic_backup": "Auto záloha"
             },
             "quick_access": {
                 "header": "Rychlý přístup",

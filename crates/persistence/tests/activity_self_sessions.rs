@@ -158,11 +158,7 @@ fn incremental_refresh_extends_the_last_session_and_advances_the_cursor() {
             ms("2025-01-09T11:00:00Z"),
             false,
         ),
-        (
-            ms("2025-01-09T20:00:00Z"),
-            ms("2025-01-09T21:02:00Z"),
-            true,
-        ),
+        (ms("2025-01-09T20:00:00Z"), ms("2025-01-09T21:02:00Z"), true),
     ];
     assert_eq!(spans(&output.sessions), expected);
     assert_eq!(output.source_count, 2);
@@ -185,11 +181,7 @@ fn expand_refresh_backfills_older_rows_and_ignores_narrower_ranges() {
             ms("2024-11-20T09:00:00Z"),
             false,
         ),
-        (
-            ms("2025-01-09T10:00:00Z"),
-            ms("2025-01-09T11:00:00Z"),
-            true,
-        ),
+        (ms("2025-01-09T10:00:00Z"), ms("2025-01-09T11:00:00Z"), true),
     ];
     assert_eq!(spans(&expanded.sessions), expected);
     assert_eq!(expanded.source_count, 2);

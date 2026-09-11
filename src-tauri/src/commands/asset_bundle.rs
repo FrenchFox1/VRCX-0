@@ -62,7 +62,11 @@ pub async fn asset_bundle__delete_cache(
 #[specta::specta]
 pub async fn asset_bundle__delete_all_cache() -> Result<(), AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    run_blocking("asset bundle cache clear", asset_bundle_cache::delete_all_cache).await
+    run_blocking(
+        "asset bundle cache clear",
+        asset_bundle_cache::delete_all_cache,
+    )
+    .await
 }
 
 #[tauri::command]

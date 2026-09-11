@@ -1851,13 +1851,10 @@
                 "rules_enabled": "ルール {count} 件 · オン",
                 "rules_enabled_of_total": "ルール {enabled}/{total} 件 · オン",
                 "rules_configured_off": "ルール {count} 件 · オフ",
-                "auto_reply_enabled": "オン",
-                "apps_enabled": "アプリ {count} 件 · オン",
-                "apps_configured_off": "アプリ {count} 件 · オフ",
                 "last_backup": "最終バックアップ {date}",
-                "automatic_backup_enabled": "自動バックアップ · オン",
-                "automatic_backup_configured_off": "自動バックアップ · オフ",
-                "connections_configured": "接続 {count} 件"
+                "connections_configured": "接続 {count} 件",
+                "apps_count": "アプリ {count} 件",
+                "automatic_backup": "自動バックアップ"
             },
             "quick_access": {
                 "header": "クイックアクセス",

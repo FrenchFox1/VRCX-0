@@ -64,7 +64,9 @@ mod tests {
 
     #[test]
     fn matching_snapshot_passes_the_gate() {
-        assert!(ensure_snapshot_scope_matches(&snapshot(3), &snapshot(3), "Favorite import").is_ok());
+        assert!(
+            ensure_snapshot_scope_matches(&snapshot(3), &snapshot(3), "Favorite import").is_ok()
+        );
     }
 
     #[test]
