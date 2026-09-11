@@ -8,6 +8,7 @@ import { LinuxRenderingTrialHost } from '@/components/hosts/LinuxRenderingTrialH
 import { ModalHost } from '@/components/hosts/ModalHost';
 import { NotificationHost } from '@/components/hosts/NotificationHost';
 import { PostUpdateChangelogToastHost } from '@/components/hosts/PostUpdateChangelogToastHost';
+import { PreviousInstancesDialogHost } from '@/components/hosts/PreviousInstancesDialogHost';
 import { SystemDialogsHost } from '@/components/hosts/SystemDialogsHost';
 import { ToolsDialogsHost } from '@/components/hosts/ToolsDialogsHost';
 import { AssistantDialogHost } from '@/features/assistant/AssistantDialogHost';
@@ -27,6 +28,7 @@ export function GlobalHosts() {
             <VrcNotificationCenterHost />
             <PostUpdateChangelogToastHost />
             <LaunchDialogHost />
+            <PreviousInstancesDialogHost />
             <SystemDialogsHost />
             <ToolsDialogsHost />
             <AssistantDialogHost />

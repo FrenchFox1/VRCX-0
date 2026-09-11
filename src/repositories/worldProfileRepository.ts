@@ -475,18 +475,6 @@ const worldProfileRepository = Object.freeze({
     registerWorldOpenShare
 });
 
-export {
-    normalize,
-    getWorldProfile,
-    getWorldsByUser,
-    saveWorld,
-    deleteWorld,
-    publishWorld,
-    unpublishWorld,
-    deleteWorldPersistentData,
-    hasWorldPersistentData,
-    getAllWorldsByUser,
-    registerWorldOpenShare
-};
+export { registerWorldOpenShare };
 export type { WorldProfileRecord } from '@/domain/entities/world';
 export default worldProfileRepository;

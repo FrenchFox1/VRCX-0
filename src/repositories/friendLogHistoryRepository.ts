@@ -1,7 +1,4 @@
-import {
-    FRIEND_LOG_TYPES,
-    type FriendLogType
-} from '@/domain/friends/friendLog';
+import type { FriendLogType } from '@/domain/friends/friendLog';
 import {
     commands,
     type FriendLogHistoryCursor,
@@ -126,5 +123,5 @@ const friendLogHistoryRepository = {
     deleteFriendLogHistory
 };
 
-export { FRIEND_LOG_TYPES, deleteFriendLogHistory, getFriendLogHistory };
+export { getFriendLogHistory };
 export default friendLogHistoryRepository;

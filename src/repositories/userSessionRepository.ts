@@ -91,11 +91,5 @@ const userSessionRepository: UserSessionRepository = {
     initUserTablesUncached
 };
 
-export {
-    ensureUserTables,
-    getUserTableContext,
-    initUserTables,
-    initUserTablesUncached,
-    normalizeUserTablePrefix
-};
+export { ensureUserTables, initUserTablesUncached, normalizeUserTablePrefix };
 export default userSessionRepository;

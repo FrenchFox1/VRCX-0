@@ -387,17 +387,5 @@ const notificationPersistenceRepository = Object.freeze({
     updateNotificationExpired
 });
 
-export {
-    addNotificationToDatabase,
-    addNotificationV2ToDatabase,
-    expireNotificationV2,
-    queryNotifications,
-    deleteNotification,
-    expireNotification,
-    sendRequestInvite,
-    sendRequestInvitePhoto,
-    sendBoop,
-    seenNotificationV2,
-    updateNotificationExpired
-};
+export { addNotificationToDatabase, queryNotifications };
 export default notificationPersistenceRepository;

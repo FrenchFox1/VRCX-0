@@ -26,10 +26,6 @@ function record(value: unknown): Record<string, unknown> {
         : {};
 }
 
-export function isGroupId(value: unknown) {
-    return hasGroupIdPrefix(normalizeUserId(value));
-}
-
 export function groupSeed(value: unknown) {
     const group = record(value);
     if (!Object.keys(group).length) {
@@ -38,7 +34,7 @@ export function groupSeed(value: unknown) {
     const groupId = normalizeUserId(
         group.groupId || group.group_id || group.id
     );
-    return isGroupId(groupId) ? group : null;
+    return hasGroupIdPrefix(groupId) ? group : null;
 }
 
 export function groupDisplayName(...values: unknown[]) {
@@ -48,7 +44,7 @@ export function groupDisplayName(...values: unknown[]) {
         if (!text) {
             continue;
         }
-        if (!isGroupId(text)) {
+        if (!hasGroupIdPrefix(text)) {
             return text;
         }
         fallback.push(text);
@@ -94,7 +90,7 @@ export function hasGroupProfileDetails(
             nestedGroup.imageUrl ||
             nestedGroup.image_url
     );
-    return Boolean((name && !isGroupId(name)) || image);
+    return Boolean((name && !hasGroupIdPrefix(name)) || image);
 }
 
 export function resolvePlatformMeta(platform: unknown) {
@@ -316,7 +312,7 @@ export function createLocationGroupRow(
             nestedGroup.id ||
             nestedGroup.groupId ||
             nestedGroup.group_id ||
-            (isGroupId(source.id) ? source.id : '') ||
+            (hasGroupIdPrefix(source.id) ? source.id : '') ||
             fallback.groupId ||
             fallback.group_id ||
             fallback.id

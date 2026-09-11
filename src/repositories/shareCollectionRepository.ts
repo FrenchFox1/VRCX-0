@@ -11,17 +11,17 @@ export type {
     ShareCollectionCreateResult
 };
 
-export function createShareCollection(
+function createShareCollection(
     input: ShareCollectionCreateInput
 ): Promise<ShareCollectionCreateResult> {
     return commands.appShareCollectionCreate(input);
 }
 
-export function openShareCollectionManage(): Promise<null> {
+function openShareCollectionManage(): Promise<null> {
     return commands.appShareCollectionOpenManage();
 }
 
-export function previewSharedCollection(id: string): Promise<ImportPreview> {
+function previewSharedCollection(id: string): Promise<ImportPreview> {
     return commands.appShareCollectionPreview(id);
 }
 

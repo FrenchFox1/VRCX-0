@@ -207,12 +207,4 @@ const myAvatarRepository = Object.freeze({
     getAvailableAvatarStyles
 });
 
-export {
-    getMyAvatarById,
-    getMyAvatars,
-    updateAvatarTags,
-    saveAvatar,
-    createImpostor,
-    getAvailableAvatarStyles
-};
 export default myAvatarRepository;

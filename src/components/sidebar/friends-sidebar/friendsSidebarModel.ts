@@ -1,4 +1,3 @@
-import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     getFriendsSortFunction,
@@ -183,24 +182,6 @@ export function clearStaleOfflineLocation(location: string, state: unknown) {
         return '';
     }
     return location;
-}
-
-export function buildFavoriteIdSet(
-    remoteFavoriteIds: readonly string[] | null | undefined,
-    localFriendFavorites: FavoriteGroupMap | null | undefined
-) {
-    const ids = new Set(
-        (remoteFavoriteIds || []).map(normalizeId).filter(Boolean)
-    );
-    for (const values of Object.values(localFriendFavorites || {})) {
-        for (const id of values) {
-            const normalized = normalizeId(id);
-            if (normalized) {
-                ids.add(normalized);
-            }
-        }
-    }
-    return ids;
 }
 
 export function resolveTrustNameColour(

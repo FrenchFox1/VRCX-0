@@ -177,5 +177,4 @@ class FeedRepository {
 
 const feedRepository = new FeedRepository();
 
-export { FeedRepository };
 export default feedRepository;

@@ -298,18 +298,5 @@ const favoritePersistenceRepository = Object.freeze({
     deleteLocalFavoriteGroup
 });
 
-export {
-    addAvatarToFavorites,
-    addFriendToLocalFavorites,
-    addWorldToFavorites,
-    getExplicitLocalFavoriteGroups,
-    createLocalFavoriteGroup,
-    getWorldFavorites,
-    getAvatarFavorites,
-    getFriendFavorites,
-    addLocalFavorite,
-    removeLocalFavorite,
-    renameLocalFavoriteGroup,
-    deleteLocalFavoriteGroup
-};
+export { getExplicitLocalFavoriteGroups };
 export default favoritePersistenceRepository;
