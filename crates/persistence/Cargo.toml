@@ -24,4 +24,5 @@ tar = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 vrcx-0-core = { path = "../core" }
+vrcx-0-platform = { path = "../platform" }
 zstd = { workspace = true }

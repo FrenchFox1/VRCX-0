@@ -9549,6 +9549,7 @@ dependencies = [
  "tracing",
  "vrcx-0-contracts",
  "vrcx-0-core",
+ "vrcx-0-platform",
  "zstd",
 ]
 
