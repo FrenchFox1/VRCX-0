@@ -279,7 +279,7 @@
     },
     "profile_backup": {
         "header": "Sichern & Wiederherstellen",
-        "tools_description": "VRCX-0-Daten sichern und wiederherstellen.",
+        "tools_description": "VRCX-0-Daten sichern und wiederherstellen",
         "automatic": "Automatische Sicherungen",
         "automatic_description": "Sicherungen regelmäßig im ausgewählten Ordner speichern.",
         "automatic_on": "Ein",
@@ -1852,16 +1852,16 @@
             "header": "Werkzeuge",
             "recent": "Zuletzt verwendet",
             "status": {
-                "rules_enabled": "Aktivierte Regeln: {count}",
-                "rules_enabled_of_total": "{enabled} von {total} Regeln aktiviert",
-                "rules_configured_off": "Konfigurierte Regeln: {count} · Deaktiviert",
-                "auto_reply_enabled": "Automatische Antwort aktiviert",
-                "apps_enabled": "Konfigurierte Apps: {count} · Aktiviert",
-                "apps_configured_off": "Konfigurierte Apps: {count} · Deaktiviert",
-                "last_backup": "Letzte Sicherung: {date}",
-                "automatic_backup_enabled": "Automatische Sicherung aktiviert",
-                "automatic_backup_configured_off": "Automatische Sicherung konfiguriert · Deaktiviert",
-                "connections_configured": "Konfigurierte KI-Verbindungen: {count}"
+                "rules_enabled": "{count} Regeln · An",
+                "rules_enabled_of_total": "{enabled}/{total} Regeln · An",
+                "rules_configured_off": "{count} Regeln · Aus",
+                "auto_reply_enabled": "An",
+                "apps_enabled": "{count} Apps · An",
+                "apps_configured_off": "{count} Apps · Aus",
+                "last_backup": "Gesichert {date}",
+                "automatic_backup_enabled": "Auto-Backup · An",
+                "automatic_backup_configured_off": "Auto-Backup · Aus",
+                "connections_configured": "{count} Verbindungen"
             },
             "quick_access": {
                 "header": "Schnellzugriff",
@@ -1869,12 +1869,11 @@
                 "done": "Fertig",
                 "add": "Zum Schnellzugriff hinzufügen",
                 "remove": "Aus Schnellzugriff entfernen",
-                "already_added": "Bereits zum Schnellzugriff hinzugefügt",
-                "empty": "Ziehe Werkzeuge hierher oder füge sie über ein Werkzeugmenü hinzu.",
+                "already_added": "Bereits im Schnellzugriff",
+                "empty": "Werkzeuge hierher ziehen",
                 "actions": "Werkzeugaktionen",
-                "shortcut_menu": "Verknüpfung hinzufügen…",
-                "tools_page_shortcut": "Schnellzugriff auf der Werkzeugseite",
-                "sidebar_shortcut": "Seitennavigation"
+                "tools_page_shortcut": "An Schnellzugriff anheften",
+                "sidebar_shortcut": "An Seitenleiste anheften"
             },
             "category": {
                 "automation": "Automatisierung",
@@ -1888,9 +1887,9 @@
                 "calendar": "Kalender",
                 "calendar_description": "Kalender für Gruppen-Events",
                 "moderation": "Gruppenmoderation",
-                "moderation_description": "Verwalte Mitglieder, Sperren, Einladungen und Beitrittsanfragen für Gruppen, die du moderierst.",
+                "moderation_description": "Mitglieder, Sperren, Einladungen und Beitrittsanfragen",
                 "my_groups": "Meine Gruppen",
-                "my_groups_description": "Beigetretene Gruppen sortieren, verbergen und verlassen."
+                "my_groups_description": "Beigetretene Gruppen sortieren, ausblenden und verlassen"
             },
             "user": {
                 "discord_names_description": "Finde die Discord-Benutzernamen deiner VRChat-Freunde",
@@ -1916,7 +1915,7 @@
                 "screenshot": "Screenshot",
                 "screenshot_description": "Deine VRChat-Fotos und Aufnahmedetails durchsuchen",
                 "gallery": "Galerie",
-                "gallery_description": "Deine VRChat-Galerie verwalten — Fotos, Profilsymbole und Prints",
+                "gallery_description": "Fotos, Profilsymbole und Prints",
                 "inventory": "Inventar",
                 "inventory_description": "Emojis, Sticker, Items und Kosmetik verwalten"
             },
@@ -1937,11 +1936,11 @@
                 "vrchat_log_description": "Lokale VRChat-Ausgabeprotokolle lesen",
                 "launch_options_description": "VRChat-Startoptionen bearbeiten",
                 "app_launcher": "App-Launcher",
-                "app_launcher_description": "Apps beim Start von VRChat automatisch starten.",
+                "app_launcher_description": "Apps beim Start von VRChat starten",
                 "registry_backup": "VRChat-Registrierungs-Backup",
                 "registry_backup_description": "Ein VRChat-Registrierungs-Backup erstellen oder wiederherstellen",
                 "llm_endpoints": "KI-Verbindungen",
-                "llm_endpoints_description": "Verwalte KI-Dienstverbindungen für Social AI und Übersetzung."
+                "llm_endpoints_description": "KI-Verbindungen für Social AI und Übersetzung"
             },
             "vrchat_log": {
                 "title": "VRChat-Log-Viewer",
@@ -1982,11 +1981,11 @@
             "social_automation": {
                 "header": "Soziale Automatisierung",
                 "status_schedule": "Statuszeitplan",
-                "status_schedule_description": "Statusänderungen planen, optional nur während VRChat läuft.",
+                "status_schedule_description": "Status nach Zeitplan ändern",
                 "room_status_rules": "Instanz- & Welt-Statusregeln",
-                "room_status_rules_description": "Status je nach Instanz, Welt oder Freunden automatisch ändern.",
+                "room_status_rules_description": "Status nach Instanz, Welt oder Freunden ändern",
                 "invite_request_auto_reply": "Automatische Antwort auf Einladungsanfragen",
-                "invite_request_auto_reply_description": "Zugelassene Freunde automatisch einladen, wenn sie beitreten möchten, während VRChat läuft.",
+                "invite_request_auto_reply_description": "Genehmigte Freunde bei Beitrittsanfrage automatisch einladen",
                 "schedule_rules": "Zeitplanregeln",
                 "schedule_rules_description": "Zeitfenster können Status, Statusnachricht oder beides ändern.",
                 "add_rule": "Regel hinzufügen",
@@ -2192,7 +2191,10 @@
                 "detect_failed": "Modelle konnten nicht erkannt werden",
                 "deleted": "Endpunkt gelöscht",
                 "delete_failed": "Endpunkt konnte nicht gelöscht werden"
-            }
+            },
+            "filter_placeholder": "Werkzeuge filtern",
+            "filter_empty": "Keine passenden Werkzeuge",
+            "sections": "Abschnitte"
         },
         "profile": {
             "game_info": {

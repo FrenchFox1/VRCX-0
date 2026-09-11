@@ -279,7 +279,7 @@
     },
     "profile_backup": {
         "header": "Zálohování a obnovení",
-        "tools_description": "Záloha a obnova dat VRCX-0.",
+        "tools_description": "Záloha a obnova dat VRCX-0",
         "automatic": "Automatické zálohy",
         "automatic_description": "Pravidelně ukládejte zálohy do vybrané složky.",
         "automatic_on": "Zapnuto",
@@ -1854,16 +1854,16 @@
             "header": "Nástroje",
             "recent": "Nedávno použité",
             "status": {
-                "rules_enabled": "Počet aktivních pravidel: {count}",
-                "rules_enabled_of_total": "Aktivní pravidla: {enabled} z {total}",
-                "rules_configured_off": "Nastavená pravidla: {count} · Vypnuto",
-                "auto_reply_enabled": "Automatická odpověď je zapnutá",
-                "apps_enabled": "Nastavené aplikace: {count} · Zapnuto",
-                "apps_configured_off": "Nastavené aplikace: {count} · Vypnuto",
-                "last_backup": "Poslední záloha: {date}",
-                "automatic_backup_enabled": "Automatické zálohování je zapnuté",
-                "automatic_backup_configured_off": "Automatické zálohování je nastavené · Vypnuto",
-                "connections_configured": "Nastavená připojení AI: {count}"
+                "rules_enabled": "{count} pravidel · Zap",
+                "rules_enabled_of_total": "{enabled}/{total} pravidel · Zap",
+                "rules_configured_off": "{count} pravidel · Vyp",
+                "auto_reply_enabled": "Zap",
+                "apps_enabled": "{count} aplikací · Zap",
+                "apps_configured_off": "{count} aplikací · Vyp",
+                "last_backup": "Záloha {date}",
+                "automatic_backup_enabled": "Auto záloha · Zap",
+                "automatic_backup_configured_off": "Auto záloha · Vyp",
+                "connections_configured": "{count} připojení"
             },
             "quick_access": {
                 "header": "Rychlý přístup",
@@ -1871,12 +1871,11 @@
                 "done": "Hotovo",
                 "add": "Přidat do rychlého přístupu",
                 "remove": "Odebrat z rychlého přístupu",
-                "already_added": "Již přidáno do rychlého přístupu",
-                "empty": "Přetáhněte sem nástroje, nebo je přidejte z nabídky nástroje.",
+                "already_added": "Už je v rychlém přístupu",
+                "empty": "Přetáhněte nástroje sem",
                 "actions": "Akce nástroje",
-                "shortcut_menu": "Přidat zástupce…",
-                "tools_page_shortcut": "Rychlý přístup na stránce Nástroje",
-                "sidebar_shortcut": "Postranní navigace"
+                "tools_page_shortcut": "Připnout do rychlého přístupu",
+                "sidebar_shortcut": "Připnout na postranní panel"
             },
             "category": {
                 "automation": "Automatizace",
@@ -1890,9 +1889,9 @@
                 "calendar": "Kalendář",
                 "calendar_description": "Kalendář skupinových akcí",
                 "moderation": "Moderace skupiny",
-                "moderation_description": "Spravujte členy, zákazy, pozvánky a žádosti o vstup u skupin, které moderujete.",
+                "moderation_description": "Členové, bany, pozvánky a žádosti",
                 "my_groups": "Moje skupiny",
-                "my_groups_description": "Seřaďte, skryjte a opusťte skupiny, ve kterých jste."
+                "my_groups_description": "Řadit, skrývat a opouštět skupiny"
             },
             "user": {
                 "discord_names_description": "Najděte Discord uživatelská jména svých přátel z VRChat",
@@ -1918,7 +1917,7 @@
                 "screenshot": "Snímek obrazovky",
                 "screenshot_description": "Procházet fotky z VRChatu a podrobnosti o snímcích",
                 "gallery": "Galerie",
-                "gallery_description": "Správa galerie VRChatu — fotky, profilové ikony a printy",
+                "gallery_description": "Fotky, profilové ikony a printy",
                 "inventory": "Inventář",
                 "inventory_description": "Spravujte emoji, samolepky, předměty a kosmetiku"
             },
@@ -1939,11 +1938,11 @@
                 "vrchat_log_description": "Číst lokální výstupní záznamy VRChat",
                 "launch_options_description": "Upravit možnosti spuštění VRChat",
                 "app_launcher": "Spouštěč aplikací",
-                "app_launcher_description": "Spouštět aplikace automaticky při startu VRChatu.",
+                "app_launcher_description": "Spouštět aplikace při startu VRChat",
                 "registry_backup": "Záloha registru VRChat",
                 "registry_backup_description": "Vytvořte nebo obnovte zálohu registru VRChat",
                 "llm_endpoints": "Připojení AI",
-                "llm_endpoints_description": "Spravujte připojení k AI službám pro Social AI a překlad."
+                "llm_endpoints_description": "AI připojení pro Social AI a překlad"
             },
             "vrchat_log": {
                 "title": "Prohlížeč záznamů VRChat",
@@ -1984,11 +1983,11 @@
             "social_automation": {
                 "header": "Automatizace sociálních interakcí",
                 "status_schedule": "Plán stavu",
-                "status_schedule_description": "Naplánujte změny stavu, volitelně jen při spuštěném VRChatu.",
+                "status_schedule_description": "Měnit stav podle rozvrhu",
                 "room_status_rules": "Pravidla stavu podle instance a světa",
-                "room_status_rules_description": "Automatická změna stavu podle instance, světa nebo přátel.",
+                "room_status_rules_description": "Měnit stav podle instance, světa nebo přátel",
                 "invite_request_auto_reply": "Automatická odpověď na žádosti o pozvání",
-                "invite_request_auto_reply_description": "Automaticky pozve schválené přátele, kteří o vstup požádají, dokud VRChat běží.",
+                "invite_request_auto_reply_description": "Automaticky zvát schválené přátele, kteří žádají o vstup",
                 "schedule_rules": "Pravidla plánu",
                 "schedule_rules_description": "Časová okna mohou měnit stav, stavovou zprávu, nebo obojí.",
                 "add_rule": "Přidat pravidlo",
@@ -2194,7 +2193,10 @@
                 "detect_failed": "Nepodařilo se zjistit modely",
                 "deleted": "Endpoint odstraněn",
                 "delete_failed": "Nepodařilo se odstranit endpoint"
-            }
+            },
+            "filter_placeholder": "Filtrovat nástroje",
+            "filter_empty": "Žádné nástroje neodpovídají",
+            "sections": "Sekce"
         },
         "profile": {
             "game_info": {

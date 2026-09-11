@@ -279,7 +279,7 @@
     },
     "profile_backup": {
         "header": "バックアップと復元",
-        "tools_description": "VRCX-0 のデータをバックアップ・復元します。",
+        "tools_description": "VRCX-0 データのバックアップと復元",
         "automatic": "自動バックアップ",
         "automatic_description": "選択したフォルダに定期的にバックアップを保存します。",
         "automatic_on": "オン",
@@ -1848,16 +1848,16 @@
             "header": "ツール",
             "recent": "最近使用したツール",
             "status": {
-                "rules_enabled": "{count} 件のルールが有効",
-                "rules_enabled_of_total": "{total} 件中 {enabled} 件のルールが有効",
-                "rules_configured_off": "設定済みのルール {count} 件はすべて無効",
-                "auto_reply_enabled": "自動返信は有効",
-                "apps_enabled": "設定済みアプリ {count} 件・有効",
-                "apps_configured_off": "設定済みアプリ {count} 件・無効",
-                "last_backup": "前回のバックアップ：{date}",
-                "automatic_backup_enabled": "自動バックアップは有効",
-                "automatic_backup_configured_off": "自動バックアップは設定済み・無効",
-                "connections_configured": "AI 接続を {count} 件設定済み"
+                "rules_enabled": "ルール {count} 件 · オン",
+                "rules_enabled_of_total": "ルール {enabled}/{total} 件 · オン",
+                "rules_configured_off": "ルール {count} 件 · オフ",
+                "auto_reply_enabled": "オン",
+                "apps_enabled": "アプリ {count} 件 · オン",
+                "apps_configured_off": "アプリ {count} 件 · オフ",
+                "last_backup": "最終バックアップ {date}",
+                "automatic_backup_enabled": "自動バックアップ · オン",
+                "automatic_backup_configured_off": "自動バックアップ · オフ",
+                "connections_configured": "接続 {count} 件"
             },
             "quick_access": {
                 "header": "クイックアクセス",
@@ -1865,12 +1865,11 @@
                 "done": "完了",
                 "add": "クイックアクセスに追加",
                 "remove": "クイックアクセスから削除",
-                "already_added": "クイックアクセスに追加済みです",
-                "empty": "ツールをここへドラッグするか、ツールメニューから追加します。",
+                "already_added": "すでにクイックアクセスにあります",
+                "empty": "ツールをここへドラッグ",
                 "actions": "ツール操作",
-                "shortcut_menu": "ショートカットを追加…",
-                "tools_page_shortcut": "ツールページのクイックアクセス",
-                "sidebar_shortcut": "サイドバーナビゲーション"
+                "tools_page_shortcut": "クイックアクセスにピン留め",
+                "sidebar_shortcut": "サイドバーにピン留め"
             },
             "category": {
                 "automation": "自動化",
@@ -1884,9 +1883,9 @@
                 "calendar": "カレンダー",
                 "calendar_description": "グループのイベントカレンダー",
                 "moderation": "グループの管理",
-                "moderation_description": "管理権限を持つグループのメンバー、BAN、招待、参加リクエストを管理します。",
+                "moderation_description": "メンバー、BAN、招待、参加申請",
                 "my_groups": "参加中のグループ",
-                "my_groups_description": "参加しているグループの並び順・公開範囲・退出をまとめて管理します。"
+                "my_groups_description": "参加中グループの並べ替え・非表示・脱退"
             },
             "user": {
                 "discord_names_description": "フレンドの Discord ユーザー名を取得",
@@ -1912,7 +1911,7 @@
                 "screenshot": "スクリーンショット",
                 "screenshot_description": "VRChat の写真と撮影情報を閲覧",
                 "gallery": "ギャラリー",
-                "gallery_description": "VRChat ギャラリーの写真・プロフィールアイコン・プリントを管理",
+                "gallery_description": "写真、プロフィールアイコン、プリント",
                 "inventory": "インベントリ",
                 "inventory_description": "Emoji、ステッカー、アイテム、コスメティックを管理"
             },
@@ -1933,11 +1932,11 @@
                 "vrchat_log_description": "ローカルの VRChat Output Log を表示",
                 "launch_options_description": "VRChat の起動オプションを編集する",
                 "app_launcher": "アプリランチャー",
-                "app_launcher_description": "VRChat 起動時にアプリを自動起動します。",
+                "app_launcher_description": "VRChat 起動時にアプリを起動",
                 "registry_backup": "VRChat レジストリバックアップ",
                 "registry_backup_description": "VRChat のレジストリバックアップを作成または復元",
                 "llm_endpoints": "AI 接続",
-                "llm_endpoints_description": "Social AI と翻訳で使う AI サービスの接続を管理します。"
+                "llm_endpoints_description": "Social AI と翻訳用の AI 接続"
             },
             "vrchat_log": {
                 "title": "VRChat ログビューアー",
@@ -1978,11 +1977,11 @@
             "social_automation": {
                 "header": "ソーシャル自動化",
                 "status_schedule": "ステータススケジュール",
-                "status_schedule_description": "ステータスの変更をスケジュールします。VRChat 起動中のみに制限することも可能です。",
+                "status_schedule_description": "スケジュールでステータスを変更",
                 "room_status_rules": "インスタンス・ワールドステータスルール",
-                "room_status_rules_description": "インスタンス・ワールド・フレンドに応じてステータスを自動変更します。",
+                "room_status_rules_description": "インスタンス・ワールド・フレンドに応じてステータスを変更",
                 "invite_request_auto_reply": "招待リクエストの自動返信",
-                "invite_request_auto_reply_description": "VRChat 起動中に、承認済みのフレンドから参加リクエストが来たら自動で招待します。",
+                "invite_request_auto_reply_description": "参加希望の承認済みフレンドを自動で招待",
                 "schedule_rules": "スケジュールルール",
                 "schedule_rules_description": "時間帯ごとにステータス、ステータスメッセージ、またはその両方を変更できます。",
                 "add_rule": "ルールを追加",
@@ -2188,7 +2187,10 @@
                 "detect_failed": "モデルの検出に失敗しました",
                 "deleted": "エンドポイントを削除しました",
                 "delete_failed": "エンドポイントの削除に失敗しました"
-            }
+            },
+            "filter_placeholder": "ツールを絞り込む",
+            "filter_empty": "一致するツールはありません",
+            "sections": "セクション"
         },
         "profile": {
             "game_info": {
