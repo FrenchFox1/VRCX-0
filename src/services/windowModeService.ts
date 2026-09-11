@@ -333,9 +333,7 @@ export function initializeWindowDisplayMode(): Promise<void> {
                 await tauriClient.webview.setWindowBounds(
                     resolveSidebarWindowTarget(geometry, targetWidth).bounds
                 );
-                return;
             }
-            await applyNormalWindowConstraints();
         } finally {
             await resumeSidebarAutoHide();
         }
