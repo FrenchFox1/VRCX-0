@@ -5004,7 +5004,7 @@
             "header": "VRChat Config JSON",
             "description1": "These options are for advanced users only.",
             "description2": "Leave a field empty to use the default value. A game restart is required to apply changes.",
-            "cache_size": "Cache size",
+            "cache_size": "Cache Size",
             "section_cache": "Cache",
             "section_pictures": "Pictures",
             "section_camera": "Camera",

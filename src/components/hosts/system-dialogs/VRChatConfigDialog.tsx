@@ -10,6 +10,7 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { cn } from '@/lib/utils';
 import { assetBundleRepository } from '@/repositories/assetBundleRepository';
 import {
     openExternalLink,
@@ -68,6 +69,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     applyResolution,
@@ -215,14 +217,36 @@ export function VRChatConfigDialog({
     const [cacheSizeBytes, setCacheSizeBytes] = useState(0);
     const [loading, setLoading] = useState(false);
 
+    async function refreshCacheSize() {
+        const nextCacheSize = await assetBundleRepository
+            .getCacheSize()
+            .catch(() => 0);
+        const cacheBytes = Number(nextCacheSize) || 0;
+        setCacheSizeBytes(cacheBytes);
+        setCacheSize(
+            cacheBytes > 0
+                ? `${(cacheBytes / 1024 / 1024 / 1024).toFixed(2)} GB`
+                : '0 GB'
+        );
+    }
+
+    async function handleRefreshCacheSize() {
+        setLoading(true);
+        try {
+            await refreshCacheSize();
+        } finally {
+            setLoading(false);
+        }
+    }
+
     async function loadConfig() {
         const requestId = loadRequestRef.current + 1;
         loadRequestRef.current = requestId;
         setLoading(true);
         try {
-            const [configJson, nextCacheSize] = await Promise.all([
+            const [configJson] = await Promise.all([
                 readVrchatConfigFileSafe(),
-                assetBundleRepository.getCacheSize().catch(() => 0)
+                refreshCacheSize()
             ]);
             if (requestId !== loadRequestRef.current) {
                 return;
@@ -232,13 +256,6 @@ export function VRChatConfigDialog({
                 picture_output_split_by_date: true,
                 ...parsed
             });
-            const cacheBytes = Number(nextCacheSize) || 0;
-            setCacheSizeBytes(cacheBytes);
-            setCacheSize(
-                cacheBytes > 0
-                    ? `${(cacheBytes / 1024 / 1024 / 1024).toFixed(2)} GB`
-                    : '0 GB'
-            );
         } catch (error) {
             if (requestId !== loadRequestRef.current) {
                 return;
@@ -319,7 +336,7 @@ export function VRChatConfigDialog({
                       )
                     : t('message.cache.deleted')
             });
-            await loadConfig();
+            await refreshCacheSize();
         } catch (error) {
             toast.add({
                 type: 'error',
@@ -348,7 +365,7 @@ export function VRChatConfigDialog({
         try {
             await assetBundleRepository.deleteAllCache();
             toast.add({ type: 'success', title: t('message.cache.deleted') });
-            await loadConfig();
+            await refreshCacheSize();
         } catch (error) {
             toast.add({
                 type: 'error',
@@ -441,7 +458,7 @@ export function VRChatConfigDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="grid max-h-[85vh] w-[calc(100%-2rem)] max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-5xl">
+            <DialogContent className="grid max-h-[85vh] w-[calc(100%-2rem)] max-w-3xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>{t('dialog.config_json.header')}</DialogTitle>
                     <DialogDescription>
@@ -449,322 +466,327 @@ export function VRChatConfigDialog({
                         {t('dialog.config_json.description2')}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid min-h-0 gap-4 overflow-y-auto pr-1 lg:grid-cols-[minmax(0,1fr)_16rem] lg:overflow-hidden lg:pr-0">
-                    <div className="min-h-0 lg:overflow-y-auto lg:pr-1">
-                        <FieldGroup>
-                            <FieldSet>
-                                <FieldLegend variant="label">
-                                    {t('dialog.config_json.section_cache')}
-                                </FieldLegend>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <ConfigNumberField
-                                        id="config-json-cache_size"
-                                        label={t(
-                                            'dialog.config_json.max_cache_size'
-                                        )}
-                                        min={VRCHAT_MIN_CACHE_SIZE_GB}
-                                        placeholder={String(
-                                            VRCHAT_MIN_CACHE_SIZE_GB
-                                        )}
-                                        value={getConfigFieldValue(
-                                            config,
-                                            'cache_size'
-                                        )}
-                                        onValueChange={(value) =>
-                                            setConfig((current) => ({
-                                                ...current,
-                                                cache_size: value
-                                            }))
-                                        }
-                                    />
-                                    <ConfigNumberField
-                                        id="config-json-cache_expiry_delay"
-                                        label={t(
-                                            'dialog.config_json.cache_expiry_delay'
-                                        )}
-                                        min={30}
-                                        placeholder="30"
-                                        value={getConfigFieldValue(
-                                            config,
-                                            'cache_expiry_delay'
-                                        )}
-                                        onValueChange={(value) =>
-                                            setConfig((current) => ({
-                                                ...current,
-                                                cache_expiry_delay: value
-                                            }))
-                                        }
-                                    />
-                                </div>
-                                <ConfigPathField
-                                    id="config-json-cache_directory"
+                <div className="min-h-0 overflow-y-auto pr-1">
+                    <FieldGroup className="gap-6">
+                        <FieldSet>
+                            <FieldLegend>
+                                {t('dialog.config_json.section_cache')}
+                            </FieldLegend>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <ConfigNumberField
+                                    id="config-json-cache_size"
                                     label={t(
-                                        'dialog.config_json.cache_directory'
+                                        'dialog.config_json.max_cache_size'
                                     )}
-                                    placeholder="%AppData%\\..\\LocalLow\\VRChat\\VRChat"
-                                    browseLabel={t(
-                                        'dialog.screenshot_metadata.browse'
+                                    min={VRCHAT_MIN_CACHE_SIZE_GB}
+                                    placeholder={String(
+                                        VRCHAT_MIN_CACHE_SIZE_GB
                                     )}
                                     value={getConfigFieldValue(
                                         config,
-                                        'cache_directory'
+                                        'cache_size'
                                     )}
                                     onValueChange={(value) =>
                                         setConfig((current) => ({
                                             ...current,
-                                            cache_directory: value
+                                            cache_size: value
                                         }))
-                                    }
-                                    onBrowse={() =>
-                                        openFolderBrowser('cache_directory')
                                     }
                                 />
-                            </FieldSet>
-
-                            <FieldSet>
-                                <FieldLegend variant="label">
-                                    {t('dialog.config_json.section_pictures')}
-                                </FieldLegend>
-                                <ConfigPathField
-                                    id="config-json-picture_output_folder"
+                                <ConfigNumberField
+                                    id="config-json-cache_expiry_delay"
                                     label={t(
-                                        'dialog.config_json.picture_directory'
+                                        'dialog.config_json.cache_expiry_delay'
                                     )}
-                                    placeholder="%UserProfile%\\Pictures\\VRChat"
-                                    browseLabel={t(
-                                        'dialog.screenshot_metadata.browse'
-                                    )}
+                                    min={30}
+                                    placeholder="30"
                                     value={getConfigFieldValue(
                                         config,
-                                        'picture_output_folder'
+                                        'cache_expiry_delay'
                                     )}
                                     onValueChange={(value) =>
                                         setConfig((current) => ({
                                             ...current,
-                                            picture_output_folder: value
+                                            cache_expiry_delay: value
                                         }))
                                     }
-                                    onBrowse={() =>
-                                        openFolderBrowser(
-                                            'picture_output_folder'
+                                />
+                            </div>
+                            <ConfigPathField
+                                id="config-json-cache_directory"
+                                label={t('dialog.config_json.cache_directory')}
+                                placeholder={
+                                    '%AppData%\\..\\LocalLow\\VRChat\\VRChat'
+                                }
+                                browseLabel={t(
+                                    'dialog.screenshot_metadata.browse'
+                                )}
+                                value={getConfigFieldValue(
+                                    config,
+                                    'cache_directory'
+                                )}
+                                onValueChange={(value) =>
+                                    setConfig((current) => ({
+                                        ...current,
+                                        cache_directory: value
+                                    }))
+                                }
+                                onBrowse={() =>
+                                    openFolderBrowser('cache_directory')
+                                }
+                            />
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground text-sm">
+                                        {t('dialog.config_json.cache_size')}
+                                    </span>
+                                    <span className="font-mono text-base tabular-nums">
+                                        {cacheSize}
+                                    </span>
+                                    <Tooltip>
+                                        <TooltipTrigger
+                                            render={
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon-xs"
+                                                    disabled={loading}
+                                                    aria-label={t(
+                                                        'dialog.config_json.refresh'
+                                                    )}
+                                                    onClick={() => {
+                                                        handleRefreshCacheSize();
+                                                    }}
+                                                >
+                                                    <RefreshCwIcon
+                                                        data-icon="icon"
+                                                        className={cn(
+                                                            loading &&
+                                                                'animate-spin'
+                                                        )}
+                                                    />
+                                                </Button>
+                                            }
+                                        />
+                                        <TooltipContent>
+                                            {t('dialog.config_json.refresh')}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                                <div className="ml-auto flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={loading}
+                                        onClick={() => {
+                                            handleSweepCache();
+                                        }}
+                                    >
+                                        <SparklesIcon data-icon="inline-start" />
+                                        {t('dialog.config_json.sweep_cache')}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        disabled={loading}
+                                        onClick={() => {
+                                            handleDeleteAllCache();
+                                        }}
+                                    >
+                                        <Trash2Icon data-icon="inline-start" />
+                                        {t('dialog.config_json.delete_cache')}
+                                    </Button>
+                                </div>
+                            </div>
+                        </FieldSet>
+
+                        <FieldSet>
+                            <FieldLegend>
+                                {t('dialog.config_json.section_pictures')}
+                            </FieldLegend>
+                            <ConfigPathField
+                                id="config-json-picture_output_folder"
+                                label={t(
+                                    'dialog.config_json.picture_directory'
+                                )}
+                                placeholder={'%UserProfile%\\Pictures\\VRChat'}
+                                browseLabel={t(
+                                    'dialog.screenshot_metadata.browse'
+                                )}
+                                value={getConfigFieldValue(
+                                    config,
+                                    'picture_output_folder'
+                                )}
+                                onValueChange={(value) =>
+                                    setConfig((current) => ({
+                                        ...current,
+                                        picture_output_folder: value
+                                    }))
+                                }
+                                onBrowse={() =>
+                                    openFolderBrowser('picture_output_folder')
+                                }
+                            />
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <ResolutionSelect
+                                    label={t(
+                                        'dialog.config_json.screenshot_resolution'
+                                    )}
+                                    value={getResolutionKey({
+                                        width: getConfigFieldValue(
+                                            config,
+                                            'screenshot_res_width'
+                                        ),
+                                        height: getConfigFieldValue(
+                                            config,
+                                            'screenshot_res_height'
+                                        )
+                                    })}
+                                    rows={VRChatScreenshotResolutions}
+                                    onValueChange={(value) =>
+                                        setConfig((current) =>
+                                            applyResolution(
+                                                current,
+                                                'screenshot_res',
+                                                value
+                                            )
                                         )
                                     }
                                 />
-                                <div className="grid items-end gap-4 sm:grid-cols-2">
-                                    <ResolutionSelect
-                                        label={t(
-                                            'dialog.config_json.screenshot_resolution'
-                                        )}
-                                        value={getResolutionKey({
-                                            width: getConfigFieldValue(
-                                                config,
-                                                'screenshot_res_width'
-                                            ),
-                                            height: getConfigFieldValue(
-                                                config,
-                                                'screenshot_res_height'
-                                            )
-                                        })}
-                                        rows={VRChatScreenshotResolutions}
-                                        onValueChange={(value) =>
-                                            setConfig((current) =>
-                                                applyResolution(
-                                                    current,
-                                                    'screenshot_res',
-                                                    value
-                                                )
-                                            )
-                                        }
-                                    />
-                                    <Field orientation="horizontal">
-                                        <Checkbox
-                                            id="vrchat-config-picture-sort-by-date"
-                                            checked={Boolean(
-                                                config.picture_output_split_by_date
-                                            )}
-                                            onCheckedChange={(checked) =>
-                                                setConfig((current) => ({
-                                                    ...current,
-                                                    picture_output_split_by_date:
-                                                        Boolean(checked)
-                                                }))
-                                            }
-                                        />
-                                        <FieldLabel htmlFor="vrchat-config-picture-sort-by-date">
-                                            {t(
-                                                'dialog.config_json.picture_sort_by_date'
-                                            )}
-                                        </FieldLabel>
-                                    </Field>
-                                </div>
-                            </FieldSet>
-
-                            <FieldSet>
-                                <FieldLegend variant="label">
-                                    {t('dialog.config_json.section_camera')}
-                                </FieldLegend>
-                                <div className="grid gap-4 sm:grid-cols-3">
-                                    <ConfigNumberField
-                                        id="config-json-fpv_steadycam_fov"
-                                        label={t(
-                                            'dialog.config_json.fpv_steadycam_fov'
-                                        )}
-                                        placeholder="50"
-                                        value={getConfigFieldValue(
-                                            config,
-                                            'fpv_steadycam_fov'
-                                        )}
-                                        onValueChange={(value) =>
-                                            setConfig((current) => ({
-                                                ...current,
-                                                fpv_steadycam_fov: value
-                                            }))
-                                        }
-                                    />
-                                    <ResolutionSelect
-                                        label={t(
-                                            'dialog.config_json.camera_resolution'
-                                        )}
-                                        value={getResolutionKey({
-                                            width: getConfigFieldValue(
-                                                config,
-                                                'camera_res_width'
-                                            ),
-                                            height: getConfigFieldValue(
-                                                config,
-                                                'camera_res_height'
-                                            )
-                                        })}
-                                        rows={VRChatCameraResolutions}
-                                        onValueChange={(value) =>
-                                            setConfig((current) =>
-                                                applyResolution(
-                                                    current,
-                                                    'camera_res',
-                                                    value
-                                                )
-                                            )
-                                        }
-                                    />
-                                    <ResolutionSelect
-                                        label={t(
-                                            'dialog.config_json.spout_resolution'
-                                        )}
-                                        value={getResolutionKey({
-                                            width: getConfigFieldValue(
-                                                config,
-                                                'camera_spout_res_width'
-                                            ),
-                                            height: getConfigFieldValue(
-                                                config,
-                                                'camera_spout_res_height'
-                                            )
-                                        })}
-                                        rows={VRChatScreenshotResolutions}
-                                        onValueChange={(value) =>
-                                            setConfig((current) =>
-                                                applyResolution(
-                                                    current,
-                                                    'camera_spout_res',
-                                                    value
-                                                )
-                                            )
-                                        }
-                                    />
-                                </div>
-                            </FieldSet>
-
-                            <FieldSeparator />
-
+                            </div>
                             <Field orientation="horizontal">
                                 <Checkbox
-                                    id="vrchat-config-disable-rich-presence"
+                                    id="vrchat-config-picture-sort-by-date"
                                     checked={Boolean(
-                                        config.disableRichPresence
+                                        config.picture_output_split_by_date
                                     )}
                                     onCheckedChange={(checked) =>
                                         setConfig((current) => ({
                                             ...current,
-                                            disableRichPresence:
+                                            picture_output_split_by_date:
                                                 Boolean(checked)
                                         }))
                                     }
                                 />
-                                <FieldLabel htmlFor="vrchat-config-disable-rich-presence">
+                                <FieldLabel htmlFor="vrchat-config-picture-sort-by-date">
                                     {t(
-                                        'dialog.config_json.disable_discord_presence'
+                                        'dialog.config_json.picture_sort_by_date'
                                     )}
                                 </FieldLabel>
                             </Field>
-                        </FieldGroup>
-                    </div>
-                    <div className="flex min-h-0 flex-col gap-4 lg:overflow-y-auto lg:border-l lg:pl-4">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-muted-foreground text-xs">
-                                {t('dialog.config_json.cache_size')}
-                            </span>
-                            <span className="font-mono text-2xl leading-none tabular-nums">
-                                {cacheSize}
-                            </span>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                disabled={loading}
-                                className="justify-start"
-                                onClick={() => {
-                                    loadConfig();
-                                }}
-                            >
-                                <RefreshCwIcon data-icon="inline-start" />
-                                {t('dialog.config_json.refresh')}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                disabled={loading}
-                                className="justify-start"
-                                onClick={() => {
-                                    handleSweepCache();
-                                }}
-                            >
-                                <SparklesIcon data-icon="inline-start" />
-                                {t('dialog.config_json.sweep_cache')}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                disabled={loading}
-                                className="justify-start"
-                                onClick={() => {
-                                    handleDeleteAllCache();
-                                }}
-                            >
-                                <Trash2Icon data-icon="inline-start" />
-                                {t('dialog.config_json.delete_cache')}
-                            </Button>
-                        </div>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground mt-auto justify-start"
-                            onClick={() => {
-                                openExternalLink(
-                                    links.vrchatDocsConfigurationFile
-                                );
-                            }}
-                        >
-                            <ExternalLinkIcon data-icon="inline-start" />
-                            {t('dialog.config_json.vrchat_docs')}
-                        </Button>
-                    </div>
+                        </FieldSet>
+
+                        <FieldSet>
+                            <FieldLegend>
+                                {t('dialog.config_json.section_camera')}
+                            </FieldLegend>
+                            <div className="grid gap-4 sm:grid-cols-3">
+                                <ConfigNumberField
+                                    id="config-json-fpv_steadycam_fov"
+                                    label={t(
+                                        'dialog.config_json.fpv_steadycam_fov'
+                                    )}
+                                    placeholder="50"
+                                    value={getConfigFieldValue(
+                                        config,
+                                        'fpv_steadycam_fov'
+                                    )}
+                                    onValueChange={(value) =>
+                                        setConfig((current) => ({
+                                            ...current,
+                                            fpv_steadycam_fov: value
+                                        }))
+                                    }
+                                />
+                                <ResolutionSelect
+                                    label={t(
+                                        'dialog.config_json.camera_resolution'
+                                    )}
+                                    value={getResolutionKey({
+                                        width: getConfigFieldValue(
+                                            config,
+                                            'camera_res_width'
+                                        ),
+                                        height: getConfigFieldValue(
+                                            config,
+                                            'camera_res_height'
+                                        )
+                                    })}
+                                    rows={VRChatCameraResolutions}
+                                    onValueChange={(value) =>
+                                        setConfig((current) =>
+                                            applyResolution(
+                                                current,
+                                                'camera_res',
+                                                value
+                                            )
+                                        )
+                                    }
+                                />
+                                <ResolutionSelect
+                                    label={t(
+                                        'dialog.config_json.spout_resolution'
+                                    )}
+                                    value={getResolutionKey({
+                                        width: getConfigFieldValue(
+                                            config,
+                                            'camera_spout_res_width'
+                                        ),
+                                        height: getConfigFieldValue(
+                                            config,
+                                            'camera_spout_res_height'
+                                        )
+                                    })}
+                                    rows={VRChatScreenshotResolutions}
+                                    onValueChange={(value) =>
+                                        setConfig((current) =>
+                                            applyResolution(
+                                                current,
+                                                'camera_spout_res',
+                                                value
+                                            )
+                                        )
+                                    }
+                                />
+                            </div>
+                        </FieldSet>
+
+                        <FieldSeparator />
+
+                        <Field orientation="horizontal">
+                            <Checkbox
+                                id="vrchat-config-disable-rich-presence"
+                                checked={Boolean(config.disableRichPresence)}
+                                onCheckedChange={(checked) =>
+                                    setConfig((current) => ({
+                                        ...current,
+                                        disableRichPresence: Boolean(checked)
+                                    }))
+                                }
+                            />
+                            <FieldLabel htmlFor="vrchat-config-disable-rich-presence">
+                                {t(
+                                    'dialog.config_json.disable_discord_presence'
+                                )}
+                            </FieldLabel>
+                        </Field>
+                    </FieldGroup>
                 </div>
                 <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground sm:mr-auto"
+                        onClick={() => {
+                            openExternalLink(links.vrchatDocsConfigurationFile);
+                        }}
+                    >
+                        <ExternalLinkIcon data-icon="inline-start" />
+                        {t('dialog.config_json.vrchat_docs')}
+                    </Button>
                     <Button
                         type="button"
                         variant="outline"
