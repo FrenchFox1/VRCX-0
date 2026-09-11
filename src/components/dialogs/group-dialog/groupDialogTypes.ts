@@ -28,7 +28,7 @@ export type GroupActionStatus =
     | 'block';
 
 export type GroupRemoteTab = 'posts' | 'members' | 'photos';
-export type GroupRemoteStatusValue = RemoteTabStatus;
+type GroupRemoteStatusValue = RemoteTabStatus;
 
 export type GroupRemoteData = {
     posts: GroupPostRecord[];

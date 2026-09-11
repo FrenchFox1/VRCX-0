@@ -116,7 +116,7 @@ function isPresentValue(value: unknown): boolean {
     return value !== undefined && value !== null && value !== '';
 }
 
-export function userIdForRosterRow(user: unknown): string {
+function userIdForRosterRow(user: unknown): string {
     return firstText(
         field(user, 'id'),
         field(user, 'userId'),

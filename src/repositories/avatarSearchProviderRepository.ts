@@ -16,7 +16,7 @@ export type AvatarSearchProviderConfig = {
 
 type ProviderItem = Record<string, unknown>;
 
-export type AvatarSearchProviderResult = {
+type AvatarSearchProviderResult = {
     avatars: AvatarProfileRecord[];
     provider: string;
     query: string;

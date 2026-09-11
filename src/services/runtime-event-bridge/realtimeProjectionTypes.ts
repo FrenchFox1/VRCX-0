@@ -58,7 +58,7 @@ export type RealtimeUserProjectionPayload = Omit<
     users: RealtimeUserRecord[];
 };
 
-export type RealtimeGameStatePatch = Partial<{
+type RealtimeGameStatePatch = Partial<{
     currentLocation: string;
     currentWorldId: string;
     currentWorldName: string;
@@ -79,7 +79,7 @@ export type RealtimeCurrentUserProjectionPayload = Omit<
     gameStatePatch?: RealtimeGameStatePatch | null;
 };
 
-export type RealtimeNotificationUpsertPayload = Omit<
+type RealtimeNotificationUpsertPayload = Omit<
     RealtimeNotificationUpsert,
     'notification' | 'insertDefaults'
 > & {

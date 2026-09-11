@@ -441,11 +441,4 @@ export {
     instancePresenceKey,
     sameInstancePresenceFact
 };
-export type {
-    InstancePlayerFact,
-    InstancePresenceFact,
-    InstancePresenceFactInput,
-    InstancePresenceSource,
-    InstanceRosterModelInput,
-    RosterUserRow
-};
+export type { InstancePresenceFact, InstancePresenceFactInput, RosterUserRow };

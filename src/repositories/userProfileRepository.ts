@@ -479,5 +479,4 @@ const userProfileRepository = Object.freeze({
     removeCurrentUserTags
 });
 
-export type { UserProfileRecord } from '@/domain/entities/user';
 export default userProfileRepository;

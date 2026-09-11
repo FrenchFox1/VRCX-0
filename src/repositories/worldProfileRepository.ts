@@ -476,5 +476,4 @@ const worldProfileRepository = Object.freeze({
 });
 
 export { registerWorldOpenShare };
-export type { WorldProfileRecord } from '@/domain/entities/world';
 export default worldProfileRepository;

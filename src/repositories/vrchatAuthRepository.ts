@@ -110,5 +110,4 @@ export {
     cancelLoginSession,
     getFileAnalysis
 };
-export type { StartLoginSessionInput };
 export default vrchatAuthRepository;

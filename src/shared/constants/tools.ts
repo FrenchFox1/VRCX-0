@@ -29,7 +29,7 @@ export type ToolDialogKey =
     | 'llm-endpoints'
     | 'profile-backup';
 
-export type ToolHostCapabilityKey =
+type ToolHostCapabilityKey =
     | 'gameLaunch'
     | 'gameProcessMonitor'
     | 'registryPrefs'
@@ -555,7 +555,6 @@ const toolNavDefinitions: ToolNavDefinition[] = [
     ...legacyToolNavDefinitions
 ];
 
-const defaultHiddenToolNavKeys = toolNavDefinitions.map((tool) => tool.key);
 const isToolNavKey = (key: unknown): key is string =>
     typeof key === 'string' && key.startsWith('tool-');
 
@@ -564,9 +563,7 @@ function getToolsByCategory(categoryKey: ToolCategoryKey): ToolDefinition[] {
 }
 
 export {
-    TOOLS_QUICK_ACCESS_UPDATED_EVENT,
     TOOLS_STATUS_UPDATED_EVENT,
-    defaultHiddenToolNavKeys,
     getEquivalentToolNavKeys,
     isToolNavKey,
     knownToolKeys,
@@ -585,10 +582,4 @@ export {
     toolNavDefinitions,
     getToolsByCategory
 };
-export type {
-    ToolAction,
-    ToolCategory,
-    ToolCategoryKey,
-    ToolDefinition,
-    ToolNavDefinition
-};
+export type { ToolDefinition };

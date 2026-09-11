@@ -5,11 +5,7 @@ import {
     type ShareCollectionCreateResult
 } from '@/platform/tauri/bindings';
 
-export type {
-    ImportPreview,
-    ShareCollectionCreateInput,
-    ShareCollectionCreateResult
-};
+export type { ShareCollectionCreateResult };
 
 function createShareCollection(
     input: ShareCollectionCreateInput

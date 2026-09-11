@@ -35,7 +35,7 @@ export const MY_AVATARS_DEFAULT_CARD_SCALE = 0.6;
 export const MY_AVATARS_GRID_DENSITY_CONFIG_KEY = 'VRCX_MyAvatarsGridDensityV2';
 export const MY_AVATARS_LEGACY_GRID_DENSITY_CONFIG_KEY =
     'VRCX_MyAvatarsGridDensity';
-export const MY_AVATARS_DEFAULT_GRID_DENSITY = 'standard';
+const MY_AVATARS_DEFAULT_GRID_DENSITY = 'standard';
 export const MY_AVATARS_GRID_DENSITY_OPTIONS = Object.freeze([
     {
         value: 'standard',

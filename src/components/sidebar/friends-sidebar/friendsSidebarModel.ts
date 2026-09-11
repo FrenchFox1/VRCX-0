@@ -10,8 +10,6 @@ import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 import {
     buildSameInstanceFriendGroups,
-    isOnlineSameInstanceFriend,
-    resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
 import type {
@@ -207,7 +205,7 @@ export function resolveTrustNameColour(
     return getTrustColor(friend, trustColor);
 }
 
-export function legacyStatusDotClassName(status: unknown) {
+function legacyStatusDotClassName(status: unknown) {
     const normalizedStatus = userStatusFromValue(status);
     if (normalizedStatus && normalizedStatus !== 'offline') {
         return SOLID_USER_STATUS_DOT_CLASS_NAMES[normalizedStatus];
@@ -412,17 +410,6 @@ export function sortActiveRows(
 ) {
     const sortedRows = sortRows(rows, prefs);
     return [...sortedRows].sort(compareByActiveStatus);
-}
-
-export function sameInstanceLocationTag(
-    friend: SidebarFriendRecord,
-    lastLocation: LastLocationSnapshot | null | undefined
-) {
-    const source = readFriendStatusSource(friend);
-    if (!isOnlineSameInstanceFriend(source)) {
-        return '';
-    }
-    return resolveSameInstanceFriendLocation(source, lastLocation);
 }
 
 export function buildSameInstanceGroups(

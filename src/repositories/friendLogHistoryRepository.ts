@@ -18,7 +18,7 @@ export interface FriendLogHistoryRow {
     previousTrustLevel?: string;
 }
 
-export interface FriendLogHistoryEntry {
+interface FriendLogHistoryEntry {
     rowId?: number | string | null;
     created_at?: string | null;
     type?: FriendLogType | string | null;
@@ -30,7 +30,7 @@ export interface FriendLogHistoryEntry {
     previousTrustLevel?: string | null;
 }
 
-export interface FriendLogHistoryOptions {
+interface FriendLogHistoryOptions {
     targetUserId?: string;
     types?: string[];
     excludedTypes?: string[];

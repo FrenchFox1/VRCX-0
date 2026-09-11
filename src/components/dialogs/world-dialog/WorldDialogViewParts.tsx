@@ -22,8 +22,7 @@ import type { WorldInstanceRecord } from './worldInstances';
 export {
     firstText,
     InstanceUserTiles,
-    mergeInstanceUsers,
-    normalizeInstanceUsers
+    mergeInstanceUsers
 } from './WorldDialogInstanceUsers';
 
 export type InstanceGroupRecord = EntityRecord & {

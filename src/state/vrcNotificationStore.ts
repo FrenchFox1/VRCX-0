@@ -33,7 +33,7 @@ let notificationRowsRevision = 0;
 import type { LoadStatus } from '@/domain/shared/types';
 
 export type { LoadStatus };
-export type NotificationCategoryKey = 'friend' | 'group' | 'other';
+type NotificationCategoryKey = 'friend' | 'group' | 'other';
 type NotificationPatch = Partial<{
     displayName: string;
     senderDisplayName: string;

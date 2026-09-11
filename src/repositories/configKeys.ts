@@ -1,6 +1,6 @@
 import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 
-export type ConfigValueType = 'string' | 'int' | 'bool' | 'float';
+type ConfigValueType = 'string' | 'int' | 'bool' | 'float';
 export type ConfigDefaultValue = string | number | boolean | null;
 
 export interface ConfigKeyDefinition {

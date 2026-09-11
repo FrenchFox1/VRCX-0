@@ -2,10 +2,7 @@ import mediaFileRepository from './mediaFileRepository';
 import vrchatMediaRepository from './vrchatMediaRepository';
 
 export type {
-    InventoryAsset,
-    InventoryItemMetadata,
     InventoryItemRecord,
-    InventoryItemsResponse,
     MediaFileRecord,
     MediaPrintRecord
 } from './vrchatMediaRepository';

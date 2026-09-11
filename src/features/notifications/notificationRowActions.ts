@@ -97,7 +97,7 @@ export function getDiscIcon(
     return BellIcon;
 }
 
-export function getResponseIcon(
+function getResponseIcon(
     response: NotificationResponse | null | undefined,
     notificationType: string | undefined
 ): LucideIcon {

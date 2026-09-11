@@ -16,7 +16,7 @@ import type {
     WorldNewInstanceForm
 } from './worldNewInstanceTypes';
 
-export function isWorldNotFoundMessage(message: unknown, worldId: string) {
+function isWorldNotFoundMessage(message: unknown, worldId: string) {
     const normalizedMessage = normalizeString(message);
     const normalizedWorldId = normalizeString(worldId);
     const match = /^World\s+(.+?)\s+not found\.?$/i.exec(normalizedMessage);

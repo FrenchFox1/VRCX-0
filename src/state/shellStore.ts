@@ -17,7 +17,7 @@ const MAX_NAV_WIDTH = 480;
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type TableDensity = 'standard' | 'compact';
 export type NotificationLayout = 'notification-center' | 'table';
-export type WindowDisplayMode = 'normal' | 'sidebar';
+type WindowDisplayMode = 'normal' | 'sidebar';
 
 const WINDOW_DISPLAY_MODE_STORAGE_KEY = 'vrcx-main-window-display-mode';
 

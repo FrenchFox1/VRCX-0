@@ -9,9 +9,9 @@ import {
 
 import configRepository from './configRepository';
 
-export type LocalFavoriteKind = FavoriteEntityKind;
+type LocalFavoriteKind = FavoriteEntityKind;
 
-export interface WorldFavoriteRow {
+interface WorldFavoriteRow {
     created_at: string;
     worldId: string;
     groupName: string;

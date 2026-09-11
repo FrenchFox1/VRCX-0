@@ -10,7 +10,7 @@ import type {
     PlayerListSourceRow
 } from './playerListTypes';
 
-export function normalizePlayerUserId(value: unknown) {
+function normalizePlayerUserId(value: unknown) {
     const normalized = normalizeString(value);
     return hasUserIdPrefix(normalized) ? normalized : '';
 }
