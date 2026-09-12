@@ -365,6 +365,23 @@
     );
 }
 
+.entity-dialog {
+    --entity-dialog-ground: var(--surface-panel);
+    --card: var(--background);
+}
+
+.dark .entity-dialog {
+    --entity-dialog-ground: var(--popover);
+    --card: color-mix(in oklch, var(--popover) 97.5%, var(--foreground));
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .entity-dialog {
+        --entity-dialog-ground: var(--popover);
+        --card: color-mix(in oklch, var(--popover) 97.5%, var(--foreground));
+    }
+}
+
 :root[data-theme-color]:not([data-theme-color='default']) {
     --primary: var(--vrcx-theme-primary);
     --primary-foreground: var(--vrcx-theme-primary-foreground);
