@@ -791,6 +791,63 @@
         "toggle_details": "Afficher / masquer les détails",
         "clear_selection": "Effacer la sélection"
     },
+    "privacy_lock": {
+        "locked_title": "Verouillé",
+        "field": {
+            "password": "Mot de passe",
+            "current_password": "Mot de passe actuel",
+            "new_password": "Nouveau mot de passe",
+            "confirm_password": "Confirmer le nouveau mot de passe",
+            "account_password": "Mot de passe du compte VRChat"
+        },
+        "action": {
+            "lock": "Verrouiller",
+            "unlock": "Déverrouiller",
+            "forgot": "Code oublié ?",
+            "back": "Retour",
+            "set": "Définir le code",
+            "change": "Modifier le code",
+            "clear": "Supprimer le code",
+            "clear_link": "Supprimer le code",
+            "clear_and_unlock": "Retirer le code",
+            "background_mode": "Mode arrière-plan",
+            "logout": "Se déconnecter"
+        },
+        "setup": {
+            "create_title": "Définir un code",
+            "create_description": "Le code masque VRCX-0 pendant l'enregistrement. Ce n'est pas un chiffrement — cela empêche seulement quelqu'un d'y accéder sur votre ordinateur.",
+            "change_title": "Modifier le code",
+            "change_description": "Saisissez votre code actuel, puis choisissez-en un nouveau.",
+            "clear_title": "Supprimer le code",
+            "clear_description": "Saisissez le mot de passe de votre compte VRChat pour supprimer le code. La vérification est effectuée localement dans VRCX-0; aucune donnée n'est envoyée aux serveurs VRChat."
+        },
+        "recover": {
+            "description": "Saisissez le mot de passe du compte VRChat pour retirer le code. La vérification est effectuée localement dans VRCX-0; aucune donnée n'est envoyée aux serveurs VRChat."
+        },
+        "settings": {
+            "label": "Code de sécurité",
+            "description": "Masquer la fenêtre derrière un code. Verouillez depuis le menu de la barre d'outils ou le menu du compte dans le panneau latéral.",
+            "status_set": "Code défini",
+            "status_unset": "Aucun code"
+        },
+        "toast": {
+            "set": "Code de verrouillage défini",
+            "changed": "Code de verrouillage modifié",
+            "cleared": "Code de verrouillage supprimé"
+        },
+        "error": {
+            "wrong_password": "Code incorrect",
+            "incomplete": "saisissez les {count} chiffres",
+            "mismatch": "Le code ne correspond pas",
+            "current_required": "Saisissez le code actuel",
+            "account_password_required": "Saisissez le mot de passe du compte VRChat",
+            "account_password_unavailable": "Ce compte n'a pas de mot de passe enregistré, donc le verrouillage ne peut pas être supprimé ici. Supprimez-le manuellement depuis les données de l'application.",
+            "password_not_set": "Aucun code défini",
+            "password_already_set": "Un code de verrouillage est déjà défini",
+            "no_session": "Connectez-vous avant d'utiliser le verrouillage",
+            "failed": "L'opération de verrouillage a échoué"
+        }
+    },
     "side_panel": {
         "search_placeholder": "Rechercher",
         "search_input_placeholder": "Rechercher ou accéder à une page…",
@@ -856,7 +913,6 @@
             "favorites_section": "Favoris",
             "group_by_instance": "Grouper par instance",
             "split_favorite_friends": "Afficher les groupes de favoris",
-            "show_grouped_friends": "Afficher les amis groupés",
             "same_instance_above_favorites": "Prioriser la même instance",
             "sort_secondary": "Puis par",
             "sort_tertiary": "Puis par",
@@ -2218,14 +2274,15 @@
             },
             "feedback": {
                 "title": "Envoyer un retour d'expérience",
-                "description": "Le retour d'expérience est anonyme. Nous lisons chaque message, mais ne pouvons pas y répondre directement.",
+                "description": "Le retour d'expérience est anonyme. Nous lisons chaque message.",
                 "privacy_note": "Aucune information concernant le compte n'est attachée.",
                 "placeholder": "Dites-nous ce qui fonctionne, ce qui ne fonctionne pas, ou ce que vous aimeriez voir...",
                 "submit": "Envoyer",
                 "submitting": "Envoi en cours…",
                 "thanks": "Merci pour votre retour d'expérience !",
                 "cooldown": "vous pouvez envoyer à nouveau dans {{seconds}}s",
-                "more_help": "Besoin d'une réponse, ou voulez-vous attacher les journaux ?",
+                "reply_note": "Besoin d'une réponse ? Incluez votre adresse e-mail dans votre retour d'expérience.",
+                "more_help": "Vous pouvez nous contacter ou inclure votre journal de débogage via :",
                 "error_generic": "Impossible d'envoyer le retour d'expérience. Veuillez réessayer plus tard."
             },
             "ai": {
