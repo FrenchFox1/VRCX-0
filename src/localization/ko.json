@@ -496,6 +496,7 @@
         "tray": {
             "open": "VRCX-0 열기",
             "backgroundMode": "백그라운드 모드",
+            "lock": "잠금",
             "doNotDisturb": "방해 금지",
             "doNotDisturbOneHour": "1시간",
             "doNotDisturbThreeHours": "3시간",
@@ -789,6 +790,63 @@
         "toggle_details": "상세 정보 표시/숨기기",
         "clear_selection": "선택 해제"
     },
+    "privacy_lock": {
+        "locked_title": "잠김",
+        "field": {
+            "password": "잠금 비밀번호",
+            "current_password": "현재 잠금 비밀번호",
+            "new_password": "새 잠금 비밀번호",
+            "confirm_password": "새 잠금 비밀번호 확인",
+            "account_password": "VRChat 계정 비밀번호"
+        },
+        "action": {
+            "lock": "잠금",
+            "unlock": "잠금 해제",
+            "forgot": "잠금 비밀번호를 잊으셨나요?",
+            "back": "뒤로",
+            "set": "비밀번호 설정",
+            "change": "비밀번호 변경",
+            "clear": "비밀번호 제거",
+            "clear_link": "잠금 비밀번호 제거",
+            "clear_and_unlock": "잠금 제거",
+            "background_mode": "백그라운드 모드",
+            "logout": "로그아웃"
+        },
+        "setup": {
+            "create_title": "잠금 비밀번호 설정",
+            "create_description": "잠그면 VRCX-0가 이 4자리 코드 뒤에 가려진 채로 계속 기록합니다. 암호화가 아니라 PC를 쓰는 다른 사람이 둘러보지 못하게 막는 기능입니다.",
+            "change_title": "잠금 비밀번호 변경",
+            "change_description": "현재 잠금 비밀번호를 입력한 뒤 새 비밀번호를 정하세요.",
+            "clear_title": "잠금 비밀번호 제거",
+            "clear_description": "VRChat 계정 비밀번호를 입력하면 잠금 코드를 제거합니다. 로컬에 저장된 비밀번호와만 비교하며 VRChat 서버에 연결하지 않습니다."
+        },
+        "recover": {
+            "description": "VRChat 계정 비밀번호를 입력하면 잠금을 제거합니다. 로컬에 저장된 비밀번호와만 비교하며 VRChat 서버에 연결하지 않습니다."
+        },
+        "settings": {
+            "label": "개인정보 잠금",
+            "description": "VRCX-0가 계속 기록하는 동안 창을 잠금 비밀번호로 가립니다. 트레이 메뉴나 사이드바의 계정 메뉴에서 잠글 수 있습니다.",
+            "status_set": "비밀번호 설정됨",
+            "status_unset": "비밀번호 없음"
+        },
+        "toast": {
+            "set": "잠금 비밀번호를 설정했습니다",
+            "changed": "잠금 비밀번호를 변경했습니다",
+            "cleared": "잠금 비밀번호를 제거했습니다"
+        },
+        "error": {
+            "wrong_password": "비밀번호가 올바르지 않습니다",
+            "incomplete": "{count}자리를 모두 입력하세요",
+            "mismatch": "비밀번호가 일치하지 않습니다",
+            "current_required": "현재 잠금 비밀번호를 입력하세요",
+            "account_password_required": "VRChat 계정 비밀번호를 입력하세요",
+            "account_password_unavailable": "이 계정은 비밀번호가 저장되어 있지 않아 여기서 잠금을 제거할 수 없습니다. 앱 데이터에서 직접 정리하세요.",
+            "password_not_set": "잠금 비밀번호가 설정되어 있지 않습니다",
+            "password_already_set": "잠금 비밀번호가 이미 설정되어 있습니다",
+            "no_session": "잠금을 사용하려면 먼저 로그인하세요",
+            "failed": "잠금 작업에 실패했습니다"
+        }
+    },
     "side_panel": {
         "search_placeholder": "검색",
         "search_input_placeholder": "검색하거나 페이지로 이동…",
@@ -853,7 +911,6 @@
             "favorites_section": "즐겨찾기",
             "group_by_instance": "인스턴스별로 그룹화",
             "split_favorite_friends": "즐겨찾는 그룹 표시",
-            "show_grouped_friends": "그룹화된 친구 표시",
             "same_instance_above_favorites": "동일한 인스턴스 우선순위 지정",
             "sort_secondary": "그런 다음",
             "sort_tertiary": "그런 다음",
@@ -2195,14 +2252,15 @@
             },
             "feedback": {
                 "title": "피드백 보내기",
-                "description": "피드백은 기본적으로 익명으로 전송되며, 모든 메시지를 읽고 있습니다. 답변이 필요하시면 피드백 내용에 이메일 주소를 함께 적어 주세요.",
+                "description": "피드백은 기본적으로 익명으로 전송되며, 모든 메시지를 읽고 있습니다.",
                 "privacy_note": "계정 정보는 포함되지 않습니다.",
                 "placeholder": "잘 되는 점, 불편한 점, 추가됐으면 하는 기능 등을 알려 주세요…",
                 "submit": "보내기",
                 "submitting": "전송 중…",
                 "thanks": "피드백 감사합니다!",
                 "cooldown": "{{seconds}}초 후에 다시 보낼 수 있습니다",
-                "more_help": "답변이 필요하거나 로그를 첨부하고 싶다면",
+                "reply_note": "답변이 필요하시면 피드백에 이메일 주소를 적어 주세요.",
+                "more_help": "아래 채널로 문의하거나 로그를 첨부하실 수도 있습니다:",
                 "error_generic": "피드백을 보내지 못했습니다. 잠시 후 다시 시도해 주세요."
             },
             "ai": {

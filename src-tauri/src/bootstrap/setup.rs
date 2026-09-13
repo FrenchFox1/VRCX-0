@@ -334,6 +334,10 @@ fn queue_deep_link_url(app: &tauri::AppHandle, value: &str) {
         tracing::warn!(url = %value, "ignored deep link before app state was ready");
         return;
     };
+    if state.runtime_host().privacy_lock().is_locked() {
+        tracing::info!("dropped deep link while the privacy lock is engaged");
+        return;
+    }
     queue_deep_link_action(state.pending_deep_links(), action, || {
         let app_handle = app.clone();
         tauri::async_runtime::spawn(async move {

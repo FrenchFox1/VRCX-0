@@ -496,6 +496,7 @@
         "tray": {
             "open": "開啟 VRCX-0",
             "backgroundMode": "背景模式",
+            "lock": "鎖定",
             "doNotDisturb": "勿擾模式",
             "doNotDisturbOneHour": "1 小時",
             "doNotDisturbThreeHours": "3 小時",
@@ -790,6 +791,63 @@
         "toggle_details": "顯示／隱藏詳情",
         "clear_selection": "清除選取"
     },
+    "privacy_lock": {
+        "locked_title": "已鎖定",
+        "field": {
+            "password": "鎖定密碼",
+            "current_password": "目前的鎖定密碼",
+            "new_password": "新的鎖定密碼",
+            "confirm_password": "確認新的鎖定密碼",
+            "account_password": "VRChat 帳號密碼"
+        },
+        "action": {
+            "lock": "鎖定",
+            "unlock": "解鎖",
+            "forgot": "忘記鎖定密碼？",
+            "back": "返回",
+            "set": "設定密碼",
+            "change": "變更密碼",
+            "clear": "移除密碼",
+            "clear_link": "移除鎖定密碼",
+            "clear_and_unlock": "移除鎖定",
+            "background_mode": "背景模式",
+            "logout": "登出"
+        },
+        "setup": {
+            "create_title": "設定鎖定密碼",
+            "create_description": "鎖定後 VRCX-0 會被這 4 位數字遮住，同時繼續記錄。這不是加密，只是避免使用你電腦的人隨手翻看。",
+            "change_title": "變更鎖定密碼",
+            "change_description": "輸入目前的鎖定密碼，再設定一組新密碼。",
+            "clear_title": "移除鎖定密碼",
+            "clear_description": "輸入 VRChat 帳號密碼以移除鎖定密碼。只與本機儲存的密碼比對，不會連線至 VRChat 伺服器。"
+        },
+        "recover": {
+            "description": "輸入 VRChat 帳號密碼以移除鎖定。只與本機儲存的密碼比對，不會連線至 VRChat 伺服器。"
+        },
+        "settings": {
+            "label": "隱私鎖定",
+            "description": "用鎖定密碼遮住視窗，同時讓 VRCX-0 繼續記錄。可從系統匣選單或側邊欄的帳號選單鎖定。",
+            "status_set": "已設定密碼",
+            "status_unset": "未設定密碼"
+        },
+        "toast": {
+            "set": "已設定鎖定密碼",
+            "changed": "已變更鎖定密碼",
+            "cleared": "已移除鎖定密碼"
+        },
+        "error": {
+            "wrong_password": "密碼不正確",
+            "incomplete": "請輸入完整的 {count} 位數字",
+            "mismatch": "兩次輸入的密碼不一致",
+            "current_required": "請輸入目前的鎖定密碼",
+            "account_password_required": "請輸入 VRChat 帳號密碼",
+            "account_password_unavailable": "此帳號沒有儲存密碼，無法在這裡移除鎖定。請手動清理應用程式資料。",
+            "password_not_set": "尚未設定鎖定密碼",
+            "password_already_set": "已經設定過鎖定密碼",
+            "no_session": "請先登入再使用鎖定",
+            "failed": "鎖定操作失敗"
+        }
+    },
     "side_panel": {
         "search_placeholder": "快速搜尋...",
         "search_input_placeholder": "搜尋或跳至頁面…",
@@ -855,7 +913,6 @@
             "favorites_section": "收藏",
             "group_by_instance": "依房間分組",
             "split_favorite_friends": "顯示收藏群組",
-            "show_grouped_friends": "顯示已分組好友",
             "same_instance_above_favorites": "優先處理同一房間",
             "sort_secondary": "其次依據",
             "sort_tertiary": "第三依據",
@@ -2217,14 +2274,15 @@
             },
             "feedback": {
                 "title": "傳送意見回饋",
-                "description": "意見回饋預設以匿名方式提交。我們會閱讀每一則訊息。如需回覆，請在回饋中附上你的電子郵件地址。",
+                "description": "意見回饋預設以匿名方式提交。我們會閱讀每一則訊息。",
                 "privacy_note": "不會附帶任何帳號資訊。",
                 "placeholder": "告訴我們哪裡好用、哪裡需要改進，或是你希望看到什麼新功能……",
                 "submit": "傳送",
                 "submitting": "傳送中…",
                 "thanks": "感謝你的回饋！",
                 "cooldown": "{{seconds}} 秒後可再次傳送",
-                "more_help": "需要回覆，或想附上日誌嗎？",
+                "reply_note": "如需回覆，請在回饋中留下電子郵件地址。",
+                "more_help": "也可以透過以下管道聯絡我們或附上日誌：",
                 "error_generic": "傳送失敗，請稍後再試。"
             },
             "ai": {

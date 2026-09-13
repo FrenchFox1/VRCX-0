@@ -13,6 +13,8 @@ import { SystemDialogsHost } from '@/components/hosts/SystemDialogsHost';
 import { ToolsDialogsHost } from '@/components/hosts/ToolsDialogsHost';
 import { AssistantDialogHost } from '@/features/assistant/AssistantDialogHost';
 import { VrcNotificationCenterHost } from '@/features/notifications/VrcNotificationCenterHost';
+import { PrivacyLockDialogHost } from '@/features/privacy-lock/PrivacyLockDialogHost';
+import { PrivacyLockOverlay } from '@/features/privacy-lock/PrivacyLockOverlay';
 
 export function GlobalHosts() {
     return (
@@ -32,6 +34,8 @@ export function GlobalHosts() {
             <SystemDialogsHost />
             <ToolsDialogsHost />
             <AssistantDialogHost />
+            <PrivacyLockDialogHost />
+            <PrivacyLockOverlay />
         </>
     );
 }

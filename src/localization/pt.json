@@ -496,6 +496,7 @@
         "tray": {
             "open": "Abrir VRCX-0",
             "backgroundMode": "Modo em segundo plano",
+            "lock": "Bloquear",
             "doNotDisturb": "Não incomodar",
             "doNotDisturbOneHour": "1 hora",
             "doNotDisturbThreeHours": "3 horas",
@@ -790,6 +791,63 @@
         "toggle_details": "Mostrar / ocultar detalhes",
         "clear_selection": "Limpar seleção"
     },
+    "privacy_lock": {
+        "locked_title": "Bloqueado",
+        "field": {
+            "password": "Senha de bloqueio",
+            "current_password": "Senha de bloqueio atual",
+            "new_password": "Nova senha de bloqueio",
+            "confirm_password": "Confirmar a nova senha de bloqueio",
+            "account_password": "Senha da conta VRChat"
+        },
+        "action": {
+            "lock": "Bloquear",
+            "unlock": "Desbloquear",
+            "forgot": "Esqueceu a senha de bloqueio?",
+            "back": "Voltar",
+            "set": "Definir senha",
+            "change": "Alterar senha",
+            "clear": "Remover senha",
+            "clear_link": "Remover a senha de bloqueio",
+            "clear_and_unlock": "Remover bloqueio",
+            "background_mode": "Modo em segundo plano",
+            "logout": "Sair"
+        },
+        "setup": {
+            "create_title": "Definir uma senha de bloqueio",
+            "create_description": "O bloqueio esconde o VRCX-0 atrás deste código de 4 dígitos enquanto ele continua registrando. Não é criptografia: só impede que alguém no seu PC fique bisbilhotando.",
+            "change_title": "Alterar a senha de bloqueio",
+            "change_description": "Digite a senha de bloqueio atual e escolha uma nova.",
+            "clear_title": "Remover a senha de bloqueio",
+            "clear_description": "Digite a senha da sua conta VRChat para remover o código de bloqueio. Ela é comparada apenas com a senha salva localmente no VRCX-0; nada é enviado aos servidores do VRChat."
+        },
+        "recover": {
+            "description": "Digite a senha da sua conta VRChat para remover o bloqueio. Ela é comparada apenas com a senha salva localmente no VRCX-0; nada é enviado aos servidores do VRChat."
+        },
+        "settings": {
+            "label": "Bloqueio de privacidade",
+            "description": "Esconde a janela atrás de uma senha de bloqueio enquanto o VRCX-0 continua registrando. Bloqueie pelo menu da bandeja ou pelo menu de conta na barra lateral.",
+            "status_set": "Senha definida",
+            "status_unset": "Sem senha"
+        },
+        "toast": {
+            "set": "Senha de bloqueio definida",
+            "changed": "Senha de bloqueio alterada",
+            "cleared": "Senha de bloqueio removida"
+        },
+        "error": {
+            "wrong_password": "Senha incorreta",
+            "incomplete": "Digite todos os {count} dígitos",
+            "mismatch": "As senhas não coincidem",
+            "current_required": "Digite a senha de bloqueio atual",
+            "account_password_required": "Digite a senha da sua conta VRChat",
+            "account_password_unavailable": "Esta conta não tem senha salva, então o bloqueio não pode ser removido aqui. Remova-o manualmente dos dados do aplicativo.",
+            "password_not_set": "Nenhuma senha de bloqueio definida",
+            "password_already_set": "Já existe uma senha de bloqueio definida",
+            "no_session": "Entre antes de usar o bloqueio",
+            "failed": "A operação de bloqueio falhou"
+        }
+    },
     "side_panel": {
         "search_placeholder": "Pesquisa Rápida...",
         "search_input_placeholder": "Buscar ou ir para uma página…",
@@ -855,7 +913,6 @@
             "favorites_section": "Favoritos",
             "group_by_instance": "Agrupar por Instância",
             "split_favorite_friends": "Mostrar Grupos de Favoritos",
-            "show_grouped_friends": "Mostrar Amigos Agrupados",
             "same_instance_above_favorites": "Priorizar Mesma Instância",
             "sort_secondary": "Depois por",
             "sort_tertiary": "Depois por",
@@ -2217,14 +2274,15 @@
             },
             "feedback": {
                 "title": "Enviar feedback",
-                "description": "O feedback é enviado de forma anónima por predefinição. Lemos todas as mensagens. Se precisares de uma resposta, inclui o teu endereço de e-mail no feedback.",
+                "description": "O feedback é enviado de forma anónima por predefinição. Lemos todas as mensagens.",
                 "privacy_note": "Não é incluída nenhuma informação da conta.",
                 "placeholder": "Diga-nos o que funciona, o que não funciona ou o que gostaria de ver…",
                 "submit": "Enviar",
                 "submitting": "A enviar…",
                 "thanks": "Obrigado pelo seu feedback!",
                 "cooldown": "Pode enviar novamente dentro de {{seconds}} s",
-                "more_help": "Precisa de resposta ou quer anexar registros?",
+                "reply_note": "Se precisares de uma resposta, inclui o teu e-mail no feedback.",
+                "more_help": "Também podes contactar-nos ou anexar registos aqui:",
                 "error_generic": "Não foi possível enviar o feedback. Tente novamente mais tarde."
             },
             "ai": {

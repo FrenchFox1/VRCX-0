@@ -496,6 +496,7 @@
         "tray": {
             "open": "打开 VRCX-0",
             "backgroundMode": "后台模式",
+            "lock": "锁定",
             "doNotDisturb": "勿扰模式",
             "doNotDisturbOneHour": "1 小时",
             "doNotDisturbThreeHours": "3 小时",
@@ -790,6 +791,63 @@
         "toggle_details": "显示／隐藏详情",
         "clear_selection": "清除选择"
     },
+    "privacy_lock": {
+        "locked_title": "已锁定",
+        "field": {
+            "password": "锁定密码",
+            "current_password": "当前锁定密码",
+            "new_password": "新锁定密码",
+            "confirm_password": "确认新锁定密码",
+            "account_password": "VRChat 账号密码"
+        },
+        "action": {
+            "lock": "锁定",
+            "unlock": "解锁",
+            "forgot": "忘记锁定密码？",
+            "back": "返回",
+            "set": "设置密码",
+            "change": "修改密码",
+            "clear": "移除密码",
+            "clear_link": "移除锁定密码",
+            "clear_and_unlock": "移除锁定",
+            "background_mode": "后台模式",
+            "logout": "退出登录"
+        },
+        "setup": {
+            "create_title": "设置锁定密码",
+            "create_description": "锁定后 VRCX-0 会被这 4 位数字遮住，同时继续记录。它不是加密，只是防止用你电脑的人随手翻看。",
+            "change_title": "修改锁定密码",
+            "change_description": "输入当前锁定密码，再设置一个新密码。",
+            "clear_title": "移除锁定密码",
+            "clear_description": "输入 VRChat 账号密码以移除锁定密码。只与本地保存的密码比对，不连接 VRChat 服务器。"
+        },
+        "recover": {
+            "description": "输入 VRChat 账号密码以移除锁定。只与本地保存的密码比对，不连接 VRChat 服务器。"
+        },
+        "settings": {
+            "label": "隐私锁定",
+            "description": "用锁定密码遮住窗口，同时 VRCX-0 继续记录。可从托盘菜单或侧边栏的账号菜单锁定。",
+            "status_set": "已设置密码",
+            "status_unset": "未设置密码"
+        },
+        "toast": {
+            "set": "已设置锁定密码",
+            "changed": "已修改锁定密码",
+            "cleared": "已移除锁定密码"
+        },
+        "error": {
+            "wrong_password": "密码不正确",
+            "incomplete": "请输入完整的 {count} 位数字",
+            "mismatch": "两次输入的密码不一致",
+            "current_required": "请输入当前锁定密码",
+            "account_password_required": "请输入 VRChat 账号密码",
+            "account_password_unavailable": "该账号没有保存密码，无法在这里移除锁定。请手动清理应用数据。",
+            "password_not_set": "尚未设置锁定密码",
+            "password_already_set": "已经设置过锁定密码",
+            "no_session": "请先登录再使用锁定",
+            "failed": "锁定操作失败"
+        }
+    },
     "side_panel": {
         "search_placeholder": "搜索",
         "search_input_placeholder": "搜索或跳转到页面…",
@@ -855,7 +913,6 @@
             "favorites_section": "收藏",
             "group_by_instance": "按房间分组",
             "split_favorite_friends": "按分组显示好友",
-            "show_grouped_friends": "显示同一房间中的好友",
             "same_instance_above_favorites": "优先显示同一房间中的好友",
             "sort_secondary": "次要排序方式",
             "sort_tertiary": "第三排序方式",
@@ -2217,14 +2274,15 @@
             },
             "feedback": {
                 "title": "发送反馈",
-                "description": "反馈默认匿名提交。我们会阅读每一条消息。如需回复，请在反馈中附上你的邮箱。",
+                "description": "反馈默认匿名提交。我们会阅读每一条消息。",
                 "privacy_note": "不会附带任何账号信息。",
                 "placeholder": "告诉我们哪些好用、哪些不好用，或者你希望看到什么新功能……",
                 "submit": "发送",
                 "submitting": "发送中…",
                 "thanks": "感谢你的反馈！",
                 "cooldown": "{{seconds}} 秒后可再次发送",
-                "more_help": "需要回复，或者想附上日志？",
+                "reply_note": "如需回复，请在反馈中留下邮箱。",
+                "more_help": "也可以通过以下渠道联系我们或附上日志：",
                 "error_generic": "发送失败，请稍后重试。"
             },
             "ai": {

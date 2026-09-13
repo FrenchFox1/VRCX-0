@@ -496,6 +496,7 @@
         "tray": {
             "open": "VRCX-0 öffnen",
             "backgroundMode": "Hintergrundmodus",
+            "lock": "Sperren",
             "doNotDisturb": "Nicht stören",
             "doNotDisturbOneHour": "1 Stunde",
             "doNotDisturbThreeHours": "3 Stunden",
@@ -790,6 +791,63 @@
         "toggle_details": "Details ein-/ausblenden",
         "clear_selection": "Auswahl aufheben"
     },
+    "privacy_lock": {
+        "locked_title": "Gesperrt",
+        "field": {
+            "password": "Sperrpasswort",
+            "current_password": "Aktuelles Sperrpasswort",
+            "new_password": "Neues Sperrpasswort",
+            "confirm_password": "Neues Sperrpasswort bestätigen",
+            "account_password": "VRChat-Kontopasswort"
+        },
+        "action": {
+            "lock": "Sperren",
+            "unlock": "Entsperren",
+            "forgot": "Sperrpasswort vergessen?",
+            "back": "Zurück",
+            "set": "Passwort festlegen",
+            "change": "Passwort ändern",
+            "clear": "Passwort entfernen",
+            "clear_link": "Sperrpasswort entfernen",
+            "clear_and_unlock": "Sperre entfernen",
+            "background_mode": "Hintergrundmodus",
+            "logout": "Abmelden"
+        },
+        "setup": {
+            "create_title": "Sperrpasswort festlegen",
+            "create_description": "Die Sperre verbirgt VRCX-0 hinter diesem 4-stelligen Code, während weiter aufgezeichnet wird. Das ist keine Verschlüsselung – es hindert nur andere am PC daran, sich umzusehen.",
+            "change_title": "Sperrpasswort ändern",
+            "change_description": "Gib dein aktuelles Sperrpasswort ein und wähle dann ein neues.",
+            "clear_title": "Sperrpasswort entfernen",
+            "clear_description": "Gib dein VRChat-Kontopasswort ein, um den Sperrcode zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet."
+        },
+        "recover": {
+            "description": "Gib dein VRChat-Kontopasswort ein, um die Sperre zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet."
+        },
+        "settings": {
+            "label": "Privatsphäre-Sperre",
+            "description": "Verbirgt das Fenster hinter einem Sperrpasswort, während VRCX-0 weiter aufzeichnet. Sperren über das Tray-Menü oder das Kontomenü in der Seitenleiste.",
+            "status_set": "Passwort festgelegt",
+            "status_unset": "Kein Passwort"
+        },
+        "toast": {
+            "set": "Sperrpasswort festgelegt",
+            "changed": "Sperrpasswort geändert",
+            "cleared": "Sperrpasswort entfernt"
+        },
+        "error": {
+            "wrong_password": "Falsches Passwort",
+            "incomplete": "Alle {count} Ziffern eingeben",
+            "mismatch": "Die Passwörter stimmen nicht überein",
+            "current_required": "Gib dein aktuelles Sperrpasswort ein",
+            "account_password_required": "Gib dein VRChat-Kontopasswort ein",
+            "account_password_unavailable": "Für dieses Konto ist kein Passwort gespeichert, daher kann die Sperre hier nicht entfernt werden. Entferne sie manuell aus den App-Daten.",
+            "password_not_set": "Es ist kein Sperrpasswort festgelegt",
+            "password_already_set": "Es ist bereits ein Sperrpasswort festgelegt",
+            "no_session": "Melde dich an, bevor du die Sperre verwendest",
+            "failed": "Der Sperrvorgang ist fehlgeschlagen"
+        }
+    },
     "side_panel": {
         "search_placeholder": "Schnellsuche...",
         "search_input_placeholder": "Suchen oder zu einer Seite springen…",
@@ -855,7 +913,6 @@
             "favorites_section": "Favoriten",
             "group_by_instance": "Nach Instanz gruppieren",
             "split_favorite_friends": "Favoritengruppen anzeigen",
-            "show_grouped_friends": "Gruppierte Freunde anzeigen",
             "same_instance_above_favorites": "Gleiche Instanz priorisieren",
             "sort_secondary": "Dann nach",
             "sort_tertiary": "Dann nach",
@@ -2217,14 +2274,15 @@
             },
             "feedback": {
                 "title": "Feedback senden",
-                "description": "Feedback wird standardmäßig anonym gesendet. Wir lesen jede Nachricht. Wenn du eine Antwort möchtest, gib bitte deine E-Mail-Adresse im Feedback an.",
+                "description": "Feedback wird standardmäßig anonym gesendet. Wir lesen jede Nachricht.",
                 "privacy_note": "Es werden keine Kontodaten übermittelt.",
                 "placeholder": "Erzähl uns, was gut läuft, was nicht, oder was du dir wünschst…",
                 "submit": "Senden",
                 "submitting": "Wird gesendet…",
                 "thanks": "Danke für dein Feedback!",
                 "cooldown": "In {{seconds}} s kannst du erneut senden",
-                "more_help": "Du brauchst eine Antwort oder möchtest Logs anhängen?",
+                "reply_note": "Wenn du eine Antwort möchtest, gib deine E-Mail-Adresse im Feedback an.",
+                "more_help": "Du kannst uns auch hier kontaktieren oder Logs anhängen:",
                 "error_generic": "Feedback konnte nicht gesendet werden. Bitte versuche es später erneut."
             },
             "ai": {

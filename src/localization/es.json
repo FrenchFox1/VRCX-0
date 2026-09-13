@@ -496,6 +496,7 @@
         "tray": {
             "open": "Abrir VRCX-0",
             "backgroundMode": "Modo en segundo plano",
+            "lock": "Bloquear",
             "doNotDisturb": "No molestar",
             "doNotDisturbOneHour": "1 hora",
             "doNotDisturbThreeHours": "3 horas",
@@ -790,6 +791,63 @@
         "toggle_details": "Mostrar / ocultar detalles",
         "clear_selection": "Borrar selección"
     },
+    "privacy_lock": {
+        "locked_title": "Bloqueado",
+        "field": {
+            "password": "Contraseña de bloqueo",
+            "current_password": "Contraseña de bloqueo actual",
+            "new_password": "Nueva contraseña de bloqueo",
+            "confirm_password": "Confirmar la nueva contraseña de bloqueo",
+            "account_password": "Contraseña de la cuenta de VRChat"
+        },
+        "action": {
+            "lock": "Bloquear",
+            "unlock": "Desbloquear",
+            "forgot": "¿Olvidaste la contraseña de bloqueo?",
+            "back": "Volver",
+            "set": "Establecer contraseña",
+            "change": "Cambiar contraseña",
+            "clear": "Quitar contraseña",
+            "clear_link": "Quitar la contraseña de bloqueo",
+            "clear_and_unlock": "Quitar bloqueo",
+            "background_mode": "Modo en segundo plano",
+            "logout": "Cerrar sesión"
+        },
+        "setup": {
+            "create_title": "Establecer una contraseña de bloqueo",
+            "create_description": "El bloqueo oculta VRCX-0 tras este código de 4 dígitos mientras sigue registrando. No es cifrado: solo evita que alguien en tu PC curiosee.",
+            "change_title": "Cambiar la contraseña de bloqueo",
+            "change_description": "Introduce tu contraseña de bloqueo actual y elige una nueva.",
+            "clear_title": "Quitar la contraseña de bloqueo",
+            "clear_description": "Introduce la contraseña de tu cuenta de VRChat para quitar el código de bloqueo. Solo se compara con la contraseña guardada localmente en VRCX-0; no se envía nada a los servidores de VRChat."
+        },
+        "recover": {
+            "description": "Introduce la contraseña de tu cuenta de VRChat para quitar el bloqueo. Solo se compara con la contraseña guardada localmente en VRCX-0; no se envía nada a los servidores de VRChat."
+        },
+        "settings": {
+            "label": "Bloqueo de privacidad",
+            "description": "Oculta la ventana tras una contraseña de bloqueo mientras VRCX-0 sigue registrando. Bloquea desde el menú de la bandeja o el menú de cuenta de la barra lateral.",
+            "status_set": "Contraseña establecida",
+            "status_unset": "Sin contraseña"
+        },
+        "toast": {
+            "set": "Contraseña de bloqueo establecida",
+            "changed": "Contraseña de bloqueo cambiada",
+            "cleared": "Contraseña de bloqueo eliminada"
+        },
+        "error": {
+            "wrong_password": "Contraseña incorrecta",
+            "incomplete": "Introduce los {count} dígitos",
+            "mismatch": "Las contraseñas no coinciden",
+            "current_required": "Introduce tu contraseña de bloqueo actual",
+            "account_password_required": "Introduce la contraseña de tu cuenta de VRChat",
+            "account_password_unavailable": "Esta cuenta no tiene contraseña guardada, así que el bloqueo no se puede quitar desde aquí. Elimínalo manualmente de los datos de la aplicación.",
+            "password_not_set": "No hay contraseña de bloqueo establecida",
+            "password_already_set": "Ya hay una contraseña de bloqueo establecida",
+            "no_session": "Inicia sesión antes de usar el bloqueo",
+            "failed": "La operación de bloqueo falló"
+        }
+    },
     "side_panel": {
         "search_placeholder": "Buscar",
         "search_input_placeholder": "Buscar o ir a una página…",
@@ -855,7 +913,6 @@
             "favorites_section": "Favoritos",
             "group_by_instance": "Agrupar por instancia",
             "split_favorite_friends": "Mostrar grupos de favoritos",
-            "show_grouped_friends": "Mostrar amigos agrupados",
             "same_instance_above_favorites": "Priorizar misma instancia",
             "sort_secondary": "Luego por",
             "sort_tertiary": "Luego por",
@@ -2217,14 +2274,15 @@
             },
             "feedback": {
                 "title": "Enviar comentarios",
-                "description": "Los comentarios se envían de forma anónima por defecto. Leemos todos los mensajes. Si necesitas una respuesta, incluye tu dirección de correo electrónico en el comentario.",
+                "description": "Los comentarios se envían de forma anónima por defecto. Leemos todos los mensajes.",
                 "privacy_note": "No se adjuntan datos de la cuenta.",
                 "placeholder": "Cuéntanos qué funciona, qué no, o qué te gustaría ver…",
                 "submit": "Enviar",
                 "submitting": "Enviando…",
                 "thanks": "¡Gracias por tu opinión!",
                 "cooldown": "Podrás enviar otro en {{seconds}} s",
-                "more_help": "¿Necesitas respuesta o quieres adjuntar registros?",
+                "reply_note": "Si necesitas una respuesta, incluye tu correo electrónico en el comentario.",
+                "more_help": "También puedes contactarnos o adjuntar registros aquí:",
                 "error_generic": "No se pudieron enviar los comentarios. Inténtalo de nuevo más tarde."
             },
             "ai": {

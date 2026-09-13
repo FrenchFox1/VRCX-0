@@ -417,6 +417,10 @@ export async function logoutFromReactShell() {
         return false;
     }
 
+    return logoutWithoutConfirmation();
+}
+
+export async function logoutWithoutConfirmation() {
     const attempt = beginAuthAttempt();
 
     const runtimeStore = useRuntimeStore.getState();

@@ -496,6 +496,7 @@
         "tray": {
             "open": "Otevřít VRCX-0",
             "backgroundMode": "Režim na pozadí",
+            "lock": "Zamknout",
             "doNotDisturb": "Nerušit",
             "doNotDisturbOneHour": "1 hodina",
             "doNotDisturbThreeHours": "3 hodiny",
@@ -790,6 +791,63 @@
         "toggle_details": "Zobrazit / skrýt podrobnosti",
         "clear_selection": "Zrušit výběr"
     },
+    "privacy_lock": {
+        "locked_title": "Zamčeno",
+        "field": {
+            "password": "Heslo zámku",
+            "current_password": "Aktuální heslo zámku",
+            "new_password": "Nové heslo zámku",
+            "confirm_password": "Potvrzení nového hesla zámku",
+            "account_password": "Heslo k účtu VRChat"
+        },
+        "action": {
+            "lock": "Zamknout",
+            "unlock": "Odemknout",
+            "forgot": "Zapomněli jste heslo zámku?",
+            "back": "Zpět",
+            "set": "Nastavit heslo",
+            "change": "Změnit heslo",
+            "clear": "Odebrat heslo",
+            "clear_link": "Odebrat heslo zámku",
+            "clear_and_unlock": "Odebrat zámek",
+            "background_mode": "Režim na pozadí",
+            "logout": "Odhlásit se"
+        },
+        "setup": {
+            "create_title": "Nastavit heslo zámku",
+            "create_description": "Zámek skryje VRCX-0 za tento 4místný kód, zatímco záznam pokračuje. Nejde o šifrování – jen zabrání někomu u vašeho PC, aby se v aplikaci hrabal.",
+            "change_title": "Změnit heslo zámku",
+            "change_description": "Zadejte aktuální heslo zámku a poté zvolte nové.",
+            "clear_title": "Odebrat heslo zámku",
+            "clear_description": "Zadejte heslo k účtu VRChat, aby se kód zámku odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá."
+        },
+        "recover": {
+            "description": "Zadejte heslo k účtu VRChat, aby se zámek odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá."
+        },
+        "settings": {
+            "label": "Zámek soukromí",
+            "description": "Skryje okno za heslo zámku, zatímco VRCX-0 dál zaznamenává. Zamknout lze z nabídky v oznamovací oblasti nebo z nabídky účtu v postranním panelu.",
+            "status_set": "Heslo nastaveno",
+            "status_unset": "Bez hesla"
+        },
+        "toast": {
+            "set": "Heslo zámku nastaveno",
+            "changed": "Heslo zámku změněno",
+            "cleared": "Heslo zámku odebráno"
+        },
+        "error": {
+            "wrong_password": "Nesprávné heslo",
+            "incomplete": "Zadejte všech {count} číslic",
+            "mismatch": "Hesla se neshodují",
+            "current_required": "Zadejte aktuální heslo zámku",
+            "account_password_required": "Zadejte heslo k účtu VRChat",
+            "account_password_unavailable": "Tento účet nemá uložené heslo, takže zámek zde nelze odebrat. Odeberte ho ručně z dat aplikace.",
+            "password_not_set": "Heslo zámku není nastaveno",
+            "password_already_set": "Heslo zámku už je nastaveno",
+            "no_session": "Před použitím zámku se přihlaste",
+            "failed": "Operace zámku selhala"
+        }
+    },
     "side_panel": {
         "search_placeholder": "Search",
         "search_input_placeholder": "Hledat nebo přejít na stránku…",
@@ -855,7 +913,6 @@
             "favorites_section": "Oblíbené",
             "group_by_instance": "Seskupit podle instance",
             "split_favorite_friends": "Zobrazit oblíbené skupiny",
-            "show_grouped_friends": "Zobrazit seskupené přátele",
             "same_instance_above_favorites": "Upřednostnit stejnou instanci",
             "sort_secondary": "Poté podle",
             "sort_tertiary": "Poté podle",
@@ -2219,14 +2276,15 @@
             },
             "feedback": {
                 "title": "Odeslat zpětnou vazbu",
-                "description": "Zpětná vazba se ve výchozím nastavení odesílá anonymně. Každou zprávu čteme. Pokud potřebujete odpověď, uveďte ve zprávě svou e-mailovou adresu.",
+                "description": "Zpětná vazba se ve výchozím nastavení odesílá anonymně. Každou zprávu čteme.",
                 "privacy_note": "Nepřipojují se žádné údaje o účtu.",
                 "placeholder": "Řekněte nám, co funguje, co ne, nebo co byste chtěli vidět…",
                 "submit": "Odeslat",
                 "submitting": "Odesílání…",
                 "thanks": "Děkujeme za zpětnou vazbu!",
                 "cooldown": "Znovu odeslat můžete za {{seconds}} s",
-                "more_help": "Potřebujete odpověď nebo chcete přiložit logy?",
+                "reply_note": "Chcete odpověď? Uveďte ve zprávě svou e-mailovou adresu.",
+                "more_help": "Kontaktovat nás nebo přiložit logy můžete také zde:",
                 "error_generic": "Zpětnou vazbu se nepodařilo odeslat. Zkuste to prosím později."
             },
             "ai": {

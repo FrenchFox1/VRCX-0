@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { PrivacyLockSetting } from '@/features/privacy-lock/PrivacyLockSetting';
 import type { HostPlatform } from '@/platform/tauri/bindings';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -122,6 +123,7 @@ export function SettingsSystemTabContent({
                     />
                 </Field>
                 {isWindows ? <TrayShortcutSetting /> : null}
+                <PrivacyLockSetting />
                 {hostPlatform === 'linux' ? <LinuxRenderingSetting /> : null}
                 <Field
                     label={t(

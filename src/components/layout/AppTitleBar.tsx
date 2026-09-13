@@ -15,6 +15,7 @@ import {
     minimizeWindow,
     toggleMaximizeWindow
 } from '@/services/shellIntegrationService';
+import { usePrivacyLockCovering } from '@/state/privacyLockPhase';
 import { useShellStore } from '@/state/shellStore';
 
 import { AppMenuBar } from './AppMenuBar';
@@ -68,6 +69,7 @@ export function AppTitleBar() {
         docked: isDocked,
         focused: isFocused
     } = useWindowChromeState();
+    const privacyLockCovering = usePrivacyLockCovering();
     const {
         isSessionReady,
         actions,
@@ -97,7 +99,7 @@ export function AppTitleBar() {
                     data-tauri-drag-region
                     className="flex h-full min-w-0 flex-1 items-center gap-2 pr-3"
                 >
-                    {isSessionReady ? (
+                    {isSessionReady && !privacyLockCovering ? (
                         <div
                             role="presentation"
                             data-titlebar-interactive="true"
@@ -117,7 +119,7 @@ export function AppTitleBar() {
                         className="h-full min-w-0 flex-1"
                     />
                 </div>
-                {sidebarWindowMode ? (
+                {privacyLockCovering ? null : sidebarWindowMode ? (
                     <div className="flex h-full shrink-0 items-center gap-1 px-1">
                         {isSessionReady ? (
                             <TitleBarButton
