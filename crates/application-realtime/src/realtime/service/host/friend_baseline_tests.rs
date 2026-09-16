@@ -179,11 +179,7 @@ fn sync_friend_snapshot_persists_feed_when_refresh_confirms_pending_offline() ->
         "Friend Fresh Name"
     );
     assert!(events.iter().all(|event| {
-        event.name != "backendRuntimeTelemetry"
-            || !matches!(
-                event.payload["kind"].as_str(),
-                Some("wsMessage" | "wsPersisted" | "gameLogPersisted")
-            )
+        event.name != "backendRuntimeTelemetry" || event.payload["kind"] != "gameLogPersisted"
     }));
 
     let repeated_watermark = runtime.runtime().capture_friend_baseline_watermark()?;
@@ -197,9 +193,6 @@ fn sync_friend_snapshot_persists_feed_when_refresh_confirms_pending_offline() ->
     assert!(repeated_events
         .iter()
         .all(|event| event.name != "realtimeFeedProjection"));
-    assert!(repeated_events.iter().all(|event| {
-        event.name != "backendRuntimeTelemetry" || event.payload["kind"] != "wsPersisted"
-    }));
     let persisted_rows =
         runtime
             .database()
@@ -1669,9 +1662,6 @@ fn friend_projection_clears_feed_entries_when_persistence_fails() -> Result<()> 
     assert!(events
         .iter()
         .all(|event| event.name != "realtimeFeedProjection"));
-    assert!(events.iter().all(|event| {
-        event.name != "backendRuntimeTelemetry" || event.payload["kind"] != "wsPersisted"
-    }));
     Ok(())
 }
 

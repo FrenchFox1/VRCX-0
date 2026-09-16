@@ -15,9 +15,10 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: commandMocks
 }));
 
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
+
 import {
     cancelLoginSession,
-    DEFAULT_ENDPOINT_DOMAIN,
     getConfig,
     getCurrentUser,
     getFileAnalysis,
@@ -60,7 +61,7 @@ describe('vrchatAuthRepository', () => {
                 id: 'usr_1'
             },
             status: 200,
-            endpointDomain: DEFAULT_ENDPOINT_DOMAIN
+            endpointDomain: DEFAULT_VRCHAT_API_ENDPOINT
         });
 
         expect(commandMocks.appVrchatAuthCurrentUserGet).toHaveBeenCalledWith();

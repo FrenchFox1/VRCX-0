@@ -21,7 +21,6 @@ vi.mock('@/repositories/configRepository', () => ({
 
 import {
     getTranslationConfig,
-    translateText,
     translateTextDetailed
 } from './translationService';
 
@@ -74,7 +73,9 @@ describe('translationService', () => {
             provider: 'google'
         });
 
-        await expect(translateText('Hello')).resolves.toBe('hola');
+        await expect(translateTextDetailed('Hello')).resolves.toMatchObject({
+            text: 'hola'
+        });
         expect(mocks.appTranslationTranslate).toHaveBeenCalledWith({
             text: 'Hello',
             targetLanguage: null,
@@ -87,7 +88,7 @@ describe('translationService', () => {
             new Error('Translation API disabled.')
         );
 
-        await expect(translateText('Hello')).rejects.toThrow(
+        await expect(translateTextDetailed('Hello')).rejects.toThrow(
             'Translation API disabled.'
         );
     });

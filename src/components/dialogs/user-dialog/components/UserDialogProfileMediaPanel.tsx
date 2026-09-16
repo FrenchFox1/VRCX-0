@@ -176,7 +176,12 @@ function ProfileMediaSection({
     onClear: (fieldName: ProfileMediaFieldName) => void;
 }) {
     const { t } = useTranslation();
-    const rawCurrentValue = profile?.[section.fieldName];
+    const rawCurrentValue =
+        profile?.[
+            section.fieldName === 'profilePicOverride'
+                ? 'bannerCustomUrl'
+                : 'userIcon'
+        ];
     const currentValue =
         typeof rawCurrentValue === 'string' ? rawCurrentValue : '';
     const currentFileId = extractFileId(currentValue);

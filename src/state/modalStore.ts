@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import type { BoopEmojiChoice } from '@/domain/entities/boopEmoji';
+
 type AlertMode = 'alert' | 'confirm';
 type OtpMode = 'totp' | 'emailOtp' | 'otp';
 type ModalResult<TValue> = {
@@ -71,7 +73,9 @@ type ModalStore = {
     alert(options?: AlertDialogOptions): Promise<ModalResult<never>>;
     confirm(options?: AlertDialogOptions): Promise<ModalResult<never>>;
     prompt(options?: PromptDialogOptions): Promise<ModalResult<string>>;
-    boopPrompt(options?: BoopDialogOptions): Promise<ModalResult<string>>;
+    boopPrompt(
+        options?: BoopDialogOptions
+    ): Promise<ModalResult<BoopEmojiChoice | null>>;
     otpPrompt(options?: OtpDialogOptions): Promise<ModalResult<string>>;
     openAlert(options?: AlertDialogOptions): Promise<ModalResult<never>>;
     openPrompt(options?: PromptDialogOptions): Promise<ModalResult<string>>;
@@ -87,9 +91,9 @@ type ModalStore = {
     handlePromptOk(value?: string): void;
     handlePromptCancel(value?: string): void;
     handlePromptDismiss(value?: string): void;
-    handleBoopOk(value?: string): void;
-    handleBoopCancel(value?: string): void;
-    handleBoopDismiss(value?: string): void;
+    handleBoopOk(value: BoopEmojiChoice | null): void;
+    handleBoopCancel(): void;
+    handleBoopDismiss(): void;
     handleOtpOk(value?: string): void;
     handleOtpCancel(value?: string): void;
     handleOtpDismiss(value?: string): void;
@@ -175,7 +179,7 @@ function matchesPromptPattern(pattern: RegExp | null, value: string): boolean {
 export const useModalStore = create<ModalStore>((set, get) => {
     let pendingAlert: ModalResolver<never> | null = null;
     let pendingPrompt: ModalResolver<string> | null = null;
-    let pendingBoop: ModalResolver<string> | null = null;
+    let pendingBoop: ModalResolver<BoopEmojiChoice | null> | null = null;
     let pendingOtp: ModalResolver<string> | null = null;
 
     function resolveAlert(result: ModalResult<never>) {
@@ -194,7 +198,7 @@ export const useModalStore = create<ModalStore>((set, get) => {
         }
     }
 
-    function resolveBoop(result: ModalResult<string>) {
+    function resolveBoop(result: ModalResult<BoopEmojiChoice | null>) {
         const resolver = pendingBoop;
         pendingBoop = null;
         if (typeof resolver === 'function') {
@@ -285,7 +289,7 @@ export const useModalStore = create<ModalStore>((set, get) => {
             }
         });
 
-        return new Promise<ModalResult<string>>((resolve) => {
+        return new Promise<ModalResult<BoopEmojiChoice | null>>((resolve) => {
             pendingBoop = resolve;
         });
     }
@@ -449,30 +453,30 @@ export const useModalStore = create<ModalStore>((set, get) => {
             set({ promptDialog: createPromptDialogState() });
             resolvePrompt(createResult(false, 'dismiss', value ?? ''));
         },
-        handleBoopOk(value?: string) {
+        handleBoopOk(value: BoopEmojiChoice | null) {
             if (!pendingBoop) {
                 return;
             }
 
             set({ boopDialog: createBoopDialogState() });
-            resolveBoop(createResult(true, 'ok', value ?? ''));
+            resolveBoop(createResult(true, 'ok', value));
         },
-        handleBoopCancel(value?: string) {
+        handleBoopCancel() {
             if (!pendingBoop) {
                 return;
             }
 
             set({ boopDialog: createBoopDialogState() });
-            resolveBoop(createResult(false, 'cancel', value ?? ''));
+            resolveBoop(createResult(false, 'cancel', null));
         },
-        handleBoopDismiss(value?: string) {
+        handleBoopDismiss() {
             const { boopDialog } = get();
             if (!pendingBoop || !boopDialog.dismissible) {
                 return;
             }
 
             set({ boopDialog: createBoopDialogState() });
-            resolveBoop(createResult(false, 'dismiss', value ?? ''));
+            resolveBoop(createResult(false, 'dismiss', null));
         },
         handleOtpOk(value = '') {
             if (!pendingOtp) {
@@ -517,7 +521,7 @@ export const useModalStore = create<ModalStore>((set, get) => {
         },
         closeBoop() {
             if (pendingBoop) {
-                get().handleBoopDismiss('');
+                get().handleBoopDismiss();
                 return;
             }
 

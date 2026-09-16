@@ -1164,11 +1164,7 @@ fn friend_ws_dispatch_fans_out_one_canonical_output() -> Result<()> {
         1
     );
     assert!(events.iter().all(|event| {
-        event.name != "backendRuntimeTelemetry"
-            || !matches!(
-                event.payload["kind"].as_str(),
-                Some("wsMessage" | "wsPersisted" | "gameLogPersisted")
-            )
+        event.name != "backendRuntimeTelemetry" || event.payload["kind"] != "gameLogPersisted"
     }));
     let mut frontend_projection = activity_projections[0].clone();
     frontend_projection.feed_entries.clear();
@@ -1249,9 +1245,6 @@ fn friend_ws_without_baseline_has_no_fanout() -> Result<()> {
     let events = runtime.take_events_for_test();
     assert!(events.iter().all(|event| {
         event.name != "realtimeFriendProjection" && event.name != "realtimeUserProjection"
-    }));
-    assert!(events.iter().all(|event| {
-        event.name != "backendRuntimeTelemetry" || event.payload["kind"] != "wsPersisted"
     }));
     Ok(())
 }

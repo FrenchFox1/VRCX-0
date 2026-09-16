@@ -222,7 +222,7 @@ export function MyAvatarGridCard({
                         <TileShell
                             selected={isActive}
                             className={cn(
-                                'h-full flex-col items-stretch p-0 text-left font-normal whitespace-normal',
+                                'h-full w-full flex-col items-stretch p-0 text-left font-normal whitespace-normal',
                                 disabled && 'cursor-not-allowed opacity-60'
                             )}
                             render={

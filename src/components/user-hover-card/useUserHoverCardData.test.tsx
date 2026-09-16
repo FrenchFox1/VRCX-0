@@ -54,12 +54,6 @@ vi.mock('@/state/preferencesStore', () => ({
     ): T => selector({ trustColor: false })
 }));
 
-vi.mock('@/state/shellStore', () => ({
-    useShellStore: {
-        getState: () => ({ displayVRCPlusIconsAsAvatar: false })
-    }
-}));
-
 vi.mock('@/state/friendRosterStore', () => ({
     useFriendRosterStore: Object.assign(
         <T,>(selector: (state: FriendRosterStoreState) => T): T =>

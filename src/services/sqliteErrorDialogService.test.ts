@@ -72,11 +72,9 @@ describe('sqliteErrorDialogService', () => {
     ])(
         'recognizes $message errors from the current IPC boundary',
         async ({ message, method, titleKey }) => {
-            const { isKnownSQLiteError, showSQLiteErrorDialog } =
-                await loadService();
+            const { showSQLiteErrorDialog } = await loadService();
             const error = new Error(message);
 
-            expect(isKnownSQLiteError(error)).toBe(true);
             await expect(showSQLiteErrorDialog(error)).resolves.toBe(true);
             expect(
                 method === 'confirm' ? mocks.confirm : mocks.alert
@@ -87,13 +85,11 @@ describe('sqliteErrorDialogService', () => {
     );
 
     it('prefers a structured category and ignores unknown errors', async () => {
-        const { isKnownSQLiteError, showSQLiteErrorDialog } =
-            await loadService();
+        const { showSQLiteErrorDialog } = await loadService();
         const categorized = Object.assign(new Error('opaque backend error'), {
             sqliteCategory: 'disk_full'
         });
 
-        expect(isKnownSQLiteError(categorized)).toBe(true);
         await expect(showSQLiteErrorDialog(categorized)).resolves.toBe(true);
         await expect(
             showSQLiteErrorDialog(new Error('permission denied'))

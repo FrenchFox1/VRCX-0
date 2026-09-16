@@ -305,6 +305,17 @@ export function createTimeRule(label = ''): TimeAutomationRule {
     };
 }
 
+export function daysSummary(days: readonly number[], t: TFunction) {
+    if (days.length === 0) {
+        return t(`${I18N_ROOT}.every_day`);
+    }
+    const selectedDays = new Set(days);
+    return dayOptions
+        .filter((day) => selectedDays.has(day.value))
+        .map((day) => t(day.labelKey))
+        .join(', ');
+}
+
 export function getTimeWindow(rule: PresenceAutomationRule) {
     return (
         rule.conditions?.find(isTimeWindowCondition) || {

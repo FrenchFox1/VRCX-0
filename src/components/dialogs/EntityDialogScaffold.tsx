@@ -164,7 +164,7 @@ function EntityDialogTabs({
                     <TabsTrigger
                         key={tab.value}
                         value={tab.value}
-                        className="text-muted-foreground hover:text-foreground data-active:text-primary h-11 flex-none rounded-none border-0 bg-transparent px-3 shadow-none after:hidden data-active:bg-transparent data-active:shadow-none"
+                        className="text-muted-foreground hover:text-foreground h-11 flex-none rounded-none border-0 bg-transparent px-3 shadow-none after:hidden data-active:bg-transparent data-active:shadow-none"
                     >
                         {tab.label}
                     </TabsTrigger>

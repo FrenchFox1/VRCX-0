@@ -3,7 +3,6 @@ import type { SortingState } from '@tanstack/react-table';
 import {
     getDataTableStorageKey,
     readPersistedTableState,
-    sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 
@@ -132,10 +131,6 @@ export function sanitizeFriendListColumnOrder(value: unknown): string[] {
     );
 
     return [...orderedColumns, ...missingColumns];
-}
-
-export function sanitizeFriendListColumnSizing(value: unknown) {
-    return sanitizeTableColumnSizing(value, FRIEND_LIST_COLUMN_IDS);
 }
 
 export function resolveFriendListPageSize(

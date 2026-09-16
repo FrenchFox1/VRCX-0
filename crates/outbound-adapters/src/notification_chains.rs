@@ -195,9 +195,16 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
                             .map_err(|error| terminal(&error))?;
                     (request, VrchatScope::VrchatMedia)
                 }
-                NotificationChainRemoteCall::BoopSend { user_id, emoji_id } => {
+                NotificationChainRemoteCall::BoopSend {
+                    user_id,
+                    emoji_id,
+                    inventory_item_id,
+                } => {
                     let (_, request) = vrcx_0_vrchat_client::notifications::boop_send_input(
-                        endpoint, user_id, emoji_id,
+                        endpoint,
+                        user_id,
+                        emoji_id,
+                        inventory_item_id,
                     )
                     .map_err(|error| terminal(&error))?;
                     (request, VrchatScope::Vrchat)

@@ -58,7 +58,7 @@ export function SavedAccountsCard({
                         const isRelogging = Boolean(
                             userId && activeSavedUserId === userId
                         );
-                        const avatarUrl = userImage(entry.user, true, '64');
+                        const avatarUrl = userImage(entry.user, 64);
 
                         return (
                             <div

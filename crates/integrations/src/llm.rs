@@ -20,13 +20,8 @@ pub enum LlmError {
     NotConfigured,
 }
 
-const OPENROUTER_CANONICAL_BASE_URL: &str = "https://openrouter.ai/api/v1";
 const OPENROUTER_REASONING_EFFORTS: &[&str] =
     &["max", "xhigh", "high", "medium", "low", "minimal", "none"];
-
-pub fn is_openrouter_base_url(base_url: &str) -> bool {
-    normalize_base_url(base_url) == OPENROUTER_CANONICAL_BASE_URL
-}
 
 #[derive(Clone)]
 pub struct LlmClient {

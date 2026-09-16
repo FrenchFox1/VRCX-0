@@ -15,7 +15,6 @@ import {
     unwrapVrchatResponse
 } from './vrchatRequest';
 
-export const DEFAULT_ENDPOINT_DOMAIN = DEFAULT_VRCHAT_API_ENDPOINT;
 type VrchatApiResult = HttpApiExecuteResponse;
 type AuthRecord = Record<string, unknown>;
 

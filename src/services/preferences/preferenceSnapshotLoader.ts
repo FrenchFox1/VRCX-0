@@ -110,7 +110,6 @@ export async function loadPreferenceSnapshot() {
         showInstanceIdInLocation,
         isAgeGatedInstancesVisible,
         hideNicknames,
-        displayVRCPlusIconsAsAvatar,
         showUserDialogProfileBackground,
         showUserDialogAvatarFrame,
         showUserDialogProfileEffect,
@@ -250,7 +249,6 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('VRCX_showInstanceIdInLocation', false),
         configRepository.getBool('VRCX_isAgeGatedInstancesVisible', true),
         configRepository.getBool('hideNicknames', false),
-        configRepository.getBool('displayVRCPlusIconsAsAvatar', true),
         configRepository.getBool('showUserDialogProfileBackground', true),
         configRepository.getBool('showUserDialogAvatarFrame', true),
         configRepository.getBool('showUserDialogProfileEffect', true),
@@ -402,10 +400,7 @@ export async function loadPreferenceSnapshot() {
         );
     useShellStore.getState().setNotificationIconDot(notificationIconDot);
     useShellStore.getState().setTaskbarIconDot(taskbarIconDot);
-    useShellStore.getState().setAppearancePreferences({
-        displayVRCPlusIconsAsAvatar,
-        hideNicknames
-    });
+    useShellStore.getState().setAppearancePreferences({ hideNicknames });
     const resolvedTableDensity = normalizeTableDensity(
         tableDensity || (compactTableMode ? 'compact' : 'standard')
     );
@@ -463,7 +458,6 @@ export async function loadPreferenceSnapshot() {
         showInstanceIdInLocation: Boolean(showInstanceIdInLocation),
         isAgeGatedInstancesVisible: Boolean(isAgeGatedInstancesVisible),
         hideNicknames: Boolean(hideNicknames),
-        displayVRCPlusIconsAsAvatar: Boolean(displayVRCPlusIconsAsAvatar),
         showUserDialogProfileBackground: Boolean(
             showUserDialogProfileBackground
         ),

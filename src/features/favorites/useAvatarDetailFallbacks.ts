@@ -6,9 +6,7 @@ import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 
 import {
     type DetailMap,
-    filterRemoteEntityCacheFallbacksById,
     getRemoteEntityCacheFallbackIds,
-    loadRemoteEntityCacheFallbacksById,
     useRemoteEntityCacheFallbackLoader
 } from './remoteEntityCacheFallbacks';
 
@@ -33,15 +31,6 @@ export function getAvatarDetailFallbackIds({
         detailSources: [remoteEntityDetailsData],
         isReady: kind === 'avatar' && remoteEntityDetailsStatus === 'ready'
     });
-}
-
-export const filterAvatarDetailFallbacksById =
-    filterRemoteEntityCacheFallbacksById;
-
-export function loadAvatarDetailFallbacksById(
-    avatarIds: string[]
-): Promise<DetailMap> {
-    return loadRemoteEntityCacheFallbacksById(avatarIds, fetchAvatarById);
 }
 
 export function useAvatarDetailFallbacks({

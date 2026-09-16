@@ -55,6 +55,19 @@ const INSTANCE_ID = '12345~hidden(usr_owner)~region(jp)';
 const LOCATION = `${WORLD_ID}:${INSTANCE_ID}`;
 
 describe('launchService', () => {
+    it('does not fabricate a short URL for a secure-only launch token', async () => {
+        const details = await resolveLaunchDialogDetails(
+            LOCATION,
+            '',
+            'secureToken'
+        );
+        expect(details).toMatchObject({
+            shortName: '',
+            shortUrl: '',
+            launchToken: 'secureToken'
+        });
+        expect(mocks.getInstanceShortName).not.toHaveBeenCalled();
+    });
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.joinInstanceWithFallback.mockResolvedValue({ status: 'opened' });

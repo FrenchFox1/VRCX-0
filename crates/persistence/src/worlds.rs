@@ -18,19 +18,6 @@ pub fn world_cache_upsert_many(
     upsert_cache_entities(db, "cache_world", entries)
 }
 
-pub fn world_cache_remove(db: &DatabaseService, world_id: String) -> Result<(), Error> {
-    ensure_global_store_tables(db)?;
-    let world_id = normalize_text(world_id);
-    if world_id.is_empty() {
-        return Ok(());
-    }
-    db.execute_non_query(
-        "DELETE FROM cache_world WHERE id = @world_id",
-        &ParamsBuilder::new().set("world_id", world_id).build(),
-    )?;
-    Ok(())
-}
-
 pub fn world_cache_get(
     db: &DatabaseService,
     world_id: String,

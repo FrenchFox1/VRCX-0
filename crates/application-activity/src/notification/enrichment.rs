@@ -22,14 +22,9 @@ impl RealtimeUserImageResolverSlot {
         }
     }
 
-    pub fn cached_url(
-        &self,
-        endpoint: &str,
-        user_id: &str,
-        allow_user_icon: bool,
-    ) -> Option<String> {
+    pub fn cached_url(&self, endpoint: &str, user_id: &str) -> Option<String> {
         let resolver = self.inner.lock().ok()?.as_ref()?.upgrade()?;
-        resolver.cached_url(endpoint, user_id, allow_user_icon)
+        resolver.cached_url(endpoint, user_id)
     }
 }
 

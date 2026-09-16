@@ -85,22 +85,6 @@ async fn list_models_uses_explicit_http_proxy() {
 }
 
 #[test]
-fn is_openrouter_base_url_matches_canonical_url_only() {
-    assert!(is_openrouter_base_url("https://openrouter.ai/api/v1"));
-    assert!(is_openrouter_base_url("https://openrouter.ai/api/v1/"));
-    assert!(is_openrouter_base_url(" https://openrouter.ai/api/v1 "));
-    assert!(is_openrouter_base_url("https://openrouter.ai/api/v1//"));
-    assert!(is_openrouter_base_url(" https://openrouter.ai/api/v1/ "));
-    assert!(!is_openrouter_base_url("https://openrouter.ai/api/v2"));
-    assert!(!is_openrouter_base_url("HTTPS://OPENROUTER.AI/API/V1"));
-    assert!(!is_openrouter_base_url("https://api.openai.com/v1"));
-    assert!(!is_openrouter_base_url(
-        "https://openrouter-proxy.example/v1"
-    ));
-    assert!(!is_openrouter_base_url(""));
-}
-
-#[test]
 fn list_models_parses_supported_efforts_preserving_order_and_unknown_values() {
     let body = r#"{
             "data": [

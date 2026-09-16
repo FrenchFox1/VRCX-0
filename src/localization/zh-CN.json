@@ -1677,7 +1677,6 @@
                 "mark_seen": "标记已读",
                 "send_boop": "发送戳一戳",
                 "search_emoji": "搜索 Emoji",
-                "clear_selection": "清除选择",
                 "send": "发送"
             },
             "success": {
@@ -1693,9 +1692,6 @@
                 "cannot_invite_from_the_current_instance_type": "无法从当前房间类型发出邀请",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "无法邀请：当前位置不是具体房间",
                 "cannot_send_invite_response_no_current_user_session_is_available": "无法发送邀请回应：当前没有已登录的账号"
-            },
-            "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "未选择自定义表情，将发送默认戳一戳"
             },
             "loading": {
                 "loading_emojis": "正在加载Emoji"
@@ -1915,7 +1911,8 @@
                 "last_backup": "上次备份 {date}",
                 "connections_configured": "{count} 个连接",
                 "apps_count": "{count} 个应用",
-                "automatic_backup": "自动备份"
+                "automatic_backup": "自动备份",
+                "show_details": "展开详情"
             },
             "quick_access": {
                 "header": "常用工具",
@@ -2543,8 +2540,6 @@
                     "theme_mode_pink": "粉色",
                     "theme_mode_material3": "Material 3",
                     "zoom": "界面缩放",
-                    "vrcplus_profile_icons": "使用个人资料头像",
-                    "vrcplus_profile_icons_description": "有可用头像时，优先将其显示为用户头像。",
                     "show_instance_id": "显示房间 ID",
                     "age_gated_instances": "显示具有年龄限制的房间",
                     "age_gated_instances_description": "显示具有年龄限制的房间。禁用时，这些房间将在列表中被隐藏，以跳转方式打开则显示为受限。",
@@ -3124,6 +3119,12 @@
             }
         },
         "player_list": {
+            "group_roles": {
+                "automatic": "当前实例群组（自动）",
+                "group": "角色所属群组",
+                "placeholder": "搜索群组或输入群组 ID",
+                "refresh": "刷新群组角色"
+            },
             "success": {
                 "last_updated": "上次更新",
                 "created": "创建时间"
@@ -3761,7 +3762,6 @@
                 "note": "线上备注",
                 "memo": "本地备注",
                 "avatar_info": "正在使用的模型",
-                "avatar_info_last_seen": "正在使用的模型",
                 "unknown_avatar": "未知模型",
                 "represented_group": "展示群组",
                 "bio": "个人简介",
@@ -4158,7 +4158,6 @@
                 "role_ids": "角色 ID",
                 "queue_enabled": "队列已启用",
                 "age_gate": "年龄限制",
-                "display_name": "昵称",
                 "user_id": "玩家 ID",
                 "strict": "严格",
                 "location": "位置变动",
@@ -4562,20 +4561,26 @@
                 "edited_by": "最后编辑者：",
                 "search_placeholder": "搜索帖子"
             },
+            "role_name": {
+                "group_owner": "群组所有者",
+                "everyone": "所有人",
+                "member": "成员"
+            },
             "members": {
                 "header": "成员",
                 "sorting": {
                     "joined_at_asc": "加入时间（顺序）",
                     "joined_at_desc": "加入时间（倒序）"
                 },
-                "filter": "按身份组筛选：",
-                "filters": {
-                    "everyone": "所有人",
-                    "users_with_no_role": "没有身份组的成员"
-                },
                 "unsubscribed_announcements": "该玩家不接收群组通知",
                 "representing": "该玩家在其名片上展示该群组",
-                "search": "搜索"
+                "view_all": "全部",
+                "friends": "好友",
+                "search": "搜索",
+                "loaded_of_total": "已加载 {loaded} / {total}",
+                "search_results": "{count} 个结果",
+                "export_loaded": "导出已加载（{count}）",
+                "export_all": "导出全部（{count}）"
             },
             "gallery": {
                 "header": "相册"
@@ -4627,15 +4632,12 @@
                 "group_join_request_cancelled": "已取消群组加入申请",
                 "group_refreshed": "已刷新群组",
                 "group_invite_sent": "已发送群组邀请",
-                "group_post_deleted": "已删除群组帖子",
-                "joined_newest": "最新加入",
-                "joined_oldest": "最早加入"
+                "group_post_deleted": "已删除群组帖子"
             },
             "action": {
                 "refresh_to_load_gallery_images": "刷新以加载图库图片",
                 "open_group_owner_profile": "打开群组所有者资料",
-                "join_state": "加入方式",
-                "load_all": "全部加载"
+                "join_state": "加入方式"
             },
             "toast": {
                 "failed_to_join_group": "加入群组失败",
@@ -4721,12 +4723,15 @@
             "ageGate": "具有年龄限制",
             "normal": "普通",
             "group": "群组",
-            "legacy": "传统"
+            "legacy": "传统",
+            "display_name": "房间名称"
         },
         "launch": {
             "header": "启动",
             "short_url": "短链接",
-            "location": "地点",
+            "share": "分享",
+            "share_description": "复制 VRCX-0 分享链接，对方打开即可预览并在客户端中打开",
+            "more_copy_options": "更多复制选项",
             "invite": "邀请",
             "open_ingame": "在 VRChat 中打开",
             "self_invite": "邀请自己",
@@ -4741,7 +4746,8 @@
                 "game_not_running": "VRChat 未运行"
             },
             "copy": {
-                "link": "链接",
+                "vrchat_link": "VRChat 链接",
+                "instance_id": "房间 ID",
                 "failed": "复制失败"
             }
         },
@@ -5384,7 +5390,10 @@
             "emoji_manager": "表情管理",
             "select_default_emoji": "选择默认表情",
             "default_emojis": "默认表情",
-            "send": "发送"
+            "send": "发送",
+            "recent": "最近使用",
+            "inventory_emojis": "库存",
+            "no_inventory_emojis": "库存里还没有可用的戳一戳表情"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 已是最新版本",
@@ -5926,6 +5935,7 @@
             "action": "操作"
         },
         "playerList": {
+            "groupRoles": "群组角色",
             "avatar": "模型",
             "timer": "时长",
             "icon": "图标",

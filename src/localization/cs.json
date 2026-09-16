@@ -1679,7 +1679,6 @@
                 "mark_seen": "Označit jako přečtené",
                 "send_boop": "Odeslat boop",
                 "search_emoji": "Hledat emoji",
-                "clear_selection": "Zrušit výběr",
                 "send": "Odeslat"
             },
             "success": {
@@ -1695,9 +1694,6 @@
                 "cannot_invite_from_the_current_instance_type": "Z tohoto typu instance nelze zvát",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Nelze pozvat: momentálně nejste v instanci, do které lze zvát",
                 "cannot_send_invite_response_no_current_user_session_is_available": "Odpověď na pozvánku nelze odeslat: aktuální relace uživatele není k dispozici"
-            },
-            "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "Nebylo vybráno žádné vlastní emoji. Bude odeslán výchozí boop"
             },
             "loading": {
                 "loading_emojis": "Načítání emoji"
@@ -1917,7 +1913,8 @@
                 "last_backup": "Záloha {date}",
                 "connections_configured": "{count} připojení",
                 "apps_count": "{count} aplikací",
-                "automatic_backup": "Auto záloha"
+                "automatic_backup": "Auto záloha",
+                "show_details": "Zobrazit podrobnosti"
             },
             "quick_access": {
                 "header": "Rychlý přístup",
@@ -2545,8 +2542,6 @@
                     "theme_mode_pink": "Růžový",
                     "theme_mode_material3": "Material 3",
                     "zoom": "Přiblížení",
-                    "vrcplus_profile_icons": "Profilové ikony",
-                    "vrcplus_profile_icons_description": "Použít profilovou ikonu jako obrázek uživatele, pokud je k dispozici.",
                     "show_instance_id": "Zobrazit ID instance",
                     "age_gated_instances": "Zobrazit věkově omezené instance",
                     "age_gated_instances_description": "Zobrazí věkově omezené instance. Když je vypnuto, jsou tyto instance skryty a zobrazeny jako omezené.",
@@ -3126,6 +3121,12 @@
             }
         },
         "player_list": {
+            "group_roles": {
+                "automatic": "Skupina instance (automaticky)",
+                "group": "Skupina pro role",
+                "placeholder": "Hledat skupiny nebo zadat ID skupiny",
+                "refresh": "Obnovit role ve skupině"
+            },
             "success": {
                 "last_updated": "Naposledy aktualizováno",
                 "created": "Vytvořeno"
@@ -3762,7 +3763,6 @@
                 "note": "Poznámka",
                 "memo": "Memo",
                 "avatar_info": "Info o avatarovi",
-                "avatar_info_last_seen": "Naposledy viděná info o avatarovi",
                 "unknown_avatar": "Neznámý avatar",
                 "represented_group": "Reprezentovaná skupina",
                 "bio": "Bio",
@@ -4161,7 +4161,6 @@
                 "role_ids": "ID rolí",
                 "queue_enabled": "Fronta povolena",
                 "age_gate": "Ověření věku",
-                "display_name": "Zobrazované jméno",
                 "user_id": "ID uživatele",
                 "strict": "Přísný režim",
                 "location": "Lokace",
@@ -4521,20 +4520,26 @@
                 "edited_by": "Upravil(a):",
                 "search_placeholder": "Hledat"
             },
+            "role_name": {
+                "group_owner": "Vlastník skupiny",
+                "everyone": "Všichni",
+                "member": "Člen"
+            },
             "members": {
                 "header": "Členové",
                 "sorting": {
                     "joined_at_asc": "Datum vstupu (vzestupně)",
                     "joined_at_desc": "Datum vstupu (sestupně)"
                 },
-                "filter": "Filtr:",
-                "filters": {
-                    "everyone": "Všichni",
-                    "users_with_no_role": "Uživatelé bez role"
-                },
                 "unsubscribed_announcements": "Odhlášeno z odběru oznámení",
                 "representing": "Reprezentuje",
-                "search": "Hledat"
+                "view_all": "Vše",
+                "friends": "Přátelé",
+                "search": "Hledat",
+                "loaded_of_total": "Načteno {loaded} z {total}",
+                "search_results": "{count} výsledků",
+                "export_loaded": "Exportovat načtené ({count})",
+                "export_all": "Exportovat vše ({count})"
             },
             "gallery": {
                 "header": "Fotografie"
@@ -4586,15 +4591,12 @@
                 "group_join_request_cancelled": "Žádost o vstup do skupiny zrušena",
                 "group_refreshed": "Skupina obnovena",
                 "group_invite_sent": "Pozvánka do skupiny odeslána",
-                "group_post_deleted": "Příspěvek skupiny smazán",
-                "joined_newest": "Vstoupil(a) nejnovější",
-                "joined_oldest": "Vstoupil(a) nejstarší"
+                "group_post_deleted": "Příspěvek skupiny smazán"
             },
             "action": {
                 "refresh_to_load_gallery_images": "Obnovte pro načtení obrázků galerie",
                 "open_group_owner_profile": "Otevřít profil vlastníka skupiny",
-                "join_state": "Stav vstupu",
-                "load_all": "Načíst vše"
+                "join_state": "Stav vstupu"
             },
             "toast": {
                 "failed_to_join_group": "Nepodařilo se vstoupit do skupiny",
@@ -4680,12 +4682,15 @@
             "ageGate": "Věkové omezení",
             "normal": "Normální",
             "group": "Skupina",
-            "legacy": "Zastaralé"
+            "legacy": "Zastaralé",
+            "display_name": "Název instance"
         },
         "launch": {
             "header": "Spustit",
             "short_url": "Krátká URL",
-            "location": "Lokace",
+            "share": "Sdílet",
+            "share_description": "Zkopíruje odkaz VRCX-0. Kdo ho otevře, uvidí náhled a může instanci otevřít v klientu.",
+            "more_copy_options": "Další možnosti kopírování",
             "invite": "Pozvat",
             "open_ingame": "Otevřít ve hře",
             "self_invite": "Pozvat sám sebe",
@@ -4700,7 +4705,8 @@
                 "game_not_running": "VRChat neběží"
             },
             "copy": {
-                "link": "Odkaz",
+                "vrchat_link": "Odkaz VRChat",
+                "instance_id": "ID instance",
                 "failed": "Kopírování se nezdařilo"
             }
         },
@@ -5343,7 +5349,10 @@
             "emoji_manager": "Správce emoji",
             "select_default_emoji": "Vybrat výchozí emoji",
             "default_emojis": "Výchozí emoji",
-            "send": "Odeslat"
+            "send": "Odeslat",
+            "recent": "Nedávno použité",
+            "inventory_emojis": "Inventář",
+            "no_inventory_emojis": "V inventáři zatím nejsou žádná emoji pro boop"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 is up to date.",
@@ -5881,6 +5890,7 @@
             "action": "Akce"
         },
         "playerList": {
+            "groupRoles": "Role ve skupině",
             "avatar": "Avatar",
             "timer": "Časovač",
             "icon": "Ikony",

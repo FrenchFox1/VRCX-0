@@ -3,7 +3,6 @@ import type { SortingState } from '@tanstack/react-table';
 import {
     getDataTableStorageKey,
     readPersistedTableState,
-    sanitizeTableColumnSizing,
     sanitizeTableColumnVisibility,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
@@ -89,10 +88,6 @@ export function sanitizeGameLogColumnOrder(value: unknown): string[] {
         'spacer',
         ...nextColumns.filter((columnId) => columnId !== 'spacer')
     ];
-}
-
-export function sanitizeGameLogColumnSizing(value: unknown) {
-    return sanitizeTableColumnSizing(value, GAME_LOG_COLUMN_IDS);
 }
 
 export function resolveGameLogPageSize(

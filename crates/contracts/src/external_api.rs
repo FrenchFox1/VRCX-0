@@ -116,19 +116,6 @@ pub struct ExternalHttpRequestInput {
 #[derive(Clone, Debug, Default)]
 pub struct ExternalApiPolicy;
 
-impl ExternalApiPolicy {
-    pub fn with_allowed_origins<I, S>(origins: I) -> Self
-    where
-        I: IntoIterator<Item = S>,
-        S: AsRef<str>,
-    {
-        for origin in origins {
-            let _ = normalize_origin(origin.as_ref());
-        }
-        Self
-    }
-}
-
 #[derive(Debug, Serialize, specta::Type)]
 pub struct ExternalApiExecuteResponse {
     pub status: i32,
@@ -410,12 +397,6 @@ fn external_url_allowed(url: &Url, scope: ExternalApiScope, policy: &ExternalApi
 
 pub fn request_origin(value: &str) -> Option<String> {
     Url::parse(value)
-        .ok()
-        .and_then(|url| normalize_url_origin(&url))
-}
-
-fn normalize_origin(value: &str) -> Option<String> {
-    Url::parse(value.trim())
         .ok()
         .and_then(|url| normalize_url_origin(&url))
 }

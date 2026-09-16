@@ -327,7 +327,7 @@ export function useFeedFriendActions(): FeedFriendActions {
                 }
                 await sendBoopToUser({
                     userId: friendId,
-                    emojiId: normalizeId(result.value)
+                    emoji: result.value ?? null
                 });
                 toast.add({
                     type: 'success',

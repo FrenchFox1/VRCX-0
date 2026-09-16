@@ -51,10 +51,6 @@ impl FavoriteEntityKind {
             _ => None,
         }
     }
-
-    pub fn matches_remote_type(self, value: &str) -> bool {
-        Self::from_remote_type(value) == Some(self)
-    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]

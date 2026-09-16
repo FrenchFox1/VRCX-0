@@ -36,7 +36,7 @@ function FriendAvatar({
     friend?: FriendRecord;
     name: string;
 }) {
-    const imageUrl = friend ? userImage(friend, true, '64') : '';
+    const imageUrl = friend ? userImage(friend, 64) : '';
 
     return (
         <Avatar size="sm">

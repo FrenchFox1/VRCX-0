@@ -16,6 +16,7 @@ use super::{
 };
 
 impl DatabaseService {
+    #[cfg(test)]
     pub fn begin_upgrade(&self, from_version: i64, to_version: i64) -> Result<(), Error> {
         self.begin_upgrade_with_progress(from_version, to_version, None, None, None, |_, _| {})
     }

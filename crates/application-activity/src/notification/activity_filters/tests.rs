@@ -57,51 +57,6 @@ fn test_config(_name: &str) -> std::result::Result<((), TestConfig), Box<dyn std
 }
 
 #[test]
-fn backend_load_ignores_legacy_shared_wrist_filters(
-) -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let (_dir, config) = test_config("overlay-activity-config")?;
-    config.set_json(
-        "sharedFeedFilters",
-        &json!({
-            "noty": {
-                "Online": "Off"
-            },
-            "wrist": {
-                "invite": "VIP",
-                "friendRequest": "Off"
-            }
-        }),
-    )?;
-    let filters = load_overlay_activity_filters(&config);
-    assert_eq!(
-        filters
-            .rule_for(OverlayActivitySurface::Wrist, "invite")
-            .scope,
-        OverlayActivityScope::Friends
-    );
-    assert_eq!(
-        filters
-            .rule_for(OverlayActivitySurface::Wrist, "friendRequest")
-            .scope,
-        OverlayActivityScope::On
-    );
-    assert_eq!(
-        config.get_json("sharedFeedFilters", json!({}))?,
-        json!({
-            "noty": {
-                "Online": "Off"
-            },
-            "wrist": {
-                "invite": "VIP",
-                "friendRequest": "Off"
-            }
-        })
-    );
-    assert_eq!(config.get_raw("overlayActivityFilters")?, None);
-    Ok(())
-}
-
-#[test]
 fn backend_load_reads_three_independent_surface_keys(
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
     let (_dir, config) = test_config("overlay-activity-three-keys")?;

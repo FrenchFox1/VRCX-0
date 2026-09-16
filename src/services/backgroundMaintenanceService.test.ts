@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
     formatReleaseDisplayVersion: vi.fn(),
     toNormalizedReleaseFromSnapshot: vi.fn(),
     runRuntimeTelemetryJob: vi.fn(),
-    recordRuntimeJobTelemetry: vi.fn(),
     appRegistryBackupMaintenanceRun: vi.fn(),
     pushNotification: vi.fn()
 }));
@@ -32,7 +31,6 @@ vi.mock('./hostCapabilityService', () => ({
 }));
 
 vi.mock('./runtimeJobTelemetryService', () => ({
-    recordRuntimeJobTelemetry: mocks.recordRuntimeJobTelemetry,
     runRuntimeTelemetryJob: mocks.runRuntimeTelemetryJob
 }));
 

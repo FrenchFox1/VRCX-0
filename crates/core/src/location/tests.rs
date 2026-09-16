@@ -362,29 +362,32 @@ fn display_location_can_format_instance_access_with_labels() {
     };
 
     assert_eq!(
-        format_display_location_with_labels(
+        format_display_location_with_labels_and_instance(
             &parse_location("wrld_a:1~group(grp_a)~groupAccessType(plus)"),
             "Group World",
             "Group Name",
             &labels,
+            false,
         ),
         "Group World Group+(Group Name)"
     );
     assert_eq!(
-        format_display_location_with_labels(
+        format_display_location_with_labels_and_instance(
             &parse_location("wrld_a:1~friends(usr_a)"),
             "Friend World",
             "",
             &labels,
+            false,
         ),
         "Friend World Friends"
     );
     assert_eq!(
-        format_display_location_with_labels(
+        format_display_location_with_labels_and_instance(
             &parse_location("wrld_a:1~hidden(usr_a)"),
             "Plus World",
             "",
             &labels,
+            false,
         ),
         "Plus World Friends+"
     );

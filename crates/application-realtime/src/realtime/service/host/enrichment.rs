@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
-use vrcx_0_core::friends::FriendRecord;
 
 use crate::realtime::{UserQueryCachePolicy, UserQueryKind, UserQueryOptions};
 use crate::world_enrich::{self, PendingWorldNameResolution};
@@ -14,6 +13,7 @@ use super::{
     RealtimeNotificationOutput, RealtimeNotificationProjection, RealtimeNotificationUpsert,
     RealtimePersistenceBatch, Value,
 };
+use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::OwnerId;
 
 const NOTIFICATION_USERNAME_RESOLVE_BUDGET: Duration = Duration::from_secs(2);
@@ -70,14 +70,8 @@ impl RealtimeHostRuntime {
         if endpoint.is_empty() {
             return;
         }
-        let allow_user_icon = self.display_vrc_plus_icons_as_avatar();
         for upsert in &mut projection.upserts {
-            self.enrich_notification_image(
-                &endpoint,
-                &mut upsert.notification,
-                allow_user_icon,
-                owner_user_id,
-            );
+            self.enrich_notification_image(&endpoint, &mut upsert.notification, owner_user_id);
         }
     }
 
@@ -131,32 +125,23 @@ impl RealtimeHostRuntime {
         user_display_name(&Value::Object(user))
     }
 
-    fn cached_user_image_url(
-        &self,
-        endpoint: &str,
-        user_id: &str,
-        allow_user_icon: bool,
-    ) -> Option<String> {
-        if let Some(url) = self.cached_friend_image_url(endpoint, user_id, allow_user_icon) {
+    fn cached_user_image_url(&self, endpoint: &str, user_id: &str) -> Option<String> {
+        if let Some(url) = self.cached_friend_image_url(endpoint, user_id) {
             return Some(url);
         }
         let user = self.user_cache.get_user(endpoint, user_id)?;
-        user_notification_image_url(&Value::Object(user), allow_user_icon)
+        user.trimmed_string("iconUrl")
     }
 
-    fn cached_friend_image_url(
-        &self,
-        endpoint: &str,
-        user_id: &str,
-        allow_user_icon: bool,
-    ) -> Option<String> {
+    fn cached_friend_image_url(&self, endpoint: &str, user_id: &str) -> Option<String> {
         self.friends
             .with_user_cache_records(|friend_endpoint, records| {
                 if friend_endpoint.trim() != endpoint.trim() {
                     return None;
                 }
                 let record = records.get(user_id.trim())?;
-                friend_notification_image_url(record, allow_user_icon)
+                let url = record.icon_url.trim();
+                (!url.is_empty()).then(|| url.to_string())
             })?
     }
 
@@ -164,16 +149,14 @@ impl RealtimeHostRuntime {
         &self,
         endpoint: &str,
         user_id: &str,
-        allow_user_icon: bool,
     ) -> Option<String> {
-        self.cached_user_image_url(endpoint, user_id, allow_user_icon)
+        self.cached_user_image_url(endpoint, user_id)
     }
 
     fn enrich_notification_image(
         &self,
         endpoint: &str,
         value: &mut Value,
-        allow_user_icon: bool,
         owner_user_id: &OwnerId,
     ) -> bool {
         if notification_has_direct_image(value) {
@@ -182,19 +165,11 @@ impl RealtimeHostRuntime {
         let Some(user_id) = notification_avatar_user_id(value, owner_user_id) else {
             return false;
         };
-        let Some(image_url) = self.cached_user_image_url(endpoint, &user_id, allow_user_icon)
-        else {
+        let Some(image_url) = self.cached_user_image_url(endpoint, &user_id) else {
             return false;
         };
         apply_notification_image_url(value, &image_url);
         true
-    }
-
-    fn display_vrc_plus_icons_as_avatar(&self) -> bool {
-        self.deps
-            .store
-            .get_bool("displayVRCPlusIconsAsAvatar", true)
-            .unwrap_or(true)
     }
 
     pub(super) fn finalize_notification_output_for_delivery(
@@ -625,46 +600,6 @@ fn user_display_name(value: &Value) -> Option<String> {
         .map(str::trim)
         .unwrap_or_default();
     is_meaningful_actor_name(display_name).then(|| display_name.to_string())
-}
-
-fn user_notification_image_url(value: &Value, allow_user_icon: bool) -> Option<String> {
-    let object = value.as_object()?;
-    [
-        allow_user_icon.then(|| object_string(object, "userIcon")),
-        Some(object_string(object, "profilePicOverride")),
-        Some(object_string(object, "currentAvatarThumbnailImageUrl")),
-    ]
-    .into_iter()
-    .flatten()
-    .find(|url| !url.trim().is_empty())
-}
-
-fn friend_notification_image_url(record: &FriendRecord, allow_user_icon: bool) -> Option<String> {
-    [
-        allow_user_icon.then(|| friend_record_extra_str(record, "userIcon")),
-        Some(friend_record_extra_str(
-            record,
-            "profilePicOverrideThumbnail",
-        )),
-        Some(friend_record_extra_str(record, "profilePicOverride")),
-        Some(friend_record_extra_str(record, "thumbnailUrl")),
-        Some(record.current_avatar_thumbnail_image_url.as_str()),
-        Some(record.current_avatar_image_url.as_str()),
-    ]
-    .into_iter()
-    .flatten()
-    .map(str::trim)
-    .find(|url| !url.is_empty())
-    .map(str::to_string)
-}
-
-fn friend_record_extra_str<'a>(record: &'a FriendRecord, key: &str) -> &'a str {
-    record
-        .extra
-        .get(key)
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .unwrap_or_default()
 }
 
 fn apply_sender_display_name(value: &mut Value, display_name: &str) {

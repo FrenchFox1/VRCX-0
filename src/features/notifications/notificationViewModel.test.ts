@@ -243,6 +243,28 @@ describe('notification view model', () => {
         });
     });
 
+    it('exposes inventory boops for a sender-scoped item lookup instead of trusting the row image', () => {
+        const view = toNotificationViewModel(
+            row({
+                type: 'boop',
+                senderUserId: 'usr_3',
+                senderUsername: 'Pine',
+                message: 'Boop!',
+                imageUrl: 'https://api.vrchat.cloud/api/1/file/avatar/1',
+                details: { inventoryItemId: 'inv_miku' }
+            })
+        );
+
+        expect(view.body).toBe('Boop!');
+        expect(view.emoji).toEqual({
+            id: 'inv_miku',
+            imageUrl: '',
+            kind: 'inventory',
+            name: '',
+            senderUserId: 'usr_3'
+        });
+    });
+
     it('falls back to a system actor for empty or unknown types', () => {
         const empty = toNotificationViewModel(
             row({ type: '', message: '', title: '' }),

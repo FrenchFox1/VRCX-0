@@ -49,7 +49,6 @@ vi.mock('react-i18next', () => {
         'component.region_code_badge.dynamic.region_value': 'Region',
         'dialog.new_instance.access_type_friend_plus': 'Friends+',
         'dialog.new_instance.access_type_group': 'Group',
-        'dialog.new_instance.access_type_group_plus': 'Group Plus',
         'dialog.new_instance.group_access_type_plus': 'Group Plus',
         'dialog.new_instance.access_type_public': 'Public',
         'dialog.user.info.instance_closed': 'Instance closed',

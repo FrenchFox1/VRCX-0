@@ -170,11 +170,9 @@ impl RealtimeNotificationUserImageResolver {
 }
 
 impl CachedNotificationUserImageResolver for RealtimeNotificationUserImageResolver {
-    fn cached_url(&self, endpoint: &str, user_id: &str, allow_user_icon: bool) -> Option<String> {
-        self.runtime.upgrade()?.cached_user_notification_image_url(
-            endpoint,
-            user_id,
-            allow_user_icon,
-        )
+    fn cached_url(&self, endpoint: &str, user_id: &str) -> Option<String> {
+        self.runtime
+            .upgrade()?
+            .cached_user_notification_image_url(endpoint, user_id)
     }
 }

@@ -355,7 +355,7 @@ describe('WorldNewInstanceDialog', () => {
         render(<WorldNewInstanceDialog {...props} />);
 
         await waitFor(() => {
-            expect(inputByLabel('dialog.world.label.display_name').value).toBe(
+            expect(inputByLabel('dialog.new_instance.display_name').value).toBe(
                 '  Alpha Room  '
             );
         });

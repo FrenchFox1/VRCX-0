@@ -43,9 +43,7 @@ pub use ports::{
 pub use preferences::{config_bool, parse_webhook_fields, NotificationWebhookFormat};
 pub use rendered::RenderedNotification;
 pub use rendering::{load_notification_locale, render_delivery};
-pub use user_image::{
-    normalize_avatar_image_url_128, user_image_url_128, UserImageCache, UserImageSources,
-};
+pub use user_image::{normalize_avatar_image_url_128, UserImageCache};
 pub use webhook::{
     discord_webhook_url_with_wait, send_json_webhook_with_retry, webhook_local_time_string,
     WebhookDeliveryFailure, WebhookDeliveryFailureKind, WebhookDeliveryOutcome,

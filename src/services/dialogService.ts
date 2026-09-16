@@ -96,12 +96,7 @@ const browseHistoryKinds = new Set<EntityDialogKind>([
     'group'
 ]);
 const historyImageKeys: Record<BrowseHistoryEntityKind, readonly string[]> = {
-    user: [
-        'profilePicOverrideThumbnail',
-        'profilePicOverride',
-        'currentAvatarThumbnailImageUrl',
-        'currentAvatarImageUrl'
-    ],
+    user: ['iconUrl'],
     world: ['thumbnailImageUrl', 'imageUrl'],
     avatar: ['thumbnailImageUrl', 'imageUrl'],
     group: ['iconUrl', 'bannerUrl']

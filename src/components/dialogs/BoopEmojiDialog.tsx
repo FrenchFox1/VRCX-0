@@ -1,12 +1,23 @@
-import { CheckIcon, ImageIcon, RefreshCcwIcon, SendIcon } from 'lucide-react';
+import { CheckIcon, ImageIcon, RefreshCcwIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TileShell } from '@/components/tile/TileShell';
+import {
+    isSameBoopEmoji,
+    type BoopEmojiChoice
+} from '@/domain/entities/boopEmoji';
+import {
+    resolveInventoryImageUrl,
+    resolveInventoryName
+} from '@/domain/entities/inventory';
 import { cn } from '@/lib/utils';
-import mediaRepository from '@/repositories/mediaRepository';
+import mediaRepository, {
+    type InventoryItemRecord
+} from '@/repositories/mediaRepository';
+import { getRecentBoopEmojis } from '@/services/boopRecentService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import {
     TILE_CHECK,
@@ -27,12 +38,9 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
-type EmojiSource = 'default' | 'custom';
+const EMOJI_SOURCES = ['recent', 'default', 'custom', 'inventory'] as const;
 
-type CustomEmoji = {
-    id: string;
-    imageUrl: string;
-};
+type EmojiSource = (typeof EMOJI_SOURCES)[number];
 
 type BoopEmojiDialogProps = {
     open: boolean;
@@ -40,8 +48,21 @@ type BoopEmojiDialogProps = {
     targetLabel?: string;
     sendDisabled?: boolean;
     onOpenChange: (open: boolean) => void;
-    onSend: (emojiId: string) => void | Promise<void>;
+    onSend: (choice: BoopEmojiChoice) => void | Promise<void>;
 };
+
+const defaultEmojiChoices: readonly BoopEmojiChoice[] = vrchatDefaultEmojis.map(
+    (emoji) => ({
+        kind: 'default',
+        id: emoji.id,
+        imageUrl: emoji.previewUrl,
+        name: emoji.name
+    })
+);
+
+function isEmojiSource(value: string): value is EmojiSource {
+    return EMOJI_SOURCES.some((source) => source === value);
+}
 
 function getString(record: Record<string, unknown>, key: string): string {
     const value = record[key];
@@ -62,16 +83,96 @@ function getFileImageUrl(file: Record<string, unknown>): string {
 
 function normalizeCustomEmoji(
     file: Record<string, unknown>
-): CustomEmoji | null {
+): BoopEmojiChoice | null {
     const id = getString(file, 'id');
     const imageUrl = getFileImageUrl(file);
     if (!id || !imageUrl) {
         return null;
     }
+    return { kind: 'file', id, imageUrl, name: '' };
+}
+
+function normalizeInventoryEmoji(
+    item: InventoryItemRecord
+): BoopEmojiChoice | null {
+    const imageUrl = resolveInventoryImageUrl(item);
+    if (!item.id || !imageUrl || !item.metadata?.fileId) {
+        return null;
+    }
     return {
-        id,
-        imageUrl
+        kind: 'inventory',
+        id: item.id,
+        imageUrl: convertFileUrlToImageUrl(imageUrl, 128),
+        name: resolveInventoryName(item)
     };
+}
+
+async function fetchCustomEmojis(): Promise<BoopEmojiChoice[]> {
+    const { json } = await mediaRepository.getFileList({
+        n: 100,
+        tag: 'emoji'
+    });
+    return Array.isArray(json)
+        ? [...json]
+              .reverse()
+              .map(normalizeCustomEmoji)
+              .filter((emoji) => emoji !== null)
+        : [];
+}
+
+async function fetchInventoryEmojis(): Promise<BoopEmojiChoice[]> {
+    const { items } = await mediaRepository.collectInventoryItems({
+        types: ['emoji'],
+        notFlags: ['ugc'],
+        archived: false
+    });
+    return items.map(normalizeInventoryEmoji).filter((emoji) => emoji !== null);
+}
+
+function useEmojiRows(
+    fetchRows: () => Promise<BoopEmojiChoice[]>,
+    enabled: boolean
+) {
+    const [rows, setRows] = useState<BoopEmojiChoice[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const requestIdRef = useRef(0);
+
+    const load = useCallback(async () => {
+        const requestId = ++requestIdRef.current;
+        setLoading(true);
+        setError('');
+        try {
+            const next = await fetchRows();
+            if (requestIdRef.current === requestId) {
+                setRows(next);
+            }
+        } catch (nextError) {
+            if (requestIdRef.current === requestId) {
+                setRows([]);
+                setError(
+                    nextError instanceof Error
+                        ? nextError.message
+                        : 'Failed to load emojis.'
+                );
+            }
+        } finally {
+            if (requestIdRef.current === requestId) {
+                setLoading(false);
+            }
+        }
+    }, [fetchRows]);
+
+    useEffect(() => {
+        if (enabled) {
+            load();
+            return;
+        }
+        requestIdRef.current += 1;
+        setLoading(false);
+    }, [enabled, load]);
+
+    return { rows, loading, error, load };
 }
 
 function EmojiChoice({
@@ -146,6 +247,61 @@ function EmojiChoice({
     );
 }
 
+function EmojiChoiceGrid({
+    source,
+    rows,
+    selected,
+    disabled,
+    loading = false,
+    emptyLabel,
+    onSelect
+}: {
+    source: EmojiSource;
+    rows: readonly BoopEmojiChoice[];
+    selected: BoopEmojiChoice | null;
+    disabled: boolean;
+    loading?: boolean;
+    emptyLabel: string;
+    onSelect: (choice: BoopEmojiChoice) => void;
+}) {
+    const { t } = useTranslation();
+    return (
+        <TabsContent
+            value={source}
+            className="bg-muted/20 max-h-[48vh] min-h-0 overflow-y-auto rounded-xl border p-2"
+        >
+            {loading ? (
+                <div className="text-muted-foreground flex h-28 items-center justify-center gap-2 text-sm">
+                    <Spinner className="size-4" />
+                    {t('view.notification.loading.loading_emojis')}
+                </div>
+            ) : rows.length ? (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
+                    {rows.map((choice) => (
+                        <EmojiChoice
+                            key={`${choice.kind}:${choice.id}`}
+                            imageUrl={choice.imageUrl}
+                            label={
+                                choice.name || t('dialog.gallery_icons.emoji')
+                            }
+                            imageOnly={!choice.name}
+                            selected={isSameBoopEmoji(selected, choice)}
+                            disabled={disabled}
+                            onClick={() => onSelect(choice)}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="text-muted-foreground flex h-28 items-center justify-center text-sm">
+                    {emptyLabel}
+                </div>
+            )}
+        </TabsContent>
+    );
+}
+
+const tabTriggerClassName = 'min-w-28 flex-none px-3';
+
 export function BoopEmojiDialog({
     open,
     isLocalUserVrcPlusSupporter = false,
@@ -156,90 +312,57 @@ export function BoopEmojiDialog({
 }: BoopEmojiDialogProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [emojiId, setEmojiId] = useState('');
+    const [choice, setChoice] = useState<BoopEmojiChoice | null>(null);
     const [emojiSource, setEmojiSource] = useState<EmojiSource>('default');
-    const [emojiRows, setEmojiRows] = useState<CustomEmoji[]>([]);
-    const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
-    const [error, setError] = useState('');
-    const requestIdRef = useRef(0);
-
-    const loadEmojiRows = useCallback(async () => {
-        if (!open || !isLocalUserVrcPlusSupporter) {
-            return;
-        }
-        const requestId = requestIdRef.current + 1;
-        requestIdRef.current = requestId;
-        setLoading(true);
-        setError('');
-        try {
-            const { json } = await mediaRepository.getFileList({
-                n: 100,
-                tag: 'emoji'
-            });
-            if (requestIdRef.current !== requestId) {
-                return;
-            }
-            setEmojiRows(
-                Array.isArray(json)
-                    ? [...json]
-                          .reverse()
-                          .map(normalizeCustomEmoji)
-                          .filter(
-                              (emoji): emoji is CustomEmoji => emoji !== null
-                          )
-                    : []
-            );
-        } catch (nextError) {
-            if (requestIdRef.current !== requestId) {
-                return;
-            }
-            setEmojiRows([]);
-            setError(
-                nextError instanceof Error
-                    ? nextError.message
-                    : 'Failed to load emojis.'
-            );
-        } finally {
-            if (requestIdRef.current === requestId) {
-                setLoading(false);
-            }
-        }
-    }, [isLocalUserVrcPlusSupporter, open]);
+    const [sendError, setSendError] = useState('');
+    const recent = useEmojiRows(getRecentBoopEmojis, open);
+    const custom = useEmojiRows(
+        fetchCustomEmojis,
+        open && isLocalUserVrcPlusSupporter
+    );
+    const inventory = useEmojiRows(fetchInventoryEmojis, open);
 
     useEffect(() => {
         if (open) {
-            setEmojiId('');
-            setEmojiSource('default');
-            loadEmojiRows();
-        } else {
-            requestIdRef.current += 1;
-            setEmojiId('');
-            setEmojiSource('default');
-            setEmojiRows([]);
-            setLoading(false);
-            setSending(false);
-            setError('');
+            setChoice(null);
+            setSendError('');
         }
-    }, [loadEmojiRows, open]);
+    }, [open]);
 
-    const selectedEmojiName =
-        vrchatDefaultEmojis.find((emoji) => emoji.id === emojiId)?.name ??
-        (emojiRows.some((emoji) => emoji.id === emojiId)
-            ? t('dialog.inventory.custom')
-            : '');
+    useEffect(() => {
+        setEmojiSource((current) =>
+            recent.rows.length
+                ? 'recent'
+                : current === 'recent'
+                  ? 'default'
+                  : current
+        );
+    }, [recent.rows]);
+
+    const error = sendError || custom.error || inventory.error;
+    const refreshable =
+        emojiSource === 'custom'
+            ? custom
+            : emojiSource === 'inventory'
+              ? inventory
+              : null;
+
+    function toggleChoice(next: BoopEmojiChoice) {
+        setChoice((current) => (isSameBoopEmoji(current, next) ? null : next));
+    }
 
     async function handleSend() {
-        if (sendDisabled || sending) {
+        if (sendDisabled || sending || !choice) {
             return;
         }
         setSending(true);
-        setError('');
+        setSendError('');
         try {
-            await onSend(emojiId);
+            await onSend(choice);
             onOpenChange(false);
         } catch (nextError) {
-            setError(
+            setSendError(
                 nextError instanceof Error
                     ? nextError.message
                     : 'Failed to send boop.'
@@ -263,146 +386,97 @@ export function BoopEmojiDialog({
                         value={emojiSource}
                         className="min-h-0 gap-3"
                         onValueChange={(value) => {
-                            if (value === 'default' || value === 'custom') {
+                            if (isEmojiSource(value)) {
                                 setEmojiSource(value);
                             }
                         }}
                     >
                         <div className="flex min-h-8 items-center justify-between gap-3">
                             <TabsList className="justify-start">
+                                {recent.rows.length ? (
+                                    <TabsTrigger
+                                        value="recent"
+                                        className={tabTriggerClassName}
+                                    >
+                                        {t('dialog.boop_dialog.recent')}
+                                    </TabsTrigger>
+                                ) : null}
                                 <TabsTrigger
                                     value="default"
-                                    className="min-w-28 flex-none px-3"
+                                    className={tabTriggerClassName}
                                 >
                                     {t('dialog.boop_dialog.default_emojis')}
                                 </TabsTrigger>
                                 {isLocalUserVrcPlusSupporter ? (
                                     <TabsTrigger
                                         value="custom"
-                                        className="min-w-28 flex-none px-3"
+                                        className={tabTriggerClassName}
                                     >
                                         {t('dialog.inventory.custom')}
                                     </TabsTrigger>
                                 ) : null}
+                                <TabsTrigger
+                                    value="inventory"
+                                    className={tabTriggerClassName}
+                                >
+                                    {t('dialog.boop_dialog.inventory_emojis')}
+                                </TabsTrigger>
                             </TabsList>
-                            {emojiId || emojiSource === 'custom' ? (
-                                <div className="flex min-w-0 items-center gap-1">
-                                    {emojiId ? (
-                                        <>
-                                            <span
-                                                className="text-muted-foreground max-w-36 truncate text-xs"
-                                                title={selectedEmojiName}
-                                            >
-                                                {selectedEmojiName}
-                                            </span>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                disabled={sending}
-                                                onClick={() => setEmojiId('')}
-                                            >
-                                                {t(
-                                                    'view.notification.action.clear_selection'
-                                                )}
-                                            </Button>
-                                        </>
-                                    ) : null}
-                                    {emojiSource === 'custom' ? (
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon-sm"
-                                            aria-label={t(
-                                                'common.actions.refresh'
-                                            )}
-                                            title={t('common.actions.refresh')}
-                                            disabled={loading || sending}
-                                            onClick={loadEmojiRows}
-                                        >
-                                            <RefreshCcwIcon />
-                                        </Button>
-                                    ) : null}
-                                </div>
+                            {refreshable ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    aria-label={t('common.actions.refresh')}
+                                    title={t('common.actions.refresh')}
+                                    disabled={refreshable.loading || sending}
+                                    onClick={refreshable.load}
+                                >
+                                    <RefreshCcwIcon />
+                                </Button>
                             ) : null}
                         </div>
-                        <TabsContent
-                            value="default"
-                            className="bg-muted/20 max-h-[48vh] min-h-0 overflow-y-auto rounded-xl border p-2"
-                        >
-                            <div className="grid grid-cols-[repeat(auto-fill,minmax(92px,1fr))] gap-2">
-                                {vrchatDefaultEmojis.map((emoji) => {
-                                    const selected = emojiId === emoji.id;
-                                    return (
-                                        <EmojiChoice
-                                            key={emoji.id}
-                                            imageUrl={emoji.previewUrl}
-                                            label={emoji.name}
-                                            selected={selected}
-                                            disabled={sending}
-                                            onClick={() =>
-                                                setEmojiId(
-                                                    selected ? '' : emoji.id
-                                                )
-                                            }
-                                        />
-                                    );
-                                })}
-                            </div>
-                        </TabsContent>
-                        {isLocalUserVrcPlusSupporter ? (
-                            <TabsContent
-                                value="custom"
-                                className="bg-muted/20 max-h-[48vh] min-h-0 overflow-y-auto rounded-xl border p-2"
-                            >
-                                {loading ? (
-                                    <div className="text-muted-foreground flex h-28 items-center justify-center gap-2 text-sm">
-                                        <Spinner className="size-4" />
-                                        {t(
-                                            'view.notification.loading.loading_emojis'
-                                        )}
-                                    </div>
-                                ) : emojiRows.length ? (
-                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
-                                        {emojiRows.map((emoji) => {
-                                            const selected =
-                                                emojiId === emoji.id;
-                                            return (
-                                                <EmojiChoice
-                                                    key={emoji.id}
-                                                    imageUrl={emoji.imageUrl}
-                                                    label={t(
-                                                        'dialog.gallery_icons.emoji'
-                                                    )}
-                                                    imageOnly
-                                                    selected={selected}
-                                                    disabled={sending}
-                                                    onClick={() =>
-                                                        setEmojiId(
-                                                            selected
-                                                                ? ''
-                                                                : emoji.id
-                                                        )
-                                                    }
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="text-muted-foreground flex h-28 items-center justify-center text-sm">
-                                        {t('empty_state.search_no_results')}
-                                    </div>
-                                )}
-                            </TabsContent>
+                        {recent.rows.length ? (
+                            <EmojiChoiceGrid
+                                source="recent"
+                                rows={recent.rows}
+                                selected={choice}
+                                disabled={sending}
+                                emptyLabel={t('empty_state.search_no_results')}
+                                onSelect={toggleChoice}
+                            />
                         ) : null}
-                    </Tabs>
-                    {!emojiId ? (
-                        <p className="text-muted-foreground text-xs">
-                            {t(
-                                'view.notification.empty.no_custom_emoji_selected_the_default_boop_will_be_sent'
+                        <EmojiChoiceGrid
+                            source="default"
+                            rows={defaultEmojiChoices}
+                            selected={choice}
+                            disabled={sending}
+                            emptyLabel={t('empty_state.search_no_results')}
+                            onSelect={toggleChoice}
+                        />
+                        {isLocalUserVrcPlusSupporter ? (
+                            <EmojiChoiceGrid
+                                source="custom"
+                                rows={custom.rows}
+                                selected={choice}
+                                disabled={sending}
+                                loading={custom.loading}
+                                emptyLabel={t('empty_state.search_no_results')}
+                                onSelect={toggleChoice}
+                            />
+                        ) : null}
+                        <EmojiChoiceGrid
+                            source="inventory"
+                            rows={inventory.rows}
+                            selected={choice}
+                            disabled={sending}
+                            loading={inventory.loading}
+                            emptyLabel={t(
+                                'dialog.boop_dialog.no_inventory_emojis'
                             )}
-                        </p>
-                    ) : null}
+                            onSelect={toggleChoice}
+                        />
+                    </Tabs>
                     {error ? (
                         <div className="text-destructive text-sm">{error}</div>
                     ) : null}
@@ -411,6 +485,7 @@ export function BoopEmojiDialog({
                     <Button
                         type="button"
                         variant="outline"
+                        className="sm:mr-auto"
                         disabled={sending}
                         onClick={() => {
                             onOpenChange(false);
@@ -429,14 +504,10 @@ export function BoopEmojiDialog({
                     </Button>
                     <Button
                         type="button"
-                        disabled={sending || sendDisabled}
+                        disabled={sending || sendDisabled || !choice}
                         onClick={handleSend}
                     >
-                        {sending ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <SendIcon data-icon="inline-start" />
-                        )}
+                        {sending ? <Spinner data-icon="inline-start" /> : null}
                         {t('dialog.boop_dialog.send')}
                     </Button>
                 </DialogFooter>

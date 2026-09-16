@@ -1,5 +1,4 @@
 import type {
-    ColumnSizingState,
     SortingState,
     ColumnVisibilityState
 } from '@tanstack/react-table';
@@ -8,7 +7,6 @@ import {
     getDataTableStorageKey,
     readPersistedTableState,
     safeJsonParse,
-    sanitizeTableColumnSizing,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 import { isRecord } from '@/shared/utils/record';
@@ -22,6 +20,7 @@ export const PLAYER_LIST_COLUMN_IDS = [
     'timer',
     'displayName',
     'rank',
+    'groupRoles',
     'status',
     'icon',
     'platform',
@@ -31,6 +30,7 @@ export const PLAYER_LIST_COLUMN_IDS = [
 ];
 
 const PLAYER_LIST_SORTABLE_COLUMN_IDS = [
+    'groupRoles',
     'timer',
     'displayName',
     'rank',
@@ -95,10 +95,4 @@ export function sanitizePlayerListColumnOrder(value: unknown): string[] {
         (columnId) => !ordered.includes(columnId)
     );
     return [...ordered, ...missing];
-}
-
-export function sanitizePlayerListColumnSizing(
-    value: unknown
-): ColumnSizingState {
-    return sanitizeTableColumnSizing(value, PLAYER_LIST_COLUMN_IDS);
 }

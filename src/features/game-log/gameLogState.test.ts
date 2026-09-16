@@ -7,7 +7,6 @@ import {
     readPersistedGameLogState,
     resolveGameLogPageSize,
     sanitizeGameLogColumnOrder,
-    sanitizeGameLogColumnSizing,
     sanitizeGameLogColumnVisibility,
     sanitizeGameLogPageSizes,
     sanitizeGameLogSorting,
@@ -162,17 +161,5 @@ describe('gameLogState', () => {
                     columnId !== 'type'
             )
         ]);
-
-        expect(
-            sanitizeGameLogColumnSizing({
-                created_at: '160px',
-                detail: 320,
-                unknown: 100,
-                action: 0
-            })
-        ).toEqual({
-            created_at: 160,
-            detail: 320
-        });
     });
 });

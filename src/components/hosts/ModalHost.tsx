@@ -245,10 +245,10 @@ export function ModalHost() {
                 targetLabel={boopDialog.targetLabel}
                 onOpenChange={(open) => {
                     if (!open) {
-                        handleBoopDismiss('');
+                        handleBoopDismiss();
                     }
                 }}
-                onSend={(emojiId: string) => handleBoopOk(emojiId)}
+                onSend={handleBoopOk}
             />
             <Dialog
                 open={otpDialog.open}

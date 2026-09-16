@@ -29,7 +29,7 @@ export function UserPickerRow({
 }: UserPickerRowProps) {
     const { t } = useTranslation();
 
-    const imageUrl = option?.user ? userImage(option.user, true, '64') : '';
+    const imageUrl = option?.user ? userImage(option.user, 64) : '';
 
     return (
         <span className="flex w-full items-center p-1.5 text-left text-sm">

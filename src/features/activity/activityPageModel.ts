@@ -55,16 +55,6 @@ export function averageMinutesPerDay(summary: ActivityPageSummary): number {
         : 0;
 }
 
-export function changePercent(
-    current: number,
-    previous: number
-): number | null {
-    if (previous <= 0) {
-        return null;
-    }
-    return Math.round(((current - previous) / previous) * 100);
-}
-
 export function accessShare(minutes: number, totalMinutes: number): number {
     return totalMinutes > 0 ? Math.round((minutes / totalMinutes) * 100) : 0;
 }

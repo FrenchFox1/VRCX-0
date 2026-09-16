@@ -1,3 +1,4 @@
+import type { UserProfileEntity } from '@/domain/entities/user';
 import type { InventoryItemRecord } from '@/repositories/vrchatMediaRepository';
 import {
     profileBackgroundAssetUrl,
@@ -10,16 +11,21 @@ import type {
     UserDialogProfileSnapshot
 } from './userDialogProfileTypes';
 
-const PROFILE_APPEARANCE_FIELDS = [
+const PROFILE_ENDPOINT_FIELDS = [
+    'ageVerificationStatus',
+    'ageVerified',
     'backgroundGradientBottom',
     'backgroundGradientTop',
     'backgroundTemplateId',
     'backgroundTextureId',
     'backgroundType',
+    'badges',
     'bannerColor',
     'bannerCustomUrl',
     'bannerType',
     'bannerUrl',
+    'bio',
+    'bioLinks',
     'hasVrcPlus',
     'iconFrame',
     'iconType',
@@ -27,10 +33,13 @@ const PROFILE_APPEARANCE_FIELDS = [
     'isEconomyCreator',
     'nameplateEffect',
     'profileEffect',
+    'pronouns',
     'themeId',
     'themes',
     'userIcon'
-] as const;
+] as const satisfies readonly (keyof UserProfileEntity)[];
+
+type ProfileEndpointField = (typeof PROFILE_ENDPOINT_FIELDS)[number];
 
 export const PROFILE_DECORATION_SLOTS = [
     'iconFrame',
@@ -86,17 +95,9 @@ export function mergeUserDialogProfileAppearance(
         return user;
     }
 
-    let nextUser = user;
-    for (const field of PROFILE_APPEARANCE_FIELDS) {
-        if (!Object.prototype.hasOwnProperty.call(appearance, field)) {
-            continue;
-        }
-        if (nextUser === user) {
-            nextUser = { ...user };
-        }
-        nextUser[field] = appearance[field];
-    }
-    return nextUser;
+    return applyProfileEndpointFields(user, appearance, (field) =>
+        Object.prototype.hasOwnProperty.call(appearance, field)
+    );
 }
 
 export function preserveUserDialogProfileAppearance(
@@ -107,20 +108,27 @@ export function preserveUserDialogProfileAppearance(
         return user;
     }
 
-    let nextUser = user;
-    for (const field of PROFILE_APPEARANCE_FIELDS) {
-        if (
-            Object.prototype.hasOwnProperty.call(user, field) ||
-            !Object.prototype.hasOwnProperty.call(previousUser, field)
-        ) {
-            continue;
+    return applyProfileEndpointFields(
+        user,
+        previousUser,
+        (field) =>
+            !Object.prototype.hasOwnProperty.call(user, field) &&
+            Object.prototype.hasOwnProperty.call(previousUser, field)
+    );
+}
+
+function applyProfileEndpointFields(
+    user: UserDialogProfileRecord,
+    source: Record<string, unknown>,
+    shouldCopy: (field: ProfileEndpointField) => boolean
+): UserDialogProfileRecord {
+    const patch: Record<string, unknown> = {};
+    for (const field of PROFILE_ENDPOINT_FIELDS) {
+        if (shouldCopy(field)) {
+            patch[field] = source[field];
         }
-        if (nextUser === user) {
-            nextUser = { ...user };
-        }
-        nextUser[field] = previousUser[field];
     }
-    return nextUser;
+    return Object.keys(patch).length ? { ...user, ...patch } : user;
 }
 
 export function applyUserDialogProfileAppearanceOverrides(

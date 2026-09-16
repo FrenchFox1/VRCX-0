@@ -4,15 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     cancel: vi.fn(),
-    start: vi.fn(),
-    statusGet: vi.fn()
+    start: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appMutualGraphFetchCancel: mocks.cancel,
-        appMutualGraphFetchStart: mocks.start,
-        appMutualGraphFetchStatusGet: mocks.statusGet
+        appMutualGraphFetchStart: mocks.start
     }
 }));
 
@@ -21,7 +19,6 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
     handleMutualGraphFetchStatusEvent,
-    refreshMutualGraphFetchStatus,
     startMutualGraphFetch,
     wasMutualGraphFetchStartedInThisSession
 } from './mutualGraphFetchService';
@@ -115,9 +112,12 @@ describe('mutualGraphFetchService', () => {
 
     it('does not apply an old command response after a newer event', async () => {
         const hydration = deferred<MutualGraphFetchStatus>();
-        mocks.statusGet.mockReturnValue(hydration.promise);
+        mocks.start.mockReturnValue(hydration.promise);
 
-        const pending = refreshMutualGraphFetchStatus();
+        const pending = startMutualGraphFetch({
+            ownerUserId: 'usr_owner',
+            friendIds: ['usr_friend']
+        });
         handleMutualGraphFetchStatusEvent(status(24, 'completed', 3, 2));
         hydration.resolve(status(24, 'running', 1));
         await pending;

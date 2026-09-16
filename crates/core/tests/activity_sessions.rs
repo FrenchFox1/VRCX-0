@@ -1,11 +1,12 @@
 use vrcx_0_core::activity_sessions::{
-    merge_sessions, sessions_from_presence, span_duration_ms, ActivitySession, PresenceKind,
-    SpanEnd, MAX_INFERRED_SPAN_MS, ONLINE_SESSION_MERGE_GAP_MS,
+    merge_sessions_with_gap, sessions_from_presence, span_duration_ms, ActivitySession,
+    PresenceKind, SpanEnd, MAX_INFERRED_SPAN_MS,
 };
 
 const BASE: i64 = 1_700_000_000_000;
 const MINUTE: i64 = 60_000;
 const HOUR: i64 = 60 * MINUTE;
+const MERGE_GAP: i64 = 5 * MINUTE;
 
 fn session(start: i64, end: i64) -> ActivitySession {
     ActivitySession {
@@ -62,14 +63,11 @@ fn activity_sessions_presence_respects_initial_pending_session() {
 
 #[test]
 fn activity_sessions_merge_joins_gap_and_preserves_metadata() {
-    let mut newer = session(
-        BASE + HOUR + ONLINE_SESSION_MERGE_GAP_MS - MINUTE,
-        BASE + 2 * HOUR,
-    );
+    let mut newer = session(BASE + HOUR + MERGE_GAP - MINUTE, BASE + 2 * HOUR);
     newer.is_open_tail = true;
     newer.source_revision = "cursor-2".to_string();
 
-    let merged = merge_sessions(&[session(BASE, BASE + HOUR)], &[newer]);
+    let merged = merge_sessions_with_gap(&[session(BASE, BASE + HOUR)], &[newer], MERGE_GAP);
 
     assert_eq!(merged.len(), 1);
     assert_eq!(merged[0].start, BASE);
@@ -80,12 +78,10 @@ fn activity_sessions_merge_joins_gap_and_preserves_metadata() {
 
 #[test]
 fn activity_sessions_merge_keeps_gap_larger_than_threshold() {
-    let merged = merge_sessions(
+    let merged = merge_sessions_with_gap(
         &[session(BASE, BASE + HOUR)],
-        &[session(
-            BASE + HOUR + ONLINE_SESSION_MERGE_GAP_MS + MINUTE,
-            BASE + 2 * HOUR,
-        )],
+        &[session(BASE + HOUR + MERGE_GAP + MINUTE, BASE + 2 * HOUR)],
+        MERGE_GAP,
     );
 
     assert_eq!(merged.len(), 2);

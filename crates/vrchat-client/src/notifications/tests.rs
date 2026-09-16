@@ -256,6 +256,49 @@ fn required_notification_fields_reject_empty_text() {
 }
 
 #[test]
+fn boop_send_builds_exclusive_emoji_or_inventory_body() {
+    let (user_id, request) =
+        boop_send_input(ENDPOINT.into(), " usr_1 ".into(), " ".into(), " ".into()).unwrap();
+    assert_eq!(user_id, "usr_1");
+    assert_eq!(request.method.as_deref(), Some("POST"));
+    assert_eq!(request.path.as_deref(), Some("users/usr%5F1/boop"));
+    assert_eq!(request.body.as_json(), Some(&json!({})));
+
+    let (_, request) = boop_send_input(
+        ENDPOINT.into(),
+        "usr_1".into(),
+        " default_wave ".into(),
+        String::new(),
+    )
+    .unwrap();
+    assert_eq!(
+        request.body.as_json(),
+        Some(&json!({ "emojiId": "default_wave" }))
+    );
+
+    let (_, request) = boop_send_input(
+        ENDPOINT.into(),
+        "usr_1".into(),
+        String::new(),
+        " inv_miku ".into(),
+    )
+    .unwrap();
+    assert_eq!(
+        request.body.as_json(),
+        Some(&json!({ "inventoryItemId": "inv_miku" }))
+    );
+
+    assert!(boop_send_input(
+        ENDPOINT.into(),
+        "usr_1".into(),
+        "default_wave".into(),
+        "inv_miku".into(),
+    )
+    .is_err());
+    assert!(boop_send_input(ENDPOINT.into(), " ".into(), String::new(), String::new()).is_err());
+}
+
+#[test]
 fn request_invite_params_reject_unknown_fields() {
     assert!(serde_json::from_value::<RequestInviteRequest>(json!({
         "message": "unsupported",

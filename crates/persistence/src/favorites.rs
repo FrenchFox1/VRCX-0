@@ -154,43 +154,6 @@ pub fn favorite_move(
     })
 }
 
-pub fn favorite_group_rename(
-    db: &DatabaseService,
-    owner_user_id: Option<&OwnerId>,
-    kind: FavoriteEntityKind,
-    group_name: String,
-    new_group_name: String,
-) -> Result<i64, Error> {
-    ensure_global_store_tables(db)?;
-    let (table, column, _) = normalize_kind(kind);
-    let normalized_group_name = normalize_text(group_name);
-    let normalized_new_group_name = normalize_text(new_group_name);
-    let owner_id = owner_id_for_kind_read(db, kind, owner_user_id)?;
-    let owner_scope = visible_owner_and(kind);
-    db.write_transaction(|tx| {
-        let deduped = delete_rows_already_in_group(
-            tx,
-            table,
-            column,
-            &normalized_group_name,
-            &normalized_new_group_name,
-            owner_scope,
-            owner_id,
-        )?;
-        let renamed = tx.execute_non_query(
-            &format!(
-                "UPDATE {table} SET group_name = @new_group_name WHERE group_name = @group_name {owner_scope}"
-            ),
-            &ParamsBuilder::new()
-                .set("new_group_name", normalized_new_group_name)
-                .set("group_name", normalized_group_name)
-                .set("owner_id", owner_id)
-                .build(),
-        )?;
-        Ok(deduped + renamed)
-    })
-}
-
 fn delete_rows_already_in_group(
     tx: &mut DatabaseWriteTransaction<'_>,
     table: &str,
@@ -207,27 +170,6 @@ fn delete_rows_already_in_group(
         &ParamsBuilder::new()
             .set("group_name", group_name.to_string())
             .set("new_group_name", new_group_name.to_string())
-            .set("owner_id", owner_id)
-            .build(),
-    )
-}
-
-pub fn favorite_group_delete(
-    db: &DatabaseService,
-    owner_user_id: Option<&OwnerId>,
-    kind: FavoriteEntityKind,
-    group_name: String,
-) -> Result<i64, Error> {
-    ensure_global_store_tables(db)?;
-    let (table, _, _) = normalize_kind(kind);
-    let owner_id = owner_id_for_kind_read(db, kind, owner_user_id)?;
-    db.execute_non_query(
-        &format!(
-            "DELETE FROM {table} WHERE group_name = @group_name {}",
-            visible_owner_and(kind)
-        ),
-        &ParamsBuilder::new()
-            .set("group_name", normalize_text(group_name))
             .set("owner_id", owner_id)
             .build(),
     )

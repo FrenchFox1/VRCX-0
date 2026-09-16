@@ -3,12 +3,10 @@ import { openExternalLink as openShellExternalLink } from '@/services/shellInteg
 import {
     convertFileUrlToImageUrl as convertFileUrlToImageUrlWithEndpoint,
     getNameColour,
-    userImage as userImageWithOptions
+    userImage as userImageWithEndpoint,
+    type ImageUser
 } from '@/shared/utils/entityMedia';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useShellStore } from '@/state/shellStore';
-
-type LooseRecord = Record<string, unknown>;
 
 export function convertFileUrlToImageUrl(
     url: string | null | undefined,
@@ -23,19 +21,12 @@ export function convertFileUrlToImageUrl(
 }
 
 export function userImage(
-    user: LooseRecord | null | undefined,
-    isIcon = false,
-    resolution: string | number = '128',
-    isUserDialogIcon = false,
-    displayVRCPlusIconsAsAvatar: boolean | null = null
+    user: ImageUser | null | undefined,
+    resolution: string | number = 128
 ) {
-    return userImageWithOptions(
+    return userImageWithEndpoint(
         user,
-        isIcon,
         resolution,
-        isUserDialogIcon,
-        displayVRCPlusIconsAsAvatar ??
-            useShellStore.getState().displayVRCPlusIconsAsAvatar,
         useRuntimeStore.getState().auth.currentUserEndpoint
     );
 }

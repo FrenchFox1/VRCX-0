@@ -48,7 +48,7 @@ export function TabsList({
                 'text-muted-foreground relative z-0 flex w-fit items-center justify-center gap-x-0.5',
                 'data-[orientation=vertical]:flex-col',
                 variant === 'default'
-                    ? 'bg-muted text-muted-foreground/72 rounded-lg p-0.5'
+                    ? 'text-muted-foreground/72 rounded-lg bg-(--state-pressed-surface) p-0.5'
                     : 'data-[orientation=horizontal]:py-1 data-[orientation=vertical]:px-1',
                 className
             )}
@@ -63,7 +63,7 @@ export function TabsList({
                 className={cn(
                     'absolute bottom-0 left-0 h-(--active-tab-height) w-(--active-tab-width) translate-x-(--active-tab-left) -translate-y-(--active-tab-bottom) transition-[width,translate] duration-200 ease-in-out',
                     variant === 'underline'
-                        ? 'bg-primary z-10 data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:translate-y-px data-[orientation=vertical]:w-0.5 data-[orientation=vertical]:-translate-x-px'
+                        ? 'bg-foreground z-10 data-[orientation=horizontal]:h-0.5 data-[orientation=horizontal]:translate-y-px data-[orientation=vertical]:w-0.5 data-[orientation=vertical]:-translate-x-px'
                         : 'bg-background dark:bg-input -z-1 rounded-md shadow-sm/5'
                 )}
                 data-slot="tab-indicator"

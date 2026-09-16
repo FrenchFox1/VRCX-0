@@ -19,7 +19,6 @@ import {
     getLatestFileUrl,
     getUsefulDisplayName,
     parseEmojiUploadSettings,
-    sanitizeInventoryGridDensity,
     validateImageFile
 } from './inventoryHelpers';
 
@@ -133,12 +132,6 @@ describe('inventory helpers', () => {
                 title: 'message.file.not_image'
             })
         );
-    });
-
-    it('sanitizes inventory grid density through gallery density options', () => {
-        expect(sanitizeInventoryGridDensity('compact')).toBe('compact');
-        expect(sanitizeInventoryGridDensity(' dense ')).toBe('dense');
-        expect(sanitizeInventoryGridDensity('comfortable')).toBe('standard');
     });
 
     it('resolves inventory display fallbacks from nested item, template, and metadata fields', () => {

@@ -271,12 +271,7 @@ mod tests {
                 id: "usr_owner".into(),
                 display_name: Some("Owner".into()),
                 username: None,
-                user_icon: None,
-                profile_pic_override_thumbnail: None,
-                profile_pic_override: None,
-                thumbnail_url: None,
-                current_avatar_thumbnail_image_url: None,
-                current_avatar_image_url: None,
+                icon_url: None,
             };
             Self::new(SavedAuthSnapshot {
                 last_user_logged_in: Some(user.id.clone()),

@@ -317,6 +317,7 @@ impl RealtimeHostRuntime {
         self.emit_friend_profile_bulk_load_status();
     }
 
+    #[cfg(test)]
     pub fn friend_profile_bulk_load_status(&self) -> FriendProfileLoadStatusPayload {
         self.friend_profile_bulk_load
             .lock()

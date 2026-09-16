@@ -35,25 +35,15 @@ impl FriendRecordPatch {
         match self {
             Self::Fields(fields) => apply_fields(target, fields),
             Self::Full(record) => {
-                let previous_dates = [
-                    target.date_joined.clone(),
-                    target.last_activity.clone(),
-                    target.last_login.clone(),
-                    target.last_mobile.clone(),
-                ];
+                let previous_dates = OPTIONAL_FIELDS
+                    .iter()
+                    .map(|field| (field.get)(target).clone())
+                    .collect::<Vec<_>>();
                 let mut existing_extra = std::mem::take(&mut target.extra);
                 *target = record.as_ref().clone();
-                for (date, previous) in [
-                    &mut target.date_joined,
-                    &mut target.last_activity,
-                    &mut target.last_login,
-                    &mut target.last_mobile,
-                ]
-                .into_iter()
-                .zip(previous_dates)
-                {
-                    if date.is_missing() {
-                        *date = previous;
+                for (field, previous) in OPTIONAL_FIELDS.iter().zip(previous_dates) {
+                    if (field.get)(target).is_missing() {
+                        (field.set)(target, previous);
                     }
                 }
                 existing_extra.extend(std::mem::take(&mut target.extra));
@@ -94,29 +84,140 @@ pub(super) fn apply_friend_patch(
     }
 }
 
-const FRIEND_NAMED_FIELD_KEYS: &[&str] = &[
-    "id",
-    "displayName",
-    "username",
-    "state",
-    "location",
-    "travelingToLocation",
-    "worldId",
-    "platform",
-    "lastPlatform",
-    "last_platform",
-    "status",
-    "statusDescription",
-    "bio",
-    "currentAvatarImageUrl",
-    "currentAvatarThumbnailImageUrl",
-    "currentAvatarAuthorId",
-    "currentAvatarName",
-    "date_joined",
-    "last_activity",
-    "last_login",
-    "last_mobile",
+struct NamedField {
+    keys: &'static [&'static str],
+    get: fn(&FriendRecord) -> &str,
+    set: fn(&mut FriendRecord, &str),
+}
+
+const NAMED_FIELDS: &[NamedField] = &[
+    NamedField {
+        keys: &["id"],
+        get: |record| &record.id,
+        set: |record, value| record.id = value.into(),
+    },
+    NamedField {
+        keys: &["displayName"],
+        get: |record| &record.display_name,
+        set: |record, value| record.display_name = value.into(),
+    },
+    NamedField {
+        keys: &["username"],
+        get: |record| &record.username,
+        set: |record, value| record.username = value.into(),
+    },
+    NamedField {
+        keys: &["state"],
+        get: |record| &record.state,
+        set: |record, value| record.state = value.into(),
+    },
+    NamedField {
+        keys: &["location"],
+        get: |record| &record.location,
+        set: |record, value| record.location = value.into(),
+    },
+    NamedField {
+        keys: &["travelingToLocation"],
+        get: |record| &record.traveling_to_location,
+        set: |record, value| record.traveling_to_location = value.into(),
+    },
+    NamedField {
+        keys: &["worldId"],
+        get: |record| &record.world_id,
+        set: |record, value| record.world_id = value.into(),
+    },
+    NamedField {
+        keys: &["platform"],
+        get: |record| &record.platform,
+        set: |record, value| record.platform = value.into(),
+    },
+    NamedField {
+        keys: &["lastPlatform", "last_platform"],
+        get: |record| &record.last_platform,
+        set: |record, value| record.last_platform = value.into(),
+    },
+    NamedField {
+        keys: &["status"],
+        get: |record| &record.status,
+        set: |record, value| record.status = value.into(),
+    },
+    NamedField {
+        keys: &["statusDescription"],
+        get: |record| &record.status_description,
+        set: |record, value| record.status_description = value.into(),
+    },
+    NamedField {
+        keys: &["bio"],
+        get: |record| &record.bio,
+        set: |record, value| record.bio = value.into(),
+    },
+    NamedField {
+        keys: &["iconUrl"],
+        get: |record| &record.icon_url,
+        set: |record, value| record.icon_url = value.into(),
+    },
+    NamedField {
+        keys: &["currentAvatarImageUrl"],
+        get: |record| &record.current_avatar_image_url,
+        set: |record, value| record.current_avatar_image_url = value.into(),
+    },
+    NamedField {
+        keys: &["currentAvatarThumbnailImageUrl"],
+        get: |record| &record.current_avatar_thumbnail_image_url,
+        set: |record, value| record.current_avatar_thumbnail_image_url = value.into(),
+    },
+    NamedField {
+        keys: &["currentAvatarAuthorId"],
+        get: |record| &record.current_avatar_author_id,
+        set: |record, value| record.current_avatar_author_id = value.into(),
+    },
+    NamedField {
+        keys: &["currentAvatarName"],
+        get: |record| &record.current_avatar_name,
+        set: |record, value| record.current_avatar_name = value.into(),
+    },
 ];
+
+struct OptionalField {
+    key: &'static str,
+    get: fn(&FriendRecord) -> &OptionalCompactString,
+    set: fn(&mut FriendRecord, OptionalCompactString),
+}
+
+const OPTIONAL_FIELDS: &[OptionalField] = &[
+    OptionalField {
+        key: "date_joined",
+        get: |record| &record.date_joined,
+        set: |record, value| record.date_joined = value,
+    },
+    OptionalField {
+        key: "last_activity",
+        get: |record| &record.last_activity,
+        set: |record, value| record.last_activity = value,
+    },
+    OptionalField {
+        key: "last_login",
+        get: |record| &record.last_login,
+        set: |record, value| record.last_login = value,
+    },
+    OptionalField {
+        key: "last_mobile",
+        get: |record| &record.last_mobile,
+        set: |record, value| record.last_mobile = value,
+    },
+];
+
+fn named_field(key: &str) -> Option<&'static NamedField> {
+    NAMED_FIELDS.iter().find(|field| field.keys.contains(&key))
+}
+
+fn optional_field(key: &str) -> Option<&'static OptionalField> {
+    OPTIONAL_FIELDS.iter().find(|field| field.key == key)
+}
+
+fn is_named_key(key: &str) -> bool {
+    named_field(key).is_some() || optional_field(key).is_some()
+}
 
 fn patch_str<'a>(patch: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a str> {
     for key in keys {
@@ -134,57 +235,20 @@ fn patch_str<'a>(patch: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a str
 }
 
 fn apply_fields(record: &mut FriendRecord, patch: &Map<String, Value>) {
-    let compact_fields = [
-        (&mut record.display_name, &["displayName"][..]),
-        (&mut record.platform, &["platform"]),
-        (
-            &mut record.last_platform,
-            &["lastPlatform", "last_platform"],
-        ),
-        (&mut record.status, &["status"]),
-        (&mut record.status_description, &["statusDescription"]),
-    ];
-    for (target, keys) in compact_fields {
-        if let Some(value) = patch_str(patch, keys) {
-            *target = value.into();
+    for field in NAMED_FIELDS {
+        if let Some(value) = patch_str(patch, field.keys) {
+            (field.set)(record, value);
         }
     }
-    let string_fields = [
-        (&mut record.username, &["username"][..]),
-        (&mut record.location, &["location"]),
-        (&mut record.traveling_to_location, &["travelingToLocation"]),
-        (&mut record.world_id, &["worldId"]),
-        (&mut record.bio, &["bio"]),
-        (
-            &mut record.current_avatar_image_url,
-            &["currentAvatarImageUrl"],
-        ),
-        (
-            &mut record.current_avatar_thumbnail_image_url,
-            &["currentAvatarThumbnailImageUrl"],
-        ),
-        (
-            &mut record.current_avatar_author_id,
-            &["currentAvatarAuthorId"],
-        ),
-        (&mut record.current_avatar_name, &["currentAvatarName"]),
-    ];
-    for (target, keys) in string_fields {
-        if let Some(value) = patch_str(patch, keys) {
-            *target = value.to_string();
-        }
-    }
-    for (target, key) in [
-        (&mut record.date_joined, "date_joined"),
-        (&mut record.last_activity, "last_activity"),
-        (&mut record.last_login, "last_login"),
-        (&mut record.last_mobile, "last_mobile"),
-    ] {
-        match patch.get(key) {
-            Some(Value::String(value)) => *target = value.as_str().into(),
-            Some(Value::Null) => *target = OptionalCompactString::null(),
+    for field in OPTIONAL_FIELDS {
+        match patch.get(field.key) {
+            Some(Value::String(value)) => (field.set)(record, value.as_str().into()),
+            Some(Value::Null) => (field.set)(record, OptionalCompactString::null()),
             Some(other) => {
-                tracing::warn!("friend patch field `{key}` has non-string value: {other}")
+                tracing::warn!(
+                    "friend patch field `{}` has non-string value: {other}",
+                    field.key
+                )
             }
             None => {}
         }
@@ -192,75 +256,71 @@ fn apply_fields(record: &mut FriendRecord, patch: &Map<String, Value>) {
     record.extra.extend(
         patch
             .iter()
-            .filter(|(key, _)| !FRIEND_NAMED_FIELD_KEYS.contains(&key.as_str()))
+            .filter(|(key, _)| !is_named_key(key))
             .map(|(key, value)| (key.clone(), value.clone())),
     );
 }
 
 fn sanitize_extra(record: &mut FriendRecord) {
-    record
-        .extra
-        .retain(|key, _| !FRIEND_NAMED_FIELD_KEYS.contains(&key.as_str()));
+    record.extra.retain(|key, _| !is_named_key(key));
 }
 
 pub(in crate::realtime::friends::runtime) fn record_string(
     record: &FriendRecord,
     key: &str,
 ) -> String {
-    match key {
-        "id" => record.id.clone(),
-        "displayName" => record.display_name.to_string(),
-        "username" => record.username.clone(),
-        "state" => record.state.to_string(),
-        "location" => record.location.clone(),
-        "travelingToLocation" => record.traveling_to_location.clone(),
-        "worldId" => record.world_id.clone(),
-        "platform" => record.platform.to_string(),
-        "lastPlatform" | "last_platform" => record.last_platform.to_string(),
-        "status" => record.status.to_string(),
-        "statusDescription" => record.status_description.to_string(),
-        "bio" => record.bio.clone(),
-        "currentAvatarImageUrl" => record.current_avatar_image_url.clone(),
-        "currentAvatarThumbnailImageUrl" => record.current_avatar_thumbnail_image_url.clone(),
-        "currentAvatarAuthorId" => record.current_avatar_author_id.clone(),
-        "currentAvatarName" => record.current_avatar_name.clone(),
-        "date_joined" => record.date_joined.as_str().unwrap_or_default().to_string(),
-        "last_activity" => record
-            .last_activity
-            .as_str()
-            .unwrap_or_default()
-            .to_string(),
-        "last_login" => record.last_login.as_str().unwrap_or_default().to_string(),
-        "last_mobile" => record.last_mobile.as_str().unwrap_or_default().to_string(),
-        _ => record.extra.text_field(key),
+    if let Some(field) = named_field(key) {
+        return (field.get)(record).to_string();
     }
+    if let Some(field) = optional_field(key) {
+        return (field.get)(record).as_str().unwrap_or_default().to_string();
+    }
+    record.extra.text_field(key)
 }
 
 pub(in crate::realtime::friends::runtime) fn record_value(
     record: &FriendRecord,
     key: &str,
 ) -> Value {
-    match key {
-        "date_joined" => optional_compact_string_value(&record.date_joined),
-        "last_activity" => optional_compact_string_value(&record.last_activity),
-        "last_login" => optional_compact_string_value(&record.last_login),
-        "last_mobile" => optional_compact_string_value(&record.last_mobile),
-        _ if FRIEND_NAMED_FIELD_KEYS.contains(&key) => Value::String(record_string(record, key)),
-        _ => record.extra.get(key).cloned().unwrap_or(Value::Null),
+    if let Some(field) = named_field(key) {
+        return Value::String((field.get)(record).to_string());
     }
-}
-
-fn optional_compact_string_value(value: &OptionalCompactString) -> Value {
-    value
-        .as_str()
-        .map(|value| Value::String(value.to_string()))
-        .unwrap_or(Value::Null)
+    if let Some(field) = optional_field(key) {
+        return serde_json::to_value((field.get)(record)).unwrap_or(Value::Null);
+    }
+    record.extra.get(key).cloned().unwrap_or(Value::Null)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn field_tables_cover_every_serialized_friend_record_key() {
+        let record = FriendRecord {
+            date_joined: "2026-01-01".into(),
+            last_activity: "2026-01-01T00:00:00Z".into(),
+            last_login: "2026-01-01T00:00:00Z".into(),
+            last_mobile: "2026-01-01T00:00:00Z".into(),
+            ..FriendRecord::default()
+        };
+        let serialized = serde_json::to_value(&record).unwrap();
+        let mut serialized_keys = serialized
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+        serialized_keys.sort();
+        let mut table_keys = NAMED_FIELDS
+            .iter()
+            .map(|field| field.keys[0].to_string())
+            .chain(OPTIONAL_FIELDS.iter().map(|field| field.key.to_string()))
+            .collect::<Vec<_>>();
+        table_keys.sort();
+        assert_eq!(serialized_keys, table_keys);
+    }
 
     #[test]
     fn transition_normalizes_aliases_and_preserves_unknown_fields() {

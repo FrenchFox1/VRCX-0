@@ -70,11 +70,7 @@ export function FriendInstanceTimer({
             {traveling ? <Spinner className="mr-1 size-3 shrink-0" /> : null}
             <span
                 aria-hidden={format === 'short' ? true : undefined}
-                className={cn(
-                    'truncate tabular-nums',
-                    isSubMinute && normalizedEpoch ? 'text-foreground' : null,
-                    className
-                )}
+                className={cn('truncate tabular-nums', className)}
             >
                 {shortText}
             </span>

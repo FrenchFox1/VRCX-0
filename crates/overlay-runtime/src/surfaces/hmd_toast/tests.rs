@@ -433,12 +433,7 @@ fn hmd_avatar_uses_friend_record_url_before_direct_notification_image() {
         FriendRecord {
             id: "usr_actor".to_string(),
             display_name: "Friend".into(),
-            extra: serde_json::json!({
-                "profilePicOverrideThumbnail": "https://images.example/profile/256",
-            })
-            .as_object()
-            .unwrap()
-            .clone(),
+            icon_url: selected_url.to_string(),
             ..FriendRecord::default()
         },
     );

@@ -134,13 +134,11 @@ describe('note export dialog data lifetime', () => {
         await screen.findByDisplayValue('memo');
         expect(mocks.userImage).toHaveBeenCalledWith(
             expect.objectContaining({ note: 'remote' }),
-            false,
-            '512'
+            512
         );
         expect(mocks.userImage).not.toHaveBeenCalledWith(
             expect.objectContaining({ bio: 'large profile text' }),
-            false,
-            '512'
+            512
         );
         fireEvent.click(
             screen.getByRole('button', { name: /dialog.note_export.export/ })

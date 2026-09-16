@@ -1,5 +1,3 @@
-pub const ONLINE_SESSION_MERGE_GAP_MS: i64 = 5 * 60 * 1000;
-
 pub const MAX_INFERRED_SPAN_MS: i64 = 24 * 60 * 60 * 1000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -77,13 +75,6 @@ pub fn sessions_from_presence(
     }
 
     (current_start, sessions)
-}
-
-pub fn merge_sessions(
-    older_sessions: &[ActivitySession],
-    newer_sessions: &[ActivitySession],
-) -> Vec<ActivitySession> {
-    merge_sessions_with_gap(older_sessions, newer_sessions, ONLINE_SESSION_MERGE_GAP_MS)
 }
 
 pub fn merge_sessions_with_gap(

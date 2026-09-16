@@ -311,10 +311,6 @@ export async function setBoolConfigPreference(
         useShellStore.getState().setTaskbarIconDot(enabled);
     } else if (normalizedKey === 'friendLogNotificationDot' && !enabled) {
         useShellStore.getState().removeNotify('friend-log');
-    } else if (normalizedKey === 'displayVRCPlusIconsAsAvatar') {
-        useShellStore.getState().setAppearancePreferences({
-            displayVRCPlusIconsAsAvatar: enabled
-        });
     } else if (normalizedKey === 'hideNicknames') {
         useShellStore.getState().setAppearancePreferences({
             hideNicknames: enabled

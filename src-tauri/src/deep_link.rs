@@ -14,6 +14,13 @@ pub enum DeepLinkAction {
     #[specta(rename_all = "camelCase")]
     OpenWorld { world_id: String },
     #[specta(rename_all = "camelCase")]
+    OpenInstance {
+        world_id: String,
+        instance_id: String,
+        short_name: String,
+        launch_token: String,
+    },
+    #[specta(rename_all = "camelCase")]
     OpenAvatar { avatar_id: String },
     #[specta(rename_all = "camelCase")]
     ImportCollection { collection_id: String },
@@ -44,6 +51,9 @@ pub fn parse_deep_link(value: &str) -> Option<DeepLinkAction> {
     if url.scheme() != "vrcx-0" || url.fragment().is_some() {
         return None;
     }
+    if url.host_str() == Some("instance") && url.path() == "/open" {
+        return parse_instance_deep_link(&url);
+    }
     let id = url
         .query_pairs()
         .find_map(|(key, value)| (key == "id").then(|| value.into_owned()))?;
@@ -58,6 +68,49 @@ pub fn parse_deep_link(value: &str) -> Option<DeepLinkAction> {
         }
         _ => None,
     }
+}
+
+fn parse_instance_deep_link(url: &url::Url) -> Option<DeepLinkAction> {
+    let mut world_id = None;
+    let mut instance_id = None;
+    let mut short_name = None;
+    let mut launch_token = None;
+    for (key, value) in url.query_pairs() {
+        let target = match key.as_ref() {
+            "id" => &mut world_id,
+            "instanceId" => &mut instance_id,
+            "shortName" => &mut short_name,
+            "launchToken" => &mut launch_token,
+            _ => continue,
+        };
+        if target.replace(value.into_owned()).is_some() {
+            return None;
+        }
+    }
+    let world_id = world_id?;
+    let instance_id = instance_id?;
+    let short_name = short_name.unwrap_or_default();
+    let launch_token = launch_token.unwrap_or_default();
+    if !is_world_id(&world_id)
+        || instance_id.is_empty()
+        || instance_id.chars().any(|character| {
+            character.is_whitespace()
+                || character.is_control()
+                || matches!(character, ':' | '/' | '?' | '#' | '&')
+        })
+        || short_name
+            .chars()
+            .chain(launch_token.chars())
+            .any(|character| character.is_whitespace() || character.is_control())
+    {
+        return None;
+    }
+    Some(DeepLinkAction::OpenInstance {
+        world_id,
+        instance_id,
+        short_name,
+        launch_token,
+    })
 }
 
 pub(crate) fn queue_deep_link_action(
@@ -98,6 +151,90 @@ mod tests {
             action,
             Some(DeepLinkAction::ImportCollection {
                 collection_id: "AbC123z".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_open_instance_preserving_access_tags_and_invite_token() {
+        let instance_id = "12345~private(usr_12345678-1234-1234-1234-1234567890ab)~canRequestInvite~region(jp)~nonce(ab-cd)";
+        let mut url = url::Url::parse("vrcx-0://instance/open").unwrap();
+        url.query_pairs_mut()
+            .append_pair("id", "wrld_12345678-1234-1234-1234-1234567890ab")
+            .append_pair("instanceId", instance_id)
+            .append_pair("shortName", "invite+token/=value&part");
+
+        assert_eq!(
+            parse_deep_link(url.as_str()),
+            Some(DeepLinkAction::OpenInstance {
+                world_id: "wrld_12345678-1234-1234-1234-1234567890ab".into(),
+                instance_id: instance_id.into(),
+                short_name: "invite+token/=value&part".into(),
+                launch_token: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_open_instance_without_invite_token() {
+        assert_eq!(
+            parse_deep_link("vrcx-0://instance/open?id=wrld_12345678-1234-1234-1234-1234567890ab&instanceId=12345~region(us)"),
+            Some(DeepLinkAction::OpenInstance {
+                world_id: "wrld_12345678-1234-1234-1234-1234567890ab".into(),
+                instance_id: "12345~region(us)".into(),
+                short_name: String::new(),
+                launch_token: String::new(),
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_or_ambiguous_instance_links() {
+        let world_id = "wrld_12345678-1234-1234-1234-1234567890ab";
+        for query in [
+            format!("id={world_id}"),
+            "instanceId=12345".into(),
+            "id=invalid&instanceId=12345".into(),
+            format!("id={world_id}&instanceId="),
+            format!("id={world_id}&id={world_id}&instanceId=12345"),
+            format!("id={world_id}&instanceId=12345&instanceId=12345"),
+            format!("id={world_id}&instanceId=12345&shortName=&shortName=token"),
+            format!("id={world_id}&instanceId=12345&shortName=token%20value"),
+            format!("id={world_id}&instanceId=12345&shortName=token%00"),
+            format!("id={world_id}&instanceId=12345&launchToken=a&launchToken=b"),
+            format!("id={world_id}&instanceId=12345&launchToken=token%00"),
+            format!("id={world_id}&instanceId=12345&launchToken=token%20value"),
+        ] {
+            assert_eq!(
+                parse_deep_link(&format!("vrcx-0://instance/open?{query}")),
+                None,
+                "{query}"
+            );
+        }
+        for invalid_instance_id in [
+            "123 45", "123\n45", "123\0", "123:45", "123/45", "123?45", "123#45", "123&45",
+        ] {
+            let mut url = url::Url::parse("vrcx-0://instance/open").unwrap();
+            url.query_pairs_mut()
+                .append_pair("id", world_id)
+                .append_pair("instanceId", invalid_instance_id);
+            assert_eq!(
+                parse_deep_link(url.as_str()),
+                None,
+                "{invalid_instance_id:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn preserves_secure_only_launch_token_without_short_name() {
+        assert_eq!(
+            parse_deep_link("vrcx-0://instance/open?id=wrld_12345678-1234-1234-1234-1234567890ab&instanceId=12345&launchToken=secure%2Btoken%2F%3D"),
+            Some(DeepLinkAction::OpenInstance {
+                world_id: "wrld_12345678-1234-1234-1234-1234567890ab".into(),
+                instance_id: "12345".into(),
+                short_name: String::new(),
+                launch_token: "secure+token/=".into(),
             })
         );
     }

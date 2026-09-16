@@ -3,9 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
     computeTrustLevel,
     computeUserPlatform,
-    diffObjectProps,
-    sanitizeUserJson,
-    trustRankDetails,
     trustRankFromTags
 } from './userTransforms';
 
@@ -75,104 +72,7 @@ describe('computeUserPlatform', () => {
     });
 });
 
-describe('diffObjectProps', () => {
-    it('detects a changed scalar field, reporting both the old and new value for a change-log/notification', () => {
-        const result = diffObjectProps(
-            { displayName: 'Old Name' },
-            { displayName: 'New Name' },
-            () => true
-        );
-        expect(result.hasPropChanged).toBe(true);
-        expect(result.changedProps.displayName).toEqual([
-            'New Name',
-            'Old Name'
-        ]);
-    });
-
-    it('does not report a field as changed when the incoming value is identical', () => {
-        const result = diffObjectProps(
-            { displayName: 'Same' },
-            { displayName: 'Same' },
-            () => true
-        );
-        expect(result.hasPropChanged).toBe(false);
-        expect(result.changedProps).toEqual({});
-    });
-
-    it('uses the caller-supplied array comparator for array fields, so tag-list reordering does not falsely count as a change', () => {
-        const arraysMatchFn = (a: unknown[], b: unknown[]) =>
-            JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
-
-        const unchanged = diffObjectProps(
-            { tags: ['a', 'b'] },
-            { tags: ['b', 'a'] },
-            arraysMatchFn
-        );
-        expect(unchanged.hasPropChanged).toBe(false);
-
-        const changed = diffObjectProps(
-            { tags: ['a', 'b'] },
-            { tags: ['a', 'c'] },
-            arraysMatchFn
-        );
-        expect(changed.hasPropChanged).toBe(true);
-    });
-
-    it('ignores a field that only exists on one side, since that is a schema difference rather than a live user update', () => {
-        const result = diffObjectProps(
-            { displayName: 'Name' },
-            { displayName: 'Name', newField: 'value' },
-            () => true
-        );
-        expect(result.hasPropChanged).toBe(false);
-    });
-});
-
-describe('sanitizeUserJson', () => {
-    it('clears the avatar image URLs when they point at the fallback "robot" placeholder, so the UI shows its own empty state instead of a placeholder image', () => {
-        const robotUrl = 'https://api.vrchat.cloud/file/robot.png';
-        const result = sanitizeUserJson(
-            {
-                currentAvatarImageUrl: robotUrl,
-                currentAvatarThumbnailImageUrl: robotUrl
-            },
-            robotUrl
-        );
-        expect(result.currentAvatarImageUrl).toBeUndefined();
-        expect(result.currentAvatarThumbnailImageUrl).toBeUndefined();
-    });
-
-    it('leaves a real avatar image URL untouched', () => {
-        const result = sanitizeUserJson(
-            { currentAvatarImageUrl: 'https://files.vrchat.cloud/real.png' },
-            'https://api.vrchat.cloud/file/robot.png'
-        );
-        expect(result.currentAvatarImageUrl).toBe(
-            'https://files.vrchat.cloud/real.png'
-        );
-    });
-});
-
 describe('trust rank table', () => {
-    it('keeps each rank paired with its label, class, colour and sort order', () => {
-        const cases = [
-            ['visitor', 'Visitor', 'x-tag-untrusted', 'untrusted', 1],
-            ['newUser', 'New User', 'x-tag-basic', 'basic', 2],
-            ['user', 'User', 'x-tag-known', 'known', 3],
-            ['knownUser', 'Known User', 'x-tag-trusted', 'trusted', 4],
-            ['trustedUser', 'Trusted User', 'x-tag-veteran', 'veteran', 5]
-        ] as const;
-
-        for (const [rank, level, className, colorKey, sortNum] of cases) {
-            expect(trustRankDetails(rank)).toEqual({
-                level,
-                className,
-                colorKey,
-                sortNum
-            });
-        }
-    });
-
     it('maps tags to ranks and prefers the highest present tag', () => {
         expect(trustRankFromTags([])).toBe('visitor');
         expect(trustRankFromTags(['system_trust_basic'])).toBe('newUser');

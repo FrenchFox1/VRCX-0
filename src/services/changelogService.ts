@@ -154,10 +154,6 @@ export function parseReleaseChangelog(
     };
 }
 
-export function parseLocalizedChangelog(body: unknown) {
-    return parseChangelog(body).entries;
-}
-
 export function resolvePreferredChangelogLanguage(
     entries: LocalizedChangelogEntry[],
     locale: string

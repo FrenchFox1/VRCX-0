@@ -75,7 +75,7 @@ function LockedPanel() {
         'background' | 'logout' | null
     >(null);
     const [actionError, setActionError] = useState('');
-    const avatarUrl = userImage(currentUser, true, '128');
+    const avatarUrl = userImage(currentUser, 128);
 
     async function runAction(
         action: 'background' | 'logout',

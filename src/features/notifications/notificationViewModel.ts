@@ -29,12 +29,20 @@ type NotificationViewModelLink = {
     internal: boolean;
 };
 
-export type NotificationViewModelEmoji = {
-    id: string;
-    imageUrl: string;
-    kind: 'custom' | 'default';
-    name: string;
-};
+export type NotificationViewModelEmoji =
+    | {
+          id: string;
+          imageUrl: string;
+          kind: 'custom' | 'default';
+          name: string;
+      }
+    | {
+          id: string;
+          imageUrl: '';
+          kind: 'inventory';
+          name: '';
+          senderUserId: string;
+      };
 
 export type NotificationViewModel = {
     id: string;
@@ -237,7 +245,17 @@ function boopEmoji(
         rawImage.startsWith('default_') ? rawImage : ''
     );
     if (!id) {
-        return null;
+        const inventoryItemId = text(notification.details?.inventoryItemId);
+        if (!inventoryItemId) {
+            return null;
+        }
+        return {
+            id: inventoryItemId,
+            imageUrl: '',
+            kind: 'inventory',
+            name: '',
+            senderUserId: text(notification.senderUserId)
+        };
     }
     if (id.startsWith('default_')) {
         return {

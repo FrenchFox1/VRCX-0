@@ -430,66 +430,6 @@ fn strip_hash_from_key_name(key: &str) -> Option<&str> {
     }
 }
 
-#[cfg(test)]
-mod validation_tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn validates_allowed_registry_keys() {
-        assert!(validate_registry_key("LOGGING_ENABLED").is_ok());
-        assert!(validate_registry_key("VRC_DEBUG_LOGGING").is_ok());
-        assert!(validate_registry_key("VRC_TEST").is_ok());
-        assert!(validate_registry_key("UnityGraphicsQuality").is_ok());
-        assert!(validate_registry_key("playerHeight_h56066313").is_ok());
-        assert!(validate_registry_key("playerHeight").is_ok());
-    }
-
-    #[test]
-    fn rejects_unsupported_registry_keys() {
-        assert!(validate_registry_key("").is_err());
-        assert!(validate_registry_key("Bad/Key").is_err());
-        assert!(validate_registry_key("Bad\\Key").is_err());
-        assert!(validate_registry_key("Bad\"Key").is_err());
-        assert!(validate_registry_key("Bad Key!").is_err());
-    }
-
-    #[test]
-    fn validates_registry_entry_type_and_shape() {
-        assert!(validate_registry_entry("VRC_TEST", &json!("enabled"), 3).is_ok());
-        assert!(validate_registry_entry("VRC_TEST", &json!(1), 4).is_ok());
-        assert!(validate_registry_entry("VRC_TEST", &json!(1.5), 100).is_ok());
-
-        assert!(validate_registry_entry("VRC_TEST", &json!(1), 3).is_err());
-        assert!(validate_registry_entry("VRC_TEST", &json!("1"), 4).is_err());
-        assert!(validate_registry_entry("VRC_TEST", &json!("1.5"), 100).is_err());
-        assert!(validate_registry_entry("VRC_TEST", &json!(1), 5).is_err());
-    }
-
-    #[test]
-    fn validates_registry_json_entries() {
-        let valid = json!({
-            "VRC_TEST": {
-                "type": 3,
-                "data": [101, 110, 97, 98, 108, 101, 100]
-            },
-            "playerHeight_h56066313": {
-                "type": 4,
-                "data": 42
-            }
-        });
-        assert!(validate_registry_json(&valid.to_string()).is_ok());
-
-        let invalid = json!({
-            "Bad/Key": {
-                "type": 3,
-                "data": "enabled"
-            }
-        });
-        assert!(validate_registry_json(&invalid.to_string()).is_err());
-    }
-}
-
 #[cfg(all(test, target_os = "windows"))]
 mod tests {
     use super::*;

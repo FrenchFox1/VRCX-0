@@ -743,7 +743,5 @@ mod tests {
             ),
             0
         );
-        assert_eq!(DATABASE_CHECKPOINT_INTERVAL_SECONDS, 86_400);
-        assert_eq!(DATABASE_WAL_TRUNCATE_INTERVAL_SECONDS, 30 * 86_400);
     }
 }

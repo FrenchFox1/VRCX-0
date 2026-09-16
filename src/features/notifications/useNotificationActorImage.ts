@@ -20,7 +20,7 @@ export function useNotificationActorImage(actor: NotificationActor): string {
     const rosterFriend = useFriendRosterStore((state) =>
         userId ? (state.friendsById[userId] ?? null) : null
     );
-    const rosterImage = rosterFriend ? userImage(rosterFriend, true, 64) : '';
+    const rosterImage = rosterFriend ? userImage(rosterFriend, 64) : '';
     const groupId =
         actor.kind === 'group' && !actor.imageUrl ? normalizeId(actor.id) : '';
 
@@ -64,5 +64,5 @@ export function useNotificationActorImage(actor: NotificationActor): string {
     if (rosterImage) {
         return rosterImage;
     }
-    return profileQuery.data ? userImage(profileQuery.data, true, 64) : '';
+    return profileQuery.data ? userImage(profileQuery.data, 64) : '';
 }

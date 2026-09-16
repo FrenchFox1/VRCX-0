@@ -58,6 +58,20 @@ pub async fn app__vrchat_group_posts_get(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn app__vrchat_group_member_get(
+    state: State<'_, AppState>,
+    input: VrchatGroupUserInput,
+) -> Result<VrchatApiResponse, AppError> {
+    state
+        .runtime_host()
+        .groups()
+        .member(input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn app__vrchat_group_members_get(
     state: State<'_, AppState>,
     input: VrchatGroupMembersInput,

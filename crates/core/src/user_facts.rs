@@ -172,91 +172,54 @@ fn presence_source_rank(source: &str) -> u8 {
     }
 }
 
-fn is_presence_field(field: &str) -> bool {
-    matches!(
-        field,
-        "status"
-            | "statusDescription"
-            | "state"
-            | "location"
-            | "travelingToLocation"
-            | "locationAt"
-            | "travelingToTime"
-            | "pendingOffline"
-    )
+#[derive(Clone, Copy)]
+enum FieldClass {
+    Identity,
+    Presence,
+    Profile,
+    SelfOwned,
 }
 
-fn is_profile_field(field: &str) -> bool {
-    matches!(
-        field,
-        "username"
-            | "displayName"
-            | "userIcon"
-            | "profilePicOverride"
-            | "profilePicOverrideThumbnail"
-            | "thumbnailUrl"
-            | "currentAvatar"
-            | "currentAvatarImageUrl"
-            | "currentAvatarThumbnailImageUrl"
-            | "currentAvatarName"
-            | "friendNumber"
-            | "tags"
-            | "platform"
-            | "last_platform"
-            | "developerType"
-    )
+const USER_FACT_FIELDS: &[(&str, FieldClass)] = &[
+    ("id", FieldClass::Identity),
+    ("username", FieldClass::Profile),
+    ("displayName", FieldClass::Profile),
+    ("iconUrl", FieldClass::Profile),
+    ("currentAvatar", FieldClass::Profile),
+    ("currentAvatarImageUrl", FieldClass::Profile),
+    ("currentAvatarThumbnailImageUrl", FieldClass::Profile),
+    ("currentAvatarName", FieldClass::Profile),
+    ("friendNumber", FieldClass::Profile),
+    ("tags", FieldClass::Profile),
+    ("platform", FieldClass::Profile),
+    ("last_platform", FieldClass::Profile),
+    ("developerType", FieldClass::Profile),
+    ("status", FieldClass::Presence),
+    ("statusDescription", FieldClass::Presence),
+    ("state", FieldClass::Presence),
+    ("location", FieldClass::Presence),
+    ("travelingToLocation", FieldClass::Presence),
+    ("locationAt", FieldClass::Presence),
+    ("travelingToTime", FieldClass::Presence),
+    ("pendingOffline", FieldClass::Presence),
+    ("isBoopingEnabled", FieldClass::SelfOwned),
+    ("hasSharedConnectionsOptOut", FieldClass::SelfOwned),
+];
+
+fn user_fact_field(field: &str) -> Option<(&'static str, FieldClass)> {
+    USER_FACT_FIELDS
+        .iter()
+        .find(|(name, _)| *name == field)
+        .copied()
 }
 
-fn is_self_field(field: &str) -> bool {
-    matches!(field, "isBoopingEnabled" | "hasSharedConnectionsOptOut")
-}
-
-fn rank_for_field(field: &str, source: &str) -> u8 {
-    if is_presence_field(field) {
-        presence_source_rank(source)
-    } else if is_profile_field(field) {
-        profile_source_rank(source)
-    } else if is_self_field(field) {
-        if source == "currentUser" || source == "gameRuntime" {
-            95
-        } else {
-            base_source_rank(source)
-        }
-    } else {
-        base_source_rank(source)
+fn rank_for_field(class: FieldClass, source: &str) -> u8 {
+    match class {
+        FieldClass::Presence => presence_source_rank(source),
+        FieldClass::Profile => profile_source_rank(source),
+        FieldClass::SelfOwned if source == "currentUser" || source == "gameRuntime" => 95,
+        FieldClass::Identity | FieldClass::SelfOwned => base_source_rank(source),
     }
-}
-
-fn user_fact_field_name(field: &str) -> Option<&'static str> {
-    Some(match field {
-        "id" => "id",
-        "username" => "username",
-        "displayName" => "displayName",
-        "userIcon" => "userIcon",
-        "profilePicOverride" => "profilePicOverride",
-        "profilePicOverrideThumbnail" => "profilePicOverrideThumbnail",
-        "thumbnailUrl" => "thumbnailUrl",
-        "currentAvatar" => "currentAvatar",
-        "currentAvatarImageUrl" => "currentAvatarImageUrl",
-        "currentAvatarThumbnailImageUrl" => "currentAvatarThumbnailImageUrl",
-        "currentAvatarName" => "currentAvatarName",
-        "status" => "status",
-        "statusDescription" => "statusDescription",
-        "state" => "state",
-        "location" => "location",
-        "travelingToLocation" => "travelingToLocation",
-        "locationAt" => "locationAt",
-        "travelingToTime" => "travelingToTime",
-        "pendingOffline" => "pendingOffline",
-        "friendNumber" => "friendNumber",
-        "isBoopingEnabled" => "isBoopingEnabled",
-        "hasSharedConnectionsOptOut" => "hasSharedConnectionsOptOut",
-        "tags" => "tags",
-        "platform" => "platform",
-        "last_platform" => "last_platform",
-        "developerType" => "developerType",
-        _ => return None,
-    })
 }
 
 fn resolve_field(raw: &str) -> Option<&'static str> {
@@ -271,7 +234,7 @@ fn resolve_field(raw: &str) -> Option<&'static str> {
         | derived_keys::ONLINE_FOR => Some("locationAt"),
         derived_keys::TRAVELING_TO_TIME => Some("travelingToTime"),
         derived_keys::FRIEND_NUMBER => Some("friendNumber"),
-        other => user_fact_field_name(other),
+        other => user_fact_field(other).map(|(name, _)| name),
     }
 }
 
@@ -367,6 +330,7 @@ fn normalize_fact_patch(input: &Value) -> Map<String, Value> {
     patch
 }
 
+#[cfg(test)]
 pub fn merge_user_fact(
     existing: Option<&UserFact>,
     input: &Value,
@@ -454,10 +418,10 @@ pub fn merge_user_fact_owned(
         if field == "id" || !is_present(value) {
             continue;
         }
-        let Some(field_name) = user_fact_field_name(field) else {
+        let Some((field_name, class)) = user_fact_field(field) else {
             continue;
         };
-        let rank = rank_for_field(field_name, &options.source);
+        let rank = rank_for_field(class, &options.source);
         let existing_rank = fact.field_ranks.get(field_name).copied().unwrap_or(0);
         if rank < existing_rank {
             continue;

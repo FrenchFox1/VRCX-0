@@ -319,7 +319,6 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     showInstanceIdInLocation: false,
     isAgeGatedInstancesVisible: true,
     hideNicknames: false,
-    displayVRCPlusIconsAsAvatar: true,
     showUserDialogProfileBackground: true,
     showUserDialogAvatarFrame: true,
     showUserDialogProfileEffect: true,
@@ -483,9 +482,6 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
             next.isAgeGatedInstancesVisible
         ),
         hideNicknames: normalizeBool(next.hideNicknames),
-        displayVRCPlusIconsAsAvatar: normalizeBool(
-            next.displayVRCPlusIconsAsAvatar
-        ),
         showUserDialogProfileBackground: normalizeBool(
             next.showUserDialogProfileBackground
         ),

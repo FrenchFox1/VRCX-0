@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { getNotificationImageUrl } from '../notificationCenterUtils';
 import { getDiscIcon } from '../notificationRowActions';
 import type { NotificationViewModelEmoji } from '../notificationViewModel';
+import { useNotificationEmojiImage } from '../useNotificationEmojiImage';
 
 export function NotificationEmojiPreview({
     emoji,
@@ -18,6 +19,7 @@ export function NotificationEmojiPreview({
     emoji: NotificationViewModelEmoji;
     onClick?: () => void;
 }) {
+    const imageUrl = useNotificationEmojiImage(emoji);
     const fallback = (
         <span
             className={cn(
@@ -29,9 +31,9 @@ export function NotificationEmojiPreview({
             <SmileIcon className="size-4" />
         </span>
     );
-    const preview = emoji.imageUrl ? (
+    const preview = imageUrl ? (
         <FadeInImage
-            src={emoji.imageUrl}
+            src={imageUrl}
             alt={emoji.name}
             className={cn('shrink-0 rounded-md object-contain', className)}
             fallback={fallback}

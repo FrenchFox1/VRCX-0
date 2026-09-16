@@ -7,7 +7,6 @@ import {
     readPersistedPlayerListState,
     safeJsonParse,
     sanitizePlayerListColumnOrder,
-    sanitizePlayerListColumnSizing,
     sanitizePlayerListColumnVisibility,
     sanitizePlayerListSorting,
     writePersistedPlayerListState
@@ -63,7 +62,6 @@ describe('playerListState', () => {
             PLAYER_LIST_COLUMN_IDS
         );
         expect(sanitizePlayerListColumnVisibility(null)).toEqual({});
-        expect(sanitizePlayerListColumnSizing(null)).toEqual({});
     });
 
     it('keeps valid saved table choices and drops unknown columns', () => {
@@ -97,15 +95,6 @@ describe('playerListState', () => {
                 (columnId) => !['note', 'avatar'].includes(columnId)
             )
         ]);
-
-        expect(
-            sanitizePlayerListColumnSizing({
-                avatar: '64',
-                timer: 120,
-                displayName: '-1',
-                unknown: 200
-            })
-        ).toEqual({ avatar: 64, timer: 120 });
     });
 
     it('restores and updates persisted player-list table state without losing existing fields', () => {

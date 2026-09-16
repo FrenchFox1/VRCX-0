@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { BoopEmojiChoice } from '@/domain/entities/boopEmoji';
 import type { FriendRosterById } from '@/domain/friends/types';
 import {
     commands,
@@ -570,7 +571,7 @@ export function useUserDialogActions({
         }
     }
 
-    async function sendUserBoopEmoji(emojiId = '') {
+    async function sendUserBoopEmoji(emoji: BoopEmojiChoice | null) {
         const context = boopDialogRequest || buildBoopContext();
         if (!context || actionStatusRef.current !== 'idle') {
             return;
@@ -584,7 +585,7 @@ export function useUserDialogActions({
             });
             await sendBoopToUser({
                 userId: context.userId,
-                emojiId
+                emoji
             });
             setBoopDialogRequest(null);
             toast.add({

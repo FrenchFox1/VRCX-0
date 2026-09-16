@@ -7,7 +7,6 @@ import {
     readPersistedFriendListState,
     resolveFriendListPageSize,
     sanitizeFriendListColumnOrder,
-    sanitizeFriendListColumnSizing,
     sanitizeFriendListColumnVisibility,
     sanitizeFriendListPageSizes,
     sanitizeFriendListSorting,
@@ -147,17 +146,5 @@ describe('friendListState', () => {
                 (columnId) => columnId !== 'status' && columnId !== 'avatar'
             )
         ]);
-
-        expect(
-            sanitizeFriendListColumnSizing({
-                avatar: '96px',
-                displayName: 220,
-                unknown: 100,
-                status: 0
-            })
-        ).toEqual({
-            avatar: 96,
-            displayName: 220
-        });
     });
 });

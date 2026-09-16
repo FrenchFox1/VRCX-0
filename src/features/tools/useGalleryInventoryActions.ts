@@ -1,7 +1,9 @@
+import { mergeCurrentUserMediaFields } from '@/shared/utils/currentUserMedia';
 import {
     mergeCurrentUserPresenceFields,
     type CurrentUserPresenceRecord
 } from '@/shared/utils/currentUserPresence';
+import { extractFileId } from '@/shared/utils/fileUtils';
 import { normalizeString } from '@/shared/utils/string';
 import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
 
@@ -34,7 +36,8 @@ export function useGalleryInventoryActions({
     currentEndpoint,
     currentUserProfileService,
     currentUserId,
-    currentUserSnapshot,
+    mediaProfile,
+    refreshMediaProfile,
     getAuthTarget,
     isRuntimeAuthTarget,
     mediaRepository,
@@ -129,7 +132,13 @@ export function useGalleryInventoryActions({
             currentEndpoint,
             normalizedFileId
         );
-        if (nextValue === currentUserSnapshot?.[fieldName]) {
+        const currentValue =
+            mediaProfile?.[
+                fieldName === 'profilePicOverride'
+                    ? 'bannerCustomUrl'
+                    : 'userIcon'
+            ] || '';
+        if (mediaProfile && normalizedFileId === extractFileId(currentValue)) {
             return;
         }
         const authTarget = getAuthTarget();
@@ -147,8 +156,12 @@ export function useGalleryInventoryActions({
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
             }
+            const refreshed = await refreshMediaProfile();
+            if (!isRuntimeAuthTarget(authTarget) || !refreshed) {
+                return;
+            }
             const mergedUser = mergeCurrentUserMediaUpdate(
-                nextUser,
+                mergeCurrentUserMediaFields(nextUser, refreshed),
                 useRuntimeStore.getState().auth.currentUserSnapshot
             );
             useRuntimeStore.getState().setAuthBootstrap({

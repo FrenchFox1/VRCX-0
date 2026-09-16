@@ -24,20 +24,6 @@ pub enum FeedFilter {
     Offline,
 }
 
-impl FeedFilter {
-    pub fn from_event_type(value: &str) -> Option<Self> {
-        match value {
-            "GPS" => Some(Self::Gps),
-            "Status" => Some(Self::Status),
-            "Bio" => Some(Self::Bio),
-            "Avatar" => Some(Self::Avatar),
-            "Online" => Some(Self::Online),
-            "Offline" => Some(Self::Offline),
-            _ => None,
-        }
-    }
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FeedCursorInput {

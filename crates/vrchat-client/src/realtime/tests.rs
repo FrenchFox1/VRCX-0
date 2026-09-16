@@ -1,5 +1,5 @@
 use super::{
-    auth_token_from_response, build_auth_url, build_browser_websocket_request, build_transport_url,
+    auth_token_from_response, build_browser_websocket_request, build_transport_url,
     connect_direct_tcp, connect_http_proxy, connect_socks5_proxy, encode_uri_component,
     extract_auth_token, normalize_websocket_domain, websocket_connect_error, Error,
 };
@@ -38,15 +38,6 @@ fn trims_custom_websocket_domain() {
     assert_eq!(
         normalize_websocket_domain("wss://example.test///"),
         "wss://example.test"
-    );
-}
-
-#[test]
-fn builds_auth_url_from_default_or_custom_endpoint() {
-    assert_eq!(build_auth_url(""), "https://api.vrchat.cloud/api/1/auth");
-    assert_eq!(
-        build_auth_url("https://api.example.test/api/1/"),
-        "https://api.example.test/api/1/auth"
     );
 }
 

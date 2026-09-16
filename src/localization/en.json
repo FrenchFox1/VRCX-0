@@ -1677,7 +1677,6 @@
                 "mark_seen": "Mark seen",
                 "send_boop": "Send boop",
                 "search_emoji": "Search emoji",
-                "clear_selection": "Clear selection",
                 "send": "Send"
             },
             "success": {
@@ -1693,9 +1692,6 @@
                 "cannot_invite_from_the_current_instance_type": "Cannot invite from the current instance type",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Cannot invite: you're not currently in a joinable instance",
                 "cannot_send_invite_response_no_current_user_session_is_available": "Cannot send invite response: no current user session is available"
-            },
-            "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "No custom emoji selected. The default boop will be sent"
             },
             "loading": {
                 "loading_emojis": "Loading emojis"
@@ -1915,7 +1911,8 @@
                 "last_backup": "Backed up {date}",
                 "connections_configured": "{count} connections",
                 "apps_count": "{count} apps",
-                "automatic_backup": "Auto backup"
+                "automatic_backup": "Auto backup",
+                "show_details": "Show details"
             },
             "quick_access": {
                 "header": "Quick access",
@@ -2543,8 +2540,6 @@
                     "theme_mode_pink": "Pink",
                     "theme_mode_material3": "Material 3",
                     "zoom": "Zoom",
-                    "vrcplus_profile_icons": "Profile Icons",
-                    "vrcplus_profile_icons_description": "Use profile icons as user images when available.",
                     "show_instance_id": "Show Instance ID",
                     "age_gated_instances": "Show Age-Gated Instances",
                     "age_gated_instances_description": "Show age-restricted instances. When disabled, these instances are hidden and shown as restricted.",
@@ -3124,6 +3119,12 @@
             }
         },
         "player_list": {
+            "group_roles": {
+                "automatic": "Instance group (automatic)",
+                "group": "Group for roles",
+                "placeholder": "Search groups or enter a group ID",
+                "refresh": "Refresh group roles"
+            },
             "success": {
                 "last_updated": "Last updated",
                 "created": "Created"
@@ -3760,7 +3761,6 @@
                 "note": "Note",
                 "memo": "Local Note",
                 "avatar_info": "Avatar Info",
-                "avatar_info_last_seen": "Avatar Info Last Seen",
                 "unknown_avatar": "Unknown Avatar",
                 "represented_group": "Represented Group",
                 "bio": "Bio",
@@ -4157,7 +4157,6 @@
                 "role_ids": "Role IDs",
                 "queue_enabled": "Queue enabled",
                 "age_gate": "Age gate",
-                "display_name": "Display Name",
                 "user_id": "User ID",
                 "strict": "Strict",
                 "location": "Location",
@@ -4561,20 +4560,26 @@
                 "edited_by": "Edited by:",
                 "search_placeholder": "Search"
             },
+            "role_name": {
+                "group_owner": "Group Owner",
+                "everyone": "Everyone",
+                "member": "Member"
+            },
             "members": {
                 "header": "Members",
                 "sorting": {
                     "joined_at_asc": "Joined At (Ascending)",
                     "joined_at_desc": "Joined At (Descending)"
                 },
-                "filter": "Filter:",
-                "filters": {
-                    "everyone": "Everyone",
-                    "users_with_no_role": "Users With No Role"
-                },
                 "unsubscribed_announcements": "Unsubscribed from announcements",
                 "representing": "Representing",
-                "search": "Search"
+                "view_all": "All",
+                "friends": "Friends",
+                "search": "Search",
+                "loaded_of_total": "Loaded {loaded} of {total}",
+                "search_results": "{count} results",
+                "export_loaded": "Export loaded ({count})",
+                "export_all": "Export all ({count})"
             },
             "gallery": {
                 "header": "Photos"
@@ -4626,15 +4631,12 @@
                 "group_join_request_cancelled": "Group join request cancelled",
                 "group_refreshed": "Group refreshed",
                 "group_invite_sent": "Group invite sent",
-                "group_post_deleted": "Group post deleted",
-                "joined_newest": "Joined newest",
-                "joined_oldest": "Joined oldest"
+                "group_post_deleted": "Group post deleted"
             },
             "action": {
                 "refresh_to_load_gallery_images": "Refresh to load gallery images",
                 "open_group_owner_profile": "Open group owner profile",
-                "join_state": "Join State",
-                "load_all": "Load All"
+                "join_state": "Join State"
             },
             "toast": {
                 "failed_to_join_group": "Failed to join group",
@@ -4720,12 +4722,15 @@
             "ageGate": "Age Gate",
             "normal": "Normal",
             "group": "Group",
-            "legacy": "Legacy"
+            "legacy": "Legacy",
+            "display_name": "Instance name"
         },
         "launch": {
             "header": "Launch",
             "short_url": "Short URL",
-            "location": "Location",
+            "share": "Share",
+            "share_description": "Copy the VRCX-0 share link. Anyone who opens it gets a preview and can open the instance in the client.",
+            "more_copy_options": "More copy options",
             "invite": "Invite",
             "open_ingame": "Open in-game",
             "self_invite": "Self invite",
@@ -4740,7 +4745,8 @@
                 "game_not_running": "VRChat not running"
             },
             "copy": {
-                "link": "Link",
+                "vrchat_link": "VRChat link",
+                "instance_id": "Instance ID",
                 "failed": "Failed to copy"
             }
         },
@@ -5383,7 +5389,10 @@
             "emoji_manager": "Emoji Manager",
             "select_default_emoji": "Select Default Emoji",
             "default_emojis": "Default Emojis",
-            "send": "Send"
+            "send": "Send",
+            "recent": "Recent",
+            "inventory_emojis": "Inventory",
+            "no_inventory_emojis": "No boop emojis in your inventory yet"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 is up to date",
@@ -5925,6 +5934,7 @@
             "action": "Action"
         },
         "playerList": {
+            "groupRoles": "Group roles",
             "avatar": "Avatar",
             "timer": "Timer",
             "icon": "Icons",

@@ -16,6 +16,7 @@ import { unwrapVrchatResponse } from './vrchatRequest';
 type NotificationDetails = Record<string, unknown> & {
     displayLocation?: string;
     emojiId?: unknown;
+    inventoryItemId?: unknown;
     groupId?: string;
     groupName?: string;
     imageUrl?: string;
@@ -74,6 +75,7 @@ interface NotificationActionOptions {
     receiverUserId?: string;
     userId?: string;
     emojiId?: string;
+    inventoryItemId?: string;
     params?: RequestInviteRequest;
 }
 
@@ -354,17 +356,18 @@ async function sendRequestInvitePhoto({
 
 async function sendBoop({
     userId,
-    emojiId = ''
+    emojiId = '',
+    inventoryItemId = ''
 }: NotificationActionOptions = {}) {
     const normalizedUserId = userId?.trim() ?? '';
     if (!normalizedUserId) {
         return null;
     }
 
-    const normalizedEmojiId = emojiId.trim();
     const input = {
         userId: normalizedUserId,
-        emojiId: normalizedEmojiId
+        emojiId: emojiId.trim(),
+        inventoryItemId: inventoryItemId.trim()
     } satisfies VrchatBoopInput;
     const response = await commands.appVrchatBoopSend(input);
     return unwrapVrchatNotificationResponse(

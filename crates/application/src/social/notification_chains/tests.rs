@@ -60,9 +60,11 @@ fn call_key(call: &NotificationChainRemoteCall) -> String {
             params,
             ..
         } => format!("inviteSendPhoto:{receiver_user_id}:{params}"),
-        NotificationChainRemoteCall::BoopSend { user_id, emoji_id } => {
-            format!("boopSend:{user_id}:{emoji_id}")
-        }
+        NotificationChainRemoteCall::BoopSend {
+            user_id,
+            emoji_id,
+            inventory_item_id,
+        } => format!("boopSend:{user_id}:{emoji_id}:{inventory_item_id}"),
     }
 }
 
@@ -294,6 +296,7 @@ async fn boop_reply_dismisses_matching_rows_before_sending() {
             endpoint: String::new(),
             target: target("notif", 2),
             emoji_id: "emoji_wave".into(),
+            inventory_item_id: String::new(),
         },
     )
     .await
@@ -304,13 +307,35 @@ async fn boop_reply_dismisses_matching_rows_before_sending() {
         actions.remote_calls(),
         vec![
             "hide:previous",
-            "boopSend:usr_sender:emoji_wave",
+            "boopSend:usr_sender:emoji_wave:",
             "hide:notif"
         ]
     );
     assert_eq!(
         actions.emitted(),
         vec![vec!["previous".to_string(), "notif".to_string()]]
+    );
+}
+
+#[tokio::test]
+async fn boop_reply_forwards_inventory_item_id() {
+    let actions = FakeActions::new();
+    let outcome = send_boop_reply_notification(
+        &actions,
+        NotificationBoopReplyInput {
+            owner_user_id: OwnerId::new("usr_self"),
+            endpoint: String::new(),
+            target: target("notif", 2),
+            emoji_id: String::new(),
+            inventory_item_id: " inv_miku ".into(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(outcome.status, NotificationActionStatus::Applied);
+    assert_eq!(
+        actions.remote_calls(),
+        vec!["boopSend:usr_sender::inv_miku", "hide:notif"]
     );
 }
 
@@ -326,6 +351,7 @@ async fn boop_reply_send_failure_keeps_dismiss_expirations() {
             endpoint: String::new(),
             target: target("notif", 2),
             emoji_id: String::new(),
+            inventory_item_id: String::new(),
         },
     )
     .await
@@ -371,6 +397,7 @@ async fn boop_reply_requires_sender_user_id() {
                 sender_user_id: String::new(),
             },
             emoji_id: String::new(),
+            inventory_item_id: String::new(),
         },
     )
     .await;

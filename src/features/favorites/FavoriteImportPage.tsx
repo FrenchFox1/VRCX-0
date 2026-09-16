@@ -115,10 +115,7 @@ function getRowImage(row: FavoriteImportRow): string {
     return (
         rowText(row, 'thumbnailImageUrl') ||
         rowText(row, 'imageUrl') ||
-        rowText(row, 'currentAvatarThumbnailImageUrl') ||
-        rowText(row, 'currentAvatarImageUrl') ||
-        rowText(row, 'userIcon') ||
-        rowText(row, 'profilePicOverride')
+        rowText(row, 'iconUrl')
     );
 }
 

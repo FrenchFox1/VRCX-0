@@ -157,7 +157,7 @@ export function useFriendListColumns({
                 maxSize: 90,
                 enableResizing: false,
                 meta: { label: t('table.friendList.avatar') },
-                accessorFn: (row) => userImage(row, true),
+                accessorFn: (row) => userImage(row),
                 enableSorting: false,
                 header: () => (
                     <DataTableHeaderLabel>
@@ -165,7 +165,7 @@ export function useFriendListColumns({
                     </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => {
-                    const imageUrl = userImage(row.original, true);
+                    const imageUrl = userImage(row.original);
                     return imageUrl ? (
                         <FadeInImage
                             src={imageUrl}

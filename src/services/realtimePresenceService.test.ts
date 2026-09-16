@@ -7,8 +7,7 @@ const serviceMocks = vi.hoisted(() => ({
         getString: vi.fn()
     },
     pushSharedFeedNotification: vi.fn(),
-    recordCurrentUserSnapshot: vi.fn(),
-    recordFriendPatch: vi.fn()
+    recordCurrentUserSnapshot: vi.fn()
 }));
 
 vi.mock('@/repositories/configRepository', () => ({
@@ -16,8 +15,7 @@ vi.mock('@/repositories/configRepository', () => ({
 }));
 
 vi.mock('./domainIngestionService', () => ({
-    recordCurrentUserSnapshot: serviceMocks.recordCurrentUserSnapshot,
-    recordFriendPatch: serviceMocks.recordFriendPatch
+    recordCurrentUserSnapshot: serviceMocks.recordCurrentUserSnapshot
 }));
 
 vi.mock('./sharedFeedNotificationService', () => ({
@@ -133,7 +131,6 @@ describe('realtimePresenceService projection boundary', () => {
         expect(
             useFriendRosterStore.getState().friendsById.usr_friend.state
         ).toBe('online');
-        expect(serviceMocks.recordFriendPatch).not.toHaveBeenCalled();
         expect(
             useRuntimeStore.getState().auth.currentUserSnapshot
         ).toMatchObject({
@@ -635,7 +632,6 @@ describe('realtimePresenceService projection boundary', () => {
                 }
             }
         });
-        expect(serviceMocks.recordFriendPatch).not.toHaveBeenCalled();
     });
 
     it('applies Rust current-user location authority patch', async () => {

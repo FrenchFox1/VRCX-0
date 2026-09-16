@@ -1677,7 +1677,6 @@
                 "mark_seen": "標記已讀",
                 "send_boop": "傳送戳一戳",
                 "search_emoji": "搜尋 Emoji",
-                "clear_selection": "清除選擇",
                 "send": "傳送"
             },
             "success": {
@@ -1693,9 +1692,6 @@
                 "cannot_invite_from_the_current_instance_type": "無法從目前房間類型發出邀請",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "無法邀請：你目前不在可加入的房間",
                 "cannot_send_invite_response_no_current_user_session_is_available": "無法傳送邀請回應：目前沒有可用的用戶工作階段"
-            },
-            "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "未選擇自訂 Emoji，將傳送預設戳一戳"
             },
             "loading": {
                 "loading_emojis": "正在載入Emoji"
@@ -1915,7 +1911,8 @@
                 "last_backup": "上次備份 {date}",
                 "connections_configured": "{count} 個連線",
                 "apps_count": "{count} 個應用程式",
-                "automatic_backup": "自動備份"
+                "automatic_backup": "自動備份",
+                "show_details": "展開詳情"
             },
             "quick_access": {
                 "header": "常用工具",
@@ -2543,8 +2540,6 @@
                     "theme_mode_pink": "粉色",
                     "theme_mode_material3": "Material 3",
                     "zoom": "介面縮放",
-                    "vrcplus_profile_icons": "使用個人資料頭像",
-                    "vrcplus_profile_icons_description": "有可用頭像時，優先將其顯示為使用者頭像。",
                     "show_instance_id": "顯示房間 ID",
                     "age_gated_instances": "年齡限制房間",
                     "age_gated_instances_description": "顯示受年齡限制的實例。停用時，這些實例會隱藏並顯示為受限制。",
@@ -3124,6 +3119,12 @@
             }
         },
         "player_list": {
+            "group_roles": {
+                "automatic": "目前實例群組（自動）",
+                "group": "身分組所屬群組",
+                "placeholder": "搜尋群組或輸入群組 ID",
+                "refresh": "重新整理群組身分組"
+            },
             "success": {
                 "last_updated": "上次更新",
                 "created": "建立時間"
@@ -3761,7 +3762,6 @@
                 "note": "備註",
                 "memo": "本機備註",
                 "avatar_info": "角色資訊",
-                "avatar_info_last_seen": "最後已知角色資訊",
                 "unknown_avatar": "未知角色",
                 "represented_group": "代表群組",
                 "bio": "自我介紹",
@@ -4158,7 +4158,6 @@
                 "role_ids": "角色 ID",
                 "queue_enabled": "佇列已啟用",
                 "age_gate": "年齡限制",
-                "display_name": "顯示名稱",
                 "user_id": "用戶 ID",
                 "strict": "嚴格",
                 "location": "位置變動",
@@ -4553,20 +4552,26 @@
                 "edited_by": "編輯：",
                 "search_placeholder": "搜尋"
             },
+            "role_name": {
+                "group_owner": "群組所有者",
+                "everyone": "所有人",
+                "member": "成員"
+            },
             "members": {
                 "header": "成員",
                 "sorting": {
                     "joined_at_asc": "加入時間（升序）",
                     "joined_at_desc": "加入時間（降序）"
                 },
-                "filter": "過濾器：",
-                "filters": {
-                    "everyone": "所有人",
-                    "users_with_no_role": "沒有身分的用戶"
-                },
                 "unsubscribed_announcements": "取消訂閱公告",
                 "representing": "展示群組",
-                "search": "搜尋"
+                "view_all": "全部",
+                "friends": "好友",
+                "search": "搜尋",
+                "loaded_of_total": "已載入 {loaded} / {total}",
+                "search_results": "{count} 個結果",
+                "export_loaded": "匯出已載入（{count}）",
+                "export_all": "匯出全部（{count}）"
             },
             "gallery": {
                 "header": "畫廊"
@@ -4618,15 +4623,12 @@
                 "group_join_request_cancelled": "已取消加入群組請求",
                 "group_refreshed": "群組已重新整理",
                 "group_invite_sent": "群組邀請已傳送",
-                "group_post_deleted": "群組帖子已刪除",
-                "joined_newest": "最新加入",
-                "joined_oldest": "最早加入"
+                "group_post_deleted": "群組帖子已刪除"
             },
             "action": {
                 "refresh_to_load_gallery_images": "重新整理以載入圖庫圖片",
                 "open_group_owner_profile": "開啟群組所有者資料",
-                "join_state": "加入狀態",
-                "load_all": "全部載入"
+                "join_state": "加入狀態"
             },
             "toast": {
                 "failed_to_join_group": "加入群組失敗",
@@ -4712,12 +4714,15 @@
             "ageGate": "年齡限制",
             "normal": "一般",
             "group": "群組",
-            "legacy": "舊版"
+            "legacy": "舊版",
+            "display_name": "房間名稱"
         },
         "launch": {
             "header": "啟動",
             "short_url": "短連結",
-            "location": "地點",
+            "share": "分享",
+            "share_description": "複製 VRCX-0 分享連結，對方開啟即可預覽並在用戶端中開啟",
+            "more_copy_options": "更多複製選項",
             "invite": "邀請",
             "open_ingame": "於遊戲中開啟",
             "self_invite": "自我邀請",
@@ -4732,7 +4737,8 @@
                 "game_not_running": "VRChat 未執行"
             },
             "copy": {
-                "link": "連結",
+                "vrchat_link": "VRChat 連結",
+                "instance_id": "房間 ID",
                 "failed": "複製失敗"
             }
         },
@@ -5375,7 +5381,10 @@
             "emoji_manager": "管理表情符號",
             "select_default_emoji": "選擇預設表情符號",
             "default_emojis": "預設表情符號",
-            "send": "傳送"
+            "send": "傳送",
+            "recent": "最近使用",
+            "inventory_emojis": "庫存",
+            "no_inventory_emojis": "庫存裡還沒有可用的戳一下表情符號"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 已是最新版本",
@@ -5917,6 +5926,7 @@
             "action": "動作"
         },
         "playerList": {
+            "groupRoles": "群組身分組",
             "avatar": "角色",
             "timer": "時長",
             "icon": "圖示",

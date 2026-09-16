@@ -89,41 +89,6 @@ fn rename_updates_favorites_and_config_atomically() {
 }
 
 #[test]
-fn rename_merges_into_existing_group_despite_unique_index() {
-    let (_dir, db) = test_db("favorite-rename-merge");
-    favorite_add(
-        &db,
-        None,
-        FavoriteEntityKind::World,
-        "wrld_1".into(),
-        "a".into(),
-    )
-    .unwrap();
-    favorite_add(
-        &db,
-        None,
-        FavoriteEntityKind::World,
-        "wrld_1".into(),
-        "b".into(),
-    )
-    .unwrap();
-    favorite_add(
-        &db,
-        None,
-        FavoriteEntityKind::World,
-        "wrld_2".into(),
-        "a".into(),
-    )
-    .unwrap();
-
-    favorite_group_rename(&db, None, FavoriteEntityKind::World, "a".into(), "b".into()).unwrap();
-
-    let mut groups = group_names(&db, FavoriteEntityKind::World);
-    groups.sort();
-    assert_eq!(groups, vec!["b".to_string(), "b".to_string()]);
-}
-
-#[test]
 fn rename_with_config_merges_into_existing_group_despite_unique_index() {
     let (_dir, db) = test_db("favorite-rename-merge-with-config");
     favorite_add(

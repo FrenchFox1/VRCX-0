@@ -96,13 +96,7 @@ export function shrinkFavoriteImage(url: unknown): string {
     if (typeof url !== 'string') {
         return '';
     }
-    const normalized = convertFileUrlToImageUrl(url, 128);
-    if (!normalized) {
-        return '';
-    }
-    return normalized.includes('/256')
-        ? normalized.replace('/256', '/128')
-        : normalized;
+    return convertFileUrlToImageUrl(url, 128);
 }
 
 export function favoriteGroupType(

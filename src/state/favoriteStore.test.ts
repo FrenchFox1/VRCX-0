@@ -72,38 +72,6 @@ describe('favoriteStore', () => {
         });
     });
 
-    it('keeps avatar details out of the frontend favorite store', () => {
-        const store = useFavoriteStore.getState();
-
-        store.addLocalFavorite({
-            kind: 'avatar',
-            groupName: 'Avatars',
-            entityId: 'avtr_1',
-            entity: { name: 'Avatar' }
-        });
-
-        expect(useFavoriteStore.getState()).not.toHaveProperty(
-            'localAvatarDetailsById'
-        );
-    });
-
-    it('keeps local world membership and details out of the frontend store', () => {
-        useFavoriteStore.getState().setFavoritesSnapshot({
-            localWorldFavorites: { Worlds: ['wrld_1'] },
-            localWorldFavoriteGroups: ['Worlds'],
-            localWorldFavoritesList: ['wrld_1'],
-            localWorldDetailsById: {
-                wrld_1: { id: 'wrld_1', name: 'World' }
-            }
-        });
-
-        const state = useFavoriteStore.getState();
-        expect(state).not.toHaveProperty('localWorldFavorites');
-        expect(state).not.toHaveProperty('localWorldFavoriteGroups');
-        expect(state).not.toHaveProperty('localWorldFavoritesList');
-        expect(state).not.toHaveProperty('localWorldDetailsById');
-    });
-
     it('indexes remote favorites by favorite object id and updates group counts', () => {
         const store = useFavoriteStore.getState();
 

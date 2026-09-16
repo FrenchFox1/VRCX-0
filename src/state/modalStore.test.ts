@@ -182,14 +182,20 @@ describe('modalStore', () => {
             dismissible: false
         });
 
-        useModalStore.getState().handleBoopDismiss('ignored');
+        useModalStore.getState().handleBoopDismiss();
         expect(useModalStore.getState().boopDialog.open).toBe(true);
 
-        useModalStore.getState().handleBoopOk('wave');
+        const wave = {
+            kind: 'default' as const,
+            id: 'default_hand_wave',
+            imageUrl: 'https://wiki-files.vrchat.com/Handwave.webp',
+            name: 'Hand Wave'
+        };
+        useModalStore.getState().handleBoopOk(wave);
         await expect(result).resolves.toEqual({
             ok: true,
             reason: 'ok',
-            value: 'wave'
+            value: wave
         });
     });
 

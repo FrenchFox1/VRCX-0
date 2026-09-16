@@ -76,20 +76,6 @@ function getSQLiteErrorCategory(error: Error): SqliteErrorCategory | null {
     );
 }
 
-function getSQLiteDialogDefinition(
-    error: unknown
-): SQLiteDialogDefinition | null {
-    if (!(error instanceof Error)) {
-        return null;
-    }
-    const category = getSQLiteErrorCategory(error);
-    return category ? SQLITE_ERROR_DIALOGS[category] : null;
-}
-
-export function isKnownSQLiteError(error: unknown): boolean {
-    return Boolean(getSQLiteDialogDefinition(error));
-}
-
 export async function showSQLiteErrorDialog(error: unknown): Promise<boolean> {
     if (!(error instanceof Error)) {
         return false;

@@ -33,6 +33,8 @@ export default defineConfig({
             exclude: [
                 'src/**/*.test.{ts,tsx}',
                 'src/**/*.d.ts',
+                'src/components/feed/feedLiveTestEntries.ts',
+                'src/features/feed/feedLiveMergeTestUtils.ts',
                 'src/localization/**',
                 'src/platform/tauri/bindings.ts',
                 ...coverageExcludedPureConstants

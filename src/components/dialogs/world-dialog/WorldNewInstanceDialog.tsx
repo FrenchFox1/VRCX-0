@@ -364,7 +364,7 @@ export function WorldNewInstanceDialog({
                         }
                     }}
                 >
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList>
                         <TabsTrigger value="Normal">
                             {t('dialog.new_instance.normal')}
                         </TabsTrigger>
@@ -607,7 +607,7 @@ export function WorldNewInstanceDialog({
                             ) : null}
                             <Field>
                                 <FieldLabel htmlFor="world-instance-display-name">
-                                    {t('dialog.world.label.display_name')}
+                                    {t('dialog.new_instance.display_name')}
                                 </FieldLabel>
                                 <Popover
                                     open={displayNamePresetsOpen}
@@ -630,7 +630,7 @@ export function WorldNewInstanceDialog({
                                                         <InputGroupButton
                                                             size="icon-xs"
                                                             aria-label={t(
-                                                                'dialog.world.label.display_name'
+                                                                'dialog.new_instance.display_name'
                                                             )}
                                                         >
                                                             <ChevronDownIcon data-icon="inline-start" />

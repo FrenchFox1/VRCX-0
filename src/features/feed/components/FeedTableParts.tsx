@@ -169,9 +169,7 @@ function FeedUserLink({
     }, [currentEndpoint, displayName, userId]);
 
     const userLabel = displayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
-    const imageUrl = showAvatar
-        ? userImage(displayUser || null, true, '64')
-        : '';
+    const imageUrl = showAvatar ? userImage(displayUser || null, 64) : '';
     const actionTarget: FeedFriendActionTarget = friend || row;
 
     return (
@@ -420,7 +418,7 @@ function FeedUserAvatarButton({
     }, [currentEndpoint, displayName, userId]);
 
     const userLabel = displayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
-    const imageUrl = userImage(displayUser || null, true, '64');
+    const imageUrl = userImage(displayUser || null, 64);
 
     return (
         <Button

@@ -32,10 +32,7 @@ interface UserFact {
     endpoint: string;
     username?: string;
     displayName?: string;
-    userIcon?: string;
-    profilePicOverride?: string;
-    profilePicOverrideThumbnail?: string;
-    thumbnailUrl?: string;
+    iconUrl?: string;
     currentAvatar?: string;
     currentAvatarImageUrl?: string;
     currentAvatarThumbnailImageUrl?: string;

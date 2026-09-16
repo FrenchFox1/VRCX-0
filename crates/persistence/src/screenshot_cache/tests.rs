@@ -271,23 +271,6 @@ fn replace_library_entries_is_idempotent_for_unchanged_entries() -> Result<()> {
 }
 
 #[test]
-fn mark_library_entry_stale_for_test_resets_index_version() -> Result<()> {
-    let dir = TestDir::new("mark-stale");
-    let cache = open_cache(&dir);
-    let root_str = path_string(&dir.path.join("Screenshots"));
-    let entry = library_entry(&root_str, "a.png", &root_str, "a.png");
-    let seen: HashSet<String> = ["a.png".to_string()].into_iter().collect();
-    cache.replace_library_entries(&root_str, &seen, &[entry], true)?;
-
-    cache.mark_library_entry_stale_for_test("a.png")?;
-
-    let states = cache.library_file_states(&root_str);
-    let state = states.get("a.png").expect("entry still present");
-    assert_eq!(state.index_version, 0);
-    Ok(())
-}
-
-#[test]
 fn list_screenshot_folder_images_for_root_filters_by_folder_and_orders_by_file_name() -> Result<()>
 {
     let dir = TestDir::new("list-folder-images");

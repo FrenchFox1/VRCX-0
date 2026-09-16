@@ -63,6 +63,7 @@ impl RealtimeHostRuntime {
         Ok(watermark)
     }
 
+    #[cfg(test)]
     pub fn run_friend_log_current_mutation<T>(
         &self,
         mutation: impl FnOnce() -> Result<T>,

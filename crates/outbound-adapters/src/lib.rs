@@ -49,6 +49,7 @@ mod secret_startup;
 mod social_mutation_remote_requests;
 mod telemetry;
 mod translation;
+mod user_api_field_log;
 mod user_dialog_tab_counts;
 mod vrc_status;
 mod vrchat_config;

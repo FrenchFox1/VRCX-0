@@ -543,12 +543,6 @@ export function UserDialogTabbedView({
     );
     const bannerFallbackUrl = convertFileUrlToImageUrl(imageUrl, 1024);
     const displayedBannerUrl = bannerUrl || bannerFallbackUrl;
-    const profileIconUrl = convertFileUrlToImageUrl(
-        normalizedText(profile.iconUrl) ||
-            normalizedText(profile.userIcon) ||
-            imageUrl,
-        512
-    );
 
     function openInstanceHistory() {
         changeTab('instance-history', { allowHidden: true });
@@ -581,7 +575,7 @@ export function UserDialogTabbedView({
         previousDisplayNames,
         profile,
         profileAppearance,
-        profileIconUrl,
+        profileIconUrl: imageUrl,
         profileLanguages,
         profileTitle,
         pronounsText,
@@ -636,7 +630,7 @@ export function UserDialogTabbedView({
         onOpenImagePreview: openImagePreview,
         onOpenUserIcon: () =>
             openImagePreview({
-                url: profileIconUrl,
+                url: imageUrl,
                 title: profileTitle
             }),
         onOpenUserUrl: () => openExternalLink(userUrl),

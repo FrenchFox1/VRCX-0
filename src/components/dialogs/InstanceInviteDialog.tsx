@@ -468,8 +468,8 @@ export function InstanceInviteDialog({
                                     normalizeId(userId)
                                 );
                                 const imageUrl = friend
-                                    ? userImage(friend, true)
-                                    : userImage(currentUser, true);
+                                    ? userImage(friend)
+                                    : userImage(currentUser);
                                 const favoriteGroupLabels =
                                     favoriteGroupLabelsByUserId[
                                         normalizeId(userId)

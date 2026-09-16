@@ -1,5 +1,6 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
+import type { UserProfileEntity } from '@/domain/entities/user';
 import type { AppToastOptions } from '@/services/toastService';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
@@ -53,7 +54,8 @@ export type GalleryControllerDeps = {
     cropRequest: GalleryCropRequest | null;
     currentEndpoint: string;
     currentUserId: string | null;
-    currentUserSnapshot: CurrentUserSnapshotState | null;
+    mediaProfile: UserProfileEntity | null;
+    refreshMediaProfile(): Promise<UserProfileEntity | null>;
     emojiAnimFps: number;
     emojiAnimFrameCount: number;
     emojiAnimLoopPingPong: boolean;
@@ -100,7 +102,8 @@ export type GalleryActionDeps = GalleryControllerDeps & {
 export type GalleryAssetActionDeps = Omit<
     GalleryActionDeps,
     | 'buildProfilePicOverride'
-    | 'currentUserSnapshot'
+    | 'mediaProfile'
+    | 'refreshMediaProfile'
     | 'mediaRepository'
     | 'prompt'
     | 'useRuntimeStore'
@@ -122,7 +125,8 @@ export type GalleryInventoryActionDeps = Pick<
     | 'confirm'
     | 'currentEndpoint'
     | 'currentUserId'
-    | 'currentUserSnapshot'
+    | 'mediaProfile'
+    | 'refreshMediaProfile'
     | 'isRuntimeAuthTarget'
     | 'prompt'
     | 'setAssets'
@@ -189,7 +193,9 @@ export type GalleryModel = {
     isVrcPlusSupporter: boolean;
     loadingByTab: Record<string, boolean>;
     mutatingKey: string;
-    profilePicOverride: string;
+    bannerCustomUrl: string;
+    mediaProfileLoading: boolean;
+    mediaProfileError: string;
     tabCounts: Record<GalleryTab, string>;
     uploadingTab: string;
     userIcon: string;
@@ -203,7 +209,9 @@ export type GalleryFileTabState = Pick<
     | 'gridDensityConfig'
     | 'loadingByTab'
     | 'mutatingKey'
-    | 'profilePicOverride'
+    | 'bannerCustomUrl'
+    | 'mediaProfileLoading'
+    | 'mediaProfileError'
     | 'uploadingTab'
     | 'userIcon'
 > &

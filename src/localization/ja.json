@@ -1673,7 +1673,6 @@
                 "mark_seen": "既読にする",
                 "send_boop": "つっつく",
                 "search_emoji": "Emoji を検索",
-                "clear_selection": "選択をクリア",
                 "send": "送信"
             },
             "success": {
@@ -1689,9 +1688,6 @@
                 "cannot_invite_from_the_current_instance_type": "現在のインスタンスタイプからは招待できません",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "招待できません: 現在の位置は具体的なインスタンスではありません",
                 "cannot_send_invite_response_no_current_user_session_is_available": "招待への返信を送信できません: 現在のユーザーセッションがありません"
-            },
-            "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "カスタム絵文字が選択されていません。既定のつっつきを送信します"
             },
             "loading": {
                 "loading_emojis": "Emojiを読み込み中"
@@ -1911,7 +1907,8 @@
                 "last_backup": "最終バックアップ {date}",
                 "connections_configured": "接続 {count} 件",
                 "apps_count": "アプリ {count} 件",
-                "automatic_backup": "自動バックアップ"
+                "automatic_backup": "自動バックアップ",
+                "show_details": "詳細を表示"
             },
             "quick_access": {
                 "header": "クイックアクセス",
@@ -2539,8 +2536,6 @@
                     "theme_mode_pink": "ピンク",
                     "theme_mode_material3": "Material 3",
                     "zoom": "ズーム",
-                    "vrcplus_profile_icons": "プロフィールのアイコン画像",
-                    "vrcplus_profile_icons_description": "設定されている場合、ユーザー画像として優先して表示します。",
                     "show_instance_id": "インスタンス名を表示",
                     "age_gated_instances": "年齢制限付きインスタンス",
                     "age_gated_instances_description": "年齢制限付きインスタンスを表示します。無効にすると、これらのインスタンスは非表示になり、制限付きとして表示されます。",
@@ -3120,6 +3115,12 @@
             }
         },
         "player_list": {
+            "group_roles": {
+                "automatic": "現在のインスタンスのグループ（自動）",
+                "group": "ロールを表示するグループ",
+                "placeholder": "グループを検索、またはグループ ID を入力",
+                "refresh": "グループロールを更新"
+            },
             "success": {
                 "last_updated": "最終更新",
                 "created": "作成日"
@@ -3755,7 +3756,6 @@
                 "note": "ノート",
                 "memo": "ローカルノート",
                 "avatar_info": "アバター情報",
-                "avatar_info_last_seen": "最後に見たアバター情報",
                 "unknown_avatar": "不明なアバター",
                 "represented_group": "ネームプレートに掲示中のグループ",
                 "bio": "自己紹介",
@@ -4152,7 +4152,6 @@
                 "role_ids": "ロール ID",
                 "queue_enabled": "キュー有効",
                 "age_gate": "年齢制限",
-                "display_name": "表示名",
                 "user_id": "ユーザーID",
                 "strict": "厳格",
                 "location": "場所",
@@ -4547,20 +4546,26 @@
                 "edited_by": "編集者:",
                 "search_placeholder": "検索..."
             },
+            "role_name": {
+                "group_owner": "グループ所有者",
+                "everyone": "全員",
+                "member": "メンバー"
+            },
             "members": {
                 "header": "メンバー",
                 "sorting": {
                     "joined_at_asc": "参加順 (昇順)",
                     "joined_at_desc": "参加順 (降順)"
                 },
-                "filter": "フィルター:",
-                "filters": {
-                    "everyone": "全員",
-                    "users_with_no_role": "ロールなしユーザー"
-                },
                 "unsubscribed_announcements": "お知らせ受信停止中",
                 "representing": "ネームプレート表示中",
-                "search": "検索"
+                "view_all": "すべて",
+                "friends": "フレンド",
+                "search": "検索",
+                "loaded_of_total": "{total} 件中 {loaded} 件を読み込み済み",
+                "search_results": "{count} 件",
+                "export_loaded": "読み込み済みを書き出し（{count}）",
+                "export_all": "すべて書き出し（{count}）"
             },
             "gallery": {
                 "header": "写真"
@@ -4612,15 +4617,12 @@
                 "group_join_request_cancelled": "グループ参加リクエストをキャンセルしました",
                 "group_refreshed": "グループを更新しました",
                 "group_invite_sent": "グループ招待を送信しました",
-                "group_post_deleted": "グループ投稿を削除しました",
-                "joined_newest": "参加が新しい順",
-                "joined_oldest": "参加が古い順"
+                "group_post_deleted": "グループ投稿を削除しました"
             },
             "action": {
                 "refresh_to_load_gallery_images": "更新してギャラリー画像を読み込みます",
                 "open_group_owner_profile": "グループ所有者のプロフィールを開く",
-                "join_state": "参加状態",
-                "load_all": "すべて読み込む"
+                "join_state": "参加状態"
             },
             "toast": {
                 "failed_to_join_group": "グループに参加できませんでした",
@@ -4706,12 +4708,15 @@
             "ageGate": "年齢制限あり",
             "normal": "通常",
             "group": "グループ",
-            "legacy": "レガシー"
+            "legacy": "レガシー",
+            "display_name": "インスタンス名"
         },
         "launch": {
             "header": "起動",
             "short_url": "短縮 URL",
-            "location": "場所",
+            "share": "共有",
+            "share_description": "VRCX-0 の共有リンクをコピーします。開いた相手はプレビューを確認してクライアントで開けます",
+            "more_copy_options": "その他のコピー",
             "invite": "招待",
             "open_ingame": "ゲーム内で開く",
             "self_invite": "自分を招待",
@@ -4726,7 +4731,8 @@
                 "game_not_running": "VRChat 未起動"
             },
             "copy": {
-                "link": "リンク",
+                "vrchat_link": "VRChat リンク",
+                "instance_id": "インスタンス ID",
                 "failed": "コピーできませんでした"
             }
         },
@@ -5367,7 +5373,10 @@
             "emoji_manager": "絵文字を管理",
             "select_default_emoji": "デフォルトの絵文字を選択",
             "default_emojis": "デフォルトの絵文字",
-            "send": "送信"
+            "send": "送信",
+            "recent": "最近使った項目",
+            "inventory_emojis": "インベントリ",
+            "no_inventory_emojis": "インベントリにつっつき用の絵文字はまだありません"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0は最新版です。",
@@ -5909,6 +5918,7 @@
             "action": "アクション"
         },
         "playerList": {
+            "groupRoles": "グループロール",
             "avatar": "アバター",
             "timer": "時間",
             "icon": "アイコン",

@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use crate::http_api::normalize_vrchat_api_endpoint;
 use hyper_util::client::legacy::connect::proxy::{SocksV5, Tunnel};
 use hyper_util::client::legacy::connect::HttpConnector;
 use serde_json::Value;
@@ -110,10 +109,6 @@ pub fn encode_uri_component(value: &str) -> String {
         .add(b'|')
         .add(b'}');
     percent_encoding::utf8_percent_encode(value, ENCODE_SET).to_string()
-}
-
-pub fn build_auth_url(endpoint: &str) -> String {
-    format!("{}/auth", normalize_vrchat_api_endpoint(Some(endpoint)))
 }
 
 pub fn extract_auth_token(body: &str) -> Result<String, Error> {

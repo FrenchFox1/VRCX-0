@@ -12,17 +12,7 @@ pub struct SavedCredentialUser {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub username: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub user_icon: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub profile_pic_override_thumbnail: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub profile_pic_override: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub thumbnail_url: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub current_avatar_thumbnail_image_url: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub current_avatar_image_url: Option<String>,
+    pub icon_url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

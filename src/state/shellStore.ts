@@ -92,7 +92,6 @@ type ShellStore = {
     windowAlwaysOnTop: boolean;
     notificationIconDot: boolean;
     taskbarIconDot: boolean;
-    displayVRCPlusIconsAsAvatar: boolean;
     hideNicknames: boolean;
     zoomLevel: number | null;
     dateCulture: string;
@@ -122,10 +121,7 @@ type ShellStore = {
     setWindowAlwaysOnTop(windowAlwaysOnTop: boolean): void;
     setNotificationIconDot(notificationIconDot: boolean): void;
     setTaskbarIconDot(taskbarIconDot: boolean): void;
-    setAppearancePreferences(options?: {
-        displayVRCPlusIconsAsAvatar?: boolean;
-        hideNicknames?: boolean;
-    }): void;
+    setAppearancePreferences(options?: { hideNicknames?: boolean }): void;
     setZoomLevel(zoomLevel: number): void;
     setDatePreferences(options: {
         dateCulture: string;
@@ -184,7 +180,6 @@ const initialState: ShellStoreState = {
     windowAlwaysOnTop: loadWindowAlwaysOnTop(),
     notificationIconDot: true,
     taskbarIconDot: true,
-    displayVRCPlusIconsAsAvatar: true,
     hideNicknames: false,
     zoomLevel: null,
     dateCulture: 'en-gb',
@@ -297,15 +292,8 @@ export const useShellStore = create<ShellStore>((set, get) => ({
         set({ taskbarIconDot });
         get().updateTrayIconNotification(true);
     },
-    setAppearancePreferences({
-        displayVRCPlusIconsAsAvatar,
-        hideNicknames
-    } = {}) {
+    setAppearancePreferences({ hideNicknames } = {}) {
         set((state) => ({
-            displayVRCPlusIconsAsAvatar:
-                displayVRCPlusIconsAsAvatar === undefined
-                    ? state.displayVRCPlusIconsAsAvatar
-                    : displayVRCPlusIconsAsAvatar,
             hideNicknames:
                 hideNicknames === undefined
                     ? state.hideNicknames

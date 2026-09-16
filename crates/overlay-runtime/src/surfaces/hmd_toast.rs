@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use vrcx_0_application_activity::notification::normalize_avatar_image_url_128;
 use vrcx_0_application_activity::{
     OverlayActivityActorRelation, OverlayActivityDelivery, OverlayActivityEntry,
 };
@@ -15,7 +16,6 @@ use super::super::manager::VrOverlayManager;
 use super::super::runtime::{render_slint_hmd_frame, VrOverlayRuntime, VrOverlayRuntimeConfig};
 use super::super::service::HostVrOverlayService;
 use super::super::test_preview::test_hmd_toast_views;
-use super::friend_record::friend_record_avatar_url;
 use super::main::{build_main_surface_model, HmdToastView, MainOverlayFrameInput};
 
 const HMD_TOAST_CAPACITY: usize = 3;
@@ -274,12 +274,7 @@ impl VrOverlayRuntime {
         } else {
             snapshot_endpoint
         };
-        let allow_user_icon = services
-            .config()
-            .get_bool("displayVRCPlusIconsAsAvatar", true)
-            .unwrap_or(true);
-        let initial_image_url =
-            friend_record_avatar_url(&friend_record, allow_user_icon, &endpoint);
+        let initial_image_url = normalize_avatar_image_url_128(&friend_record.icon_url, &endpoint);
         if let Some(bitmap) = self.cached_hmd_avatar(&initial_image_url, &actor_user_id) {
             self.update_hmd_avatar(&source_id, bitmap);
             return;

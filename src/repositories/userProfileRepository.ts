@@ -65,7 +65,6 @@ type UserMutualFriendRow = UserRecord & {
     imageUrl?: string;
     nameplateEffect?: string;
     profileEffect?: string;
-    profilePicOverride?: string;
     status?: string;
     statusDescription?: string;
 };
@@ -423,7 +422,13 @@ async function updateCurrentUserBadge({
         `users/${encodeURIComponent(normalizedUserId)}/badges/${encodeURIComponent(normalizedBadgeId)}`
     );
 
-    return getUserProfile({ userId: normalizedUserId, force: true });
+    const [user, profile] = await Promise.all([
+        getUserProfile({ userId: normalizedUserId, force: true }),
+        getUserAppearanceProfile({ userId: normalizedUserId, asSelf: true })
+    ]);
+    return Object.hasOwn(profile, 'badges')
+        ? { ...user, badges: profile.badges }
+        : user;
 }
 
 async function addCurrentUserTags({ userId, tags = [] }: CurrentUserTagsInput) {

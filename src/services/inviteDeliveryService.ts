@@ -1,5 +1,10 @@
+import {
+    toBoopEmojiSendParams,
+    type BoopEmojiChoice
+} from '@/domain/entities/boopEmoji';
 import { commands, type RequestInviteRequest } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
+import { recordRecentBoopEmoji } from '@/services/boopRecentService';
 
 interface SendInviteToLocationInput {
     receiverUserId?: string;
@@ -26,7 +31,7 @@ interface SendRequestInviteToUserInput {
 
 interface SendBoopToUserInput {
     userId?: string;
-    emojiId?: string;
+    emoji?: BoopEmojiChoice | null;
 }
 
 function normalizeText(value?: string | null): string {
@@ -118,15 +123,19 @@ export async function sendRequestInviteToUser({
 
 export async function sendBoopToUser({
     userId,
-    emojiId = ''
+    emoji = null
 }: SendBoopToUserInput = {}) {
     const normalizedUserId = normalizeText(userId);
     if (!normalizedUserId) {
         return null;
     }
 
-    return notificationPersistenceRepository.sendBoop({
+    const response = await notificationPersistenceRepository.sendBoop({
         userId: normalizedUserId,
-        emojiId
+        ...toBoopEmojiSendParams(emoji)
     });
+    if (emoji) {
+        await recordRecentBoopEmoji(emoji).catch(() => {});
+    }
+    return response;
 }

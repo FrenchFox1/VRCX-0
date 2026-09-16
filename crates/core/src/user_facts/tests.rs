@@ -39,7 +39,6 @@ fn to_object_emits_derived_trust_and_platform() {
         Some(false)
     );
     assert!(!object.contains_key("fieldRanks"));
-    assert!(!object.contains_key("fieldSources"));
 }
 
 #[test]
@@ -127,6 +126,36 @@ fn aliases_and_whitelist_normalize_input() {
     assert_eq!(f.get("displayName").and_then(Value::as_str), Some("Alice"));
     assert_eq!(f.get("locationAt"), Some(&json!(123)));
     assert!(!f.contains_key("unknown_field"));
+}
+
+#[test]
+fn icon_url_is_a_profile_field() {
+    let result = merge_user_fact(
+        None,
+        &json!({
+            "id": "usr_1",
+            "iconUrl": "https://api.vrchat.cloud/api/1/image/file_1/1/256"
+        }),
+        &opts("profile"),
+    );
+    assert_eq!(
+        result.fact.fields.get("iconUrl").and_then(Value::as_str),
+        Some("https://api.vrchat.cloud/api/1/image/file_1/1/256")
+    );
+
+    let downgraded = merge_user_fact(
+        Some(&result.fact),
+        &json!({ "id": "usr_1", "iconUrl": "https://api.vrchat.cloud/api/1/image/file_2/1/256" }),
+        &opts("friend"),
+    );
+    assert_eq!(
+        downgraded
+            .fact
+            .fields
+            .get("iconUrl")
+            .and_then(Value::as_str),
+        Some("https://api.vrchat.cloud/api/1/image/file_1/1/256")
+    );
 }
 
 #[test]

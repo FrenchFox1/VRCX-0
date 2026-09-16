@@ -112,7 +112,7 @@ export function InstanceUserTiles({
     };
     const creatorHasDisplayMedia =
         creatorUserSeed.displayName !== creatorUserId &&
-        Boolean(userImage(creatorUserSeed, true));
+        Boolean(userImage(creatorUserSeed));
     const creatorProfileQuery = useQuery({
         queryKey: queryKeys.user(creatorUserId, currentEndpoint),
         queryFn: () =>
@@ -204,7 +204,7 @@ export function InstanceUserTiles({
                     user.targetUserId,
                     user.target_user_id
                 );
-                const image = userImage(user, true);
+                const image = userImage(user);
                 const isCurrentUser = Boolean(
                     userId && userId === currentUserSnapshot?.id
                 );

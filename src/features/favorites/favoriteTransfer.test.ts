@@ -116,7 +116,6 @@ describe('favorite transfer helpers', () => {
             ]
         });
         expect(input.items?.[0]?.entity).toEqual(remoteItem.seedData);
-        expect(input.items?.[0]).not.toHaveProperty('remoteFavoriteRecordId');
     });
 
     it('builds local to remote payload as copy-only', () => {
@@ -143,7 +142,6 @@ describe('favorite transfer helpers', () => {
                 }
             ]
         });
-        expect(input.items?.[0]).not.toHaveProperty('remoteFavoriteRecordId');
     });
 
     it('returns only successful transfer keys for selection cleanup', () => {

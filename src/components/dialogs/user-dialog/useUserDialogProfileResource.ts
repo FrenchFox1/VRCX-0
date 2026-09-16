@@ -171,19 +171,12 @@ export function useUserDialogProfileResource({
             kind: 'user',
             entityId: profile.id,
             title,
-            imageUrl:
-                profile.profilePicOverrideThumbnail ||
-                profile.profilePicOverride ||
-                profile.currentAvatarThumbnailImageUrl ||
-                profile.currentAvatarImageUrl
+            imageUrl: profile.iconUrl
         });
     }, [
-        profile?.currentAvatarImageUrl,
-        profile?.currentAvatarThumbnailImageUrl,
         profile?.displayName,
+        profile?.iconUrl,
         profile?.id,
-        profile?.profilePicOverride,
-        profile?.profilePicOverrideThumbnail,
         profile?.username,
         updateEntityDialogMetadata
     ]);

@@ -14,6 +14,8 @@ const tauriMock = vi.hoisted(() => ({
         appVrchatCurrentUserProfileUpdate: vi.fn(),
         appVrchatFriendStatusGet: vi.fn(),
         appVrchatUserProfileGet: vi.fn(),
+        appVrchatUserGet: vi.fn(),
+        appVrchatCurrentUserBadgeUpdate: vi.fn(),
         appUserMutualFriendsListGet: vi.fn()
     }
 }));
@@ -39,6 +41,8 @@ describe('UserProfileRepository', () => {
         ).mockReset();
         vi.mocked(tauriMock.commands.appVrchatFriendStatusGet).mockReset();
         vi.mocked(tauriMock.commands.appVrchatUserProfileGet).mockReset();
+        tauriMock.commands.appVrchatUserGet.mockReset();
+        tauriMock.commands.appVrchatCurrentUserBadgeUpdate.mockReset();
         vi.mocked(tauriMock.commands.appUserMutualFriendsListGet).mockReset();
     });
 
@@ -102,8 +106,6 @@ describe('UserProfileRepository', () => {
         ).toMatchObject({
             id: 'usr_123',
             displayName: 'User',
-            badges: [],
-            bioLinks: [],
             currentAvatarTags: [],
             $trustLevel: 'Known User',
             $trustClass: 'x-tag-trusted',
@@ -114,6 +116,74 @@ describe('UserProfileRepository', () => {
             $platform: 'android'
         });
     });
+
+    it('keeps omitted profile fields absent while preserving explicit clears', () => {
+        const user = userProfileRepository.normalize({ id: 'usr_target' });
+        for (const field of [
+            'bio',
+            'bioLinks',
+            'pronouns',
+            'badges',
+            'iconUrl'
+        ]) {
+            expect(user).not.toHaveProperty(field);
+        }
+
+        const cleared = {
+            id: 'usr_target',
+            bio: '',
+            bioLinks: [],
+            pronouns: '',
+            badges: [],
+            iconUrl: ''
+        };
+        expect(userProfileRepository.normalize(cleared)).toMatchObject(cleared);
+    });
+
+    it.each([
+        { badges: [] },
+        { badges: [{ badgeId: 'bdg_target', hidden: false, showcased: true }] }
+    ])(
+        'refreshes badges from the self profile after a badge mutation: %j',
+        async ({ badges }) => {
+            tauriMock.commands.appVrchatCurrentUserBadgeUpdate.mockResolvedValue(
+                {
+                    status: 200,
+                    data: '{}'
+                }
+            );
+            tauriMock.commands.appVrchatUserGet.mockResolvedValue({
+                status: 200,
+                data: JSON.stringify({
+                    id: 'usr_target',
+                    displayName: 'Target',
+                    badges: [{ badgeId: 'bdg_stale' }]
+                })
+            });
+            tauriMock.commands.appVrchatUserProfileGet.mockResolvedValue({
+                status: 200,
+                data: JSON.stringify({ id: 'usr_target', badges })
+            });
+
+            const result = await userProfileRepository.updateCurrentUserBadge({
+                userId: 'usr_target',
+                badgeId: 'bdg_target',
+                showcased: true
+            });
+
+            expect(result).toMatchObject({
+                id: 'usr_target',
+                displayName: 'Target',
+                badges
+            });
+            expect(
+                tauriMock.commands.appVrchatUserProfileGet
+            ).toHaveBeenCalledWith({
+                userId: 'usr_target',
+                asSelf: true
+            });
+        }
+    );
 
     it('preserves optional, nullable, and nested profile fields from dialog data', () => {
         const profile = userProfileRepository.normalize({

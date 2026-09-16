@@ -92,12 +92,7 @@ struct FakeCachedResolver {
 }
 
 impl CachedNotificationUserImageResolver for FakeCachedResolver {
-    fn cached_url(
-        &self,
-        _endpoint: &str,
-        _user_id: &str,
-        _allow_user_icon: bool,
-    ) -> Option<String> {
+    fn cached_url(&self, _endpoint: &str, _user_id: &str) -> Option<String> {
         self.url.clone()
     }
 }
@@ -114,7 +109,7 @@ fn realtime_image_resolver_reads_the_realtime_cache() {
     let resolver = RealtimeUserImageResolverSlot::default();
     resolver.set(&cached);
     let image_url = resolver
-        .cached_url(endpoint, "usr_traveler", true)
+        .cached_url(endpoint, "usr_traveler")
         .map(|url| normalize_avatar_image_url_128(&url, endpoint));
 
     assert_eq!(
@@ -128,7 +123,7 @@ fn realtime_image_resolver_reads_the_realtime_cache() {
 #[test]
 fn realtime_image_resolver_returns_none_when_endpoint_is_missing() {
     let resolver = RealtimeUserImageResolverSlot::default();
-    let image_url = resolver.cached_url("", "usr_traveler", true);
+    let image_url = resolver.cached_url("", "usr_traveler");
 
     assert_eq!(image_url, None);
 }
@@ -144,5 +139,5 @@ fn realtime_user_image_resolver_does_not_retain_owner() {
     drop(owner);
 
     assert!(weak_owner.upgrade().is_none());
-    assert_eq!(resolver.cached_url("", "usr_missing", true), None);
+    assert_eq!(resolver.cached_url("", "usr_missing"), None);
 }

@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde_json::json;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
-use vrcx_0_persistence::worlds::{world_cache_get, world_cache_remove, world_cache_upsert};
+use vrcx_0_persistence::worlds::{world_cache_get, world_cache_upsert};
 
 struct TestDir {
     path: PathBuf,
@@ -189,11 +189,19 @@ fn summary_lookup_starts_empty_then_loads_db_row_into_memory() {
         .expect("DB row should be loaded on demand");
 
     assert_eq!(summary.name, "DB Only World");
-    world_cache_remove(db.as_ref(), "wrld_db_only".into()).unwrap();
+    world_cache_upsert(
+        db.as_ref(),
+        world_entry(
+            "wrld_db_only",
+            "Rewritten World",
+            "2026-01-03T00:00:00.000Z",
+        ),
+    )
+    .unwrap();
     let memory_summary = cache
         .get_summary("wrld_db_only")
         .unwrap()
-        .expect("memory hit should not query the removed DB row");
+        .expect("memory hit should not query the rewritten DB row");
     assert_eq!(memory_summary.name, "DB Only World");
     assert_eq!(
         cache.get_name("wrld_db_only").as_deref(),

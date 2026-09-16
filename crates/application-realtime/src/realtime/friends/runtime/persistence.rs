@@ -225,6 +225,8 @@ pub(super) fn add_profile_diff_feed_entries(
             owner_user_id: String::new(),
         });
     }
+    // TODO: VRChat stopped sending `bio` and `currentAvatar*` for other users (REST + WS)
+    // since 2026-09, so the Bio/Avatar feed below no longer fires; kept until confirmed dead.
     if changes.has("bio") && !patch.text_field("bio").is_empty() && !previous.bio.is_empty() {
         output.persistence.feed_entries.push(FeedLiveEntry::Bio {
             created_at: created_at.to_string(),
@@ -238,9 +240,7 @@ pub(super) fn add_profile_diff_feed_entries(
     let avatar_image_changed =
         changes.has("currentAvatarImageUrl") || changes.has("currentAvatarThumbnailImageUrl");
     let avatar_tags_changed = changes.has("currentAvatarTags");
-    let profile_pic_override = string_or_previous(patch, previous, "profilePicOverride");
-    let should_write_avatar =
-        (avatar_image_changed && profile_pic_override.is_empty()) || avatar_tags_changed;
+    let should_write_avatar = avatar_image_changed || avatar_tags_changed;
     let current_avatar = first_owned([
         string_or_previous(patch, previous, "currentAvatarImageUrl"),
         string_or_previous(patch, previous, "currentAvatarThumbnailImageUrl"),

@@ -3,10 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 
 import {
-    filterAvatarDetailFallbacksById,
-    getAvatarDetailFallbackIds,
-    loadAvatarDetailFallbacksById
-} from './useAvatarDetailFallbacks';
+    filterRemoteEntityCacheFallbacksById,
+    loadRemoteEntityCacheFallbacksById
+} from './remoteEntityCacheFallbacks';
+import { getAvatarDetailFallbackIds } from './useAvatarDetailFallbacks';
+
+const fetchAvatarById = (avatarId: string) =>
+    avatarProfileRepository.getAvatarProfile({ avatarId });
 
 vi.mock('@/repositories/avatarProfileRepository', () => ({
     default: {
@@ -77,7 +80,10 @@ describe('useAvatarDetailFallbacks helpers', () => {
             cachedAvatar('avtr_missing', 'DB Missing Avatar')
         );
 
-        const fallbacks = await loadAvatarDetailFallbacksById(fallbackIds);
+        const fallbacks = await loadRemoteEntityCacheFallbacksById(
+            fallbackIds,
+            fetchAvatarById
+        );
 
         expect(fallbackIds).toEqual(['avtr_local', 'avtr_missing']);
         expect(avatarProfileRepository.getAvatarProfile).toHaveBeenCalledTimes(
@@ -111,11 +117,10 @@ describe('useAvatarDetailFallbacks helpers', () => {
             }
         );
 
-        const fallbacks = await loadAvatarDetailFallbacksById([
-            'avtr_cached',
-            'avtr_shell',
-            'avtr_missing'
-        ]);
+        const fallbacks = await loadRemoteEntityCacheFallbacksById(
+            ['avtr_cached', 'avtr_shell', 'avtr_missing'],
+            fetchAvatarById
+        );
 
         expect(fallbacks).toMatchObject({
             avtr_cached: {
@@ -128,7 +133,7 @@ describe('useAvatarDetailFallbacks helpers', () => {
     });
 
     it('filters stale fallback rows when the current favorite ids change', () => {
-        const fallbacks = filterAvatarDetailFallbacksById(
+        const fallbacks = filterRemoteEntityCacheFallbacksById(
             {
                 avtr_old: cachedAvatar('avtr_old', 'Old Avatar'),
                 avtr_new: cachedAvatar('avtr_new', 'New Avatar')

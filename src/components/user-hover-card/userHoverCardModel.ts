@@ -190,8 +190,8 @@ export function buildUserHoverCardModel({
             ref?.displayName ||
             normalizeId(identity?.id) ||
             'Unknown',
-        avatarUrl: userImage(identity, true, '128'),
-        avatarPreviewUrl: userImage(identity, false),
+        avatarUrl: userImage(identity, 128),
+        avatarPreviewUrl: userImage(identity, 512),
         userColour: identity?.$userColour || '',
         trustSource,
         trustKey,

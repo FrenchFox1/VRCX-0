@@ -613,9 +613,18 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn boop(&self, user_id: String, emoji_id: String) -> Result<VrchatApiResponse> {
-        let (user_id, request) =
-            boop_send_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), user_id, emoji_id)?;
+    pub async fn boop(
+        &self,
+        user_id: String,
+        emoji_id: String,
+        inventory_item_id: String,
+    ) -> Result<VrchatApiResponse> {
+        let (user_id, request) = boop_send_input(
+            VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            user_id,
+            emoji_id,
+            inventory_item_id,
+        )?;
         self.execute(
             "app__vrchat_boop_send",
             format!("Sending boop to {user_id}."),

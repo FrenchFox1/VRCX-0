@@ -90,7 +90,7 @@ function SessionFriendList({
                     friend.displayName ||
                     knownFriend?.displayName ||
                     friend.userId;
-                const avatarUrl = userImage(knownFriend, true, '64');
+                const avatarUrl = userImage(knownFriend, 64);
 
                 return (
                     <li

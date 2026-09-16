@@ -123,6 +123,8 @@ pub struct FriendRecord {
     #[serde(default)]
     pub bio: String,
     #[serde(default)]
+    pub icon_url: String,
+    #[serde(default)]
     pub current_avatar_image_url: String,
     #[serde(default)]
     pub current_avatar_thumbnail_image_url: String,
@@ -358,6 +360,32 @@ mod tests {
 
         assert!(object.contains_key("currentAvatarImageUrl"));
         assert!(object.contains_key("currentAvatarThumbnailImageUrl"));
+    }
+
+    #[test]
+    fn friend_record_owns_icon_url_as_a_named_field() {
+        let record: FriendRecord = serde_json::from_value(json!({
+            "id": "usr_friend",
+            "iconUrl": "https://api.vrchat.cloud/api/1/image/file_icon/1/256",
+            "iconFrame": "invt_frame"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            record.icon_url,
+            "https://api.vrchat.cloud/api/1/image/file_icon/1/256"
+        );
+        assert!(!record.extra.contains_key("iconUrl"));
+        assert_eq!(
+            record.extra.get("iconFrame"),
+            Some(&Value::String("invt_frame".into()))
+        );
+
+        let serialized = serde_json::to_value(&record).unwrap();
+        assert_eq!(
+            serialized["iconUrl"],
+            "https://api.vrchat.cloud/api/1/image/file_icon/1/256"
+        );
     }
 
     #[test]

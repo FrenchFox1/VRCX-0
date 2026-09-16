@@ -127,8 +127,6 @@ export type UserProfileEntity = EntityRecord & {
     picoId?: string;
     platform?: string;
     platform_history?: UserPlatformHistoryRecord[];
-    profilePicOverride?: string;
-    profilePicOverrideThumbnail?: string;
     profileEffect?: string;
     pronouns?: string;
     pronounsHistory?: string[];
@@ -153,8 +151,8 @@ export type UserProfileEntity = EntityRecord & {
     twoFactorAuthEnabled?: boolean;
     twoFactorAuthEnabledDate?: string | null;
     unsubscribe?: boolean;
-    updated_at?: string;
     userIcon?: string;
+    updated_at?: string;
     userLanguage?: string | null;
     userLanguageCode?: string;
     usesGeneratedPassword?: boolean;

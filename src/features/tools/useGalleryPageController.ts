@@ -58,10 +58,13 @@ export function useGalleryPageController() {
     const {
         currentEndpoint,
         currentUserId,
-        currentUserSnapshot,
         isVrcPlusSupporter,
         openImagePreview,
-        profilePicOverride,
+        bannerCustomUrl,
+        mediaProfile,
+        mediaProfileLoading,
+        mediaProfileError,
+        refreshMediaProfile,
         userIcon
     } = useGalleryRuntimeState();
     const [activeTab, setActiveTabState] = useState(() =>
@@ -98,7 +101,7 @@ export function useGalleryPageController() {
     );
     const {
         refreshTab,
-        refreshAll,
+        refreshAll: refreshAllAssets,
         beginUpload,
         uploadSelectedFile,
         confirmCroppedUpload,
@@ -112,7 +115,8 @@ export function useGalleryPageController() {
         cropRequest,
         currentEndpoint,
         currentUserId,
-        currentUserSnapshot,
+        mediaProfile,
+        refreshMediaProfile,
         emojiAnimFps,
         emojiAnimFrameCount,
         emojiAnimLoopPingPong,
@@ -135,15 +139,15 @@ export function useGalleryPageController() {
     } satisfies GalleryControllerDeps);
     const { bulkRunning, deleteSelection, setFavoriteSelection } =
         useGalleryBulkActions({ setAssets });
-    const refreshAllRef = useRef(refreshAll);
+    const refreshAllRef = useRef(refreshAllAssets);
     useEffect(() => {
-        refreshAllRef.current = refreshAll;
-    }, [refreshAll]);
+        refreshAllRef.current = refreshAllAssets;
+    }, [refreshAllAssets]);
 
     useEffect(() => {
+        setAssets(EMPTY_ASSETS);
+        setLoadingByTab({});
         if (!currentUserId) {
-            setAssets(EMPTY_ASSETS);
-            setLoadingByTab({});
             return;
         }
         refreshAllRef.current();
@@ -186,7 +190,10 @@ export function useGalleryPageController() {
         gridDensity,
         changeGridDensity,
         navigate,
-        refreshAll,
+        refreshAll: () => {
+            refreshAllAssets();
+            void refreshMediaProfile().catch(() => {});
+        },
         setActiveTab,
         beginUpload,
         setProfileField,
@@ -212,7 +219,9 @@ export function useGalleryPageController() {
         isVrcPlusSupporter,
         loadingByTab,
         mutatingKey,
-        profilePicOverride,
+        bannerCustomUrl,
+        mediaProfileLoading,
+        mediaProfileError,
         tabCounts,
         userIcon,
         cropRequest,

@@ -178,9 +178,9 @@ fn player_helpers_match_exact_ids_and_case_insensitive_name_fragments() {
 
     assert!(metadata.contains_player_id("usr_alice"));
     assert!(!metadata.contains_player_id("USR_ALICE"));
-    assert!(metadata.contains_player_name("LICe ex"));
-    assert!(metadata.contains_player_name("bob"));
-    assert!(!metadata.contains_player_name("Carol"));
+    assert!(metadata.contains_player_name_lowercase("lice ex"));
+    assert!(metadata.contains_player_name_lowercase("bob"));
+    assert!(!metadata.contains_player_name_lowercase("carol"));
 }
 
 #[test]

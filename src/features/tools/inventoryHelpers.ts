@@ -241,10 +241,6 @@ export function getInventoryGridDensityConfig(gridDensity: GalleryGridDensity) {
     return getGalleryGridDensityConfig(gridDensity);
 }
 
-export function sanitizeInventoryGridDensity(nextValue: unknown) {
-    return sanitizeGalleryGridDensity(nextValue);
-}
-
 export function getLatestFileUrl(file: Pick<MediaFileRecord, 'versions'>) {
     const versions = Array.isArray(file?.versions) ? file.versions : [];
     return versions.at(-1)?.file?.url ?? '';

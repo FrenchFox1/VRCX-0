@@ -117,13 +117,7 @@ function sortLocationUsers(users: InstanceRosterRow[]) {
 
 function locationUserHasImage(userValue: unknown) {
     const user = record(userValue);
-    return Boolean(
-        user?.profilePicOverrideThumbnail ||
-        user?.profilePicOverride ||
-        user?.thumbnailUrl ||
-        user?.currentAvatarThumbnailImageUrl ||
-        user?.currentAvatarImageUrl
-    );
+    return Boolean(user?.iconUrl);
 }
 
 function locationUserId(userValue: unknown) {

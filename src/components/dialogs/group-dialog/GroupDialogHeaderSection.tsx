@@ -264,11 +264,15 @@ export function GroupDialogHeaderSection({
                                 {groupTitle}
                             </span>
                         )}
-                        <GroupTitleLanguages
-                            languages={languageRows}
-                            limit={2}
-                        />
                     </CardTitle>
+                    {languageRows.length ? (
+                        <div className="flex min-w-0 flex-wrap items-center gap-1">
+                            <GroupTitleLanguages
+                                languages={languageRows}
+                                limit={2}
+                            />
+                        </div>
+                    ) : null}
                     {subtitle ? (
                         <div className="text-muted-foreground font-mono text-xs break-all">
                             {subtitle}
@@ -372,9 +376,6 @@ export function GroupDialogHeaderSection({
                             {canInviteToGroup ? (
                                 <EntityActionItem
                                     icon={MessageSquareIcon}
-                                    disabled={
-                                        remoteStatus.members === 'running'
-                                    }
                                     onClick={() => {
                                         onInviteUserToGroup();
                                     }}

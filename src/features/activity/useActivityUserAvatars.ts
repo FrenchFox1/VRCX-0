@@ -30,7 +30,7 @@ export function useActivityUserAvatars(
                 const profile = await userProfileRepository.getUserProfile({
                     userId
                 });
-                return userImage(profile, true, '128') || null;
+                return userImage(profile, 128) || null;
             },
             onResolved: (userId, image) => {
                 resolvedRef.current.add(userId);
@@ -46,7 +46,7 @@ export function useActivityUserAvatars(
     return (userId: string) => {
         const friend = friendsById[userId];
         if (friend) {
-            const image = userImage(friend, true, '128');
+            const image = userImage(friend, 128);
             if (image) {
                 return image;
             }

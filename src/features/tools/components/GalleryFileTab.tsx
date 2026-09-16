@@ -33,7 +33,9 @@ export function GalleryFileTab({
         uploadingTab,
         mutatingKey,
         currentUserId,
-        profilePicOverride,
+        bannerCustomUrl,
+        mediaProfileLoading,
+        mediaProfileError,
         userIcon,
         gridDensityConfig,
         onBeginUpload,
@@ -44,11 +46,11 @@ export function GalleryFileTab({
         onDeleteFile
     } = fileTab;
     const files = assets[tab];
-    const loading = loadingByTab[tab];
+    const loading = loadingByTab[tab] || mediaProfileLoading;
     const { t } = useTranslation();
     const activeFileId =
         tab === 'gallery'
-            ? extractFileId(profilePicOverride)
+            ? extractFileId(bannerCustomUrl)
             : extractFileId(userIcon);
     const fileIds = useMemo(() => files.map((file) => file.id), [files]);
     const selection = useTileSelectionState({
@@ -88,7 +90,9 @@ export function GalleryFileTab({
                                         <DropdownMenuItem
                                             variant="destructive"
                                             disabled={
-                                                !profilePicOverride ||
+                                                !bannerCustomUrl ||
+                                                mediaProfileLoading ||
+                                                Boolean(mediaProfileError) ||
                                                 Boolean(mutatingKey)
                                             }
                                             onClick={() =>
@@ -113,6 +117,8 @@ export function GalleryFileTab({
                                             variant="destructive"
                                             disabled={
                                                 !userIcon ||
+                                                mediaProfileLoading ||
+                                                Boolean(mediaProfileError) ||
                                                 Boolean(mutatingKey)
                                             }
                                             onClick={() =>
@@ -136,6 +142,8 @@ export function GalleryFileTab({
                 <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                     {loading ? (
                         <LoadingState />
+                    ) : mediaProfileError ? (
+                        <EmptyState title={mediaProfileError} />
                     ) : files.length > 0 ? (
                         <div
                             className={`${gridDensityConfig.fileGridClass} p-1`}
@@ -146,7 +154,7 @@ export function GalleryFileTab({
                                     tab={tab}
                                     definition={definition}
                                     file={file}
-                                    profilePicOverride={profilePicOverride}
+                                    bannerCustomUrl={bannerCustomUrl}
                                     userIcon={userIcon}
                                     mutatingKey={mutatingKey}
                                     currentUserId={currentUserId}

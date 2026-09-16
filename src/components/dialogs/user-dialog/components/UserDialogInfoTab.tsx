@@ -516,12 +516,7 @@ function UserDialogProfileLinksPanel({
     visibleHomeLocationTarget
 }: UserDialogProfileLinksSectionProps) {
     const { t } = useTranslation();
-    const avatarInfoTitle =
-        !isCurrentUser &&
-        profile?.profilePicOverride &&
-        profile?.currentAvatarImageUrl
-            ? t('dialog.user.info.avatar_info_last_seen')
-            : t('dialog.user.info.avatar_info');
+    const avatarInfoTitle = t('dialog.user.info.avatar_info');
     const currentAvatarImageUrl =
         profile?.currentAvatarImageUrl ||
         profile?.currentAvatarThumbnailImageUrl;

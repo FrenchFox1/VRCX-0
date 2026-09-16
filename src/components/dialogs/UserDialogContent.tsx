@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router';
 
 import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import { recordKnownUser } from '@/services/domainIngestionService';
-import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { userImage } from '@/services/entityMediaService';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import { dialogTargetKey } from '@/services/userDialogSessionCacheService';
 import { isRecord } from '@/shared/utils/record';
@@ -283,16 +283,7 @@ export function UserDialogContent({
         profile?.$platform || profile?.platform || profile?.last_platform
     );
     const PlatformIcon = platform.icon;
-    const imageUrl = profile
-        ? convertFileUrlToImageUrl(
-              profile.profilePicOverrideThumbnail ||
-                  profile.profilePicOverride ||
-                  profile.currentAvatarThumbnailImageUrl ||
-                  profile.currentAvatarImageUrl ||
-                  '',
-              256
-          )
-        : '';
+    const imageUrl = userImage(profile, 512);
     const { memo, editMemo, memoDialog } = useUserDialogMemoState({
         activeUserTargetRef,
         currentEndpoint,

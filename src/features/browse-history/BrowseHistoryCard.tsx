@@ -35,7 +35,6 @@ function openHistoryItem(item: BrowseHistoryItemOutput) {
         name: item.title,
         displayName: item.title,
         thumbnailImageUrl: item.imageUrl,
-        profilePicOverrideThumbnail: item.imageUrl,
         iconUrl: item.imageUrl
     };
     switch (item.entityKind) {

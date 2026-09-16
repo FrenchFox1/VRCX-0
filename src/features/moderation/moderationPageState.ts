@@ -150,7 +150,3 @@ export function getModerationRowKey(row: ModerationRow) {
         ':'
     );
 }
-
-export function isSameModerationRow(left: ModerationRow, right: ModerationRow) {
-    return getModerationRowKey(left) === getModerationRowKey(right);
-}

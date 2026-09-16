@@ -60,15 +60,7 @@ pub(super) fn saved_credential_user_from_value(
         id,
         display_name: optional_raw_string(value, "displayName"),
         username: optional_raw_string(value, "username"),
-        user_icon: optional_raw_string(value, "userIcon"),
-        profile_pic_override_thumbnail: optional_raw_string(value, "profilePicOverrideThumbnail"),
-        profile_pic_override: optional_raw_string(value, "profilePicOverride"),
-        thumbnail_url: optional_raw_string(value, "thumbnailUrl"),
-        current_avatar_thumbnail_image_url: optional_raw_string(
-            value,
-            "currentAvatarThumbnailImageUrl",
-        ),
-        current_avatar_image_url: optional_raw_string(value, "currentAvatarImageUrl"),
+        icon_url: optional_raw_string(value, "iconUrl"),
     })
 }
 

@@ -40,12 +40,7 @@ function hasUsefulProfileFields(
         hasProfileText(source.last_platform) ||
         hasProfileText(source.status) ||
         hasProfileText(source.statusDescription) ||
-        hasProfileText(source.profilePicOverrideThumbnail) ||
-        hasProfileText(source.profilePicOverride) ||
-        hasProfileText(source.thumbnailUrl) ||
-        hasProfileText(source.currentAvatarThumbnailImageUrl) ||
-        hasProfileText(source.currentAvatarImageUrl) ||
-        hasProfileText(source.userIcon) ||
+        hasProfileText(source.iconUrl) ||
         hasArrayItems(source.$languages) ||
         hasArrayItems(source.languages) ||
         hasArrayItems(source.bioLinks) ||
@@ -359,7 +354,7 @@ export function enrichPlayerListRows({
             languages,
             bioLinks,
             note,
-            avatarUrl: userImage(userRef, true),
+            avatarUrl: userImage(userRef),
             isCurrentUser: Boolean(isCurrentUser),
             isFriend: Boolean(friend),
             isFavorite,

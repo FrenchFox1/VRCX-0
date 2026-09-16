@@ -49,11 +49,3 @@ export async function translateTextDetailed(
         detectedSourceLang: result.detectedSourceLanguage
     };
 }
-
-export async function translateText(
-    text: string,
-    targetLanguage: string = ''
-): Promise<string> {
-    const result = await translateTextDetailed(text, targetLanguage);
-    return result.text;
-}

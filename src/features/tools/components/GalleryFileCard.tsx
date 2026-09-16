@@ -15,7 +15,7 @@ export function GalleryFileCard({
     tab,
     definition,
     file,
-    profilePicOverride,
+    bannerCustomUrl,
     userIcon,
     mutatingKey,
     currentUserId,
@@ -29,7 +29,7 @@ export function GalleryFileCard({
     tab: FileAssetTab;
     definition: FileTabDefinition;
     file: MediaFileRecord;
-    profilePicOverride: string;
+    bannerCustomUrl: string;
     userIcon: string;
     mutatingKey: string;
     currentUserId: string | null;
@@ -46,9 +46,8 @@ export function GalleryFileCard({
     const displayName = getUsefulDisplayName(file);
     const activeFileId =
         tab === 'gallery'
-            ? extractFileId(profilePicOverride)
+            ? extractFileId(bannerCustomUrl)
             : extractFileId(userIcon);
-    // VRChat's web UI calls profilePicOverride the Banner; keep the API field unchanged.
     const profileField: GalleryProfileField =
         tab === 'gallery' ? 'profilePicOverride' : 'userIcon';
     const isCurrent = activeFileId === file.id;

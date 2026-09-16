@@ -4,10 +4,13 @@ import type { WorldProfileRecord } from '@/domain/entities/world';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
 import {
-    filterWorldDetailFallbacksById,
-    getWorldDetailFallbackIds,
-    loadWorldDetailFallbacksById
-} from './useWorldDetailFallbacks';
+    filterRemoteEntityCacheFallbacksById,
+    loadRemoteEntityCacheFallbacksById
+} from './remoteEntityCacheFallbacks';
+import { getWorldDetailFallbackIds } from './useWorldDetailFallbacks';
+
+const fetchWorldById = (worldId: string) =>
+    worldProfileRepository.getWorldProfile({ worldId });
 
 vi.mock('@/repositories/worldProfileRepository', () => ({
     default: {
@@ -86,7 +89,10 @@ describe('world detail fallback helpers', () => {
             cachedWorld('wrld_missing', 'DB Missing World')
         );
 
-        const fallbacks = await loadWorldDetailFallbacksById(fallbackIds);
+        const fallbacks = await loadRemoteEntityCacheFallbacksById(
+            fallbackIds,
+            fetchWorldById
+        );
 
         expect(fallbackIds).toEqual([
             'wrld_fact',
@@ -131,11 +137,10 @@ describe('world detail fallback helpers', () => {
             }
         );
 
-        const fallbacks = await loadWorldDetailFallbacksById([
-            'wrld_cached',
-            'wrld_shell',
-            'wrld_missing'
-        ]);
+        const fallbacks = await loadRemoteEntityCacheFallbacksById(
+            ['wrld_cached', 'wrld_shell', 'wrld_missing'],
+            fetchWorldById
+        );
 
         expect(fallbacks).toMatchObject({
             wrld_cached: {
@@ -148,7 +153,7 @@ describe('world detail fallback helpers', () => {
     });
 
     it('filters stale fallback rows when the current favorite ids change', () => {
-        const fallbacks = filterWorldDetailFallbacksById(
+        const fallbacks = filterRemoteEntityCacheFallbacksById(
             {
                 wrld_old: cachedWorld('wrld_old', 'Old World'),
                 wrld_new: cachedWorld('wrld_new', 'New World')

@@ -31,7 +31,7 @@ fn saved_snapshot_redacts_passwords_and_cookies() -> vrcx_0_application_core::Re
                     "id": "usr_1",
                     "displayName": "Example",
                     "username": "example",
-                    "userIcon": "https://example.test/icon.png",
+                    "iconUrl": "https://example.test/icon.png",
                     "password": "nested-secret",
                     "profile": {
                         "cookies": "nested-cookie"
@@ -57,7 +57,7 @@ fn saved_snapshot_redacts_passwords_and_cookies() -> vrcx_0_application_core::Re
     assert_eq!(credential.user.display_name.as_deref(), Some("Example"));
     assert_eq!(credential.user.username.as_deref(), Some("example"));
     assert_eq!(
-        credential.user.user_icon.as_deref(),
+        credential.user.icon_url.as_deref(),
         Some("https://example.test/icon.png")
     );
     assert!(credential.has_login_credentials);
@@ -209,7 +209,7 @@ fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
                     "id": "usr_z",
                     "displayName": "Zulu",
                     "username": "zulu",
-                    "userIcon": "https://example.test/icon",
+                    "iconUrl": "https://example.test/icon",
                     "password": "must-not-reach-the-snapshot"
                 },
                 "loginParmas": {
@@ -238,7 +238,7 @@ fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
         Some("Zulu")
     );
     assert_eq!(
-        credentials["usr_z"].user.user_icon.as_deref(),
+        credentials["usr_z"].user.icon_url.as_deref(),
         Some("https://example.test/icon")
     );
     assert_eq!(
@@ -262,7 +262,7 @@ fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
         Some("zulu")
     );
     assert_eq!(
-        snapshot.saved_credentials_list[0].user.user_icon.as_deref(),
+        snapshot.saved_credentials_list[0].user.icon_url.as_deref(),
         Some("https://example.test/icon")
     );
     assert_eq!(snapshot.saved_credentials_list[1].user.id, "usr_a");
@@ -277,7 +277,7 @@ fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
     assert!(persisted.get("legacy-key").is_none());
     assert!(persisted["usr_z"].get("loginParmas").is_none());
     assert_eq!(
-        persisted["usr_z"]["user"]["userIcon"],
+        persisted["usr_z"]["user"]["iconUrl"],
         "https://example.test/icon"
     );
     assert_eq!(persisted["usr_a"]["loginParams"]["endpoint"], "");

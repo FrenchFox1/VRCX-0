@@ -1,10 +1,10 @@
+import { createInstanceUserRow } from '@/domain/instances/instanceRoster';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 
 import {
     createLocationGroupRow,
-    createLocationUserRow,
     groupSeed,
     hasGroupProfileDetails
 } from './userDialogContentHelpers';
@@ -110,7 +110,7 @@ type LoadLocationOwnerInput = {
 };
 
 type LocationOwnerResult = {
-    ownerUser: ReturnType<typeof createLocationUserRow> | null;
+    ownerUser: ReturnType<typeof createInstanceUserRow> | null;
     ownerGroup: ReturnType<typeof createLocationGroupRow> | null;
 };
 
@@ -159,7 +159,7 @@ export async function loadLocationOwner({
 
     if (ownerSeed) {
         return {
-            ownerUser: createLocationUserRow(ownerSeed),
+            ownerUser: createInstanceUserRow(ownerSeed),
             ownerGroup: null
         };
     }
@@ -170,12 +170,12 @@ export async function loadLocationOwner({
         });
 
         return {
-            ownerUser: createLocationUserRow(ownerProfile),
+            ownerUser: createInstanceUserRow(ownerProfile),
             ownerGroup: null
         };
     } catch {
         return {
-            ownerUser: createLocationUserRow({
+            ownerUser: createInstanceUserRow({
                 id: ownerId,
                 displayName: ownerId
             }),

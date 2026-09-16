@@ -97,6 +97,7 @@ type InventoryAsset = MediaApiRecord & {
 
 type InventoryItemMetadata = MediaApiRecord & {
     assets?: InventoryAsset[];
+    fileId?: string;
     gradientEnd?: string;
     gradientStart?: string;
     imageUrl?: string;

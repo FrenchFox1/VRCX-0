@@ -11,7 +11,7 @@ use super::preferences::{load_webhook_preferences, NotificationWebhookPreference
 use super::webhook::{discord_webhook_url_with_wait, wait_for_webhook_stop};
 use super::webhook_delivery::{WebhookDeliveryChannel, WebhookDeliveryMonitor};
 use super::{
-    config_bool, load_notification_locale, render_delivery, resolve_delivery_world_name,
+    load_notification_locale, render_delivery, resolve_delivery_world_name,
     send_json_webhook_with_retry, NotificationConfig, NotificationRemote,
     NotificationWebhookFormat, NotificationWebhookTransport, UserImageCache,
 };
@@ -41,7 +41,6 @@ struct NotificationWebhookJob {
     format: NotificationWebhookFormat,
     locale: super::OverlayLocale,
     vrchat_endpoint: String,
-    allow_user_icon: bool,
 }
 
 struct NotificationWebhookWorkerDeps {
@@ -104,8 +103,6 @@ impl OverlayActivitySink for NotificationWebhookSink {
             .realtime_context
             .map(|context| context.endpoint)
             .unwrap_or_default();
-        let allow_user_icon =
-            config_bool(self.config.as_ref(), "displayVRCPlusIconsAsAvatar", true);
         let event_label = delivery.entry.activity_type.clone();
         let job = NotificationWebhookJob {
             delivery,
@@ -113,7 +110,6 @@ impl OverlayActivitySink for NotificationWebhookSink {
             format,
             locale,
             vrchat_endpoint: endpoint,
-            allow_user_icon,
         };
         if let Err(error) = self.queue.try_send(job) {
             let reason = match error {
@@ -178,7 +174,6 @@ async fn deliver_notification_webhook(
                     user_image_cache: deps.user_image_cache.as_ref(),
                     remote: deps.remote.as_ref(),
                     endpoint: &job.vrchat_endpoint,
-                    allow_user_icon: job.allow_user_icon,
                 },
                 &job.delivery,
                 &render,

@@ -141,11 +141,6 @@ export function isActionRecent(
     return false;
 }
 
-export function clearRecentActions(): void {
-    writeActions({});
-    notifyRecentActionListeners();
-}
-
 export function subscribeRecentActions(listener: () => void): () => void {
     listeners.add(listener);
     return () => {

@@ -1,5 +1,7 @@
 import {
+    useEffect,
     useMemo,
+    useRef,
     useState,
     type Dispatch,
     type MutableRefObject,
@@ -8,18 +10,27 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { EntityRecord } from '@/domain/entities/shared';
-import type { UserBadgeRecord } from '@/domain/entities/user';
+import type {
+    UserBadgeRecord,
+    UserProfileEntity
+} from '@/domain/entities/user';
+import { invalidateEntityQueries, queryKeys } from '@/lib/entityQueryCache';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import currentUserProfileService from '@/services/currentUserProfileService';
 import { toast } from '@/services/toastService';
+import { mergeCurrentUserMediaFields } from '@/shared/utils/currentUserMedia';
 import { mergeCurrentUserPresenceFields } from '@/shared/utils/currentUserPresence';
+import { extractFileId } from '@/shared/utils/fileUtils';
 import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import { useCurrentUserSocialStatusDialog } from './useCurrentUserSocialStatusDialog';
-import { preserveUserDialogProfileAppearance } from './userDialogProfileAppearance';
+import {
+    mergeUserDialogProfileAppearance,
+    preserveUserDialogProfileAppearance
+} from './userDialogProfileAppearance';
 import {
     fallbackLanguageOptions,
     normalizeLanguageKey,
@@ -154,6 +165,13 @@ export function useUserDialogSelfActions({
     setActionStatus
 }: UseUserDialogSelfActionsProps) {
     const { t } = useTranslation();
+    const targetGeneration = useRef(0);
+    useEffect(
+        () => () => {
+            targetGeneration.current += 1;
+        },
+        [currentUserId, currentEndpoint, isCurrentUser, profile?.id]
+    );
     const [profileDetailsDialogOpen, setProfileDetailsDialogOpen] =
         useState(false);
     const [profileDetailsDraft, setProfileDetailsDraft] = useState(
@@ -226,13 +244,23 @@ export function useUserDialogSelfActions({
                 })
         });
 
-    function applyCurrentUserSnapshot(nextUser: UserDialogProfileRecord) {
-        const displayBaseUser = preserveUserDialogProfileAppearance(
-            mergeCurrentUserPresenceFields(nextUser, baseProfile),
-            baseProfile
+    function applyCurrentUserSnapshot(
+        nextUser: UserDialogProfileRecord,
+        appearance?: UserProfileEntity
+    ) {
+        const resolvedUser = appearance
+            ? mergeCurrentUserMediaFields(nextUser, appearance)
+            : nextUser;
+        const displayBaseUser = mergeUserDialogProfileAppearance(
+            preserveUserDialogProfileAppearance(
+                mergeCurrentUserPresenceFields(resolvedUser, baseProfile),
+                baseProfile
+            ),
+            appearance,
+            currentUserId || ''
         );
         const storeUser = mergeCurrentUserPresenceFields(
-            nextUser,
+            resolvedUser,
             useRuntimeStore.getState().auth.currentUserSnapshot
         );
 
@@ -252,23 +280,68 @@ export function useUserDialogSelfActions({
         patch: CurrentUserPatch,
         {
             successMessage,
-            errorMessage
-        }: { successMessage: string; errorMessage: string }
+            errorMessage,
+            refreshMedia = false
+        }: {
+            successMessage: string;
+            errorMessage: string;
+            refreshMedia?: boolean;
+        }
     ) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle') {
             return false;
         }
 
+        const generation = targetGeneration.current;
+        const isCurrentTarget = () => {
+            const auth = useRuntimeStore.getState().auth;
+            return (
+                targetGeneration.current === generation &&
+                auth.currentUserId === currentUserId &&
+                auth.currentUserEndpoint === currentEndpoint
+            );
+        };
+        if (!isCurrentTarget()) {
+            return false;
+        }
         setSelfActionStatus(actionStatusRef, setActionStatus, 'self-profile');
         try {
             const nextUser = await currentUserProfileService.updateCurrentUser({
                 userId: currentUserId || '',
                 params: patch
             });
-            applyCurrentUserSnapshot(nextUser);
+            if (!isCurrentTarget()) {
+                return false;
+            }
+            let appearance: UserProfileEntity | undefined;
+            if (refreshMedia) {
+                const refreshed =
+                    await userProfileRepository.getUserAppearanceProfile({
+                        userId: currentUserId || '',
+                        asSelf: true
+                    });
+                if (!isCurrentTarget()) {
+                    return false;
+                }
+                appearance = {
+                    ...refreshed,
+                    userIcon: refreshed.userIcon || '',
+                    bannerCustomUrl: refreshed.bannerCustomUrl || ''
+                };
+                void invalidateEntityQueries(
+                    queryKeys.userAppearanceProfile(
+                        currentUserId || '',
+                        currentEndpoint
+                    )
+                );
+            }
+            applyCurrentUserSnapshot(nextUser, appearance);
             toast.add({ type: 'success', title: successMessage });
             return true;
         } catch (error) {
+            if (!isCurrentTarget()) {
+                return false;
+            }
             toast.add({
                 type: 'error',
                 title: userFacingErrorMessage(error, errorMessage)
@@ -439,7 +512,16 @@ export function useUserDialogSelfActions({
             currentEndpoint,
             normalizedFileId
         );
-        if (nextValue === profile?.[fieldName]) {
+        const currentValue =
+            profile[
+                fieldName === 'profilePicOverride'
+                    ? 'bannerCustomUrl'
+                    : 'userIcon'
+            ];
+        if (
+            normalizedFileId ===
+            extractFileId(typeof currentValue === 'string' ? currentValue : '')
+        ) {
             return;
         }
         await saveCurrentUserPatch(
@@ -447,6 +529,7 @@ export function useUserDialogSelfActions({
                 [fieldName]: nextValue
             },
             {
+                refreshMedia: true,
                 successMessage:
                     fieldName === 'userIcon'
                         ? t('message.gallery.profile_icon_changed')

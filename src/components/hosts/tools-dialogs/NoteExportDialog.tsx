@@ -128,14 +128,7 @@ export function NoteExportDialog({
                         name: friend.displayName || friend.name || userId,
                         memo,
                         ref: {
-                            userIcon: ref.userIcon,
-                            profilePicOverrideThumbnail:
-                                ref.profilePicOverrideThumbnail,
-                            profilePicOverride: ref.profilePicOverride,
-                            thumbnailUrl: ref.thumbnailUrl,
-                            currentAvatarThumbnailImageUrl:
-                                ref.currentAvatarThumbnailImageUrl,
-                            currentAvatarImageUrl: ref.currentAvatarImageUrl,
+                            iconUrl: ref.iconUrl,
                             note: ref.note
                         }
                     });
@@ -453,12 +446,8 @@ export function NoteExportDialog({
                     {rows.length ? (
                         rows.map((row) => {
                             const memoLength = row.memo.length;
-                            const fullImageUrl = userImage(
-                                row.ref,
-                                false,
-                                '512'
-                            );
-                            const thumbUrl = userImage(row.ref, true, '64');
+                            const fullImageUrl = userImage(row.ref, 512);
+                            const thumbUrl = userImage(row.ref, 64);
                             const skipped = skippedIds.has(row.id);
                             const remoteNote =
                                 typeof row.ref.note === 'string'

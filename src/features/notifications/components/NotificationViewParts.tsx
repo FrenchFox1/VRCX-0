@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { BoopEmojiDialog } from '@/components/dialogs/BoopEmojiDialog';
 import { ToolbarFilterMenu } from '@/components/layout/ToolbarControls';
+import type { BoopEmojiChoice } from '@/domain/entities/boopEmoji';
 import { NOTIFICATION_TYPES } from '@/repositories/notificationPersistenceRepository';
 import {
     DropdownMenuCheckboxItem,
@@ -147,7 +148,7 @@ export function BoopReplyDialog({
     onOpenChange: (open: boolean) => void;
     onSend: (
         notification: NotificationRow | null,
-        emojiId: string
+        emoji: BoopEmojiChoice | null
     ) => void | Promise<void>;
     request: NotificationRow | null;
 }) {
@@ -161,7 +162,7 @@ export function BoopReplyDialog({
             targetLabel={displayName}
             sendDisabled={!notification?.senderUserId}
             onOpenChange={onOpenChange}
-            onSend={(emojiId: string) => onSend(notification, emojiId)}
+            onSend={(emoji) => onSend(notification, emoji)}
         />
     );
 }

@@ -18,6 +18,7 @@ import {
 import { HoverCard, HoverCardTrigger } from '@/ui/shadcn/hover-card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { NotificationMessage } from '../components/NotificationMessage';
 import {
     NOTIFICATION_ROW_HOVER_REVEAL,
     NotificationEmojiPreview,
@@ -346,7 +347,10 @@ export function NotificationDrawerRow({
                                 <div className="mt-0.5 flex min-w-0 items-center gap-2">
                                     {previewMessage ? (
                                         <p className="text-muted-foreground line-clamp-2 min-w-0 text-xs text-pretty break-words">
-                                            {previewMessage}
+                                            <NotificationMessage
+                                                notification={notification}
+                                                message={previewMessage}
+                                            />
                                         </p>
                                     ) : null}
                                     {view.emoji ? (

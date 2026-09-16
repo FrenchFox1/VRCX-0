@@ -81,7 +81,6 @@ mod tests {
             serialized["remoteFavoritesById"]["fav_record"]["favoriteId"],
             "wrld_target"
         );
-        assert!(serialized.get("remoteFavoritesByObjectId").is_none());
         assert!(serialized.get("localWorldFavorites").is_none());
     }
 }

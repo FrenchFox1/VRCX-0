@@ -250,7 +250,7 @@ function buildFriendFavoriteItem({
         detailText: '',
         location,
         travelingToLocation: textValue(profile?.travelingToLocation),
-        imageUrl: profile ? userImage(profile, true, '64') : '',
+        imageUrl: profile ? userImage(profile, 64) : '',
         statusLabel: textValue(status),
         statusVariant:
             status === 'online' || status === 'active'

@@ -113,36 +113,6 @@ fn hmd_defaults_match_interruptive_notification_profile() {
 }
 
 #[test]
-fn hmd_friend_defaults_match_the_recommended_activity_set() {
-    let friend_types = hmd_default_scope_contract()
-        .into_iter()
-        .filter_map(|(activity_type, scope)| {
-            (scope == OverlayActivityScope::Friends).then_some(activity_type)
-        })
-        .collect::<BTreeSet<_>>();
-
-    assert_eq!(
-        friend_types,
-        [
-            "DisplayName",
-            "GPS",
-            "Offline",
-            "OnPlayerJoining",
-            "Online",
-            "Status",
-            "TrustLevel",
-            "boop",
-            "invite",
-            "inviteResponse",
-            "requestInvite",
-        ]
-        .into_iter()
-        .map(str::to_string)
-        .collect()
-    );
-}
-
-#[test]
 fn hmd_delivery_is_live_only_and_independent_from_wrist_snapshot() {
     let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
         "version": 1,

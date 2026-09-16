@@ -1,5 +1,3 @@
-import { removeEmojis, replaceBioSymbols } from './string';
-
 export type UserRecord = Record<string, unknown>;
 
 export interface TrustLevelInfo {
@@ -10,33 +8,6 @@ export interface TrustLevelInfo {
     isTroll: boolean;
     isProbableTroll: boolean;
     trustColorKey: string;
-}
-
-export interface ObjectDiffResult {
-    hasPropChanged: boolean;
-    changedProps: Record<string, true | [unknown, unknown]>;
-}
-
-export function sanitizeUserJson(
-    json: UserRecord,
-    robotUrl: string
-): UserRecord {
-    if (json['statusDescription']) {
-        json['statusDescription'] = removeEmojis(
-            replaceBioSymbols(String(json['statusDescription']))
-        );
-    }
-    if (json['bio']) {
-        json['bio'] = replaceBioSymbols(String(json['bio']));
-    }
-    if (json['note']) {
-        json['note'] = replaceBioSymbols(String(json['note']));
-    }
-    if (robotUrl && json['currentAvatarImageUrl'] === robotUrl) {
-        delete json['currentAvatarImageUrl'];
-        delete json['currentAvatarThumbnailImageUrl'];
-    }
-    return json;
 }
 
 export type TrustRank =
@@ -105,10 +76,6 @@ export function trustRankFromTags(tags: string[]): TrustRank {
     return 'visitor';
 }
 
-export function trustRankDetails(rank: TrustRank) {
-    return TRUST_RANKS[rank];
-}
-
 export function computeTrustLevel(
     tags: string[],
     developerType: string
@@ -153,50 +120,6 @@ export function computeUserPlatform(
     return lastPlatform || '';
 }
 
-export function diffObjectProps(
-    ref: UserRecord,
-    json: UserRecord,
-    arraysMatchFn: (a: unknown[], b: unknown[]) => boolean
-): ObjectDiffResult {
-    const changedProps: Record<string, true | [unknown, unknown]> = {};
-    let hasPropChanged = false;
-
-    for (const prop in ref) {
-        if (typeof json[prop] === 'undefined') {
-            continue;
-        }
-        if (ref[prop] === null || typeof ref[prop] !== 'object') {
-            changedProps[prop] = true;
-        }
-    }
-
-    for (const prop in json) {
-        if (typeof ref[prop] === 'undefined') {
-            continue;
-        }
-        if (Array.isArray(json[prop]) && Array.isArray(ref[prop])) {
-            if (!arraysMatchFn(json[prop], ref[prop])) {
-                changedProps[prop] = true;
-            }
-        } else if (json[prop] === null || typeof json[prop] !== 'object') {
-            changedProps[prop] = true;
-        }
-    }
-
-    for (const prop in changedProps) {
-        const asIs = ref[prop];
-        const toBe = json[prop];
-        if (asIs === toBe) {
-            delete changedProps[prop];
-        } else {
-            hasPropChanged = true;
-            changedProps[prop] = [toBe, asIs];
-        }
-    }
-
-    return { hasPropChanged, changedProps };
-}
-
 export function createDefaultUserRef<TUser extends UserRecord>(
     json: TUser
 ): TUser & UserRecord {
@@ -204,9 +127,6 @@ export function createDefaultUserRef<TUser extends UserRecord>(
         ageVerificationStatus: '',
         ageVerified: false,
         allowAvatarCopying: false,
-        badges: [],
-        bio: '',
-        bioLinks: [],
         currentAvatarImageUrl: '',
         currentAvatarTags: [],
         currentAvatarThumbnailImageUrl: '',
@@ -226,9 +146,6 @@ export function createDefaultUserRef<TUser extends UserRecord>(
         location: '',
         platform: '',
         note: null,
-        profilePicOverride: '',
-        profilePicOverrideThumbnail: '',
-        pronouns: '',
         state: '',
         status: '',
         statusDescription: '',
@@ -236,7 +153,6 @@ export function createDefaultUserRef<TUser extends UserRecord>(
         travelingToInstance: '',
         travelingToLocation: '',
         travelingToWorld: '',
-        userIcon: '',
         worldId: '',
         fallbackAvatar: '',
         $location: {},

@@ -1,12 +1,9 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use vrcx_0_application_core::{
-    FriendProjection, FriendProjectionPatch, FriendStateBucketAuthority, ImageCache, WebClient,
-};
+use vrcx_0_application_core::{ImageCache, WebClient};
 use vrcx_0_application_game::{EmptyEventPayload, NowPlayingPayload};
 use vrcx_0_composition::RuntimeHostDesktopAssemblyDeps;
-use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_persistence::{storage::StorageService, DatabaseService};
 
 use super::*;
@@ -61,41 +58,6 @@ fn test_services(name: &str) -> (TestDir, DesktopRuntimeServices) {
         DesktopRuntimeServices::new(crate::state::build_desktop_runtime_services_deps(&context))
             .unwrap();
     (dir, services)
-}
-
-fn friend_projection(state_bucket: &str, count: usize) -> FriendProjection {
-    let mut projection = FriendProjection::new(1, 1);
-    projection.patches = (0..count)
-        .map(|index| FriendProjectionPatch {
-            user_id: format!("usr_friend_{index}"),
-            patch: FriendRecord {
-                state: state_bucket.into(),
-                ..FriendRecord::default()
-            },
-            state_bucket_authority: FriendStateBucketAuthority::Explicit,
-        })
-        .collect();
-    projection
-}
-
-#[test]
-fn prefetch_online_friend_avatars_is_a_no_op_without_active_session() {
-    let (_dir, services) = test_services("prefetch-no-active-session");
-
-    services.prefetch_online_friend_avatars(&friend_projection("online", 1));
-}
-
-#[test]
-fn prefetch_online_friend_avatars_ignores_non_online_buckets() {
-    let (_dir, services) = test_services("prefetch-non-online-bucket");
-
-    services.prefetch_online_friend_avatars(&friend_projection("active", 1));
-}
-
-#[test]
-fn prefetch_online_friend_avatars_skips_bulk_baseline_projections() {
-    let (_dir, services) = test_services("prefetch-bulk-baseline");
-    services.prefetch_online_friend_avatars(&friend_projection("online", 64));
 }
 
 #[test]

@@ -334,7 +334,7 @@ export function SettingsSocialTab() {
                             <div className="flex flex-col rounded-md border">
                                 {hiddenFeedUserOptions.map((option) => {
                                     const imageUrl = option.user
-                                        ? userImage(option.user, true, '64')
+                                        ? userImage(option.user, 64)
                                         : '';
                                     return (
                                         <div

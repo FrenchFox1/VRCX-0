@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import userProfileRepository from '@/repositories/userProfileRepository';
+
 import {
     applyUserDialogProfileAppearanceOverrides,
     mergeUserDialogProfileAppearance,
@@ -112,6 +114,45 @@ describe('mergeUserDialogProfileAppearance', () => {
         });
     });
 
+    it('merges profile-owned text fields that the user endpoint no longer returns', () => {
+        const user = {
+            id: 'usr_target',
+            displayName: 'Ordinary user',
+            tags: ['system_trust_basic']
+        };
+        const badges = [{ badgeId: 'bdg_1', badgeName: 'Supporter' }];
+
+        expect(
+            mergeUserDialogProfileAppearance(
+                user,
+                {
+                    id: 'usr_target',
+                    ageVerificationStatus: '18+',
+                    ageVerified: true,
+                    bio: 'hello',
+                    bioLinks: ['https://example.test'],
+                    pronouns: 'they/them',
+                    badges,
+                    userIcon: 'https://example.test/custom-icon.png',
+                    iconUrl:
+                        'https://api.vrchat.cloud/api/1/image/file_icon/1/256',
+                    trustTags: ['system_trust_veteran']
+                },
+                'usr_target'
+            )
+        ).toEqual({
+            ...user,
+            ageVerificationStatus: '18+',
+            ageVerified: true,
+            bio: 'hello',
+            bioLinks: ['https://example.test'],
+            pronouns: 'they/them',
+            badges,
+            userIcon: 'https://example.test/custom-icon.png',
+            iconUrl: 'https://api.vrchat.cloud/api/1/image/file_icon/1/256'
+        });
+    });
+
     it('ignores a profile response for another target', () => {
         const user = {
             id: 'usr_target',
@@ -132,6 +173,47 @@ describe('mergeUserDialogProfileAppearance', () => {
 });
 
 describe('preserveUserDialogProfileAppearance', () => {
+    it('keeps profile fields after normalizing a partial user response', () => {
+        const previous = {
+            id: 'usr_target',
+            bio: 'Existing bio',
+            bioLinks: ['https://example.test'],
+            pronouns: 'they/them',
+            badges: [{ badgeId: 'bdg_target' }],
+            iconUrl: 'https://example.test/icon.png'
+        };
+        const user = userProfileRepository.normalize({
+            id: 'usr_target',
+            status: 'busy'
+        });
+
+        expect(
+            preserveUserDialogProfileAppearance(user, previous)
+        ).toMatchObject({
+            ...previous,
+            status: 'busy'
+        });
+        expect(
+            preserveUserDialogProfileAppearance(
+                userProfileRepository.normalize({
+                    ...previous,
+                    bio: '',
+                    bioLinks: [],
+                    pronouns: '',
+                    badges: [],
+                    iconUrl: ''
+                }),
+                previous
+            )
+        ).toMatchObject({
+            bio: '',
+            bioLinks: [],
+            pronouns: '',
+            badges: [],
+            iconUrl: ''
+        });
+    });
+
     it('keeps profile-only background fields after an ordinary user update', () => {
         expect(
             preserveUserDialogProfileAppearance(
@@ -165,17 +247,17 @@ describe('preserveUserDialogProfileAppearance', () => {
             preserveUserDialogProfileAppearance(
                 {
                     id: 'usr_target',
-                    userIcon: ''
+                    iconUrl: ''
                 },
                 {
                     id: 'usr_target',
-                    userIcon: 'https://example.test/old-icon.png',
+                    iconUrl: 'https://example.test/old-icon.png',
                     profileEffect: 'invt_profile'
                 }
             )
         ).toEqual({
             id: 'usr_target',
-            userIcon: '',
+            iconUrl: '',
             profileEffect: 'invt_profile'
         });
     });

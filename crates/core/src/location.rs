@@ -272,15 +272,6 @@ pub struct DisplayLocationLabels<'a> {
     pub group_plus: &'a str,
 }
 
-pub fn format_display_location_with_labels(
-    parsed: &ParsedLocation,
-    world_name: &str,
-    group_name: &str,
-    labels: &DisplayLocationLabels<'_>,
-) -> String {
-    format_display_location_with_labels_and_instance(parsed, world_name, group_name, labels, false)
-}
-
 pub fn format_display_location_with_labels_and_instance(
     parsed: &ParsedLocation,
     world_name: &str,

@@ -1679,7 +1679,6 @@
                 "mark_seen": "Марк видел",
                 "send_boop": "Отправить буп",
                 "search_emoji": "Поиск эмоджи",
-                "clear_selection": "Очистить выбор",
                 "send": "Отправить"
             },
             "success": {
@@ -1695,9 +1694,6 @@
                 "cannot_invite_from_the_current_instance_type": "Невозможно пригласить из текущего типа",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "Невозможно пригласить: вы сейчас не в инстансе, куда можно пригласить.",
                 "cannot_send_invite_response_no_current_user_session_is_available": "Не удалось отправить ответ по запросу: текущий сеанс пользователя не доступен"
-            },
-            "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "Не будет выбрано специальное эмоджи. По умолчанию будет отправлена буп."
             },
             "loading": {
                 "loading_emojis": "Загрузка смайликов"
@@ -1917,7 +1913,8 @@
                 "last_backup": "Копия {date}",
                 "connections_configured": "Подключений: {count}",
                 "apps_count": "Приложений: {count}",
-                "automatic_backup": "Автокопия"
+                "automatic_backup": "Автокопия",
+                "show_details": "Показать подробности"
             },
             "quick_access": {
                 "header": "Быстрый доступ",
@@ -2545,8 +2542,6 @@
                     "theme_mode_pink": "Розовый",
                     "theme_mode_material3": "Материал 3",
                     "zoom": "Масштаб",
-                    "vrcplus_profile_icons": "Значки профиля",
-                    "vrcplus_profile_icons_description": "Показывать значок профиля вместо изображения аватара, если он доступен.",
                     "show_instance_id": "Показать ID случая",
                     "age_gated_instances": "Ограниченые по возросту Инстансы",
                     "age_gated_instances_description": "В случае инвалидности эти случаи скрываются и показываются как ограниченные.",
@@ -3126,6 +3121,12 @@
             }
         },
         "player_list": {
+            "group_roles": {
+                "automatic": "Группа инстанса (автоматически)",
+                "group": "Группа для отображения ролей",
+                "placeholder": "Поиск группы или ввод ID группы",
+                "refresh": "Обновить роли группы"
+            },
             "success": {
                 "last_updated": "Последнее обновление",
                 "created": "Создана"
@@ -3763,7 +3764,6 @@
                 "note": "Заметка",
                 "memo": "Заметка VRCX-0",
                 "avatar_info": "Информация о аватаре",
-                "avatar_info_last_seen": "Данные аватара при последнем визите",
                 "unknown_avatar": "Неизвестный Аватар",
                 "represented_group": "Представленная группа",
                 "bio": "Био",
@@ -4162,7 +4162,6 @@
                 "role_ids": "ID ролей",
                 "queue_enabled": "Включено число",
                 "age_gate": "Ворота возраста",
-                "display_name": "Показать имя",
                 "user_id": "Идентификатор пользователя",
                 "strict": "Строгие",
                 "location": "Место проведения",
@@ -4522,20 +4521,26 @@
                 "edited_by": "Отредактированно:",
                 "search_placeholder": "Поиск"
             },
+            "role_name": {
+                "group_owner": "Владелец группы",
+                "everyone": "Все",
+                "member": "Участник"
+            },
             "members": {
                 "header": "Участники",
                 "sorting": {
                     "joined_at_asc": "Присоединился (по возрастанию)",
                     "joined_at_desc": "Присоединился (по убыванию)"
                 },
-                "filter": "Фильтр:",
-                "filters": {
-                    "everyone": "Все",
-                    "users_with_no_role": "Пользователи без роли"
-                },
                 "unsubscribed_announcements": "Отписаться от объявлений",
                 "representing": "Представляет",
-                "search": "Поиск"
+                "view_all": "Все",
+                "friends": "Друзья",
+                "search": "Поиск",
+                "loaded_of_total": "Загружено {loaded} из {total}",
+                "search_results": "Результатов: {count}",
+                "export_loaded": "Экспорт загруженных ({count})",
+                "export_all": "Экспорт всех ({count})"
             },
             "gallery": {
                 "header": "Фото"
@@ -4587,15 +4592,12 @@
                 "group_join_request_cancelled": "Запрос на вступление в группу отменён",
                 "group_refreshed": "Группа обновлена",
                 "group_invite_sent": "Приглашение в группу отправлено",
-                "group_post_deleted": "Публикация группы удалена",
-                "joined_newest": "Сначала недавно вступившие",
-                "joined_oldest": "Сначала давно вступившие"
+                "group_post_deleted": "Публикация группы удалена"
             },
             "action": {
                 "refresh_to_load_gallery_images": "Обновить для загрузки изображений галереи",
                 "open_group_owner_profile": "Открыть профиль владельца группы",
-                "join_state": "Статус присоединения",
-                "load_all": "Загрузить все"
+                "join_state": "Статус присоединения"
             },
             "toast": {
                 "failed_to_join_group": "Не удалось присоединиться к группе",
@@ -4681,12 +4683,15 @@
             "ageGate": "Возрастной порог",
             "normal": "Обычный",
             "group": "Группа",
-            "legacy": "Устаревший"
+            "legacy": "Устаревший",
+            "display_name": "Название инстанса"
         },
         "launch": {
             "header": "Запустить",
             "short_url": "Короткий URL",
-            "location": "Местоположение",
+            "share": "Поделиться",
+            "share_description": "Скопировать ссылку VRCX-0. Получатель увидит превью и сможет открыть инстанс в клиенте.",
+            "more_copy_options": "Другие варианты копирования",
             "invite": "Пригласить",
             "open_ingame": "Открыть в игре",
             "self_invite": "Самоприглашение",
@@ -4701,7 +4706,8 @@
                 "game_not_running": "VRChat не запущен"
             },
             "copy": {
-                "link": "Ссылка",
+                "vrchat_link": "Ссылка VRChat",
+                "instance_id": "ID инстанса",
                 "failed": "Не удалось скопировать"
             }
         },
@@ -5344,7 +5350,10 @@
             "emoji_manager": "Менеджер эмодзи",
             "select_default_emoji": "Выбрать эмодзи по умолчанию",
             "default_emojis": "Стандартные эмодзи",
-            "send": "Отправить"
+            "send": "Отправить",
+            "recent": "Недавние",
+            "inventory_emojis": "Инвентарь",
+            "no_inventory_emojis": "В инвентаре пока нет эмодзи для бупа"
         },
         "vrcx_updater": {
             "latest_version": "У вас установлена актуальная версия VRCX-0.",
@@ -5882,6 +5891,7 @@
             "action": "Действие"
         },
         "playerList": {
+            "groupRoles": "Роли группы",
             "avatar": "Аватар",
             "timer": "Таймер",
             "icon": "Иконки",

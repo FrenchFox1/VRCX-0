@@ -72,8 +72,10 @@ describe('favorite item helpers', () => {
 
     it('shrinks direct image URLs from 256 to 128 when possible', () => {
         expect(
-            shrinkFavoriteImage('https://example.test/image/file_abc/1/256')
-        ).toBe('https://example.test/image/file_abc/1/128');
+            shrinkFavoriteImage(
+                'https://api.vrchat.cloud/api/1/image/file_abc/1/256'
+            )
+        ).toBe('https://api.vrchat.cloud/api/1/image/file_abc/1/128');
         expect(shrinkFavoriteImage('')).toBe('');
     });
 

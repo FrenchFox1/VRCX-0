@@ -30,7 +30,6 @@ export function SettingsInterfaceTab() {
             showInstanceIdInLocation: state.showInstanceIdInLocation,
             isAgeGatedInstancesVisible: state.isAgeGatedInstancesVisible,
             hideNicknames: state.hideNicknames,
-            displayVRCPlusIconsAsAvatar: state.displayVRCPlusIconsAsAvatar,
             showNewDashboardButton: state.showNewDashboardButton,
             dtHour12: state.dtHour12,
             dtIsoFormat: state.dtIsoFormat,
@@ -65,7 +64,6 @@ export function SettingsInterfaceTab() {
         onShowInstanceIdInLocationChange,
         onAgeGatedInstancesVisibleChange,
         onHideNicknamesChange,
-        onDisplayVrcPlusIconsAsAvatarChange,
         onShowNewDashboardButtonChange,
         onOpenTablePageSizes,
         onOpenTableLimits,
@@ -112,9 +110,6 @@ export function SettingsInterfaceTab() {
                     onAgeGatedInstancesVisibleChange
                 }
                 onHideNicknamesChange={onHideNicknamesChange}
-                onDisplayVrcPlusIconsAsAvatarChange={
-                    onDisplayVrcPlusIconsAsAvatarChange
-                }
                 onShowNewDashboardButtonChange={onShowNewDashboardButtonChange}
                 onOpenTablePageSizes={onOpenTablePageSizes}
                 onOpenTableLimits={onOpenTableLimits}

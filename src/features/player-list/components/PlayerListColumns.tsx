@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef, AppRow } from '@/components/data-table/appTable';
 import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
+import { DATA_TABLE_EMPTY_VALUE } from '@/components/data-table/dataTableStyles';
 import {
     DATA_TABLE_CONTROL_CELL_CLASS_NAME,
     DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
@@ -39,6 +40,7 @@ import {
     resolvePlatformMode,
     resolveStatusMeta
 } from '../playerListDisplay';
+import { playerGroupRoleOrder } from '../playerListGroupRoles';
 import type { PlayerListLanguageRow, PlayerListRow } from '../playerListTypes';
 import { SortButton } from './PlayerListViewParts';
 
@@ -430,6 +432,32 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                         {row.original.trustLevel || ''}
                     </span>
                 )
+            },
+            {
+                id: 'groupRoles',
+                size: 180,
+                meta: { label: t('table.playerList.groupRoles') },
+                accessorFn: (row) => playerGroupRoleOrder(row.groupRoles),
+                sortUndefined: 'last',
+                sortDescFirst: false,
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.playerList.groupRoles')}
+                    />
+                ),
+                cell: ({ row }) => {
+                    const roles = row.original.groupRoles;
+                    if (!roles) return <span>{DATA_TABLE_EMPTY_VALUE}</span>;
+                    const label = roles.length
+                        ? roles.map((role) => role.name).join(' · ')
+                        : t('dialog.group.role_name.everyone');
+                    return (
+                        <span className="block truncate text-sm" title={label}>
+                            {label}
+                        </span>
+                    );
+                }
             },
             {
                 id: 'status',

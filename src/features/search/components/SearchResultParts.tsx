@@ -350,7 +350,7 @@ export function UserRow({
     isDarkMode: boolean;
     languageOptionsMap: ReadonlyMap<string, LanguageOption>;
 }) {
-    const imageUrl = userImage(user, true);
+    const imageUrl = userImage(user);
     const languages = normalizeProfileLanguageRows(user, languageOptionsMap);
     const trustStyle =
         randomUserColours && user?.id

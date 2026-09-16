@@ -6,6 +6,7 @@ import type { NotificationRow } from '@/repositories/notificationPersistenceRepo
 import { HoverCardContent } from '@/ui/shadcn/hover-card';
 import { Separator } from '@/ui/shadcn/separator';
 
+import { NotificationMessage } from '../components/NotificationMessage';
 import {
     NotificationIconDisc,
     NotificationPersonAvatar
@@ -120,7 +121,10 @@ export function NotificationHoverContent({
                     ) : null}
                     {notification?.message ? (
                         <p className="text-muted-foreground text-xs leading-relaxed break-words whitespace-pre-line">
-                            {notification.message}
+                            <NotificationMessage
+                                notification={notification}
+                                message={notification.message}
+                            />
                         </p>
                     ) : null}
                 </>

@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+    ChevronDownIcon,
     ChevronRightIcon,
     Clock3Icon,
     MinusIcon,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import {
     useEffect,
+    useId,
     useRef,
     useState,
     type ComponentProps,
@@ -42,6 +44,7 @@ import { ToolbarSearch } from '@/components/layout/ToolbarControls';
 import { SettingsCard } from '@/features/settings/components/SettingsCard';
 import { cn } from '@/lib/utils';
 import type { ToolDefinition } from '@/shared/constants/tools';
+import { useNavigationCacheStore } from '@/state/navigationCacheStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -50,6 +53,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import {
     getCatalogDragId,
@@ -90,11 +94,13 @@ function useToolsLabel() {
 }
 
 function ToolRow({
+    toolKey,
     icon: Icon,
     title,
     description,
     status,
     actionsLabel,
+    showDetailsLabel,
     toolsPageShortcutLabel,
     sidebarShortcutLabel,
     addQuickAccessLabel,
@@ -114,11 +120,13 @@ function ToolRow({
     onAddQuickAccess,
     onRemoveQuickAccess
 }: {
+    toolKey: string;
     icon: LucideIcon;
     title: string;
     description: string;
     status?: ToolStatusSummary;
     actionsLabel: string;
+    showDetailsLabel: string;
     toolsPageShortcutLabel: string;
     sidebarShortcutLabel: string;
     addQuickAccessLabel: string;
@@ -143,160 +151,241 @@ function ToolRow({
     const editQuickAccessLabel = isEditRemoveAction
         ? removeQuickAccessLabel
         : addQuickAccessLabel;
+    const expanded = useNavigationCacheStore(
+        (state) => state.toolRows[toolKey] ?? true
+    );
+    const setToolRowOpen = useNavigationCacheStore(
+        (state) => state.setToolRowOpen
+    );
+    const itemsPanelId = useId();
+    const items = editMode ? [] : (status?.items ?? []);
+    const expandable = items.length > 0;
+    const showItems = expandable && expanded;
 
     return (
         <div
             ref={itemRef}
             style={itemStyle}
             className={cn(
-                'group/tool bg-background grid h-9 grid-cols-[1.25rem_16rem_minmax(0,1fr)_auto_1.5rem] items-center gap-3 px-4 text-sm',
-                '[&:has([aria-expanded=true])]:bg-[var(--vrcx-0-table-row-hover-surface)]',
-                'has-[>button:focus-visible]:bg-[var(--vrcx-0-table-row-hover-surface)]',
-                editMode
-                    ? 'cursor-grab touch-none active:cursor-grabbing'
-                    : 'hover:bg-[var(--vrcx-0-table-row-hover-surface)]',
+                'bg-background',
+                editMode && 'cursor-grab touch-none active:cursor-grabbing',
                 isDragging && 'opacity-50'
             )}
             {...(editMode && dragProps ? dragProps : {})}
         >
-            <button
-                type="button"
-                className="col-span-3 grid h-full grid-cols-subgrid items-center gap-3 text-left outline-none"
-                aria-disabled={editMode ? true : undefined}
-                onClick={editMode ? undefined : onClick}
+            <div
+                className={cn(
+                    'group/tool grid h-9 grid-cols-[1.25rem_16rem_minmax(0,1fr)_auto_1.5rem_1.5rem] items-center gap-3 px-4 text-sm',
+                    '[&:has([data-slot=dropdown-menu-trigger][aria-expanded=true])]:bg-[var(--vrcx-0-table-row-hover-surface)]',
+                    'has-[>button:focus-visible]:bg-[var(--vrcx-0-table-row-hover-surface)]',
+                    !editMode &&
+                        'hover:bg-[var(--vrcx-0-table-row-hover-surface)]'
+                )}
             >
-                <Icon
-                    aria-hidden="true"
-                    className="text-muted-foreground size-4"
-                />
-                <span className="truncate font-medium">{title}</span>
-                <span className="text-muted-foreground truncate text-xs">
-                    {description}
-                </span>
-            </button>
-            <div className="flex items-center justify-end gap-3">
-                {status?.label ? (
-                    <span
-                        className={cn(
-                            'flex items-center gap-1.5 text-xs whitespace-nowrap tabular-nums',
-                            status.tone === 'active'
-                                ? 'text-primary'
-                                : 'text-muted-foreground'
-                        )}
-                    >
-                        {status.toggle ? null : (
-                            <span
-                                aria-hidden="true"
-                                className={cn(
-                                    'size-1.5 rounded-full',
-                                    status.tone === 'active'
-                                        ? 'bg-primary'
-                                        : 'bg-muted-foreground/70'
-                                )}
-                            />
-                        )}
-                        {status.label}
-                    </span>
-                ) : null}
-                {status?.toggle ? (
-                    <Switch
-                        size="sm"
-                        checked={status.toggle.enabled}
-                        disabled={editMode}
-                        aria-label={title}
-                        onCheckedChange={(checked) => {
-                            void status.toggle?.setEnabled(checked);
-                        }}
-                    />
-                ) : null}
-                {isPinned ? (
-                    <PanelLeftIcon
-                        aria-label={sidebarShortcutLabel}
+                <button
+                    type="button"
+                    className="col-span-3 grid h-full grid-cols-subgrid items-center gap-3 text-left outline-none"
+                    aria-disabled={editMode ? true : undefined}
+                    onClick={editMode ? undefined : onClick}
+                >
+                    <Icon
+                        aria-hidden="true"
                         className="text-muted-foreground size-4"
                     />
-                ) : null}
-            </div>
-            <div className="flex size-6 items-center justify-center">
-                {editMode ? (
-                    <Button
-                        type="button"
-                        size="icon-xs"
-                        variant="secondary"
-                        className="size-6"
-                        aria-label={editQuickAccessLabel}
-                        onPointerDown={(event) => {
-                            event.stopPropagation();
-                        }}
-                        onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            if (isEditRemoveAction) {
-                                onRemoveQuickAccess?.();
-                            } else {
-                                onAddQuickAccess?.();
-                            }
-                        }}
-                    >
-                        <EditQuickAccessIcon data-icon="inline-start" />
-                    </Button>
-                ) : (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    size="icon-xs"
-                                    className="text-muted-foreground hidden size-6 group-focus-within/tool:flex group-hover/tool:flex aria-expanded:flex"
-                                    variant="ghost"
-                                    aria-label={actionsLabel}
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        event.stopPropagation();
-                                    }}
-                                >
-                                    <MoreHorizontalIcon data-icon="inline-start" />
-                                </Button>
-                            }
+                    <span className="truncate font-medium">{title}</span>
+                    <span className="text-muted-foreground truncate text-xs">
+                        {description}
+                    </span>
+                </button>
+                <div className="flex items-center justify-end gap-3">
+                    {status?.label ? (
+                        <span
+                            className={cn(
+                                'flex items-center gap-1.5 text-xs whitespace-nowrap tabular-nums',
+                                status.tone === 'active'
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground'
+                            )}
+                        >
+                            {status.toggle ? null : (
+                                <span
+                                    aria-hidden="true"
+                                    className={cn(
+                                        'size-1.5 rounded-full',
+                                        status.tone === 'active'
+                                            ? 'bg-primary'
+                                            : 'bg-muted-foreground/70'
+                                    )}
+                                />
+                            )}
+                            {status.label}
+                        </span>
+                    ) : null}
+                    {status?.toggle ? (
+                        <Switch
+                            size="sm"
+                            checked={status.toggle.enabled}
+                            disabled={editMode}
+                            aria-label={title}
+                            onCheckedChange={(checked) => {
+                                void status.toggle?.setEnabled(checked);
+                            }}
                         />
-                        <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuCheckboxItem
-                                checked={isQuickAccess}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        onAddQuickAccess?.();
-                                    } else {
-                                        onRemoveQuickAccess?.();
-                                    }
-                                }}
-                            >
-                                <StarIcon data-icon="inline-start" />
-                                {toolsPageShortcutLabel}
-                            </DropdownMenuCheckboxItem>
-                            {navEligible ? (
+                    ) : null}
+                    {isPinned ? (
+                        <PanelLeftIcon
+                            aria-label={sidebarShortcutLabel}
+                            className="text-muted-foreground size-4"
+                        />
+                    ) : null}
+                </div>
+                <div className="flex size-6 items-center justify-center">
+                    {editMode ? (
+                        <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="secondary"
+                            className="size-6"
+                            aria-label={editQuickAccessLabel}
+                            onPointerDown={(event) => {
+                                event.stopPropagation();
+                            }}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                if (isEditRemoveAction) {
+                                    onRemoveQuickAccess?.();
+                                } else {
+                                    onAddQuickAccess?.();
+                                }
+                            }}
+                        >
+                            <EditQuickAccessIcon data-icon="inline-start" />
+                        </Button>
+                    ) : (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        size="icon-xs"
+                                        className="text-muted-foreground invisible size-6 group-hover/tool:visible group-has-[:focus-visible]/tool:visible aria-expanded:visible"
+                                        variant="ghost"
+                                        aria-label={actionsLabel}
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                        }}
+                                    >
+                                        <MoreHorizontalIcon data-icon="inline-start" />
+                                    </Button>
+                                }
+                            />
+                            <DropdownMenuContent align="end" className="w-56">
                                 <DropdownMenuCheckboxItem
-                                    checked={isPinned}
+                                    checked={isQuickAccess}
                                     onCheckedChange={(checked) => {
                                         if (checked) {
-                                            onPin?.();
+                                            onAddQuickAccess?.();
                                         } else {
-                                            onUnpin?.();
+                                            onRemoveQuickAccess?.();
                                         }
                                     }}
                                 >
-                                    <PanelLeftIcon data-icon="inline-start" />
-                                    {sidebarShortcutLabel}
+                                    <StarIcon data-icon="inline-start" />
+                                    {toolsPageShortcutLabel}
                                 </DropdownMenuCheckboxItem>
-                            ) : null}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
-                {editMode ? null : (
-                    <ChevronRightIcon
-                        aria-hidden="true"
-                        className="text-muted-foreground/50 size-4 group-focus-within/tool:hidden group-hover/tool:hidden [.group\/tool:has([aria-expanded=true])_&]:hidden"
-                    />
-                )}
+                                {navEligible ? (
+                                    <DropdownMenuCheckboxItem
+                                        checked={isPinned}
+                                        onCheckedChange={(checked) => {
+                                            if (checked) {
+                                                onPin?.();
+                                            } else {
+                                                onUnpin?.();
+                                            }
+                                        }}
+                                    >
+                                        <PanelLeftIcon data-icon="inline-start" />
+                                        {sidebarShortcutLabel}
+                                    </DropdownMenuCheckboxItem>
+                                ) : null}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </div>
+                <div className="flex size-6 items-center justify-center">
+                    {editMode ? null : expandable ? (
+                        <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="ghost"
+                            className="text-muted-foreground/50 hover:text-foreground aria-expanded:text-muted-foreground/50 aria-expanded:hover:text-foreground size-6 aria-expanded:bg-transparent aria-expanded:hover:bg-(--state-hover-surface)"
+                            aria-label={showDetailsLabel}
+                            aria-expanded={expanded}
+                            aria-controls={itemsPanelId}
+                            onClick={() => setToolRowOpen(toolKey, !expanded)}
+                        >
+                            <ChevronDownIcon
+                                data-expanded={expanded}
+                                className="size-4 transition-transform duration-150 data-[expanded=true]:rotate-180 motion-reduce:transition-none"
+                            />
+                        </Button>
+                    ) : (
+                        <ChevronRightIcon
+                            aria-hidden="true"
+                            className="text-muted-foreground/50 size-4"
+                        />
+                    )}
+                </div>
             </div>
+            {showItems ? (
+                <div
+                    id={itemsPanelId}
+                    className="divide-stroke-subtle border-stroke-subtle divide-y border-t"
+                >
+                    {items.map((item) => (
+                        <div
+                            key={item.id}
+                            className="group/tool-item grid h-8 grid-cols-[1.25rem_16rem_minmax(0,1fr)_auto_1.5rem_1.5rem] items-center gap-3 px-4 text-sm hover:bg-[var(--vrcx-0-table-row-hover-surface)] has-[>button:focus-visible]:bg-[var(--vrcx-0-table-row-hover-surface)]"
+                        >
+                            <button
+                                type="button"
+                                className="col-span-3 grid h-full grid-cols-subgrid items-center gap-3 text-left outline-none"
+                                onClick={onClick}
+                            >
+                                <span aria-hidden="true" />
+                                <span
+                                    className={cn(
+                                        'truncate',
+                                        !item.enabled && 'text-muted-foreground'
+                                    )}
+                                >
+                                    {item.label}
+                                </span>
+                                <span className="text-muted-foreground truncate text-xs">
+                                    {item.description}
+                                </span>
+                            </button>
+                            <div className="flex items-center justify-end">
+                                <Switch
+                                    size="sm"
+                                    checked={item.enabled}
+                                    aria-label={item.label}
+                                    onCheckedChange={(checked) => {
+                                        void item.setEnabled(checked);
+                                    }}
+                                />
+                            </div>
+                            <span aria-hidden="true" />
+                            <ChevronRightIcon
+                                aria-hidden="true"
+                                className="text-muted-foreground/50 size-4 justify-self-center opacity-0 group-hover/tool-item:opacity-100 group-has-[:focus-visible]/tool-item:opacity-100"
+                            />
+                        </div>
+                    ))}
+                </div>
+            ) : null}
         </div>
     );
 }
@@ -623,11 +712,13 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
         const normalizedToolKey = normalizePinnedToolKey(tool.key);
         return (
             <ToolRow
+                toolKey={tool.key}
                 icon={getNavIconComponent(tool.navIcon, 'lucide:Wrench')}
                 title={label(tool.titleKey)}
                 description={label(tool.descriptionKey)}
                 status={statusByToolKey.get(tool.key)}
                 actionsLabel={label('view.tools.quick_access.actions')}
+                showDetailsLabel={label('view.tools.status.show_details')}
                 navEligible={tool.navEligible}
                 isPinned={pinnedToolKeys.has(normalizedToolKey)}
                 isQuickAccess={quickAccessKeySet.has(normalizedToolKey)}
@@ -723,39 +814,33 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
                 className="relative mt-4 min-h-0 flex-1 overflow-y-auto"
             >
                 <div className="mx-auto grid w-full max-w-5xl grid-cols-[11rem_minmax(0,1fr)] gap-6 pb-6">
-                    <nav
-                        aria-label={label('view.tools.sections')}
-                        className="sticky top-0 flex flex-col gap-0.5 self-start"
+                    <Tabs
+                        orientation="vertical"
+                        value={activeSectionId}
+                        onValueChange={scrollToSection}
+                        className="sticky top-0 self-start"
                     >
-                        {railItems.map((item) => {
-                            const RailIcon = item.icon;
-                            const active = item.id === activeSectionId;
-                            return (
-                                <button
-                                    key={item.id}
-                                    type="button"
-                                    className={cn(
-                                        'focus-visible:ring-ring flex h-7 w-full items-center gap-2 rounded-md px-2.5 text-left text-sm outline-none focus-visible:ring-2',
-                                        active
-                                            ? 'text-foreground bg-(--state-selected-surface)'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    )}
-                                    aria-current={active ? 'true' : undefined}
-                                    onClick={() => scrollToSection(item.id)}
-                                >
-                                    {RailIcon ? (
-                                        <RailIcon
-                                            aria-hidden="true"
-                                            className="size-4 shrink-0"
-                                        />
-                                    ) : null}
-                                    <span className="truncate">
-                                        {item.title}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </nav>
+                        <TabsList
+                            aria-label={label('view.tools.sections')}
+                            className="h-fit w-full gap-0.5"
+                        >
+                            {railItems.map((item) => {
+                                const RailIcon = item.icon;
+                                return (
+                                    <TabsTrigger
+                                        key={item.id}
+                                        value={item.id}
+                                        className="justify-start gap-2 px-2.5"
+                                    >
+                                        {RailIcon ? <RailIcon /> : null}
+                                        <span className="truncate">
+                                            {item.title}
+                                        </span>
+                                    </TabsTrigger>
+                                );
+                            })}
+                        </TabsList>
+                    </Tabs>
 
                     <div className="flex min-w-0 flex-col gap-4">
                         <DndContext

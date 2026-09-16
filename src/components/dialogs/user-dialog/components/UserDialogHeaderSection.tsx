@@ -22,7 +22,6 @@ import { UserStatusDot } from '@/components/UserStatusDot';
 import type { UserBadgeRecord } from '@/domain/entities/user';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
-import { userImage } from '@/services/entityMediaService';
 import type { RecentActionType } from '@/services/recentActionService';
 import { useResolvedThemeMode } from '@/services/themeService';
 import { OWNER_USER_ID } from '@/shared/constants/user';
@@ -405,7 +404,7 @@ function UserDialogHeaderFacts({
         typeof profile.discordId === 'string' ? profile.discordId : '';
 
     return (
-        <EntityFactList className="bg-card border-stroke-subtle -mx-(--card-spacing) -mb-(--card-spacing) border-t px-(--card-spacing) pt-3 pb-(--card-spacing)">
+        <EntityFactList className="border-stroke-subtle border-t pt-3">
             <HeaderPreferenceRow
                 label={t('dialog.user.info.avatar_cloning')}
                 checked={Boolean(profile.allowAvatarCopying)}
@@ -638,7 +637,6 @@ export function UserDialogHeaderSection({
         onToggleSelfDiscordConnections,
         onToggleSelfSharedConnections
     };
-    const userIconUrl = profileIconUrl || userImage(profile, true, '256', true);
     const hasTitleMeta = Boolean(profileLanguages?.length);
     const hasIdentityMeta = Boolean(
         pronounsText || previousDisplayNames.length
@@ -694,7 +692,7 @@ export function UserDialogHeaderSection({
                     onBannerClick={onImageClick}
                     onOpenUserIcon={onOpenUserIcon}
                     userIconLabel={t('dialog.user.action.open_user_icon')}
-                    userIconUrl={userIconUrl}
+                    userIconUrl={profileIconUrl}
                 />
             }
         >

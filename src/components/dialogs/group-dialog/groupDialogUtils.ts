@@ -142,7 +142,7 @@ export function getGroupRowImage(row: unknown, kind: string): string {
         return '';
     }
     if (kind === 'members') {
-        return userImage(isRecord(row.user) ? row.user : row, true, '64');
+        return userImage(isRecord(row.user) ? row.user : row, 64);
     }
     return convertFileUrlToImageUrl(getGroupRowRawImage(row), 256);
 }

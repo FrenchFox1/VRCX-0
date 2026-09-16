@@ -46,7 +46,9 @@ export function GalleryPage() {
                         isVrcPlusSupporter: pageState.isVrcPlusSupporter,
                         loadingByTab: pageState.loadingByTab,
                         mutatingKey: pageState.mutatingKey,
-                        profilePicOverride: pageState.profilePicOverride,
+                        bannerCustomUrl: pageState.bannerCustomUrl,
+                        mediaProfileLoading: pageState.mediaProfileLoading,
+                        mediaProfileError: pageState.mediaProfileError,
                         tabCounts: pageState.tabCounts,
                         uploadingTab: pageState.uploadingTab,
                         userIcon: pageState.userIcon

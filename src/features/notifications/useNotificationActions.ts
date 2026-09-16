@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { BoopEmojiChoice } from '@/domain/entities/boopEmoji';
 import type { InviteMessageType } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository, {
     type NotificationResponse
@@ -473,13 +474,16 @@ export function useNotificationActions({
     );
 
     const sendBoopReply = useCallback(
-        async (notification: NotificationRow | null, emojiId: string = '') => {
+        async (
+            notification: NotificationRow | null,
+            emoji: BoopEmojiChoice | null
+        ) => {
             if (!notification) {
                 return;
             }
             await sendBoopReplyNotification({
                 currentUserId,
-                emojiId,
+                emoji,
                 notification
             });
             await reload();

@@ -42,6 +42,14 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 )?;
                 Ok(built1(group_id, request))
             }
+            GroupRemoteRequest::GetMember(input) => {
+                let (group_id, user_id, request) = vrcx_0_vrchat_client::groups::member_get_input(
+                    VRCHAT_API_DEFAULT_ENDPOINT.into(),
+                    input.group_id,
+                    input.user_id,
+                )?;
+                Ok(built2(group_id, user_id, request))
+            }
             GroupRemoteRequest::GetMembers(input) => {
                 let sort = match input.sort {
                     GroupMemberSort::JoinedAtAsc => {

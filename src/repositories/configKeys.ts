@@ -76,7 +76,6 @@ export const ConfigKeys = defineConfigKeys({
     hideNicknames: { type: 'bool', default: false },
     showInstanceIdInLocation: { type: 'bool', default: false },
     isAgeGatedInstancesVisible: { type: 'bool', default: true },
-    displayVRCPlusIconsAsAvatar: { type: 'bool', default: true },
     showUserDialogProfileBackground: { type: 'bool', default: true },
     showUserDialogAvatarFrame: { type: 'bool', default: true },
     showUserDialogProfileEffect: { type: 'bool', default: true },
@@ -271,8 +270,8 @@ export const ConfigKeys = defineConfigKeys({
     FriendLocationShowSameInstance: { type: 'bool', default: null },
     InstanceActivityBarWidth: { type: 'int', default: 25 },
     groupCalendarShowFeaturedEvents: { type: 'bool', default: false },
-    toolsCategoryCollapsed: { type: 'string', default: null },
     toolsRecentList: { type: 'string', default: '[]' },
+    boopRecentEmojis: { type: 'string', default: '[]' },
     screenshotGalleryFolder: { type: 'string', default: '' },
     screenshotGalleryScrollPositions: { type: 'string', default: '{}' },
 

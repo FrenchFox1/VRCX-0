@@ -13,7 +13,6 @@ pub(crate) struct DiscordDeps<'a> {
     pub(crate) user_image_cache: &'a UserImageCache,
     pub(crate) remote: &'a dyn NotificationRemote,
     pub(crate) endpoint: &'a str,
-    pub(crate) allow_user_icon: bool,
 }
 
 pub(super) async fn resolve_avatar_name(
@@ -45,7 +44,7 @@ pub(super) async fn resolve_actor_icon_url(
     match tokio::time::timeout(
         DISCORD_RESOLVE_TIMEOUT,
         deps.user_image_cache
-            .resolve(deps.remote, deps.endpoint, actor, deps.allow_user_icon),
+            .resolve(deps.remote, deps.endpoint, actor),
     )
     .await
     {

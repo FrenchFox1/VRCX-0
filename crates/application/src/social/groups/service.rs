@@ -21,6 +21,7 @@ pub enum GroupRemoteRequest {
     GetUserGroups(VrchatGroupUserGroupsInput),
     GetPosts(VrchatGroupPagedInput),
     GetMembers(VrchatGroupMembersInput),
+    GetMember(VrchatGroupUserInput),
     SearchMembers(VrchatGroupMembersSearchInput),
     GetGallery(VrchatGroupGalleryInput),
     GetBans(VrchatGroupPagedInput),
@@ -209,6 +210,22 @@ pub async fn get_posts(
         &deps,
         "app__vrchat_group_posts_get",
         format!("Getting posts for group {}.", built.primary_id),
+        built.request,
+    )
+    .await
+}
+
+pub async fn get_member(
+    deps: GroupApiDeps,
+    input: VrchatGroupUserInput,
+) -> Result<VrchatApiResponse> {
+    let built = deps
+        .remote_requests
+        .build(GroupRemoteRequest::GetMember(input))?;
+    execute_group_api(
+        &deps,
+        "app__vrchat_group_member_get",
+        format!("Getting a member of group {}.", built.primary_id),
         built.request,
     )
     .await

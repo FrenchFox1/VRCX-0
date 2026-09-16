@@ -46,7 +46,7 @@ pub async fn app__vrchat_boop_send(
     state
         .runtime_host()
         .vrchat_remote()
-        .boop(input.user_id, input.emoji_id)
+        .boop(input.user_id, input.emoji_id, input.inventory_item_id)
         .await
         .map_err(AppError::from)
 }

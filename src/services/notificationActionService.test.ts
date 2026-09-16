@@ -11,7 +11,12 @@ const mocks = vi.hoisted(() => ({
     appNotificationInviteResponseSend: vi.fn(),
     appNotificationBoopDismiss: vi.fn(),
     appNotificationBoopReply: vi.fn(),
-    appNotificationRespondAndExpire: vi.fn()
+    appNotificationRespondAndExpire: vi.fn(),
+    recordRecentBoopEmoji: vi.fn()
+}));
+
+vi.mock('@/services/boopRecentService', () => ({
+    recordRecentBoopEmoji: mocks.recordRecentBoopEmoji
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -68,6 +73,7 @@ function deferred<T>() {
 describe('notificationActionService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.recordRecentBoopEmoji.mockResolvedValue(undefined);
         mocks.queryNotifications.mockResolvedValue([]);
         mocks.expireNotification.mockResolvedValue(undefined);
         mocks.appSocialFriendRequestNotificationAccept.mockResolvedValue({
@@ -95,7 +101,12 @@ describe('notificationActionService', () => {
         await sendBoopReplyNotification({
             currentUserId: 'usr_self',
             notification,
-            emojiId: 'emoji_wave'
+            emoji: {
+                kind: 'default',
+                id: 'default_hand_wave',
+                imageUrl: 'https://wiki-files.vrchat.com/Handwave.webp',
+                name: 'Hand Wave'
+            }
         });
 
         expect(mocks.appNotificationBoopReply).toHaveBeenCalledWith({
@@ -106,8 +117,36 @@ describe('notificationActionService', () => {
                 type: 'boop',
                 senderUserId: 'usr_sender'
             },
-            emojiId: 'emoji_wave'
+            emojiId: 'default_hand_wave',
+            inventoryItemId: ''
         });
+    });
+
+    it('maps an inventory emoji reply onto inventoryItemId', async () => {
+        mocks.appNotificationBoopReply.mockResolvedValue(outcome());
+        const { sendBoopReplyNotification } =
+            await import('./notificationActionService');
+
+        await sendBoopReplyNotification({
+            currentUserId: 'usr_self',
+            notification,
+            emoji: {
+                kind: 'inventory',
+                id: 'inv_miku',
+                imageUrl: 'https://example.test/miku.png',
+                name: 'Miku'
+            }
+        });
+
+        expect(mocks.appNotificationBoopReply).toHaveBeenCalledWith(
+            expect.objectContaining({
+                emojiId: '',
+                inventoryItemId: 'inv_miku'
+            })
+        );
+        expect(mocks.recordRecentBoopEmoji).toHaveBeenCalledWith(
+            expect.objectContaining({ kind: 'inventory', id: 'inv_miku' })
+        );
     });
 
     it('surfaces a boop send failure reported by the backend chain', async () => {
@@ -124,9 +163,16 @@ describe('notificationActionService', () => {
         await expect(
             sendBoopReplyNotification({
                 currentUserId: 'usr_self',
-                notification
+                notification,
+                emoji: {
+                    kind: 'inventory',
+                    id: 'inv_miku',
+                    imageUrl: 'https://example.test/miku.png',
+                    name: 'Miku'
+                }
             })
         ).rejects.toThrow('send failed');
+        expect(mocks.recordRecentBoopEmoji).not.toHaveBeenCalled();
     });
 
     it('dismisses boops for a sender through the backend command', async () => {

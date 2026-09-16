@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
     getModerationRowKey,
-    isSameModerationRow,
     MODERATION_DEFAULT_SORTING,
     sanitizeModerationSorting
 } from './moderationPageState';
@@ -26,7 +25,6 @@ describe('moderationPageState', () => {
         expect(getModerationRowKey(mute)).not.toBe(
             getModerationRowKey(muteChat)
         );
-        expect(isSameModerationRow(mute, muteChat)).toBe(false);
     });
 
     it('drops source and target from saved sorting state', () => {

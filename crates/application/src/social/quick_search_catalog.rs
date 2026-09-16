@@ -654,21 +654,6 @@ fn friend_result(
     note: &str,
     matched_field: QuickSearchMatchedField,
 ) -> QuickSearchResult {
-    let image_url = friend
-        .extra
-        .get("profilePicOverrideThumbnail")
-        .or_else(|| friend.extra.get("profilePicOverride"))
-        .or_else(|| friend.extra.get("thumbnailUrl"))
-        .and_then(Value::as_str)
-        .filter(|value| !value.trim().is_empty())
-        .map(str::to_owned)
-        .unwrap_or_else(|| {
-            if friend.current_avatar_thumbnail_image_url.trim().is_empty() {
-                friend.current_avatar_image_url.clone()
-            } else {
-                friend.current_avatar_thumbnail_image_url.clone()
-            }
-        });
     let user_colour = friend
         .extra
         .get("$userColour")
@@ -683,7 +668,7 @@ fn friend_result(
         source: "friends".into(),
         name,
         subtitle,
-        image_url,
+        image_url: friend.icon_url,
         seed_data,
         memo: memo.trim().to_string(),
         note: note.trim().to_string(),
@@ -958,6 +943,28 @@ mod tests {
             owner_id: String::new(),
             seed_data: json!({ "id": id, "name": name }),
         }
+    }
+
+    #[test]
+    fn friend_result_uses_icon_url_as_the_user_image() {
+        let friend = FriendRecord {
+            id: "usr_friend".into(),
+            icon_url: "https://api.vrchat.cloud/api/1/image/file_icon/1/256".into(),
+            ..FriendRecord::default()
+        };
+
+        let result = friend_result(
+            friend,
+            "Friend".into(),
+            "",
+            "",
+            QuickSearchMatchedField::Name,
+        );
+
+        assert_eq!(
+            result.image_url,
+            "https://api.vrchat.cloud/api/1/image/file_icon/1/256"
+        );
     }
 
     #[test]

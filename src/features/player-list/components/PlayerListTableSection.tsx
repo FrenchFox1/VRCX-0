@@ -13,8 +13,10 @@ import {
     type PlayerListFilterScope
 } from '../playerListFilters';
 import type { PlayerListRow, PlayerListSourceRow } from '../playerListTypes';
+import { usePlayerListGroupRoles } from '../usePlayerListGroupRoles';
 import { usePlayerListTableState } from '../usePlayerListTableState';
 import { usePlayerListColumns } from './PlayerListColumns';
+import { PlayerListGroupSelector } from './PlayerListGroupSelector';
 import { PlayerListToolbar } from './PlayerListToolbar';
 import {
     PlayerListEmptyState,
@@ -111,6 +113,11 @@ export function PlayerListTableSection({
 }) {
     const { t } = useTranslation();
     const tableState = usePlayerListTableState();
+    const groupRoles = usePlayerListGroupRoles(
+        filterContextKey,
+        filteredRows,
+        isGameRunning && tableState.columnVisibility.groupRoles !== false
+    );
     const tableColumns = usePlayerListColumns();
     const [query, setQuery] = useState('');
     const [filterScope, setFilterScope] =
@@ -126,8 +133,8 @@ export function PlayerListTableSection({
         [filteredRows]
     );
     const visibleRows = useMemo(
-        () => filterPlayerListRows(filteredRows, query, filterScope),
-        [filterScope, filteredRows, query]
+        () => filterPlayerListRows(groupRoles.rows, query, filterScope),
+        [filterScope, groupRoles.rows, query]
     );
     const table = useAppTable<PlayerListRow>({
         data: visibleRows,
@@ -203,6 +210,15 @@ export function PlayerListTableSection({
                     className="flex min-h-0 flex-1 flex-col gap-0"
                 >
                     <PlayerListToolbar
+                        groupSelector={
+                            <PlayerListGroupSelector
+                                value={groupRoles.selectedGroup}
+                                groupId={groupRoles.groupId}
+                                instanceGroupId={groupRoles.instanceGroupId}
+                                onChange={groupRoles.selectGroup}
+                                onRefresh={groupRoles.refresh}
+                            />
+                        }
                         counts={scopeCounts}
                         onQueryChange={setQuery}
                         onResetLayout={tableState.resetLayout}

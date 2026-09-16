@@ -45,22 +45,50 @@ describe('useFriendsLocationsPreferences', () => {
         mocks.setString.mockReset().mockResolvedValue(undefined);
     });
 
-    it('ignores the removed current-user visibility preference', async () => {
-        mocks.boolValues.set('isShowCurrentUserInSameInstance', false);
+    it('loads persisted preferences and writes changes back', async () => {
+        mocks.stringValues.set('FriendLocationDensity', 'dense');
+        mocks.boolValues.set('FriendLocationShowSameInstance', true);
+        mocks.stringValues.set('sidebarFavoriteGroups', '["group_a"]');
+        mocks.stringValues.set('sidebarSortMethod3', 'Sort by Time');
         const { result } = renderHook(() => useFriendsLocationsPreferences());
 
         await waitFor(() => expect(result.current.preferencesReady).toBe(true));
-        expect(mocks.getBool).not.toHaveBeenCalledWith(
-            'isShowCurrentUserInSameInstance',
-            expect.anything()
-        );
-        mocks.getBool.mockClear();
+        expect(result.current.density).toBe('dense');
+        expect(result.current.showSameInstanceInOnline).toBe(true);
+        expect(result.current.sidebarFavoritePrefs.selectedGroups).toEqual([
+            'group_a'
+        ]);
+        expect(result.current.sidebarSortMethods).toEqual([
+            'Sort by Status',
+            'Sort Alphabetically',
+            'Sort by Time'
+        ]);
 
-        mocks.boolValues.set('isShowCurrentUserInSameInstance', false);
         act(() => {
-            publishPreferenceChanged('isShowCurrentUserInSameInstance', false);
+            result.current.changeShowSameInstanceInOnline(false);
         });
 
-        expect(mocks.getBool).not.toHaveBeenCalled();
+        expect(result.current.showSameInstanceInOnline).toBe(false);
+        expect(mocks.setBool).toHaveBeenCalledWith(
+            'FriendLocationShowSameInstance',
+            false
+        );
+    });
+
+    it('reloads sidebar preferences when they change elsewhere', async () => {
+        const { result } = renderHook(() => useFriendsLocationsPreferences());
+        await waitFor(() => expect(result.current.preferencesReady).toBe(true));
+        expect(result.current.sidebarFavoritePrefs.isDivideByGroup).toBe(false);
+
+        mocks.boolValues.set('isSidebarDivideByFriendGroup', true);
+        act(() => {
+            publishPreferenceChanged('isSidebarDivideByFriendGroup', true);
+        });
+
+        await waitFor(() =>
+            expect(result.current.sidebarFavoritePrefs.isDivideByGroup).toBe(
+                true
+            )
+        );
     });
 });

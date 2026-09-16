@@ -10,6 +10,8 @@ import type {
 } from '@/domain/instances/currentInstanceRoster';
 import type { LocalModerationOutput } from '@/platform/tauri/bindings';
 
+import type { PlayerGroupRole } from './playerListGroupRoles';
+
 export type PlayerListRecord = Record<string, unknown>;
 export type PlayerListRosterRow = Partial<CurrentInstanceRosterPlayer>;
 
@@ -74,6 +76,7 @@ export type PlayerListSourceRow = PlayerListRecord &
 export type PlayerListContext = Partial<CurrentInstanceRosterContext>;
 
 export type PlayerListRow = PlayerListSourceRow & {
+    groupRoles?: PlayerGroupRole[] | null;
     displayName: string;
     userId: string;
     userRef: PlayerListProfileRecord | null;

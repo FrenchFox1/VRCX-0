@@ -23,7 +23,6 @@ type SettingsInterfaceDisplayPrefs = Pick<
     | 'showInstanceIdInLocation'
     | 'isAgeGatedInstancesVisible'
     | 'hideNicknames'
-    | 'displayVRCPlusIconsAsAvatar'
     | 'showNewDashboardButton'
     | 'dtHour12'
     | 'dtIsoFormat'
@@ -37,7 +36,6 @@ type SettingsInterfaceDisplayCardsProps = {
     | 'onShowInstanceIdInLocationChange'
     | 'onAgeGatedInstancesVisibleChange'
     | 'onHideNicknamesChange'
-    | 'onDisplayVrcPlusIconsAsAvatarChange'
     | 'onShowNewDashboardButtonChange'
     | 'onOpenTablePageSizes'
     | 'onOpenTableLimits'
@@ -63,7 +61,6 @@ export function SettingsInterfaceDisplayCards({
     onShowInstanceIdInLocationChange,
     onAgeGatedInstancesVisibleChange,
     onHideNicknamesChange,
-    onDisplayVrcPlusIconsAsAvatarChange,
     onShowNewDashboardButtonChange,
     onOpenTablePageSizes,
     onOpenTableLimits,
@@ -114,20 +111,6 @@ export function SettingsInterfaceDisplayCards({
                     <Switch
                         checked={!prefs.hideNicknames}
                         onCheckedChange={onHideNicknamesChange}
-                    />
-                </Field>
-
-                <Field
-                    label={t(
-                        'view.settings.appearance.appearance.vrcplus_profile_icons'
-                    )}
-                    description={t(
-                        'view.settings.appearance.appearance.vrcplus_profile_icons_description'
-                    )}
-                >
-                    <Switch
-                        checked={prefs.displayVRCPlusIconsAsAvatar}
-                        onCheckedChange={onDisplayVrcPlusIconsAsAvatarChange}
                     />
                 </Field>
             </SettingsCard>

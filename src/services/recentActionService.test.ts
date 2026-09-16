@@ -117,12 +117,12 @@ describe('recentActionService', () => {
 
         service.configureRecentActionCooldown({ enabled: true, minutes: 60 });
         service.recordRecentAction('usr_abc', 'Invite');
-        service.clearRecentActions();
+        service.recordRecentAction('usr_def', 'Invite');
 
         expect(listener).toHaveBeenCalledTimes(3);
 
         unsubscribe();
-        service.clearRecentActions();
+        service.recordRecentAction('usr_ghi', 'Invite');
 
         expect(listener).toHaveBeenCalledTimes(3);
     });

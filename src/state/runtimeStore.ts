@@ -102,6 +102,7 @@ export type CurrentUserSnapshotState = Record<string, unknown> & {
     currentAvatarThumbnailImageUrl?: string;
     currentAvatarName?: string;
     profilePicOverride?: string;
+    iconUrl?: string;
     userIcon?: string;
     homeLocation?: string | null;
     location?: string;

@@ -79,7 +79,6 @@ fn context_omits_session_ended_unless_true() {
 
     assert_eq!(value.get("installId"), Some(&json!("install")));
     assert_eq!(value.get("mode"), Some(&json!("foreground")));
-    assert!(value.get("vrchatRunning").is_none());
     assert!(value.get("sessionEnded").is_none());
 
     let ended = TelemetryContext {

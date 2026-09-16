@@ -75,7 +75,7 @@ export function resolveFriendRowDisplay(
               };
     return {
         displaySource,
-        imageUrl: userImage(displaySource, true, '64'),
+        imageUrl: userImage(displaySource, 64),
         displayName:
             displaySource?.displayName ||
             displaySource?.username ||

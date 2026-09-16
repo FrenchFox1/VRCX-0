@@ -16,11 +16,13 @@ type NavigationCacheStore = {
     lastRoute: string;
     folders: Record<string, boolean>;
     settingsCards: Record<string, boolean>;
+    toolRows: Record<string, boolean>;
     hydrated: boolean;
     hydrate(): Promise<void>;
     setLastRoute(route: string): void;
     setFolderOpen(index: string, open: boolean): void;
     setSettingsCardOpen(id: string, open: boolean): void;
+    setToolRowOpen(toolKey: string, open: boolean): void;
 };
 
 function readExpansionStates(value: unknown): Record<string, boolean> {
@@ -33,9 +35,14 @@ function readExpansionStates(value: unknown): Record<string, boolean> {
 }
 
 function persistNavigation(): void {
-    const { lastRoute, folders, settingsCards } =
+    const { lastRoute, folders, settingsCards, toolRows } =
         useNavigationCacheStore.getState();
-    const contents = JSON.stringify({ lastRoute, folders, settingsCards });
+    const contents = JSON.stringify({
+        lastRoute,
+        folders,
+        settingsCards,
+        toolRows
+    });
     writeQueue = writeQueue
         .then(async () => {
             await mkdir('', {
@@ -56,6 +63,7 @@ export const useNavigationCacheStore = create<NavigationCacheStore>(
         lastRoute: '/feed',
         folders: {},
         settingsCards: {},
+        toolRows: {},
         hydrated: false,
         hydrate: () => {
             hydration ??= (async () => {
@@ -74,7 +82,8 @@ export const useNavigationCacheStore = create<NavigationCacheStore>(
                             folders: readExpansionStates(value.folders),
                             settingsCards: readExpansionStates(
                                 value.settingsCards
-                            )
+                            ),
+                            toolRows: readExpansionStates(value.toolRows)
                         });
                     }
                 } catch {
@@ -98,6 +107,11 @@ export const useNavigationCacheStore = create<NavigationCacheStore>(
         setSettingsCardOpen: (id, open) => {
             if (!get().hydrated || get().settingsCards[id] === open) return;
             set({ settingsCards: { ...get().settingsCards, [id]: open } });
+            persistNavigation();
+        },
+        setToolRowOpen: (toolKey, open) => {
+            if (!get().hydrated || get().toolRows[toolKey] === open) return;
+            set({ toolRows: { ...get().toolRows, [toolKey]: open } });
             persistNavigation();
         }
     })

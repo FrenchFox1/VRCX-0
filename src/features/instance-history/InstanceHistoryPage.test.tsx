@@ -96,7 +96,6 @@ vi.mock('@/components/layout/ToolbarControls', () => ({
     ToolbarActions: ({ children }: { children?: ReactNode }) => (
         <div>{children}</div>
     ),
-    ToolbarDivider: () => null,
     ToolbarRefreshButton: () => null,
     ToolbarSearch: ({ trailing }: { trailing?: ReactNode }) => (
         <div>{trailing}</div>

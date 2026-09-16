@@ -31,6 +31,7 @@ import {
     toNotificationViewModel
 } from '../notificationViewModel';
 import { useNotificationActorImage } from '../useNotificationActorImage';
+import { NotificationMessage } from './NotificationMessage';
 import {
     NOTIFICATION_ROW_HOVER_REVEAL,
     NotificationEmojiPreview,
@@ -200,7 +201,10 @@ export function NotificationRow({
                                         : 'text-foreground/85'
                                 )}
                             >
-                                {body}
+                                <NotificationMessage
+                                    notification={notification}
+                                    message={body}
+                                />
                             </p>
                         ) : null}
                         {view.emoji ? (

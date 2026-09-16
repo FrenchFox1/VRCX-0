@@ -70,11 +70,6 @@ export function handleMutualGraphFetchStatusEvent(
     return applyMutualGraphFetchStatus(status);
 }
 
-export async function refreshMutualGraphFetchStatus() {
-    const status = await commands.appMutualGraphFetchStatusGet();
-    return applyMutualGraphFetchStatus(status);
-}
-
 export async function startMutualGraphFetch({
     ownerUserId,
     endpoint = '',

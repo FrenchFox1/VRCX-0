@@ -4,14 +4,12 @@ import { getColourFromUserID } from './colour';
 
 type LooseRecord = Record<string, unknown>;
 
-type ImageUser = LooseRecord & {
-    userIcon?: string;
-    profilePicOverrideThumbnail?: string;
-    profilePicOverride?: string;
-    thumbnailUrl?: string;
-    currentAvatarThumbnailImageUrl?: string;
-    currentAvatarImageUrl?: string;
+export type ImageUser = LooseRecord & {
+    iconUrl?: string | null;
 };
+
+const VRCHAT_IMAGE_FILE_PATTERN =
+    /(?:file\/(file_[a-f0-9-]+)\/(\d+)(?:\/file)?|image\/(file_[a-f0-9-]+)\/(\d+)\/\d+)\/?$/;
 
 export function convertFileUrlToImageUrl(
     url: string | null | undefined,
@@ -21,18 +19,14 @@ export function convertFileUrlToImageUrl(
     if (!url) {
         return '';
     }
-
-    const pattern = /file\/file_([a-f0-9-]+)\/(\d+)(\/file)?\/?$/;
-    const match = url.match(pattern);
-
-    if (match) {
-        const fileId = match[1];
-        const version = match[2];
-        const endpoint = normalizeVrchatEndpointDomain(endpointDomain);
-        return `${endpoint}/image/file_${fileId}/${version}/${resolution}`;
+    const match = url.match(VRCHAT_IMAGE_FILE_PATTERN);
+    if (!match) {
+        return url;
     }
-
-    return url;
+    const fileId = match[1] ?? match[3];
+    const version = match[2] ?? match[4];
+    const endpoint = normalizeVrchatEndpointDomain(endpointDomain);
+    return `${endpoint}/image/${fileId}/${version}/${resolution}`;
 }
 
 function hsvToRgb(h: number, s: number, v: number) {
@@ -100,62 +94,8 @@ export function getNameColour(userId: string, isDarkMode: boolean) {
 
 export function userImage(
     user: ImageUser | null | undefined,
-    isIcon = false,
-    resolution: string | number = '128',
-    isUserDialogIcon = false,
-    displayVRCPlusIconsAsAvatar = false,
+    resolution: string | number = 128,
     endpointDomain: string | null = null
 ) {
-    if (!user) {
-        return '';
-    }
-    if (
-        (isUserDialogIcon && user.userIcon) ||
-        (displayVRCPlusIconsAsAvatar && user.userIcon)
-    ) {
-        if (isIcon) {
-            return convertFileUrlToImageUrl(
-                user.userIcon,
-                resolution,
-                endpointDomain
-            );
-        }
-        return user.userIcon;
-    }
-
-    if (user.profilePicOverrideThumbnail) {
-        if (isIcon) {
-            return user.profilePicOverrideThumbnail.replace(
-                '/256',
-                `/${resolution}`
-            );
-        }
-        return user.profilePicOverrideThumbnail;
-    }
-    if (user.profilePicOverride) {
-        return user.profilePicOverride;
-    }
-    if (user.thumbnailUrl) {
-        return user.thumbnailUrl;
-    }
-    if (user.currentAvatarThumbnailImageUrl) {
-        if (isIcon) {
-            return user.currentAvatarThumbnailImageUrl.replace(
-                '/256',
-                `/${resolution}`
-            );
-        }
-        return user.currentAvatarThumbnailImageUrl;
-    }
-    if (user.currentAvatarImageUrl) {
-        if (isIcon) {
-            return convertFileUrlToImageUrl(
-                user.currentAvatarImageUrl,
-                resolution,
-                endpointDomain
-            );
-        }
-        return user.currentAvatarImageUrl;
-    }
-    return '';
+    return convertFileUrlToImageUrl(user?.iconUrl, resolution, endpointDomain);
 }

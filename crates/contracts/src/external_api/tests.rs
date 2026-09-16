@@ -249,7 +249,7 @@ fn fixed_external_scopes_keep_origin_and_path_restrictions() {
 
 #[test]
 fn translation_scope_allows_bearer_authorization_header() {
-    let policy = ExternalApiPolicy::with_allowed_origins(["https://api.deepl.com"]);
+    let policy = ExternalApiPolicy;
     let request = ExternalHttpRequestInput {
         url: Some("https://api.deepl.com/v2/translate".into()),
         method: Some(ExternalHttpMethod::Post),
@@ -290,7 +290,7 @@ fn translation_scope_rejects_unlisted_origins() {
 
 #[test]
 fn translation_scope_allows_deepl_authorization_header() {
-    let policy = ExternalApiPolicy::with_allowed_origins(["https://api-free.deepl.com"]);
+    let policy = ExternalApiPolicy;
     let request = ExternalHttpRequestInput {
         url: Some("https://api-free.deepl.com/v2/translate".into()),
         method: Some(ExternalHttpMethod::Post),
@@ -314,7 +314,7 @@ fn translation_scope_allows_deepl_authorization_header() {
 
 #[test]
 fn non_translation_scopes_reject_authorization_header() {
-    let policy = ExternalApiPolicy::with_allowed_origins(["https://example.com"]);
+    let policy = ExternalApiPolicy;
     let request = ExternalHttpRequestInput {
         url: Some("https://example.com/search".into()),
         headers: Some(HashMap::from([(

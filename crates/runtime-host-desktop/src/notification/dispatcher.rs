@@ -5,9 +5,9 @@ use std::time::Duration;
 
 use tokio::sync::{mpsc, oneshot};
 use vrcx_0_application_activity::notification::{
-    config_bool, extract_file_id, extract_file_version, fallback_file_version,
-    load_notification_locale, normalize_avatar_image_url_128, render_delivery, NotificationConfig,
-    OverlayLocale, RealtimeUserImageResolverSlot, RenderedNotification,
+    extract_file_id, extract_file_version, fallback_file_version, load_notification_locale,
+    normalize_avatar_image_url_128, render_delivery, NotificationConfig, OverlayLocale,
+    RealtimeUserImageResolverSlot, RenderedNotification,
 };
 use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot, OverlayActivitySurface,
@@ -179,11 +179,6 @@ impl OverlayActivitySink for NotificationDispatcher {
                 &mut delivery,
                 &endpoint,
                 &current_user_id,
-                config_bool(
-                    self.notification_config.as_ref(),
-                    "displayVRCPlusIconsAsAvatar",
-                    true,
-                ),
                 &self.realtime_user_image_resolver,
             );
         }
@@ -378,7 +373,6 @@ fn apply_cached_actor_image(
     delivery: &mut OverlayActivityDelivery,
     endpoint: &str,
     current_user_id: &str,
-    allow_user_icon: bool,
     resolver: &RealtimeUserImageResolverSlot,
 ) {
     if !delivery.entry.content.image_url.trim().is_empty() {
@@ -388,7 +382,7 @@ fn apply_cached_actor_image(
     if !actor_user_id.starts_with("usr_") || actor_user_id == current_user_id.trim() {
         return;
     }
-    if let Some(image_url) = resolver.cached_url(endpoint, actor_user_id, allow_user_icon) {
+    if let Some(image_url) = resolver.cached_url(endpoint, actor_user_id) {
         delivery.entry.content.image_url = normalize_avatar_image_url_128(&image_url, endpoint);
     }
 }

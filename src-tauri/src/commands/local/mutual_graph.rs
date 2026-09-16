@@ -27,15 +27,6 @@ pub async fn app__mutual_graph_snapshot_get(
 
 #[tauri::command(async)]
 #[specta::specta]
-pub fn app__mutual_graph_fetch_status_get(state: State<'_, AppState>) -> MutualGraphFetchStatus {
-    state
-        .runtime_host()
-        .local_data()
-        .mutual_graph_fetch_status()
-}
-
-#[tauri::command(async)]
-#[specta::specta]
 pub fn app__mutual_graph_fetch_cancel(
     state: State<'_, AppState>,
     input: MutualGraphFetchCancelInput,

@@ -1677,7 +1677,6 @@
                 "mark_seen": "Marcar como vista",
                 "send_boop": "Enviar boop",
                 "search_emoji": "Buscar emoji",
-                "clear_selection": "Borrar selección",
                 "send": "Enviar"
             },
             "success": {
@@ -1693,9 +1692,6 @@
                 "cannot_invite_from_the_current_instance_type": "No se puede invitar desde el tipo de instancia actual",
                 "cannot_invite_current_location_is_not_a_concrete_instance": "No se puede invitar: la ubicación actual no es una instancia concreta",
                 "cannot_send_invite_response_no_current_user_session_is_available": "No se puede enviar la respuesta a la invitación: no hay ninguna sesión de usuario disponible"
-            },
-            "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "No se seleccionó ningún emoji personalizado. Se enviará el boop predeterminado"
             },
             "loading": {
                 "loading_emojis": "Cargando emojis"
@@ -1915,7 +1911,8 @@
                 "last_backup": "Copia {date}",
                 "connections_configured": "{count} conexiones",
                 "apps_count": "{count} apps",
-                "automatic_backup": "Copia automática"
+                "automatic_backup": "Copia automática",
+                "show_details": "Mostrar detalles"
             },
             "quick_access": {
                 "header": "Acceso rápido",
@@ -2543,8 +2540,6 @@
                     "theme_mode_pink": "Rosa",
                     "theme_mode_material3": "Material 3",
                     "zoom": "Zoom",
-                    "vrcplus_profile_icons": "Iconos de perfil",
-                    "vrcplus_profile_icons_description": "Usa el icono de perfil como imagen del usuario cuando esté disponible.",
                     "show_instance_id": "Mostrar ID de instancia",
                     "age_gated_instances": "Mostrar instancias con restricción de edad",
                     "age_gated_instances_description": "Muestra las instancias con restricción de edad. Cuando está desactivado, estas instancias se ocultan y se muestran como restringidas.",
@@ -3124,6 +3119,12 @@
             }
         },
         "player_list": {
+            "group_roles": {
+                "automatic": "Grupo de la instancia (automático)",
+                "group": "Grupo de los roles",
+                "placeholder": "Buscar grupos o introducir un ID de grupo",
+                "refresh": "Actualizar roles del grupo"
+            },
             "success": {
                 "last_updated": "Última actualización",
                 "created": "Creado"
@@ -3760,7 +3761,6 @@
                 "note": "Nota",
                 "memo": "Memo",
                 "avatar_info": "Información del avatar",
-                "avatar_info_last_seen": "Avatar visto por última vez",
                 "unknown_avatar": "Avatar desconocido",
                 "represented_group": "Grupo Representado",
                 "bio": "Biografía",
@@ -4157,7 +4157,6 @@
                 "role_ids": "ID de roles",
                 "queue_enabled": "Cola activada",
                 "age_gate": "Restricción por edad",
-                "display_name": "Nombre visible",
                 "user_id": "ID de usuario",
                 "strict": "Estricto",
                 "location": "Ubicación",
@@ -4517,20 +4516,26 @@
                 "edited_by": "Editado por:",
                 "search_placeholder": "Buscar"
             },
+            "role_name": {
+                "group_owner": "Propietario del grupo",
+                "everyone": "Todos",
+                "member": "Miembro"
+            },
             "members": {
                 "header": "Miembros",
                 "sorting": {
                     "joined_at_asc": "Unido el (Ascendente)",
                     "joined_at_desc": "Unido el (Descendente)"
                 },
-                "filter": "Filtrar:",
-                "filters": {
-                    "everyone": "Todos",
-                    "users_with_no_role": "Usuarios Sin Rol"
-                },
                 "unsubscribed_announcements": "Dado de baja de los anuncios",
                 "representing": "Representando",
-                "search": "Buscar"
+                "view_all": "Todos",
+                "friends": "Amigos",
+                "search": "Buscar",
+                "loaded_of_total": "{loaded} de {total} cargados",
+                "search_results": "{count} resultados",
+                "export_loaded": "Exportar cargados ({count})",
+                "export_all": "Exportar todos ({count})"
             },
             "gallery": {
                 "header": "Fotos"
@@ -4582,15 +4587,12 @@
                 "group_join_request_cancelled": "Solicitud de ingreso al grupo cancelada",
                 "group_refreshed": "Grupo actualizado",
                 "group_invite_sent": "Invitación al grupo enviada",
-                "group_post_deleted": "Publicación del grupo eliminada",
-                "joined_newest": "Ingreso más reciente",
-                "joined_oldest": "Ingreso más antiguo"
+                "group_post_deleted": "Publicación del grupo eliminada"
             },
             "action": {
                 "refresh_to_load_gallery_images": "Actualiza para cargar las imágenes de la galería",
                 "open_group_owner_profile": "Abrir el perfil del propietario del grupo",
-                "join_state": "Estado de ingreso",
-                "load_all": "Cargar todo"
+                "join_state": "Estado de ingreso"
             },
             "toast": {
                 "failed_to_join_group": "No se pudo unir al grupo",
@@ -4676,12 +4678,15 @@
             "ageGate": "Restricción de Edad",
             "normal": "Normal",
             "group": "Grupo",
-            "legacy": "Legado"
+            "legacy": "Legado",
+            "display_name": "Nombre de la instancia"
         },
         "launch": {
             "header": "Lanzar",
             "short_url": "URL Corta",
-            "location": "Ubicación",
+            "share": "Compartir",
+            "share_description": "Copia el enlace de VRCX-0. Quien lo abra verá una vista previa y podrá abrir la instancia en el cliente.",
+            "more_copy_options": "Más opciones de copia",
             "invite": "Invitar",
             "open_ingame": "Abrir en el juego",
             "self_invite": "Autoinvitación",
@@ -4696,7 +4701,8 @@
                 "game_not_running": "VRChat no está abierto"
             },
             "copy": {
-                "link": "Enlace",
+                "vrchat_link": "Enlace de VRChat",
+                "instance_id": "ID de instancia",
                 "failed": "No se pudo copiar"
             }
         },
@@ -5339,7 +5345,10 @@
             "emoji_manager": "Gestor de emojis",
             "select_default_emoji": "Seleccionar emoji predeterminado",
             "default_emojis": "Emojis Predeterminados",
-            "send": "Enviar"
+            "send": "Enviar",
+            "recent": "Recientes",
+            "inventory_emojis": "Inventario",
+            "no_inventory_emojis": "Aún no hay emojis de boop en tu inventario"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 está actualizado.",
@@ -5877,6 +5886,7 @@
             "action": "Acción"
         },
         "playerList": {
+            "groupRoles": "Roles del grupo",
             "avatar": "Avatar",
             "timer": "Temporizador",
             "icon": "Iconos",

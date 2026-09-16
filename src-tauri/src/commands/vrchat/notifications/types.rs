@@ -26,4 +26,6 @@ pub struct VrchatBoopInput {
     pub(crate) user_id: String,
     #[serde(default)]
     pub(crate) emoji_id: String,
+    #[serde(default)]
+    pub(crate) inventory_item_id: String,
 }

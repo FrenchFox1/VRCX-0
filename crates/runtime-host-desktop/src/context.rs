@@ -248,10 +248,6 @@ impl DesktopRuntimeServices {
         else {
             return;
         };
-        let allow_user_icon = self
-            .config
-            .get_bool("displayVRCPlusIconsAsAvatar", true)
-            .unwrap_or(true);
         for patch in &projection.patches {
             if !StateBucket::Online.matches(&patch.patch.state) {
                 continue;
@@ -260,9 +256,9 @@ impl DesktopRuntimeServices {
             if !user_id.starts_with("usr_") {
                 continue;
             }
-            let Some(raw_url) =
-                self.realtime_user_image_resolver
-                    .cached_url(&endpoint, user_id, allow_user_icon)
+            let Some(raw_url) = self
+                .realtime_user_image_resolver
+                .cached_url(&endpoint, user_id)
             else {
                 continue;
             };

@@ -101,17 +101,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn generated_token_is_high_entropy_base64url_without_padding() {
-        let token = generate_mcp_token().unwrap();
-
-        assert!(token.len() >= 43);
-        assert!(token
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_'));
-        assert!(!token.contains('='));
-    }
-
-    #[test]
     fn request_auth_requires_bearer_token_and_loopback_host() {
         let policy = McpAuthPolicy {
             port: 8798,

@@ -177,13 +177,6 @@ export function buildInterfaceSection({
         onHideNicknamesChange: (checked: boolean) => {
             saveBoolPreference('hideNicknames', 'hideNicknames', !checked);
         },
-        onDisplayVrcPlusIconsAsAvatarChange: (checked: boolean) => {
-            saveBoolPreference(
-                'displayVRCPlusIconsAsAvatar',
-                'displayVRCPlusIconsAsAvatar',
-                checked
-            );
-        },
         onShowUserDialogProfileBackgroundChange: (checked: boolean) => {
             saveBoolPreference(
                 'showUserDialogProfileBackground',

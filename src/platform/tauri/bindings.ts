@@ -1044,9 +1044,6 @@ const generatedCommands = {
     ): Promise<MutualGraphSnapshotOutput> {
         return await TAURI_INVOKE('app__mutual_graph_snapshot_get', { userId });
     },
-    async appMutualGraphFetchStatusGet(): Promise<MutualGraphFetchStatus> {
-        return await TAURI_INVOKE('app__mutual_graph_fetch_status_get');
-    },
     async appMutualGraphFetchCancel(
         input: MutualGraphFetchCancelInput
     ): Promise<MutualGraphFetchStatus> {
@@ -1556,6 +1553,11 @@ const generatedCommands = {
         input: VrchatGroupProfileInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_group_get', { input });
+    },
+    async appVrchatGroupMemberGet(
+        input: VrchatGroupUserInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_member_get', { input });
     },
     async appVrchatGroupInviteDelete(
         input: VrchatGroupUserInput
@@ -3723,6 +3725,13 @@ export type DebugLoggingOutcomeKind =
     | 'needsUserAction';
 export type DeepLinkAction =
     | { type: 'openWorld'; worldId: string }
+    | {
+          type: 'openInstance';
+          worldId: string;
+          instanceId: string;
+          shortName: string;
+          launchToken: string;
+      }
     | { type: 'openAvatar'; avatarId: string }
     | { type: 'importCollection'; collectionId: string };
 export type DesktopNotificationActivation = {
@@ -4302,6 +4311,7 @@ export type FriendRecord = Partial<{
     status?: string;
     statusDescription?: string;
     bio?: string;
+    iconUrl?: string;
     currentAvatarImageUrl?: string;
     currentAvatarThumbnailImageUrl?: string;
     currentAvatarAuthorId?: string;
@@ -5369,6 +5379,7 @@ export type NotificationBoopReplyInput = {
     endpoint?: string;
     target: NotificationTarget;
     emojiId?: string;
+    inventoryItemId?: string;
 };
 export type NotificationDoNotDisturbMode =
     | 'off'
@@ -6015,12 +6026,7 @@ export type SavedCredentialUser = {
     id: string;
     displayName?: string | null;
     username?: string | null;
-    userIcon?: string | null;
-    profilePicOverrideThumbnail?: string | null;
-    profilePicOverride?: string | null;
-    thumbnailUrl?: string | null;
-    currentAvatarThumbnailImageUrl?: string | null;
-    currentAvatarImageUrl?: string | null;
+    iconUrl?: string | null;
 };
 export type SavedGroupCollection = {
     id: string;
@@ -6449,7 +6455,11 @@ export type VrchatAvatarSaveInput = {
     avatarId?: string;
     params: AvatarUpdateRequest;
 };
-export type VrchatBoopInput = { userId?: string; emojiId?: string };
+export type VrchatBoopInput = {
+    userId?: string;
+    emojiId?: string;
+    inventoryItemId?: string;
+};
 export type VrchatConfigWriteResult = { oldCacheCleanupError: string | null };
 export type VrchatCurrentUserBadgeInput = {
     badgeId?: string;

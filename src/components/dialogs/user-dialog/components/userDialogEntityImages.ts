@@ -11,13 +11,12 @@ export function rowImage(row: unknown, kind: UserDialogEntityKind) {
         return '';
     }
     if (kind === 'user') {
-        return userImage(row, true, '64');
+        return userImage(row, 64);
     }
     const imageUrl = [
         row.thumbnailImageUrl,
         row.imageUrl,
         row.iconUrl,
-        row.userIcon,
         row.currentAvatarImageUrl
     ].find(
         (value): value is string =>

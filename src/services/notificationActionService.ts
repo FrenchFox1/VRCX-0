@@ -1,4 +1,8 @@
 import {
+    toBoopEmojiSendParams,
+    type BoopEmojiChoice
+} from '@/domain/entities/boopEmoji';
+import {
     commands,
     type NotificationActionOutcome,
     type NotificationTarget,
@@ -8,6 +12,7 @@ import notificationPersistenceRepository, {
     type NotificationResponse,
     type NotificationRow
 } from '@/repositories/notificationPersistenceRepository';
+import { recordRecentBoopEmoji } from '@/services/boopRecentService';
 
 type NotificationRecord = Partial<
     Pick<
@@ -50,7 +55,7 @@ interface NotificationResponseInput extends NotificationActionInput {
 }
 
 interface BoopReplyInput extends NotificationActionInput {
-    emojiId?: string;
+    emoji?: BoopEmojiChoice | null;
 }
 
 function normalizeText(value: unknown): string {
@@ -233,7 +238,7 @@ export async function dismissBoopNotifications({
 export async function sendBoopReplyNotification({
     currentUserId,
     notification,
-    emojiId = ''
+    emoji = null
 }: BoopReplyInput) {
     const target = requireNotification(notification);
     const senderUserId = normalizeText(target.senderUserId);
@@ -243,9 +248,12 @@ export async function sendBoopReplyNotification({
     const outcome = await commands.appNotificationBoopReply({
         ownerUserId: normalizeText(currentUserId),
         target: toNotificationTarget(target),
-        emojiId: normalizeText(emojiId)
+        ...toBoopEmojiSendParams(emoji)
     });
     unwrapNotificationActionOutcome(outcome);
+    if (emoji) {
+        await recordRecentBoopEmoji(emoji).catch(() => {});
+    }
 }
 
 export async function sendNotificationButtonResponse({

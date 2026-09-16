@@ -1,4 +1,3 @@
-import type { TFunction } from 'i18next';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -41,6 +40,7 @@ import {
 import {
     createTimeRule,
     dayOptions,
+    daysSummary,
     getTimeWindow,
     hasGameRunningCondition,
     hasRuleAction,
@@ -76,17 +76,6 @@ function updateTimeWindow(
         ...rule,
         conditions: [{ ...timeWindow, ...patch }, ...otherConditions]
     };
-}
-
-function daysSummary(days: readonly number[], t: TFunction) {
-    if (days.length === 0) {
-        return t(`${I18N_ROOT}.every_day`);
-    }
-    const selectedDays = new Set(days);
-    return dayOptions
-        .filter((day) => selectedDays.has(day.value))
-        .map((day) => t(day.labelKey))
-        .join(', ');
 }
 
 type TimeRulesTabProps = {

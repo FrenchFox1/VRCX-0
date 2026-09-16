@@ -551,7 +551,8 @@ describe('favorites page data helpers', () => {
         const items = buildWorldItems({
             remoteWorldDetail: {
                 name: 'Image World',
-                thumbnailImageUrl: 'https://example.test/thumb/256',
+                thumbnailImageUrl:
+                    'https://api.vrchat.cloud/api/1/image/file_0a0a/1/256',
                 imageUrl: 'https://example.test/full/256'
             }
         });
@@ -559,7 +560,8 @@ describe('favorites page data helpers', () => {
         expect(items).toEqual([
             expect.objectContaining({
                 imageUrl: 'https://example.test/full/256',
-                imageSmallUrl: 'https://example.test/thumb/128'
+                imageSmallUrl:
+                    'https://api.vrchat.cloud/api/1/image/file_0a0a/1/128'
             })
         ]);
     });
@@ -580,7 +582,8 @@ describe('favorites page data helpers', () => {
                 wrld_local: {
                     id: 'wrld_local',
                     name: 'Local World',
-                    thumbnailImageUrl: 'https://example.test/local-thumb/256',
+                    thumbnailImageUrl:
+                        'https://api.vrchat.cloud/api/1/image/file_0b0b/1/256',
                     imageUrl: 'https://example.test/local-full/256'
                 }
             },
@@ -591,7 +594,8 @@ describe('favorites page data helpers', () => {
         expect(items).toEqual([
             expect.objectContaining({
                 imageUrl: 'https://example.test/local-full/256',
-                imageSmallUrl: 'https://example.test/local-thumb/128'
+                imageSmallUrl:
+                    'https://api.vrchat.cloud/api/1/image/file_0b0b/1/128'
             })
         ]);
     });
@@ -657,7 +661,8 @@ describe('favorites page data helpers', () => {
                 {
                     id: 'avtr_history',
                     name: 'History Avatar',
-                    thumbnailImageUrl: 'https://example.test/history-thumb/256',
+                    thumbnailImageUrl:
+                        'https://api.vrchat.cloud/api/1/image/file_0c0c/1/256',
                     imageUrl: 'https://example.test/history-full/256'
                 }
             ],
@@ -667,7 +672,8 @@ describe('favorites page data helpers', () => {
         expect(items).toEqual([
             expect.objectContaining({
                 imageUrl: 'https://example.test/history-full/256',
-                imageSmallUrl: 'https://example.test/history-thumb/128'
+                imageSmallUrl:
+                    'https://api.vrchat.cloud/api/1/image/file_0c0c/1/128'
             })
         ]);
     });

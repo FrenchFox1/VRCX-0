@@ -282,10 +282,6 @@ impl LocalDataRuntime {
         self.saved_group_favorites.remove_group(input)
     }
 
-    pub fn mutual_graph_fetch_status(&self) -> MutualGraphFetchStatus {
-        self.mutual_graph_fetch.status()
-    }
-
     pub fn mutual_graph_fetch_cancel(
         &self,
         input: MutualGraphFetchCancelInput,

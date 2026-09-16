@@ -118,9 +118,7 @@ fn notification_cache_hit_enriches_avatar_image_for_runtime_delivery() -> Result
         "user": {
             "id": "usr_sender",
             "displayName": "Cached Sender",
-            "userIcon": "https://images.example/user-icon.png",
-            "profilePicOverride": "https://images.example/profile.png",
-            "currentAvatarThumbnailImageUrl": "https://images.example/avatar-thumb.png"
+            "iconUrl": "https://images.example/user-icon.png"
         },
         "source": "test",
         "isFriend": true
@@ -186,9 +184,7 @@ fn notification_avatar_resolves_from_user_id_when_sender_field_absent() -> Resul
         "user": {
             "id": "usr_sender",
             "displayName": "Cached Sender",
-            "userIcon": "https://images.example/user-icon.png",
-            "profilePicOverride": "https://images.example/profile.png",
-            "currentAvatarThumbnailImageUrl": "https://images.example/avatar-thumb.png"
+            "iconUrl": "https://images.example/user-icon.png"
         },
         "source": "test",
         "isFriend": true
@@ -245,9 +241,7 @@ fn notification_avatar_fallback_skips_owner_receiver_when_sender_is_absent() -> 
         "user": {
             "id": "usr_self",
             "displayName": "Self",
-            "userIcon": "https://images.example/self-icon.png",
-            "profilePicOverride": "https://images.example/self-profile.png",
-            "currentAvatarThumbnailImageUrl": "https://images.example/self-avatar.png"
+            "iconUrl": "https://images.example/self-icon.png"
         },
         "source": "test",
         "isFriend": false
@@ -308,9 +302,7 @@ fn notification_avatar_fallback_skips_current_user_sender() -> Result<()> {
         "user": {
             "id": "usr_self",
             "displayName": "Self",
-            "userIcon": "https://images.example/self-icon.png",
-            "profilePicOverride": "https://images.example/self-profile.png",
-            "currentAvatarThumbnailImageUrl": "https://images.example/self-avatar.png"
+            "iconUrl": "https://images.example/self-icon.png"
         },
         "source": "test",
         "isFriend": false
@@ -364,63 +356,6 @@ fn notification_avatar_fallback_skips_current_user_sender() -> Result<()> {
 }
 
 #[test]
-fn notification_avatar_fallback_respects_vrc_plus_icon_preference() -> Result<()> {
-    let (_dir, runtime, active_session) =
-        runtime_with_active_session("notification-avatar-vrc-plus-disabled")?;
-    config_store::set_bool(runtime.database(), "displayVRCPlusIconsAsAvatar", false)?;
-    runtime.runtime().ingest_user_facts(vec![json!({
-        "user": {
-            "id": "usr_sender",
-            "displayName": "Cached Sender",
-            "userIcon": "https://images.example/user-icon.png",
-            "profilePicOverride": "https://images.example/profile.png",
-            "currentAvatarThumbnailImageUrl": "https://images.example/avatar-thumb.png"
-        },
-        "source": "test",
-        "isFriend": true
-    })]);
-    runtime.runtime().deps.event_bus.take_events_for_test();
-    let notification = json!({
-        "id": "notif-avatar-vrc-plus-disabled",
-        "createdAt": "2026-06-21T00:00:00.000Z",
-        "type": "friendRequest",
-        "senderUserId": "usr_sender",
-        "senderUsername": "usr_sender",
-        "message": "Friend request"
-    });
-
-    runtime
-        .runtime()
-        .apply_notification_output(RealtimeNotificationOutput {
-            owner_user_id: OwnerId::new(active_session.user_id),
-            projection: RealtimeNotificationProjection {
-                generation: 7,
-                upserts: vec![RealtimeNotificationUpsert {
-                    notification: notification.clone().into(),
-                    insert_defaults: None,
-                    notify_menu: true,
-                    deliver_runtime: true,
-                    run_automation: false,
-                }],
-                ..RealtimeNotificationProjection::default()
-            },
-            persistence: RealtimePersistenceBatch {
-                notification_v2_upserts: vec![notification],
-                ..RealtimePersistenceBatch::default()
-            },
-        });
-
-    let events = runtime.runtime().deps.event_bus.take_events_for_test();
-    let projection = events
-        .iter()
-        .find(|event| event.name == "realtimeNotificationProjection")
-        .expect("cache-hit notification should emit a realtime projection");
-    let projected = &projection.payload["upserts"][0]["notification"];
-    assert_eq!(projected["imageUrl"], "https://images.example/profile.png");
-    Ok(())
-}
-
-#[test]
 fn notification_avatar_fallback_preserves_existing_image_and_skips_group_sender() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("notification-avatar-existing-and-group")?;
@@ -428,8 +363,7 @@ fn notification_avatar_fallback_preserves_existing_image_and_skips_group_sender(
         "user": {
             "id": "usr_sender",
             "displayName": "Cached Sender",
-            "userIcon": "https://images.example/user-icon.png",
-            "currentAvatarThumbnailImageUrl": "https://images.example/avatar-thumb.png"
+            "iconUrl": "https://images.example/user-icon.png"
         },
         "source": "test",
         "isFriend": false
@@ -637,11 +571,9 @@ fn cached_user_notification_image_url_returns_none_before_cache_populated() -> R
         runtime_with_active_session("cached-user-image-url-miss")?;
 
     assert_eq!(
-        runtime.runtime().cached_user_notification_image_url(
-            &runtime.runtime().active_endpoint(),
-            "usr_target",
-            true
-        ),
+        runtime
+            .runtime()
+            .cached_user_notification_image_url(&runtime.runtime().active_endpoint(), "usr_target"),
         None
     );
     Ok(())
@@ -655,8 +587,7 @@ fn cached_user_notification_image_url_reads_realtime_cache_hit() -> Result<()> {
         "user": {
             "id": "usr_target",
             "displayName": "Target",
-            "userIcon": "https://images.example/user-icon.png",
-            "profilePicOverride": "https://images.example/profile.png"
+            "iconUrl": "https://images.example/user-icon.png"
         },
         "source": "test",
         "isFriend": true
@@ -666,14 +597,8 @@ fn cached_user_notification_image_url_reads_realtime_cache_hit() -> Result<()> {
     assert_eq!(
         runtime
             .runtime()
-            .cached_user_notification_image_url(&endpoint, "usr_target", true),
+            .cached_user_notification_image_url(&endpoint, "usr_target"),
         Some("https://images.example/user-icon.png".into())
-    );
-    assert_eq!(
-        runtime
-            .runtime()
-            .cached_user_notification_image_url(&endpoint, "usr_target", false),
-        Some("https://images.example/profile.png".into())
     );
     Ok(())
 }
@@ -686,7 +611,7 @@ fn notification_facts_prefer_the_current_friend_record() -> Result<()> {
     runtime.runtime().ingest_user_facts(vec![json!({
         "user": {
             "id": "usr_target",
-            "currentAvatarThumbnailImageUrl": "https://images.example/stale.png"
+            "iconUrl": "https://images.example/stale.png"
         },
         "source": "test",
         "isFriend": true
@@ -701,7 +626,7 @@ fn notification_facts_prefer_the_current_friend_record() -> Result<()> {
                     id: "usr_target".into(),
                     display_name: "Current Friend".into(),
                     location: "wrld_target:instance~region(jp)".into(),
-                    current_avatar_thumbnail_image_url: "https://images.example/current.png".into(),
+                    icon_url: "https://images.example/current.png".into(),
                     extra: json!({
                         "world": { "name": "Current World" }
                     })
@@ -722,7 +647,7 @@ fn notification_facts_prefer_the_current_friend_record() -> Result<()> {
     assert_eq!(
         runtime
             .runtime()
-            .cached_user_notification_image_url(&endpoint, "usr_target", true),
+            .cached_user_notification_image_url(&endpoint, "usr_target"),
         Some("https://images.example/current.png".into())
     );
     runtime

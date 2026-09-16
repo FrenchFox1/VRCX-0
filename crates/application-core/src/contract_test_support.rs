@@ -6,35 +6,6 @@ use serde::Serialize;
 
 use crate::{Error, ImageCachePort, Result, WebClient, WebClientPort, WorldCachePort};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum BehaviorLockFacet {
-    InputNormalization,
-    OutputAndSerialization,
-    ErrorMapping,
-    AuthenticationAndOwnership,
-    RemoteRequest,
-    Persistence,
-    Events,
-    Cache,
-    Lifecycle,
-    Diagnostics,
-    RawBoundary,
-}
-
-pub const BEHAVIOR_LOCK_CHECKLIST: &[BehaviorLockFacet] = &[
-    BehaviorLockFacet::InputNormalization,
-    BehaviorLockFacet::OutputAndSerialization,
-    BehaviorLockFacet::ErrorMapping,
-    BehaviorLockFacet::AuthenticationAndOwnership,
-    BehaviorLockFacet::RemoteRequest,
-    BehaviorLockFacet::Persistence,
-    BehaviorLockFacet::Events,
-    BehaviorLockFacet::Cache,
-    BehaviorLockFacet::Lifecycle,
-    BehaviorLockFacet::Diagnostics,
-    BehaviorLockFacet::RawBoundary,
-];
-
 pub struct CallRecorder<T> {
     calls: Mutex<Vec<T>>,
 }
@@ -507,30 +478,5 @@ impl WorldCachePort for MemoryWorldCachePort {
         if let Ok(world) = serde_json::from_str(&response.data) {
             self.insert(world);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn checklist_has_every_observable_behavior_category_once() {
-        assert_eq!(BEHAVIOR_LOCK_CHECKLIST.len(), 11);
-        for (index, facet) in BEHAVIOR_LOCK_CHECKLIST.iter().enumerate() {
-            assert!(!BEHAVIOR_LOCK_CHECKLIST[..index].contains(facet));
-        }
-    }
-
-    #[test]
-    fn recorder_and_scripted_results_are_deterministic() {
-        let calls = CallRecorder::default();
-        calls.record("first");
-        calls.record("second");
-        assert_eq!(calls.snapshot(), ["first", "second"]);
-
-        let results = ScriptedResults::new([1, 2]);
-        assert_eq!(results.next(), 1);
-        assert_eq!(results.next(), 2);
     }
 }

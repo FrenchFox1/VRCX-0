@@ -26,7 +26,8 @@ describe('navigation cache', () => {
                     'system.application': false,
                     'advanced.troubleshooting': true,
                     invalid: 'true'
-                }
+                },
+                toolRows: { 'status-schedule': false, invalid: 1 }
             })
         );
         const { useNavigationCacheStore } =
@@ -39,7 +40,8 @@ describe('navigation cache', () => {
             settingsCards: {
                 'system.application': false,
                 'advanced.troubleshooting': true
-            }
+            },
+            toolRows: { 'status-schedule': false }
         });
         expect(fs.writeTextFile).not.toHaveBeenCalled();
     });
@@ -85,13 +87,17 @@ describe('navigation cache', () => {
         expect(useNavigationCacheStore.getState().hydrated).toBe(true);
         useNavigationCacheStore.getState().setFolderOpen('favorites', false);
         useNavigationCacheStore.getState().setLastRoute('/friends-locations');
+        useNavigationCacheStore
+            .getState()
+            .setToolRowOpen('status-schedule', false);
         await vi.waitFor(() =>
-            expect(fs.writeTextFile).toHaveBeenCalledTimes(2)
+            expect(fs.writeTextFile).toHaveBeenCalledTimes(3)
         );
-        expect(JSON.parse(fs.writeTextFile.mock.calls[1][1])).toEqual({
+        expect(JSON.parse(fs.writeTextFile.mock.calls[2][1])).toEqual({
             lastRoute: '/friends-locations',
             folders: { favorites: false },
-            settingsCards: {}
+            settingsCards: {},
+            toolRows: { 'status-schedule': false }
         });
     });
 
@@ -129,7 +135,8 @@ describe('navigation cache', () => {
             settingsCards: {
                 'system.application': false,
                 'advanced.troubleshooting': true
-            }
+            },
+            toolRows: {}
         });
         fs.readTextFile.mockResolvedValue(saved);
         vi.resetModules();

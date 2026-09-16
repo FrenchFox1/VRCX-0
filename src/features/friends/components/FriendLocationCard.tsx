@@ -401,7 +401,7 @@ export function FriendLocationCard({
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
-    const avatarUrl = userImage(friend, true);
+    const avatarUrl = userImage(friend);
     const tone = resolveStatusTone(friend, currentUserSnapshot);
     const canOpenUser = typeof onOpenUser === 'function';
     const canOpenWorld = typeof onOpenWorld === 'function';

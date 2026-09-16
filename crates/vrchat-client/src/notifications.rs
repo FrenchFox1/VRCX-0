@@ -320,13 +320,20 @@ pub fn boop_send_input(
     endpoint: String,
     user_id: String,
     emoji_id: String,
+    inventory_item_id: String,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let user_id = require_text(user_id, "VrchatBoopSend requires userId.")?;
     let emoji_id = normalize_text(emoji_id);
-    let body = if emoji_id.is_empty() {
-        json!({})
-    } else {
-        json!({ "emojiId": emoji_id })
+    let inventory_item_id = normalize_text(inventory_item_id);
+    let body = match (emoji_id.is_empty(), inventory_item_id.is_empty()) {
+        (true, true) => json!({}),
+        (false, true) => json!({ "emojiId": emoji_id }),
+        (true, false) => json!({ "inventoryItemId": inventory_item_id }),
+        (false, false) => {
+            return Err(HttpApiError::Custom(
+                "VrchatBoopSend accepts either emojiId or inventoryItemId, not both.".into(),
+            ))
+        }
     };
     Ok((
         user_id.clone(),

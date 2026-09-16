@@ -122,6 +122,8 @@ pub struct NotificationBoopReplyInput {
     pub target: NotificationTarget,
     #[serde(default)]
     pub emoji_id: String,
+    #[serde(default)]
+    pub inventory_item_id: String,
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -178,6 +180,7 @@ pub enum NotificationChainRemoteCall {
     BoopSend {
         user_id: String,
         emoji_id: String,
+        inventory_item_id: String,
     },
 }
 
@@ -491,6 +494,7 @@ pub async fn send_boop_reply_notification(
         .execute_remote(NotificationChainRemoteCall::BoopSend {
             user_id: sender_user_id,
             emoji_id: normalize_text(&input.emoji_id),
+            inventory_item_id: normalize_text(&input.inventory_item_id),
         })
         .await
     {

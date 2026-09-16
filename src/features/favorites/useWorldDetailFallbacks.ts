@@ -6,9 +6,7 @@ import worldProfileRepository from '@/repositories/worldProfileRepository';
 
 import {
     type DetailMap,
-    filterRemoteEntityCacheFallbacksById,
     getRemoteEntityCacheFallbackIds,
-    loadRemoteEntityCacheFallbacksById,
     useRemoteEntityCacheFallbackLoader
 } from './remoteEntityCacheFallbacks';
 
@@ -33,15 +31,6 @@ export function getWorldDetailFallbackIds({
         detailSources: [remoteEntityDetailsData],
         isReady: kind === 'world' && remoteEntityDetailsStatus === 'ready'
     });
-}
-
-export const filterWorldDetailFallbacksById =
-    filterRemoteEntityCacheFallbacksById;
-
-export function loadWorldDetailFallbacksById(
-    worldIds: string[]
-): Promise<DetailMap> {
-    return loadRemoteEntityCacheFallbacksById(worldIds, fetchWorldById);
 }
 
 export function useWorldDetailFallbacks({

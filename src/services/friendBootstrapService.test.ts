@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const serviceMocks = vi.hoisted(() => ({
-    recordFriendPatch: vi.fn(),
     getFriendLogCurrent: vi.fn(),
     socialFriendRosterBaselineGet: vi.fn(),
     vrchatUserGet: vi.fn(),
@@ -22,10 +21,6 @@ vi.mock('@/repositories/friendLogRepository', () => ({
     default: {
         getFriendLogCurrent: serviceMocks.getFriendLogCurrent
     }
-}));
-
-vi.mock('./domainIngestionService', () => ({
-    recordFriendPatch: serviceMocks.recordFriendPatch
 }));
 
 vi.mock('./friendLogMutationService', () => ({

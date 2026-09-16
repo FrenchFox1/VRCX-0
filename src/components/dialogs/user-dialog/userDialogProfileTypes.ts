@@ -19,8 +19,7 @@ export type UserDialogProfileRecord = CurrentUserPresenceRecord & {
     avatarName?: string;
     currentAvatarImageUrl?: string;
     currentAvatarThumbnailImageUrl?: string;
-    profilePicOverride?: string;
-    profilePicOverrideThumbnail?: string;
+    iconUrl?: string;
 };
 
 export type UserDialogProfileSnapshot = UserDialogProfileRecord | null;

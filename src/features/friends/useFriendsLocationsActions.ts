@@ -256,7 +256,7 @@ export function useFriendsLocationsActions({
             }
             await sendBoopToUser({
                 userId: friendId,
-                emojiId: result.value
+                emoji: result.value ?? null
             });
             toast.add({
                 type: 'success',

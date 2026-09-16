@@ -191,6 +191,46 @@ mod tests {
     }
 
     #[test]
+    fn friend_update_embedded_user_owns_icon_url() {
+        let mut baseline = friend_record("online", "wrld_old:1~region(jp)");
+        baseline.icon_url = "https://api.vrchat.cloud/api/1/image/file_old/1/256".into();
+        let runtime = runtime_with_friend(baseline);
+
+        let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
+            "type": "friend-update",
+            "content": {
+                "userId": "usr_friend",
+                "user": {
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "iconUrl": "https://api.vrchat.cloud/api/1/image/file_new/2/256",
+                    "iconFrame": "invt_frame"
+                }
+            }
+        }))) else {
+            panic!("friend-update should produce an output");
+        };
+
+        let patch = &output.projection.patches[0];
+        assert_eq!(
+            patch.patch.icon_url,
+            "https://api.vrchat.cloud/api/1/image/file_new/2/256"
+        );
+        assert!(!patch.patch.extra.contains_key("iconUrl"));
+
+        let friend = snapshot_friend(&runtime);
+        assert_eq!(
+            friend.icon_url,
+            "https://api.vrchat.cloud/api/1/image/file_new/2/256"
+        );
+        assert!(!friend.extra.contains_key("iconUrl"));
+        assert_eq!(
+            friend.extra.get("iconFrame"),
+            Some(&Value::String("invt_frame".into()))
+        );
+    }
+
+    #[test]
     fn friend_location_top_level_traveling_overrides_stale_embedded_location() {
         let runtime = runtime_with_friend(friend_record("online", "wrld_old:1~region(jp)"));
 

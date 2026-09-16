@@ -150,7 +150,7 @@ export function SidePanelSelfAccountMenu() {
                                 entry,
                                 currentUserId
                             );
-                            const avatarUrl = userImage(entry.user, true, '64');
+                            const avatarUrl = userImage(entry.user, 64);
                             return (
                                 <DropdownMenuItem
                                     key={userId || index}

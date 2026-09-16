@@ -42,7 +42,7 @@ export function MutualFriendsNodeCard({
     user: FriendRecord | null;
 }) {
     const { t } = useTranslation();
-    const imageUrl = user ? userImage(user, true, '128') : '';
+    const imageUrl = user ? userImage(user, 128) : '';
 
     return (
         <MutualFriendsSurface className="animate-in fade-in-0 slide-in-from-bottom-2 pointer-events-auto absolute right-3 bottom-3 z-10 w-72 p-3 duration-200 ease-out">
