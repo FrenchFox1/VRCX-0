@@ -2,18 +2,19 @@ use serde_json::{json, Value};
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::realtime::FriendLogDelete;
 use vrcx_0_core::derived_keys;
+use vrcx_0_core::files::extract_file_id;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use vrcx_0_core::trust::{trust_level_changed, trust_level_differs};
 
 use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::{
-    FriendStateBucketAuthority, PendingOfflineTimerAction, RealtimeFriendOutput,
+    FriendIconChange, FriendStateBucketAuthority, PendingOfflineTimerAction, RealtimeFriendOutput,
 };
 
 use super::persistence::{
-    add_profile_diff_feed_entries, friend_log_upsert, friend_relationship_feed_entry,
+    add_profile_diff_feed_entries, display_name, friend_log_upsert, friend_relationship_feed_entry,
     gps_feed_entry, is_online_state, is_private_location, meaningful_name, meaningful_record_name,
-    online_feed_entry, player_joining_feed_entry, trust_level_feed_entry, FriendChangedProps,
+    online_feed_entry, patch_field_changed, player_joining_feed_entry, trust_level_feed_entry,
     FriendRelationshipFeedKind, OfflineFeedPrevious,
 };
 use super::state::{PendingOffline, RealtimeFriendState, PENDING_OFFLINE_DELAY};
@@ -33,7 +34,7 @@ use patch_builders::{
     state_bucket_changed,
 };
 use record_transition::apply_friend_patch;
-pub(super) use record_transition::{record_string, record_value, FriendRecordPatch};
+pub(super) use record_transition::{record_string, FriendRecordPatch};
 
 const GPS_REPEAT_WINDOW_MS: i64 = 5 * 60 * 1000;
 
@@ -256,8 +257,9 @@ fn apply_update(
     }
     let previous = get_friend_record(state, &user_id);
     normalize_patch_trust(&mut patch, previous.as_ref());
-    let changes = FriendChangedProps::from_patch(&patch, previous.as_ref());
-    let location_changed = changes.has("location");
+    let location_changed = previous
+        .as_ref()
+        .is_some_and(|previous| patch_field_changed(&patch, previous, "location"));
     if location_changed {
         normalize_friend_update_location_patch(&mut patch, previous.as_ref(), now);
     }
@@ -297,18 +299,38 @@ fn apply_update(
                 );
             }
         }
-        add_profile_diff_feed_entries(
-            output,
-            &user_id,
-            &patch,
-            previous.as_ref(),
-            &changes,
-            &now.iso,
-        );
+        add_profile_diff_feed_entries(output, &user_id, &patch, previous.as_ref(), &now.iso);
+        if let Some(change) = previous
+            .as_ref()
+            .and_then(|previous| friend_icon_change(&user_id, &patch, previous, &now.iso))
+        {
+            output.icon_changes.push(change);
+        }
     }
     request_profile_refetch_for_impossible_location(output, &user_id, &patch, &state_bucket);
     apply_patch_to_state(state, output, &user_id, patch, &state_bucket, &now.iso);
     Some(())
+}
+
+fn friend_icon_change(
+    user_id: &str,
+    patch: &Value,
+    previous: &FriendRecord,
+    created_at: &str,
+) -> Option<FriendIconChange> {
+    let next_icon_url = patch.trimmed_field("iconUrl")?;
+    if next_icon_url == previous.icon_url
+        || extract_file_id(next_icon_url)? == extract_file_id(&previous.icon_url)?
+    {
+        return None;
+    }
+    Some(FriendIconChange {
+        user_id: user_id.to_string(),
+        display_name: display_name(user_id, patch, Some(previous)),
+        previous_icon_url: previous.icon_url.clone(),
+        next_icon_url: next_icon_url.to_string(),
+        created_at: created_at.to_string(),
+    })
 }
 
 fn apply_online(

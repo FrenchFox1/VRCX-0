@@ -30,8 +30,14 @@ mod current_user;
 mod enrichment;
 mod fanout;
 mod feed;
+mod friend_avatar_change;
+#[cfg(test)]
+mod friend_avatar_change_tests;
 #[cfg(test)]
 mod friend_baseline_tests;
+mod friend_feed_entry;
+#[cfg(test)]
+mod friend_feed_entry_tests;
 #[cfg(test)]
 mod friend_joining_tests;
 mod friend_mutation;

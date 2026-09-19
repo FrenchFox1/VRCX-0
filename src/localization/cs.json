@@ -463,6 +463,9 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Nepodařilo se otevřít instanci ve VRChat, použije se pozvání sebe sama",
             "failed_to_save_memo": "Nepodařilo se uložit lokální poznámku"
         },
+        "picker": {
+            "more_not_shown": "Dalších {count} není zobrazeno. Zužte hledání, abyste je našli."
+        },
         "affinity": {
             "friend": "Přítel",
             "favorite": "Oblíbený"
@@ -913,6 +916,7 @@
             "favorites_section": "Oblíbené",
             "group_by_instance": "Seskupit podle instance",
             "split_favorite_friends": "Zobrazit oblíbené skupiny",
+            "show_grouped_friends": "Zobrazit seskupené přátele",
             "same_instance_above_favorites": "Upřednostnit stejnou instanci",
             "sort_secondary": "Poté podle",
             "sort_tertiary": "Poté podle",
@@ -1144,6 +1148,16 @@
         },
         "friends_locations": {
             "online": "Online",
+            "world_friends_one": "{count} přítel",
+            "world_friends_few": "{count} přátelé",
+            "world_friends_many": "{count} přátel",
+            "world_friends_other": "{count} přátel",
+            "view_people": "Zobrazení přátel",
+            "view_worlds": "Zobrazení světů",
+            "world_instances_one": "{count} instance",
+            "world_instances_few": "{count} instance",
+            "world_instances_many": "{count} instance",
+            "world_instances_other": "{count} instancí",
             "other_online": "Ostatní přátelé online",
             "favorite": "Oblíbení",
             "same_instance": "Stejná instance",
@@ -1734,7 +1748,6 @@
                 "username": "Uživatelské jméno",
                 "rank": "Hodnost",
                 "status": "Stav",
-                "bio": "Bio",
                 "note": "Poznámka",
                 "memo": "Lokální poznámka"
             },
@@ -2273,9 +2286,9 @@
             },
             "feedback": {
                 "title": "Odeslat zpětnou vazbu",
-                "description": "Zpětná vazba se ve výchozím nastavení odesílá anonymně. Každou zprávu čteme.",
+                "description": "Ve výchozím nastavení anonymní. Hlášení chyb i návrhy jsou vítány.",
                 "privacy_note": "Nepřipojují se žádné údaje o účtu.",
-                "placeholder": "Řekněte nám, co funguje, co ne, nebo co byste chtěli vidět…",
+                "placeholder": "Popište, co se stalo, co jste očekávali a jak to reprodukovat…",
                 "submit": "Odeslat",
                 "submitting": "Odesílání…",
                 "thanks": "Děkujeme za zpětnou vazbu!",
@@ -2301,14 +2314,19 @@
                 "favorites": {
                     "header": "Oblíbené"
                 },
+                "friend_bios": {
+                    "header": "Bio přátel",
+                    "keep_up_to_date": "Udržovat bio přátel aktuální",
+                    "description": "Pravidelně načítá veřejná bio přátel a změny zobrazuje ve Feedu. Aktualizace se mohou zpozdit a některé změny mohou být vynechány."
+                },
                 "hidden_feed": {
-                    "header": "Skrytí uživatelé ve Feedu",
-                    "description": "Skryje vybrané uživatele ve Feedu bez odstranění uložených dat.",
-                    "add": "Přidat uživatele",
-                    "search_placeholder": "Hledat uživatele",
-                    "empty": "Ve Feedu nejsou skryti žádní uživatelé.",
-                    "remove": "Odebrat skrytého uživatele",
-                    "unknown_user": "Neznámý uživatel"
+                    "header": "Skrytí přátelé ve Feedu",
+                    "description": "Skryje vybrané přátele ve Feedu bez odstranění uložených dat.",
+                    "add": "Přidat přítele",
+                    "search_placeholder": "Hledat přátele",
+                    "empty": "Zatím jste nikoho neskryli.",
+                    "remove": "Odebrat skrytého přítele",
+                    "unknown_friend": "Neznámý přítel"
                 }
             },
             "vr": {
@@ -2812,8 +2830,6 @@
                         "gamelog_description": "Při vypnutí se nová historie neukládá. Živé funkce jako Seznam hráčů a Nyní hraje zůstanou dostupné.",
                         "feed_history": "Ukládat historii Zdroje",
                         "feed_history_description": "Při vypnutí začne Zdroj každou relaci prázdný. Funkce v reálném čase jako postranní panel přátel zůstanou dostupné.",
-                        "avatar_feed_history": "Ukládat historii změn avatarů",
-                        "avatar_feed_history_description": "Při vypnutí se nové změny avatarů nezapisují do databáze. Zobrazení Zdroje a doručování oznámení zůstávají funkční.",
                         "tools": "Diagnostika",
                         "database_usage": "Využití databáze",
                         "refresh_database_usage": "Obnovit využití databáze",
@@ -6133,6 +6149,8 @@
                 "failed_to_save_status_bar_clocks": "Nepodařilo se uložit hodiny na stavovém řádku",
                 "failed_to_open_vrchat_status": "Nepodařilo se otevřít stav VRChat",
                 "failed_to_open_media_link": "Nepodařilo se otevřít odkaz na médium",
+                "media_link_copied": "Odkaz na médium zkopírován",
+                "failed_to_copy_media_link": "Nepodařilo se zkopírovat odkaz na médium",
                 "failed_to_update_proxy_settings": "Nepodařilo se aktualizovat nastavení proxy",
                 "failed_to_start_background_mode": "Nepodařilo se přepnout do režimu na pozadí"
             }

@@ -1,3 +1,4 @@
+import { commands } from '@/platform/tauri/bindings';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { isRecord } from '@/shared/utils/record';
@@ -171,10 +172,9 @@ export async function getCurrentAvatarDetails({
         normalizedAvatarName(myAvatar?.imageUrl) ||
         normalizedAvatarName(myAvatar?.thumbnailImageUrl);
     if (imageUrl) {
-        const imageAvatarInfo =
-            await avatarProfileRepository.getAvatarNameFromImageUrl(imageUrl);
         const imageAvatarName = normalizedAvatarName(
-            imageAvatarInfo?.avatarName
+            (await commands.appFileMetadataGet(imageUrl).catch(() => null))
+                ?.avatarName
         );
         if (!isUnknownAvatarName(imageAvatarName)) {
             return {

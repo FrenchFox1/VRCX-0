@@ -15,8 +15,8 @@ use vrcx_0_application::social::{
 use vrcx_0_application_activity::OverlayActivityRuntime;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
-    AvatarCache, FavoriteEntityKind, Result, RuntimeAuthScope, TaskSupervisor, WebClient,
-    WorldCache,
+    AvatarCache, FavoriteEntityKind, FileCache, Result, RuntimeAuthScope, TaskSupervisor,
+    WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
     GameLogSessionDto, GameLogSessionsQueryInput, InstanceHistoryEntryOutput,
@@ -24,9 +24,10 @@ use vrcx_0_application_game::{
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_contracts::{
-    SavedGroupCollectionCreateInput, SavedGroupCollectionDeleteInput, SavedGroupFavoriteAddInput,
-    SavedGroupFavoriteRemoveInput, SavedGroupFavoritesSnapshot,
+    FileMetadataOutput, SavedGroupCollectionCreateInput, SavedGroupCollectionDeleteInput,
+    SavedGroupFavoriteAddInput, SavedGroupFavoriteRemoveInput, SavedGroupFavoritesSnapshot,
 };
+use vrcx_0_core::files::extract_file_id;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_persistence::DatabaseService;
@@ -103,6 +104,7 @@ pub struct LocalDataRuntime {
     tasks: TaskSupervisor,
     avatar_cache: Arc<AvatarCache>,
     world_cache: Arc<WorldCache>,
+    file_cache: FileCache,
     realtime: Arc<RealtimeHostRuntime>,
     saved_group_favorites: vrcx_0_application::social::SavedGroupFavoritesRuntime,
     favorite_mutations: FavoriteMutationCoordinator,
@@ -122,6 +124,7 @@ impl LocalDataRuntime {
         tasks: TaskSupervisor,
         avatar_cache: Arc<AvatarCache>,
         world_cache: Arc<WorldCache>,
+        file_cache: FileCache,
         realtime: Arc<RealtimeHostRuntime>,
         overlay_activity: OverlayActivityRuntime,
         favorite_mutations: FavoriteMutationCoordinator,
@@ -150,6 +153,7 @@ impl LocalDataRuntime {
             tasks,
             avatar_cache,
             world_cache,
+            file_cache,
             realtime,
             saved_group_favorites,
             favorite_mutations,
@@ -220,12 +224,16 @@ impl LocalDataRuntime {
             .await
     }
 
-    pub fn set_feed_persistence_disabled(&self, disabled: bool) -> Result<()> {
-        self.realtime.set_feed_persistence_disabled(disabled)
+    pub async fn file_metadata_get(&self, file_url_or_id: String) -> Option<FileMetadataOutput> {
+        let file_id = extract_file_id(&file_url_or_id)?;
+        let auth_scope = self.auth_scope.snapshot();
+        self.file_cache
+            .resolve(self.web.as_ref(), &auth_scope.endpoint, &file_id)
+            .await
     }
 
-    pub fn set_avatar_feed_persistence_disabled(&self, disabled: bool) -> Result<()> {
-        self.realtime.set_avatar_feed_persistence_disabled(disabled)
+    pub fn set_feed_persistence_disabled(&self, disabled: bool) -> Result<()> {
+        self.realtime.set_feed_persistence_disabled(disabled)
     }
 
     pub fn query_feed_latest(&self, query: FeedLatestQueryInput) -> Result<FeedReadModelOutput> {

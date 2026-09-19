@@ -327,6 +327,9 @@ impl VrcxMcpServer {
         }
         let time_window_params = input.time_window.unwrap_or_default();
         let time_window: social_aggregates::TimeWindow = time_window_params.clone().into();
+        let recent_changes =
+            self.friend_profile_changes(&owner_user_id, &user_id, time_window.clone())?;
+        let latest_bio = latest_bio_from_changes(&recent_changes);
         let current = self
             .runtime
             .realtime_runtime
@@ -343,13 +346,12 @@ impl VrcxMcpServer {
                     world_id: parsed.world_id,
                     status: friend.status,
                     status_description: friend.status_description,
-                    bio: friend.bio,
+                    bio: latest_bio.clone().unwrap_or_default(),
                     platform: if friend.platform.is_empty() {
                         friend.last_platform
                     } else {
                         friend.platform
                     },
-                    current_avatar_name: friend.current_avatar_name,
                 }
             });
         let note = self
@@ -397,19 +399,8 @@ impl VrcxMcpServer {
             .rows
             .into_iter()
             .next();
-        let recent_changes = self.friend_profile_changes(&owner_user_id, &user_id, time_window)?;
-        let latest_bio = latest_bio_from_changes(&recent_changes);
-        let current = match current {
-            Some(mut current) => {
-                if current.bio.trim().is_empty() {
-                    if let Some(bio) = latest_bio {
-                        current.bio = bio;
-                    }
-                }
-                Some(current)
-            }
-            None => fallback_friend_profile_current(&user_id, &relationship, latest_bio),
-        };
+        let current = current
+            .or_else(|| fallback_friend_profile_current(&user_id, &relationship, latest_bio));
         Ok(FriendProfileOutput {
             user_id: user_id.clone(),
             current,
@@ -707,7 +698,6 @@ struct FriendProfileCurrent {
     status_description: CompactString,
     bio: String,
     platform: CompactString,
-    current_avatar_name: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -818,7 +808,6 @@ fn fallback_friend_profile_current(
         status_description: CompactString::new(""),
         bio,
         platform: CompactString::new(""),
-        current_avatar_name: String::new(),
     })
 }
 

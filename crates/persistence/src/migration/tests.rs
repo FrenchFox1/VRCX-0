@@ -238,7 +238,7 @@ fn per_user_custom_receives_table_and_prefix() {
 #[test]
 fn runs_inside_an_upgrade_work_copy() {
     let (_dir, db) = test_db("work-copy");
-    crate::write_database_schema_versions(&db, crate::VRCX0_SCHEMA_VERSION).unwrap();
+    crate::write_vrcx0_schema_version(&db, crate::VRCX0_SCHEMA_VERSION).unwrap();
     db.begin_upgrade_with_progress(
         crate::VRCX0_SCHEMA_VERSION,
         crate::VRCX0_SCHEMA_VERSION,

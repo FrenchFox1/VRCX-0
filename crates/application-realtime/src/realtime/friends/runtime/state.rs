@@ -777,6 +777,26 @@ impl RealtimeFriendsRuntime {
         Some(output)
     }
 
+    pub fn feed_entry_output(
+        &self,
+        generation: u64,
+        feed_entry: FeedLiveEntry,
+    ) -> Option<RealtimeFriendOutput> {
+        let state = self.lock_state();
+        let baseline = state
+            .baseline
+            .as_ref()
+            .filter(|baseline| baseline.generation == generation)?;
+        let mut output = RealtimeFriendOutput::new(
+            OwnerId::new(baseline.current_user_id.clone()),
+            baseline.generation,
+            baseline.baseline_revision,
+        );
+        output.persistence.feed_entries.push(feed_entry.clone());
+        output.projection.feed_entries.push(feed_entry);
+        Some(output)
+    }
+
     fn lock_state(&self) -> MutexGuard<'_, RealtimeFriendState> {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }

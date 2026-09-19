@@ -6,10 +6,8 @@ pub(super) use serde_json::json;
 pub(super) use std::sync::Arc;
 #[cfg(test)]
 pub(super) use std::sync::Mutex;
-#[cfg(test)]
-pub(super) use vrcx_0_contracts::feed::{
-    FeedFilter, FeedLatestQueryInput, FeedQueryMode, FeedRowsQueryInput, FeedSearchQueryInput,
-};
+#[cfg(any(test, feature = "test-utils"))]
+pub(super) use vrcx_0_contracts::feed::{FeedQueryMode, FeedRowsQueryInput};
 #[cfg(test)]
 pub(super) use vrcx_0_contracts::feed_live::FeedLiveEntry;
 #[cfg(test)]
@@ -35,8 +33,8 @@ pub(super) use vrcx_0_application_core::{
 #[cfg(test)]
 pub(super) use vrcx_0_application_core::{LocalGameContextSnapshot, OverlayActivityInputSink};
 use vrcx_0_application_core::{
-    MemoryWorldCachePort, NoopPrintCleanupInputSink, NoopWebClientPort, Result, RuntimeAuthScope,
-    RuntimeEventForTest, RuntimeTaskExecutor,
+    MemoryFileCachePort, MemoryWorldCachePort, NoopPrintCleanupInputSink, NoopWebClientPort,
+    Result, RuntimeAuthScope, RuntimeEventForTest, RuntimeTaskExecutor,
 };
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
@@ -76,6 +74,7 @@ pub struct TestRealtimeHostRuntime {
     runtime: Arc<RealtimeHostRuntime>,
     store: Arc<TestRealtimeStore>,
     world_cache_port: MemoryWorldCachePort,
+    file_cache_port: MemoryFileCachePort,
     #[cfg(test)]
     activity_sink: Arc<TestActivitySink>,
     #[cfg(test)]
@@ -99,6 +98,14 @@ impl TestRealtimeHostRuntime {
 
     pub fn web_client(&self) -> &WebClient {
         self.runtime.deps.web.as_ref()
+    }
+
+    pub fn cache_file_for_test(&self, file: vrcx_0_contracts::FileMetadataOutput) {
+        self.file_cache_port.insert(file);
+    }
+
+    pub fn file_resolve_calls_for_test(&self) -> Vec<String> {
+        self.file_cache_port.resolve_calls()
     }
 
     pub fn cache_world_for_test(&self, id: &str, name: &str, updated_at: &str) {
@@ -243,6 +250,50 @@ pub(super) fn friend_log_history_query(
     input: FriendLogHistoryQueryInput,
 ) -> Result<Vec<vrcx_0_contracts::friend_log::FriendLogHistoryOutput>> {
     store.friend_log_history(input)
+}
+
+#[cfg(any(test, feature = "test-utils"))]
+pub fn feed_lookup_input(user_id: String) -> FeedRowsQueryInput {
+    FeedRowsQueryInput {
+        user_id,
+        mode: FeedQueryMode::Lookup,
+        search: String::new(),
+        filters: Vec::new(),
+        vip_list: Vec::new(),
+        scoped_user_ids: Vec::new(),
+        excluded_user_ids: Vec::new(),
+        max_entries: 20,
+        date_from: String::new(),
+        date_to: String::new(),
+        cursor: None,
+    }
+}
+
+#[cfg(any(test, feature = "test-utils"))]
+pub fn seed_friend_baseline(
+    runtime: &TestRealtimeHostRuntime,
+    active_session: &crate::realtime::RealtimeSessionContext,
+) {
+    runtime.runtime().friends.set_baseline(
+        vrcx_0_core::friends::FriendRosterBaseline {
+            current_user_id: active_session.user_id.clone(),
+            endpoint: active_session.endpoint.clone(),
+            websocket: active_session.websocket.clone(),
+            friends_by_id: [(
+                "usr_friend".to_string(),
+                vrcx_0_core::friends::FriendRecord {
+                    id: "usr_friend".into(),
+                    display_name: "Friend".into(),
+                    state: "online".into(),
+                    ..vrcx_0_core::friends::FriendRecord::default()
+                },
+            )]
+            .into_iter()
+            .collect(),
+        },
+        7,
+        0,
+    );
 }
 
 #[cfg(test)]
@@ -608,6 +659,8 @@ fn runtime_with_active_session_game_context(
     let world_cache = Arc::new(vrcx_0_application_core::WorldCache::new(
         world_cache_port.clone(),
     ));
+    let file_cache_port = MemoryFileCachePort::default();
+    let file_cache = vrcx_0_application_core::FileCache::new(file_cache_port.clone());
     #[cfg(test)]
     let test_local_game_context = local_game_context_available
         .then(|| Arc::new(TestLocalGameContextSource::new(session.clone())));
@@ -656,6 +709,7 @@ fn runtime_with_active_session_game_context(
         #[cfg(not(test))]
         notification_projection_observer: None,
         world_cache,
+        file_cache,
         instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(NoopPrintCleanupInputSink),
         current_user_snapshot_sink: None,
@@ -683,6 +737,7 @@ fn runtime_with_active_session_game_context(
             runtime,
             store,
             world_cache_port,
+            file_cache_port,
             #[cfg(test)]
             activity_sink,
             #[cfg(test)]
@@ -747,41 +802,8 @@ pub(super) fn feed_entry_of(entry_type: &str, created_at: &str) -> FeedLiveEntry
             previous_status_description: String::new(),
             owner_user_id: String::new(),
         },
-        "Bio" => FeedLiveEntry::Bio {
-            created_at,
-            user_id,
-            display_name,
-            bio: String::new(),
-            previous_bio: String::new(),
-            owner_user_id: String::new(),
-        },
-        "Avatar" => FeedLiveEntry::Avatar {
-            created_at,
-            user_id,
-            display_name,
-            owner_id: String::new(),
-            previous_owner_id: String::new(),
-            avatar_name: String::new(),
-            previous_avatar_name: String::new(),
-            current_avatar_image_url: String::new(),
-            current_avatar_thumbnail_image_url: String::new(),
-            previous_current_avatar_image_url: String::new(),
-            previous_current_avatar_thumbnail_image_url: String::new(),
-            current_avatar_tags: None,
-            previous_current_avatar_tags: None,
-            owner_user_id: String::new(),
-        },
         other => panic!("unsupported test feed entry type: {other}"),
     }
-}
-
-#[cfg(test)]
-pub(super) fn transient_avatar_entry(created_at: &str) -> FeedLiveEntry {
-    let mut entry = feed_entry_of("Avatar", created_at);
-    if let FeedLiveEntry::Avatar { avatar_name, .. } = &mut entry {
-        *avatar_name = "Transient Avatar".to_string();
-    }
-    entry
 }
 
 #[cfg(test)]

@@ -4,6 +4,7 @@ use serde_json::{json, Map, Value};
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_contracts::vrchat_api::vrchat_response;
+use vrcx_0_core::files::extract_file_id;
 
 use super::{
     LegacyEntityImageKind, LegacyEntityImageUploadInput, LegacyMediaUploadDeps,
@@ -60,7 +61,7 @@ pub async fn upload_legacy_entity_image(
             target.entity_label
         ),
     )?;
-    let source_file_id = extract_file_id(&input.image_url);
+    let source_file_id = extract_file_id(&input.image_url).unwrap_or_default();
     if source_file_id.is_empty() {
         return Err(Error::Custom(format!(
             "{} image upload requires an existing source image file id.",
@@ -127,18 +128,6 @@ fn json_field_string(value: &Value, field: &str) -> String {
         .unwrap_or_default()
 }
 
-fn extract_file_id(value: &str) -> String {
-    let Some(start) = value.find("file_") else {
-        return String::new();
-    };
-    value[start..]
-        .chars()
-        .take_while(|character| {
-            character.is_ascii_alphanumeric() || *character == '_' || *character == '-'
-        })
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use std::sync::Mutex;
@@ -188,15 +177,6 @@ mod tests {
             base64_file: base64_file.into(),
             file_size_in_bytes: Some(123),
         }
-    }
-
-    #[test]
-    fn extracts_the_existing_file_id_from_vrchat_image_urls() {
-        assert_eq!(
-            extract_file_id("https://api.example/file/file_123/4/file"),
-            "file_123"
-        );
-        assert_eq!(extract_file_id("missing"), "");
     }
 
     #[tokio::test]

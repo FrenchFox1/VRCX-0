@@ -9,6 +9,11 @@ import {
     sanitizeFriendsLocationsDensity,
     type FriendsLocationsDensity
 } from './friendsLocationsDensity';
+import {
+    DEFAULT_FRIENDS_LOCATIONS_VIEW_MODE,
+    sanitizeFriendsLocationsViewMode,
+    type FriendsLocationsViewMode
+} from './friendsLocationsWorlds';
 
 type FriendsLocationsSidebarFavoritePrefs = {
     isDivideByGroup: boolean;
@@ -21,6 +26,9 @@ export function useFriendsLocationsPreferences() {
     const [showSameInstanceInOnline, setShowSameInstanceInOnline] =
         useState(false);
     const [density, setDensity] = useState(DEFAULT_FRIENDS_LOCATIONS_DENSITY);
+    const [viewMode, setViewMode] = useState<FriendsLocationsViewMode>(
+        DEFAULT_FRIENDS_LOCATIONS_VIEW_MODE
+    );
     const [sidebarFavoritePrefs, setSidebarFavoritePrefs] =
         useState<FriendsLocationsSidebarFavoritePrefs>({
             isDivideByGroup: false,
@@ -42,6 +50,10 @@ export function useFriendsLocationsPreferences() {
                 DEFAULT_FRIENDS_LOCATIONS_DENSITY
             ),
             configRepository.getBool('FriendLocationShowSameInstance', false),
+            configRepository.getString(
+                'FriendLocationViewMode',
+                DEFAULT_FRIENDS_LOCATIONS_VIEW_MODE
+            ),
             configRepository.getBool('isSidebarDivideByFriendGroup', false),
             configRepository.getString('sidebarFavoriteGroups', '[]'),
             configRepository.getString('sidebarFavoriteGroupOrder', '[]'),
@@ -56,6 +68,7 @@ export function useFriendsLocationsPreferences() {
                 ([
                     nextDensity,
                     nextShowSameInstance,
+                    nextViewMode,
                     nextDivideByGroup,
                     nextSelectedGroups,
                     nextGroupOrder,
@@ -69,6 +82,7 @@ export function useFriendsLocationsPreferences() {
 
                     setDensity(sanitizeFriendsLocationsDensity(nextDensity));
                     setShowSameInstanceInOnline(nextShowSameInstance);
+                    setViewMode(sanitizeFriendsLocationsViewMode(nextViewMode));
                     setSidebarFavoritePrefs({
                         isDivideByGroup: nextDivideByGroup,
                         selectedGroups: parseConfigArray(nextSelectedGroups),
@@ -171,13 +185,20 @@ export function useFriendsLocationsPreferences() {
         configRepository.setString('FriendLocationDensity', value);
     }
 
+    function changeViewMode(value: FriendsLocationsViewMode) {
+        setViewMode(value);
+        configRepository.setString('FriendLocationViewMode', value);
+    }
+
     return {
         changeDensityPreference,
         changeShowSameInstanceInOnline,
+        changeViewMode,
         density,
         preferencesReady,
         showSameInstanceInOnline,
         sidebarFavoritePrefs,
-        sidebarSortMethods
+        sidebarSortMethods,
+        viewMode
     };
 }

@@ -41,4 +41,4 @@ vrcx-0-local-server = { path = "../local-server" }
 [dev-dependencies]
 vrcx-0-outbound-adapters = { path = "../outbound-adapters" }
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }
-vrcx-0-persistence = { path = "../persistence" }
+vrcx-0-persistence = { path = "../persistence", features = ["test-utils"] }

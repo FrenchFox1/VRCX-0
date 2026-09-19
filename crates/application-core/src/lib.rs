@@ -11,6 +11,7 @@ mod error;
 mod event_bus;
 pub mod events;
 mod favorite_kind;
+mod file_cache;
 mod image_cache;
 mod instance_dwell;
 mod interruptible_sleep;
@@ -49,8 +50,9 @@ pub use background::{
 pub use config::{config_string_array_value, normalize_config_string_array};
 #[cfg(any(test, feature = "test-utils"))]
 pub use contract_test_support::{
-    assert_json_contract, CallRecorder, MemoryCookieWebClientPort, MemoryWorldCachePort,
-    NoopImageCachePort, NoopWebClientPort, NoopWorldCachePort, ScriptedResults,
+    assert_json_contract, CallRecorder, MemoryCookieWebClientPort, MemoryFileCachePort,
+    MemoryWorldCachePort, NoopImageCachePort, NoopWebClientPort, NoopWorldCachePort,
+    ScriptedResults,
 };
 pub use diagnostics::RuntimeDiagnostics;
 pub use error::Error;
@@ -69,6 +71,7 @@ pub use events::{
     RealtimeUserProjection,
 };
 pub use favorite_kind::{FavoriteChangeScope, FavoriteEntityKind, VrchatFavoriteType};
+pub use file_cache::{FileCache, FileCachePort};
 pub use image_cache::{save_ugc_image_to_file, ImageCache, ImageCachePort};
 pub use instance_dwell::{FriendLocationTime, FriendLocationTimeSource, InstanceDwellRegistry};
 pub use interruptible_sleep::sleep_interruptibly;

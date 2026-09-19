@@ -5,6 +5,9 @@ edition = "2021"
 license.workspace = true
 description = "SQLite persistence layer"
 
+[features]
+test-utils = []
+
 [dependencies]
 vrcx-0-contracts = { path = "../contracts" }
 base64 = { workspace = true }

@@ -17,7 +17,6 @@ export function useSettingsAdvancedTabState() {
             avatarAutoCleanup: state.avatarAutoCleanup,
             gameLogDisabled: state.gameLogDisabled,
             feedPersistenceDisabled: state.feedPersistenceDisabled,
-            avatarFeedPersistenceDisabled: state.avatarFeedPersistenceDisabled,
             anonymousUsageTelemetry: state.anonymousUsageTelemetry,
             udonExceptionLogging: state.udonExceptionLogging,
             logResourceLoad: state.logResourceLoad
@@ -36,7 +35,6 @@ export function useSettingsAdvancedTabState() {
         saveBoolPreference,
         handleGameLogDisabledChange,
         handleFeedPersistenceDisabledChange,
-        handleAvatarFeedPersistenceDisabledChange,
         saveStringPreference,
         setPurgeDialogOpen,
         refreshSqliteTableSizes,
@@ -105,9 +103,6 @@ export function useSettingsAdvancedTabState() {
         },
         onFeedPersistenceDisabledChange: (checked: boolean) => {
             handleFeedPersistenceDisabledChange(checked);
-        },
-        onAvatarFeedPersistenceDisabledChange: (checked: boolean) => {
-            handleAvatarFeedPersistenceDisabledChange(checked);
         },
         onAvatarAutoCleanupChange: (value: AvatarAutoCleanupPreference) => {
             saveStringPreference(

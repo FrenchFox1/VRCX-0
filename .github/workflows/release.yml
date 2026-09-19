@@ -152,24 +152,21 @@ jobs:
                   fi
 
                   if [[ "$RUNNER_OS" == "Linux" ]]; then
-                      VRCX_0_WEBKIT_BUILD_TARGET=safari17 \
+                      VRCX_0_WEBKIT_BUILD_TARGET=safari17.4 \
                           npm run tauri:build -- \
                           --config src-tauri/tauri.linux.conf.json \
-                          --bundles appimage
-                      VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
-                          npm run tauri:build -- \
-                          --config src-tauri/tauri.linux.conf.json \
-                          --bundles deb
+                          --no-bundle
                       if [[ "${{ needs.prepare.outputs.channel }}" == "beta" ]]; then
-                          VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
-                              npm run tauri:build -- \
+                          npm run tauri -- bundle \
+                              --config src-tauri/tauri.linux.conf.json \
+                              --bundles appimage deb
+                          npm run tauri -- bundle \
                               --config "$override_config" \
                               --bundles rpm
                       else
-                          VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
-                              npm run tauri:build -- \
+                          npm run tauri -- bundle \
                               --config src-tauri/tauri.linux.conf.json \
-                              --bundles rpm
+                              --bundles appimage deb rpm
                       fi
                       exit 0
                   fi

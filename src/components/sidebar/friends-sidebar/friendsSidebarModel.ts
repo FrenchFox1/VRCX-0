@@ -61,6 +61,7 @@ export type SidebarFriendRecord = FriendRecordInput &
     };
 
 export type SidebarPreferences = {
+    isHideFriendsInSameInstance?: boolean;
     isSameInstanceAboveFavorites?: boolean;
     isSidebarDivideByFriendGroup?: boolean;
     sidebarFavoriteGroupOrder?: string[];

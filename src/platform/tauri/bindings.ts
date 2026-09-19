@@ -901,13 +901,6 @@ const generatedCommands = {
             disabled
         });
     },
-    async appAvatarFeedPersistenceSetDisabled(
-        disabled: boolean
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__avatar_feed_persistence_set_disabled', {
-            disabled
-        });
-    },
     async appAvatarFeedHistoryCleanup(
         cutoffDate: string | null
     ): Promise<AvatarFeedCleanupOutcome> {
@@ -1070,6 +1063,11 @@ const generatedCommands = {
     },
     async appWorldGet(input: WorldGetInput): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__world_get', { input });
+    },
+    async appFileMetadataGet(
+        fileUrlOrId: string
+    ): Promise<FileMetadataOutput | null> {
+        return await TAURI_INVOKE('app__file_metadata_get', { fileUrlOrId });
     },
     async appWorldFriendVisits(
         worldId: string
@@ -1394,11 +1392,6 @@ const generatedCommands = {
         input: VrchatAvatarIdInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_avatar_delete', { input });
-    },
-    async appVrchatAvatarFileGet(
-        input: VrchatAvatarFileInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_avatar_file_get', { input });
     },
     async appVrchatAvatarGalleryGet(
         input: VrchatAvatarIdInput
@@ -3548,25 +3541,24 @@ export type ContentFilter =
 export type CrashRelaunchDecisionPayload =
     | { handled: boolean; error: string }
     | { handled: boolean; location: string; delayMs: number | null };
-export type CurrentUserProfileUpdateRequest =
-    | { backgroundType: 'default' }
-    | {
-          backgroundType: 'gradient';
-          backgroundGradientBottom: string;
-          backgroundGradientTop: string;
-      }
-    | { backgroundType: 'texture'; backgroundTextureId: string };
+export type CurrentUserProfileUpdateRequest = {
+    bio?: string | null;
+    bioLinks?: string[] | null;
+    userIcon?: string | null;
+    bannerType?: ProfileBannerType | null;
+    bannerCustomUrl?: string | null;
+    backgroundType?: ProfileBackgroundType | null;
+    backgroundGradientBottom?: string | null;
+    backgroundGradientTop?: string | null;
+    backgroundTextureId?: string | null;
+};
 export type CurrentUserRefreshOutcome = { applied: boolean };
 export type CurrentUserSnapshot = JsonValue;
 export type CurrentUserUpdateRequest = {
     homeLocation?: string | null;
     status?: UserStatus | null;
     statusDescription?: string | null;
-    bio?: string | null;
-    bioLinks?: string[] | null;
     pronouns?: string | null;
-    userIcon?: string | null;
-    profilePicOverride?: string | null;
     allowAvatarCopying?: boolean | null;
     isBoopingEnabled?: boolean | null;
     hasSharedConnectionsOptOut?: boolean | null;
@@ -4094,11 +4086,7 @@ export type FeedLiveEntry =
           avatarName: string;
           previousAvatarName: string;
           currentAvatarImageUrl: string;
-          currentAvatarThumbnailImageUrl: string;
           previousCurrentAvatarImageUrl: string;
-          previousCurrentAvatarThumbnailImageUrl: string;
-          currentAvatarTags?: string[] | null;
-          previousCurrentAvatarTags?: string[] | null;
           ownerUserId: string;
       }
     | {
@@ -4210,6 +4198,12 @@ export type FeedSearchQueryInput = {
     dateTo?: string;
     maxRows: number;
 };
+export type FileMetadataOutput = {
+    id: string;
+    name: string;
+    ownerId: string;
+    avatarName: string | null;
+};
 export type FriendLocationTime = {
     userId: string;
     location: string;
@@ -4310,12 +4304,7 @@ export type FriendRecord = Partial<{
     lastPlatform?: string;
     status?: string;
     statusDescription?: string;
-    bio?: string;
     iconUrl?: string;
-    currentAvatarImageUrl?: string;
-    currentAvatarThumbnailImageUrl?: string;
-    currentAvatarAuthorId?: string;
-    currentAvatarName?: string;
     date_joined?: string | null;
     last_activity?: string | null;
     last_login?: string | null;
@@ -5660,6 +5649,7 @@ export type PrivacyLockSnapshot = {
     locked: boolean;
     hasPassword: boolean;
 };
+export type ProfileBackgroundType = 'default' | 'gradient' | 'texture';
 export type ProfileBackupActionOutcome = {
     accepted: boolean;
     status: ProfileBackupStatus;
@@ -5710,6 +5700,7 @@ export type ProfileBackupStatus = {
     error: ProfileBackupError | null;
     lastOutcome: ProfileBackupOutcome | null;
 };
+export type ProfileBannerType = 'avatarBanner' | 'customImage';
 export type ProfileDecorationEquipSlot =
     | 'iconFrame'
     | 'profileEffect'
@@ -6439,7 +6430,6 @@ export type VrchatAuthFileAnalysisInput = {
     variant?: string;
 };
 export type VrchatAuthSavedCredentialDeleteInput = { userId?: string };
-export type VrchatAvatarFileInput = { fileId?: string };
 export type VrchatAvatarIdInput = { avatarId?: string };
 export type VrchatAvatarListByUserInput = {
     userId?: string;

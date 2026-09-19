@@ -70,7 +70,6 @@ describe('friendListRows', () => {
             statusDescription: 'Working on avatars',
             status: 'active',
             stateBucket: 'online',
-            bio: 'VR dancer',
             note: 'old note',
             memo: 'local memo'
         };
@@ -116,15 +115,6 @@ describe('friendListRows', () => {
         expect(
             matchesFriendListSearch(
                 friend,
-                'dancer',
-                new Set(['bio']),
-                memos,
-                notes
-            )
-        ).toBe(true);
-        expect(
-            matchesFriendListSearch(
-                friend,
                 'event',
                 new Set(['note']),
                 memos,
@@ -153,9 +143,21 @@ describe('friendListRows', () => {
 
     it('returns the friends a user expects after combining favorites-only and search', () => {
         const rows = [
-            { id: 'usr_1', displayName: 'Ava', bio: 'Quest worlds' },
-            { id: 'usr_2', displayName: 'Ben', bio: 'Desktop worlds' },
-            { id: 'usr_3', displayName: 'Cara', bio: 'Quest worlds' }
+            {
+                id: 'usr_1',
+                displayName: 'Ava',
+                statusDescription: 'Quest worlds'
+            },
+            {
+                id: 'usr_2',
+                displayName: 'Ben',
+                statusDescription: 'Desktop worlds'
+            },
+            {
+                id: 'usr_3',
+                displayName: 'Cara',
+                statusDescription: 'Quest worlds'
+            }
         ];
         const favorites = new Set(['usr_1', 'usr_3']);
 
@@ -165,7 +167,7 @@ describe('friendListRows', () => {
                 favoritesOnly: true,
                 favoriteFriendIds: favorites,
                 searchQuery: 'quest',
-                activeSearchFilterIds: new Set(['bio']),
+                activeSearchFilterIds: new Set(['status']),
                 userMemoById: new Map(),
                 userNoteById: new Map()
             }).map((friend) => friend.id)

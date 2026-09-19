@@ -3,22 +3,16 @@ import {
     fetchCachedData,
     queryKeys
 } from '@/lib/entityQueryCache';
-import {
-    commands,
-    type VrchatAvatarFileInput
-} from '@/platform/tauri/bindings';
-import { parseAvatarImageMetadata } from '@/shared/utils/avatar';
-import { extractFileId } from '@/shared/utils/fileUtils';
+import { commands } from '@/platform/tauri/bindings';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
-import { normalizeFileResponse } from './normalization';
 import {
     avatarIdInput,
     isRecord,
     normalizeEntityId,
     unwrapVrchatAvatarResponse
 } from './shared';
-import type { AvatarFileRecord, AvatarGalleryFile } from './types';
+import type { AvatarGalleryFile } from './types';
 
 export async function getAvatarGallery({
     avatarId,
@@ -62,35 +56,4 @@ export async function getAvatarGallery({
         }
         return (Number(a?.order) || 0) - (Number(b?.order) || 0);
     });
-}
-
-export async function getAvatarNameFromImageUrl(imageUrl: string) {
-    const fileId = extractFileId(imageUrl);
-    if (!fileId) {
-        return {
-            ownerId: '',
-            avatarName: '-'
-        };
-    }
-
-    try {
-        const response = await fetchCachedData({
-            queryKey: queryKeys.file(fileId, DEFAULT_VRCHAT_API_ENDPOINT),
-            policy: entityQueryPolicies.fileObject,
-            queryFn: async () => {
-                return unwrapVrchatAvatarResponse<AvatarFileRecord>(
-                    await commands.appVrchatAvatarFileGet({
-                        fileId
-                    } satisfies VrchatAvatarFileInput),
-                    `file/${encodeURIComponent(fileId)}`
-                );
-            }
-        });
-        return parseAvatarImageMetadata(normalizeFileResponse(response.json));
-    } catch {
-        return {
-            ownerId: '',
-            avatarName: '-'
-        };
-    }
 }

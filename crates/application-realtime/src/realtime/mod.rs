@@ -22,8 +22,8 @@ pub use current_user::{
 pub use friends::{is_friend_event_type, RealtimeFriendsRuntime};
 pub use notifications::{normalize_v1_notification, normalize_v2_notification};
 pub use output::{
-    RealtimeCurrentUserOutput, RealtimeFriendOutput, RealtimeInstanceClosedOutput,
-    RealtimeNotificationOutput,
+    FriendIconChange, RealtimeCurrentUserOutput, RealtimeFriendOutput,
+    RealtimeInstanceClosedOutput, RealtimeNotificationOutput,
 };
 pub use print_content_refresh::is_print_created_content_refresh;
 pub use projection::{

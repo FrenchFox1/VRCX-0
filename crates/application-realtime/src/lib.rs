@@ -9,7 +9,8 @@ mod world_enrich;
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_support {
     pub use crate::realtime::service::test_support::{
-        runtime_with_active_session, TestDir, TestRealtimeHostRuntime,
+        feed_lookup_input, runtime_with_active_session, seed_friend_baseline, TestDir,
+        TestRealtimeHostRuntime,
     };
 }
 

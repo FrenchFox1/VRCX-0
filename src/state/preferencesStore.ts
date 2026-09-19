@@ -330,6 +330,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     hideUserMemos: false,
     friendLogNotificationDot: true,
     hideUnfriends: false,
+    profileBioScanEnabled: false,
     randomUserColours: false,
     notificationIconDot: true,
     taskbarIconDot: true,
@@ -375,7 +376,6 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     autoSweepVRChatCache: false,
     gameLogDisabled: false,
     feedPersistenceDisabled: false,
-    avatarFeedPersistenceDisabled: false,
     avatarAutoCleanup: 'Off',
     anonymousUsageTelemetry: true,
     udonExceptionLogging: false,
@@ -501,6 +501,7 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         hideUserMemos: normalizeBool(next.hideUserMemos),
         friendLogNotificationDot: normalizeBool(next.friendLogNotificationDot),
         hideUnfriends: normalizeBool(next.hideUnfriends),
+        profileBioScanEnabled: normalizeBool(next.profileBioScanEnabled),
         randomUserColours: normalizeBool(next.randomUserColours),
         notificationIconDot: normalizeBool(next.notificationIconDot),
         taskbarIconDot: normalizeBool(next.taskbarIconDot),
@@ -599,9 +600,6 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         autoSweepVRChatCache: normalizeBool(next.autoSweepVRChatCache),
         gameLogDisabled: normalizeBool(next.gameLogDisabled),
         feedPersistenceDisabled: normalizeBool(next.feedPersistenceDisabled),
-        avatarFeedPersistenceDisabled: normalizeBool(
-            next.avatarFeedPersistenceDisabled
-        ),
         avatarAutoCleanup: normalizeAvatarAutoCleanupPreference(
             next.avatarAutoCleanup
         ),

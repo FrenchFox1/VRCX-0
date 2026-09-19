@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarInfoLine } from '@/components/feed/FeedAvatarInfoLine';
+import { useAvatarImageInfo } from '@/components/feed/useAvatarImageInfo';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
@@ -516,26 +517,39 @@ function UserDialogProfileLinksPanel({
     visibleHomeLocationTarget
 }: UserDialogProfileLinksSectionProps) {
     const { t } = useTranslation();
-    const avatarInfoTitle = t('dialog.user.info.avatar_info');
-    const currentAvatarImageUrl =
-        profile?.currentAvatarImageUrl ||
-        profile?.currentAvatarThumbnailImageUrl;
+    const iconInfo = useAvatarImageInfo({
+        imageUrl: isCurrentUser ? '' : profile?.iconUrl
+    });
+    const avatarInfo = isCurrentUser
+        ? {
+              avatarName: currentAvatarDisplayName,
+              avatarTags: profile?.currentAvatarTags,
+              imageUrl:
+                  profile?.currentAvatarImageUrl ||
+                  profile?.currentAvatarThumbnailImageUrl
+          }
+        : iconInfo.status === 'ready' && iconInfo.avatarName
+          ? {
+                avatarName: iconInfo.avatarName,
+                ownerId: iconInfo.ownerId,
+                imageUrl: profile?.iconUrl
+            }
+          : null;
 
     return (
         <InfoPanel title={t('dialog.user.info.profile_details')}>
-            <InfoStat label={avatarInfoTitle}>
-                <AvatarInfoLine
-                    avatarName={
-                        isCurrentUser ? currentAvatarDisplayName : undefined
-                    }
-                    avatarTags={profile?.currentAvatarTags}
-                    compact
-                    imageUrl={currentAvatarImageUrl}
-                    userId={profile?.id}
-                />
-            </InfoStat>
-
-            <Separator />
+            {avatarInfo ? (
+                <>
+                    <InfoStat label={t('dialog.user.info.avatar_info')}>
+                        <AvatarInfoLine
+                            {...avatarInfo}
+                            compact
+                            userId={profile?.id}
+                        />
+                    </InfoStat>
+                    <Separator />
+                </>
+            ) : null}
 
             <InfoStat label={t('dialog.user.info.represented_group')}>
                 {representedGroupStatus === 'running' ? (

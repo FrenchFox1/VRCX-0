@@ -17,6 +17,10 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key })
 }));
 
+vi.mock('./useFriendsLocationsWorldSummaries', () => ({
+    useFriendsLocationsWorldSummaries: () => new Map()
+}));
+
 function friendAt(location: string): FriendRecord {
     return {
         id: 'usr_friend',
@@ -49,6 +53,7 @@ function pageInput(
         currentUserSnapshot: null,
         deferredSearchQuery: '',
         density: 'compact',
+        viewMode: 'people',
         favoriteFriendGroups: [],
         friendsById: Object.fromEntries(
             friends.map((friend) => [friend.id.trim(), friend])
@@ -381,6 +386,7 @@ describe('useFriendsLocationsPageDerivedState', () => {
                 currentUserSnapshot: null,
                 deferredSearchQuery: 'Friend',
                 density: 'compact',
+                viewMode: 'people',
                 favoriteFriendGroups: [],
                 friendsById: { [friend.id]: friend },
                 gameState: {
@@ -427,5 +433,118 @@ describe('useFriendsLocationsPageDerivedState', () => {
             return;
         }
         expect(cardRow.friends[0]?.$location_at).toBeUndefined();
+    });
+});
+
+describe('useFriendsLocationsPageDerivedState worlds view', () => {
+    afterEach(() => {
+        cleanup();
+        useFriendLocationTimeStore.getState().reset();
+        vi.restoreAllMocks();
+    });
+
+    function worldFriend(
+        id: string,
+        location: string,
+        state: FriendRecord['state'] = 'online'
+    ): FriendRecord {
+        return {
+            ...friendAt(location),
+            id,
+            displayName: id,
+            state,
+            stateBucket: state
+        };
+    }
+
+    it('groups every online friend by world regardless of the active segment', () => {
+        const input = pageInput([
+            worldFriend('usr_a', 'wrld_hot:1'),
+            worldFriend('usr_b', 'wrld_hot:2'),
+            worldFriend('usr_c', 'wrld_quiet:1'),
+            worldFriend('usr_d', 'private'),
+            worldFriend('usr_e', 'wrld_web:1', 'active'),
+            worldFriend('usr_f', 'offline', 'offline')
+        ]);
+        input.activeSegment = 'offline';
+        input.viewMode = 'worlds';
+        const { result } = renderHook(() =>
+            useFriendsLocationsPageDerivedState(input)
+        );
+
+        expect(
+            result.current.worldGroups.map(
+                (group) => `${group.worldId}:${group.instances.length}`
+            )
+        ).toEqual(['wrld_hot:2', 'wrld_quiet:1']);
+        expect(result.current.hasVisibleSections).toBe(true);
+    });
+
+    it('builds no world groups in the people view', () => {
+        const input = pageInput([worldFriend('usr_a', 'wrld_hot:1')]);
+        const { result } = renderHook(() =>
+            useFriendsLocationsPageDerivedState(input)
+        );
+
+        expect(result.current.worldGroups).toEqual([]);
+    });
+
+    it('keeps the current user inside their own instance', () => {
+        const input = pageInput([worldFriend('usr_a', 'wrld_local:1')]);
+        input.viewMode = 'worlds';
+        input.currentUserSnapshot = {
+            id: 'usr_self',
+            displayName: 'Me',
+            location: 'wrld_local:1'
+        };
+        const { result } = renderHook(() =>
+            useFriendsLocationsPageDerivedState(input)
+        );
+
+        const instance = result.current.worldGroups[0]?.instances[0];
+        expect(instance?.isCurrent).toBe(true);
+        expect(instance?.friends.map((friend) => friend.id)).toEqual([
+            'usr_self',
+            'usr_a'
+        ]);
+    });
+
+    it('pushes ask me and busy friends to the end of an instance and lists private friends separately', () => {
+        const input = pageInput([
+            { ...worldFriend('usr_busy', 'wrld_hot:1'), status: 'busy' },
+            { ...worldFriend('usr_ask', 'wrld_hot:1'), status: 'ask me' },
+            { ...worldFriend('usr_join', 'wrld_hot:1'), status: 'join me' },
+            { ...worldFriend('usr_active', 'wrld_hot:1'), status: 'active' },
+            worldFriend('usr_private', 'private')
+        ]);
+        input.viewMode = 'worlds';
+        const { result } = renderHook(() =>
+            useFriendsLocationsPageDerivedState(input)
+        );
+
+        expect(
+            result.current.worldGroups[0]?.instances[0]?.friends.map(
+                (friend) => friend.id
+            )
+        ).toEqual(['usr_join', 'usr_active', 'usr_ask', 'usr_busy']);
+        expect(
+            result.current.privateWorldFriends.map((friend) => friend.id)
+        ).toEqual(['usr_private']);
+    });
+
+    it('filters world groups by the search query', () => {
+        const input = pageInput([
+            worldFriend('usr_a', 'wrld_hot:1'),
+            worldFriend('usr_c', 'wrld_quiet:1')
+        ]);
+        input.viewMode = 'worlds';
+        input.deferredSearchQuery = 'usr_c';
+        const { result } = renderHook(() =>
+            useFriendsLocationsPageDerivedState(input)
+        );
+
+        expect(
+            result.current.worldGroups.map((group) => group.worldId)
+        ).toEqual(['wrld_quiet']);
     });
 });

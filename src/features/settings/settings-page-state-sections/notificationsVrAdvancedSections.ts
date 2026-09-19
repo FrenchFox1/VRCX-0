@@ -43,7 +43,6 @@ type AdvancedSectionInput = SettingsSectionInput<
     | 'saveBoolPreference'
     | 'handleGameLogDisabledChange'
     | 'handleFeedPersistenceDisabledChange'
-    | 'handleAvatarFeedPersistenceDisabledChange'
     | 'saveStringPreference'
     | 'setPurgeDialogOpen'
     | 'refreshSqliteTableSizes'
@@ -124,7 +123,6 @@ export function buildAdvancedSection({
     saveBoolPreference,
     handleGameLogDisabledChange,
     handleFeedPersistenceDisabledChange,
-    handleAvatarFeedPersistenceDisabledChange,
     saveStringPreference,
     setPurgeDialogOpen,
     refreshSqliteTableSizes,
@@ -147,7 +145,6 @@ export function buildAdvancedSection({
         saveBoolPreference,
         handleGameLogDisabledChange,
         handleFeedPersistenceDisabledChange,
-        handleAvatarFeedPersistenceDisabledChange,
         saveStringPreference,
         setPurgeDialogOpen,
         refreshSqliteTableSizes,

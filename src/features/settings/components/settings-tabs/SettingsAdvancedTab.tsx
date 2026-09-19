@@ -165,7 +165,6 @@ export function SettingsAdvancedTabContent({
         onLogResourceLoadChange,
         onGameLogDisabledChange,
         onFeedPersistenceDisabledChange,
-        onAvatarFeedPersistenceDisabledChange,
         onAvatarAutoCleanupChange,
         onOpenPurgeDialog,
         onMigrateLegacyVrcxData,
@@ -477,23 +476,6 @@ export function SettingsAdvancedTabContent({
                         checked={!prefs.feedPersistenceDisabled}
                         onCheckedChange={(checked) =>
                             onFeedPersistenceDisabledChange(!checked)
-                        }
-                    />
-                </Field>
-                <Field
-                    label={t(
-                        'view.settings.advanced.advanced_ui.troubleshooting.avatar_feed_history'
-                    )}
-                    description={t(
-                        'view.settings.advanced.advanced_ui.troubleshooting.avatar_feed_history_description'
-                    )}
-                    disabled={prefs.feedPersistenceDisabled}
-                >
-                    <Switch
-                        checked={!prefs.avatarFeedPersistenceDisabled}
-                        disabled={prefs.feedPersistenceDisabled}
-                        onCheckedChange={(checked) =>
-                            onAvatarFeedPersistenceDisabledChange(!checked)
                         }
                     />
                 </Field>

@@ -389,14 +389,7 @@ fn value_or_null_with_fallback(value: &Value, key: &str, fallback: &str) -> Valu
         .unwrap_or(Value::Null)
 }
 
-fn extract_file_id(value: &str) -> Option<String> {
-    let start = value.find("file_")?;
-    let file_id = value[start..]
-        .chars()
-        .take_while(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-'))
-        .collect::<String>();
-    (file_id.len() > "file_".len()).then_some(file_id)
-}
+use vrcx_0_core::files::extract_file_id;
 
 #[cfg(test)]
 mod tests;

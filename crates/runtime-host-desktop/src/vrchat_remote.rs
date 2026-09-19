@@ -31,8 +31,8 @@ use vrcx_0_vrchat_client::auth::{
     current_user_get_input, file_analysis_get_input, visits_get_input,
 };
 use vrcx_0_vrchat_client::avatars::{
-    avatar_file_get_input, avatar_gallery_get_input, avatar_list_by_user_get_input,
-    avatar_styles_get_input, AvatarListByUserGetInput,
+    avatar_gallery_get_input, avatar_list_by_user_get_input, avatar_styles_get_input,
+    AvatarListByUserGetInput,
 };
 use vrcx_0_vrchat_client::favorites::{favorite_groups_get_input, favorite_worlds_get_input};
 use vrcx_0_vrchat_client::friends::friend_status_get_input;
@@ -72,17 +72,27 @@ use vrcx_0_vrchat_client::tools::{
 };
 use vrcx_0_vrchat_client::users::{profile_get_input, user_represented_group_get_input};
 
+use crate::profile_bio::ProfileBioObserver;
 use crate::DesktopMediaRuntime;
 
 #[derive(Clone)]
 pub struct DesktopVrchatRemoteFacade {
     api: VrchatApiRuntime,
     media: DesktopMediaRuntime,
+    profile_bio: ProfileBioObserver,
 }
 
 impl DesktopVrchatRemoteFacade {
-    pub(crate) fn new(api: VrchatApiRuntime, media: DesktopMediaRuntime) -> Self {
-        Self { api, media }
+    pub(crate) fn new(
+        api: VrchatApiRuntime,
+        media: DesktopMediaRuntime,
+        profile_bio: ProfileBioObserver,
+    ) -> Self {
+        Self {
+            api,
+            media,
+            profile_bio,
+        }
     }
 
     pub async fn current_user(&self) -> Result<VrchatApiResponse> {
@@ -129,13 +139,16 @@ impl DesktopVrchatRemoteFacade {
     pub async fn user_profile(&self, user_id: String, as_self: bool) -> Result<VrchatApiResponse> {
         let (user_id, request) =
             profile_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), user_id, as_self)?;
-        self.execute(
-            "app__vrchat_user_profile_get",
-            format!("Getting profile for user {user_id}."),
-            request,
-            VrchatScope::Vrchat,
-        )
-        .await
+        let response = self
+            .execute(
+                "app__vrchat_user_profile_get",
+                format!("Getting profile for user {user_id}."),
+                request,
+                VrchatScope::Vrchat,
+            )
+            .await?;
+        self.profile_bio.observe(&response);
+        Ok(response)
     }
 
     pub async fn user_represented_group(&self, user_id: String) -> Result<VrchatApiResponse> {
@@ -249,18 +262,6 @@ impl DesktopVrchatRemoteFacade {
             "app__vrchat_avatar_styles_get",
             "Getting avatar styles.",
             avatar_styles_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
-            VrchatScope::Vrchat,
-        )
-        .await
-    }
-
-    pub async fn avatar_file(&self, file_id: String) -> Result<VrchatApiResponse> {
-        let (file_id, request) =
-            avatar_file_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), file_id)?;
-        self.execute(
-            "app__vrchat_avatar_file_get",
-            format!("Getting file {file_id}."),
-            request,
             VrchatScope::Vrchat,
         )
         .await

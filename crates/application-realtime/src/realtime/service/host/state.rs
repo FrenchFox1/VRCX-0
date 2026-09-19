@@ -5,9 +5,10 @@ use std::sync::{Arc, Mutex};
 use serde_json::Value;
 use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{
-    HostSessionRuntime, InstanceDwellRegistry, LocalGameContextSource, OverlayActivityInputSink,
-    PrintCleanupInputSink, RealtimeNotificationProjectionObserver, RemoteMutationGate,
-    RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
+    FileCache, HostSessionRuntime, InstanceDwellRegistry, LocalGameContextSource,
+    OverlayActivityInputSink, PrintCleanupInputSink, RealtimeNotificationProjectionObserver,
+    RemoteMutationGate, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor,
+    WebClient, WorldCache,
 };
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::FriendRecord;
@@ -223,6 +224,7 @@ pub struct RealtimeHostRuntimeDeps {
     pub activity_sink: Option<Arc<dyn OverlayActivityInputSink>>,
     pub notification_projection_observer: Option<Arc<dyn RealtimeNotificationProjectionObserver>>,
     pub world_cache: Arc<WorldCache>,
+    pub file_cache: FileCache,
     pub instance_dwell: Arc<InstanceDwellRegistry>,
     pub print_cleanup: Arc<dyn PrintCleanupInputSink>,
     pub current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
@@ -247,6 +249,7 @@ impl RealtimeHostRuntimeDeps {
         activity_sink: Option<Arc<dyn OverlayActivityInputSink>>,
         notification_projection_observer: Option<Arc<dyn RealtimeNotificationProjectionObserver>>,
         world_cache: Arc<WorldCache>,
+        file_cache: FileCache,
         instance_dwell: Arc<InstanceDwellRegistry>,
         print_cleanup: Arc<dyn PrintCleanupInputSink>,
         current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
@@ -268,6 +271,7 @@ impl RealtimeHostRuntimeDeps {
             activity_sink,
             notification_projection_observer,
             world_cache,
+            file_cache,
             instance_dwell,
             print_cleanup,
             current_user_snapshot_sink,
@@ -292,7 +296,6 @@ pub struct RealtimeHostRuntime {
     pub(super) feed_owner_lock: Mutex<()>,
     pub(super) feed_live_cache: Mutex<FeedLiveCache>,
     pub(super) feed_persistence_disabled: AtomicBool,
-    pub(super) avatar_feed_persistence_disabled: AtomicBool,
     pub(super) notification_apply_lock: tokio::sync::Mutex<()>,
     pub(super) friend_profile_bulk_load:
         Mutex<super::friend_profile_bulk_load::FriendProfileBulkLoadState>,

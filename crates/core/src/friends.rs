@@ -121,17 +121,7 @@ pub struct FriendRecord {
     #[specta(type = String)]
     pub status_description: CompactString,
     #[serde(default)]
-    pub bio: String,
-    #[serde(default)]
     pub icon_url: String,
-    #[serde(default)]
-    pub current_avatar_image_url: String,
-    #[serde(default)]
-    pub current_avatar_thumbnail_image_url: String,
-    #[serde(default)]
-    pub current_avatar_author_id: String,
-    #[serde(default)]
-    pub current_avatar_name: String,
     #[serde(
         rename = "date_joined",
         skip_serializing_if = "OptionalCompactString::is_missing",
@@ -228,19 +218,6 @@ impl FriendRosterBaseline {
     }
 }
 
-pub const DEFAULT_AVATAR_FILE_ID: &str = "file_0e8c4e32-7444-44ea-ade4-313c010d4bae";
-
-pub fn strip_default_avatar_image(object: &mut Map<String, Value>) {
-    let is_default = object
-        .get("currentAvatarImageUrl")
-        .and_then(Value::as_str)
-        .is_some_and(|url| url.contains(DEFAULT_AVATAR_FILE_ID));
-    if is_default {
-        object.remove("currentAvatarImageUrl");
-        object.remove("currentAvatarThumbnailImageUrl");
-    }
-}
-
 pub fn normalize_user_id(value: &str) -> String {
     value.trim().to_string()
 }
@@ -318,49 +295,8 @@ pub fn meaningful_display_name(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        meaningful_display_name, strip_default_avatar_image, FriendRecord, FriendRosterBaseline,
-        DEFAULT_AVATAR_FILE_ID,
-    };
-    use crate::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+    use super::{meaningful_display_name, FriendRecord, FriendRosterBaseline};
     use serde_json::{json, Value};
-
-    #[test]
-    fn strips_default_avatar_image_and_thumbnail() {
-        let mut object = json!({
-            "currentAvatarImageUrl": format!("{VRCHAT_API_DEFAULT_ENDPOINT}/file/{DEFAULT_AVATAR_FILE_ID}/1/file"),
-            "currentAvatarThumbnailImageUrl": format!("{VRCHAT_API_DEFAULT_ENDPOINT}/file/{DEFAULT_AVATAR_FILE_ID}/1/256"),
-            "displayName": "Friend"
-        })
-        .as_object()
-        .cloned()
-        .unwrap();
-
-        strip_default_avatar_image(&mut object);
-
-        assert!(!object.contains_key("currentAvatarImageUrl"));
-        assert!(!object.contains_key("currentAvatarThumbnailImageUrl"));
-        assert_eq!(
-            object.get("displayName"),
-            Some(&Value::String("Friend".into()))
-        );
-    }
-
-    #[test]
-    fn keeps_real_avatar_image() {
-        let mut object = json!({
-            "currentAvatarImageUrl": "https://api.vrchat.cloud/api/1/file/file_real/1/file",
-            "currentAvatarThumbnailImageUrl": "https://api.vrchat.cloud/api/1/file/file_real/1/256"
-        })
-        .as_object()
-        .cloned()
-        .unwrap();
-
-        strip_default_avatar_image(&mut object);
-
-        assert!(object.contains_key("currentAvatarImageUrl"));
-        assert!(object.contains_key("currentAvatarThumbnailImageUrl"));
-    }
 
     #[test]
     fn friend_record_owns_icon_url_as_a_named_field() {

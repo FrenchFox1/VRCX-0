@@ -54,6 +54,13 @@ export function buildSocialSection({
         onHideUnfriendsChange: (checked: boolean) => {
             saveBoolPreference('hideUnfriends', 'hideUnfriends', checked);
         },
+        onProfileBioScanEnabledChange: (checked: boolean) => {
+            saveBoolPreference(
+                'profileBioScanEnabled',
+                'profileBioScanEnabled',
+                checked
+            );
+        },
         onFriendLogNotificationDotChange: (checked: boolean) => {
             saveBoolPreference(
                 'friendLogNotificationDot',

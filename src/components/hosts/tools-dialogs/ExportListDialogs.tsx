@@ -47,9 +47,7 @@ export function ExportDiscordNamesDialog({
         const discordRegex = /(?:discord|dc|dis)(?: |=|:|\u02f8|;)(.*)/i;
         for (const userId of getFriendIds(orderedFriendIds)) {
             const friend = friendsById[userId];
-            const match =
-                discordRegex.exec(friend?.statusDescription || '') ||
-                discordRegex.exec(friend?.bio || '');
+            const match = discordRegex.exec(friend?.statusDescription || '');
             if (match?.[1]) {
                 lines.push(
                     `${csvEscape(friend?.displayName || userId)},${csvEscape(match[1].trim())}`

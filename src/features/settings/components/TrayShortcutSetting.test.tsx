@@ -94,9 +94,11 @@ async function saveRecordedShortcut() {
 
 async function openRecorder() {
     render(<TrayShortcutSetting />);
-    fireEvent.click(
-        screen.getByRole('button', { name: 'shortcuts.tray.configure' })
-    );
+    const configure = screen.getByRole('button', {
+        name: 'shortcuts.tray.configure'
+    });
+    act(() => configure.focus());
+    fireEvent.click(configure);
     const recorder = await screen.findByRole('textbox', {
         name: 'shortcuts.tray.record'
     });

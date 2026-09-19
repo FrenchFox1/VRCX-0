@@ -7,7 +7,6 @@ export {
     resetTrustColorsPreference,
     setAccessibleStatusIndicatorsPreference,
     setAppLanguagePreference,
-    setAvatarFeedPersistenceDisabledPreference,
     setBoolConfigPreference,
     setCloseToTrayPreference,
     setCropInstancePrintsPreference,

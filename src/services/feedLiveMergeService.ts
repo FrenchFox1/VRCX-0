@@ -56,12 +56,6 @@ function optionalNumber(value: unknown): number | undefined {
     return Number.isFinite(number) ? number : undefined;
 }
 
-function optionalStringList(value: unknown): string[] | undefined {
-    return Array.isArray(value)
-        ? value.filter((entry): entry is string => typeof entry === 'string')
-        : undefined;
-}
-
 function liveEntryRow(entry: FeedLiveEntryPayload): FeedRow {
     const row: FeedRow = {
         created_at: optionalText(entry.created_at),
@@ -107,18 +101,8 @@ function liveEntryRow(entry: FeedLiveEntryPayload): FeedRow {
             row.currentAvatarImageUrl = optionalText(
                 entry.currentAvatarImageUrl
             );
-            row.currentAvatarThumbnailImageUrl = optionalText(
-                entry.currentAvatarThumbnailImageUrl
-            );
             row.previousCurrentAvatarImageUrl = optionalText(
                 entry.previousCurrentAvatarImageUrl
-            );
-            row.previousCurrentAvatarThumbnailImageUrl = optionalText(
-                entry.previousCurrentAvatarThumbnailImageUrl
-            );
-            row.currentAvatarTags = optionalStringList(entry.currentAvatarTags);
-            row.previousCurrentAvatarTags = optionalStringList(
-                entry.previousCurrentAvatarTags
             );
             break;
         case 'OnPlayerJoining':

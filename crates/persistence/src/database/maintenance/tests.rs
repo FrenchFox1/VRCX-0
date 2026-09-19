@@ -639,3 +639,40 @@ fn page_stats_come_from_a_single_snapshot() -> Result<(), Error> {
     assert!(free_pages <= page_count);
     Ok(())
 }
+
+#[test]
+fn import_upstream_print_favorites_merges_rows_into_config_and_drops_table() -> Result<(), Error> {
+    let (_dir, db) = cleanup_test_db("import-upstream-print-favorites")?;
+    crate::config::set_json(
+        &db,
+        PRINT_FAVORITE_IDS_CONFIG_KEY,
+        &serde_json::json!(["prnt_local", "prnt_both"]),
+    )?;
+    db.execute_non_query(
+        "CREATE TABLE favorite_print (id INTEGER PRIMARY KEY, print_id TEXT UNIQUE, created_at TEXT)",
+        &Default::default(),
+    )?;
+    db.execute_non_query(
+        "INSERT INTO favorite_print (print_id, created_at) VALUES
+            ('prnt_newer', '2026-08-02T00:00:00.000Z'),
+            ('prnt_both', '2026-08-01T00:00:00.000Z'),
+            ('prnt_older', '2026-08-01T00:00:00.000Z'),
+            ('', '2026-08-03T00:00:00.000Z')",
+        &Default::default(),
+    )?;
+
+    database_maintenance_run(&db, DatabaseMaintenanceTask::ImportUpstreamPrintFavorites)?;
+
+    assert_eq!(
+        crate::config::get_json(&db, PRINT_FAVORITE_IDS_CONFIG_KEY, Value::Null)?,
+        serde_json::json!(["prnt_local", "prnt_both", "prnt_older", "prnt_newer"])
+    );
+    assert!(select_table_names(&db, "name = 'favorite_print'")?.is_empty());
+
+    database_maintenance_run(&db, DatabaseMaintenanceTask::ImportUpstreamPrintFavorites)?;
+    assert_eq!(
+        crate::config::get_json(&db, PRINT_FAVORITE_IDS_CONFIG_KEY, Value::Null)?,
+        serde_json::json!(["prnt_local", "prnt_both", "prnt_older", "prnt_newer"])
+    );
+    Ok(())
+}

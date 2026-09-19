@@ -25,7 +25,7 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{
-    AvatarCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry,
+    AvatarCache, FileCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry,
     RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
     RuntimeAuthScope, RuntimeBackgroundJobs, RuntimeDiagnostics, RuntimeEventBus, RuntimeLifecycle,
     RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
@@ -37,6 +37,7 @@ const AVATAR_CACHE_WORKING_CAPACITY: u64 = 32;
 const AVATAR_CACHE_WORKING_TTL: Duration = Duration::from_secs(2 * 60);
 const WORLD_CACHE_WORKING_CAPACITY: u64 = 64;
 const WORLD_CACHE_WORKING_TTL: Duration = Duration::from_secs(30 * 60);
+const FILE_CACHE_WORKING_CAPACITY: u64 = 256;
 
 #[derive(Clone)]
 pub(crate) struct RuntimeHostContext {
@@ -68,6 +69,7 @@ pub(crate) struct RuntimeHostContext {
     pub(crate) avatar_cache: Arc<AvatarCache>,
     pub(crate) avatar_moderation: AvatarModerationRuntime,
     pub(crate) world_cache: Arc<WorldCache>,
+    pub(crate) file_cache: FileCache,
     pub(crate) instance_dwell: Arc<InstanceDwellRegistry>,
     pub(crate) config: ConfigRepository,
     notification_config: Arc<dyn NotificationConfig>,
@@ -184,6 +186,10 @@ impl RuntimeHostDesktopAssemblyDeps {
         self.context.world_cache()
     }
 
+    pub fn file_cache(&self) -> &FileCache {
+        self.context.file_cache()
+    }
+
     pub fn instance_dwell(&self) -> &Arc<InstanceDwellRegistry> {
         self.context.instance_dwell()
     }
@@ -292,6 +298,10 @@ impl RuntimeHostContext {
                 WORLD_CACHE_WORKING_TTL,
             ),
         ));
+        let file_cache = FileCache::new(vrcx_0_outbound_adapters::LocalFileCacheAdapter::new(
+            Arc::clone(&db),
+            FILE_CACHE_WORKING_CAPACITY,
+        ));
         let overlay_activity = OverlayActivityRuntime::with_filters(load_overlay_activity_filters(
             notification_config.as_ref(),
         ));
@@ -304,6 +314,7 @@ impl RuntimeHostContext {
             Arc::new(vrcx_0_outbound_adapters::VrchatNotificationRemote::new(
                 Arc::clone(&web),
                 Arc::clone(&world_cache),
+                file_cache.clone(),
             ));
         let notification_webhook_transport = Arc::new(
             vrcx_0_outbound_adapters::LocalNotificationWebhookTransport::new(Arc::clone(&web)),
@@ -389,6 +400,7 @@ impl RuntimeHostContext {
             avatar_cache,
             avatar_moderation: AvatarModerationRuntime::new(),
             world_cache,
+            file_cache,
             instance_dwell: Arc::new(InstanceDwellRegistry::new()),
             config,
             notification_config,
@@ -482,6 +494,10 @@ impl RuntimeHostContext {
 
     pub fn world_cache(&self) -> &Arc<WorldCache> {
         &self.world_cache
+    }
+
+    pub fn file_cache(&self) -> &FileCache {
+        &self.file_cache
     }
 
     pub fn instance_dwell(&self) -> &Arc<InstanceDwellRegistry> {

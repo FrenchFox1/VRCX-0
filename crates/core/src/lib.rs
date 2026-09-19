@@ -43,3 +43,4 @@ pub use notification_kind::NotificationKind;
 pub use owner::OwnerId;
 pub use release_status::ReleaseStatus;
 pub use two_factor_method::TwoFactorMethod;
+pub mod files;

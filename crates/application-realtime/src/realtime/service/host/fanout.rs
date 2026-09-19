@@ -67,16 +67,6 @@ impl RealtimeHostRuntime {
         Ok(())
     }
 
-    pub fn set_avatar_feed_persistence_disabled(&self, disabled: bool) -> Result<()> {
-        let _owner = self.lock_friend_owner();
-        self.deps
-            .store
-            .set_bool("avatarFeedPersistenceDisabled", disabled)?;
-        self.avatar_feed_persistence_disabled
-            .store(disabled, Ordering::Relaxed);
-        Ok(())
-    }
-
     pub(super) fn set_activity_friend_user_ids(&self, user_ids: Vec<String>) {
         if let Some(activity_sink) = &self.deps.activity_sink {
             activity_sink.set_friend_user_ids(user_ids);
@@ -133,6 +123,7 @@ impl RealtimeHostRuntime {
     ) -> FriendOutputApplyOutcome {
         let timer_action = output.timer_action.clone();
         let profile_refetch_user_ids = output.profile_refetch_user_ids.clone();
+        let icon_changes = std::mem::take(&mut output.icon_changes);
         let mut projection = output.projection.clone();
         let projection_generation = projection.generation;
         if !self.is_friend_projection_current(&projection) {
@@ -145,16 +136,8 @@ impl RealtimeHostRuntime {
             output.owner_user_id.as_str(),
         );
         let feed_persistence_disabled = self.feed_persistence_disabled.load(Ordering::Relaxed);
-        let avatar_feed_persistence_disabled = self
-            .avatar_feed_persistence_disabled
-            .load(Ordering::Relaxed);
         if feed_persistence_disabled {
             output.persistence.feed_entries.clear();
-        } else if avatar_feed_persistence_disabled {
-            output
-                .persistence
-                .feed_entries
-                .retain(|entry| !matches!(entry, FeedLiveEntry::Avatar { .. }));
         }
         let mut world_name_fetch_ids =
             self.enrich_projection_world_names(&mut projection.feed_entries);
@@ -179,13 +162,7 @@ impl RealtimeHostRuntime {
                     .sync
                     .record_failure("realtimeFriends", error.to_string());
                 if !feed_persistence_disabled {
-                    if avatar_feed_persistence_disabled {
-                        projection
-                            .feed_entries
-                            .retain(|entry| matches!(entry, FeedLiveEntry::Avatar { .. }));
-                    } else {
-                        projection.feed_entries.clear();
-                    }
+                    projection.feed_entries.clear();
                 }
                 false
             }
@@ -234,6 +211,7 @@ impl RealtimeHostRuntime {
             });
         }
         self.schedule_friend_profile_refetches(projection_generation, profile_refetch_user_ids);
+        self.schedule_friend_icon_changes(projection_generation, icon_changes);
         self.schedule_world_name_warm(world_name_fetch_ids);
         FriendOutputApplyOutcome::Applied {
             persistence_succeeded: persisted,

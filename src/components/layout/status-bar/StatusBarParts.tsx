@@ -44,6 +44,7 @@ export function StatusSegment({
     dotClassName,
     labelClassName,
     onClick,
+    onContextMenu,
     tooltip,
     valueClassName
 }: {
@@ -59,6 +60,7 @@ export function StatusSegment({
     dotClassName?: string;
     labelClassName?: string;
     onClick?: MouseEventHandler<HTMLButtonElement>;
+    onContextMenu?: MouseEventHandler<HTMLButtonElement>;
     tooltip?: ReactNode;
     valueClassName?: string;
 }) {
@@ -111,6 +113,7 @@ export function StatusSegment({
                     className
                 )}
                 onClick={onClick}
+                onContextMenu={onContextMenu}
             >
                 {content}
             </Button>

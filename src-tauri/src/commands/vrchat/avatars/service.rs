@@ -7,8 +7,8 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use super::types::{
-    VrchatAvatarFileInput, VrchatAvatarIdInput, VrchatAvatarListByUserInput,
-    VrchatAvatarModerationInput, VrchatAvatarSaveInput,
+    VrchatAvatarIdInput, VrchatAvatarListByUserInput, VrchatAvatarModerationInput,
+    VrchatAvatarSaveInput,
 };
 
 #[tauri::command]
@@ -66,20 +66,6 @@ pub async fn app__vrchat_avatar_moderations_get(
     state: State<'_, AppState>,
 ) -> Result<VrchatApiResponse, AppError> {
     Ok(state.runtime_host().avatars().moderations().await?)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_avatar_file_get(
-    state: State<'_, AppState>,
-    input: VrchatAvatarFileInput,
-) -> Result<VrchatApiResponse, AppError> {
-    state
-        .runtime_host()
-        .vrchat_remote()
-        .avatar_file(input.file_id)
-        .await
-        .map_err(AppError::from)
 }
 
 #[tauri::command]

@@ -159,6 +159,9 @@ fn start_requires_active_realtime_session() -> Result<()> {
         activity_sink: None,
         notification_projection_observer: None,
         world_cache,
+        file_cache: vrcx_0_application_core::FileCache::new(
+            vrcx_0_application_core::MemoryFileCachePort::default(),
+        ),
         instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
         current_user_snapshot_sink: None,

@@ -6,11 +6,11 @@ use vrcx_0_application::social::{
 };
 use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_persistence::maintenance::PRINT_FAVORITE_IDS_CONFIG_KEY;
 use vrcx_0_persistence::DatabaseService;
 
 const AUTO_DELETE_OLD_PRINTS_CONFIG_KEY: &str = "autoDeleteOldPrints";
 const AUTO_DELETE_PRINTS_LIMIT_CONFIG_KEY: &str = "autoDeletePrintsLimit";
-const AUTO_DELETE_PRINTS_FAVORITE_IDS_CONFIG_KEY: &str = "autoDeletePrintsFavoriteIds";
 #[derive(Clone)]
 pub struct LocalPrintAdapter {
     db: Arc<DatabaseService>,
@@ -39,21 +39,13 @@ impl PrintFavoritesStore for LocalPrintAdapter {
     }
 
     fn favorite_ids(&self) -> crate::Result<Value> {
-        vrcx_0_persistence::config::get_json(
-            &self.db,
-            AUTO_DELETE_PRINTS_FAVORITE_IDS_CONFIG_KEY,
-            json!([]),
-        )
-        .map_err(crate::map_persistence_error)
+        vrcx_0_persistence::config::get_json(&self.db, PRINT_FAVORITE_IDS_CONFIG_KEY, json!([]))
+            .map_err(crate::map_persistence_error)
     }
 
     fn write_favorite_ids(&self, ids: &Value) -> crate::Result<()> {
-        vrcx_0_persistence::config::set_json(
-            &self.db,
-            AUTO_DELETE_PRINTS_FAVORITE_IDS_CONFIG_KEY,
-            ids,
-        )
-        .map_err(crate::map_persistence_error)
+        vrcx_0_persistence::config::set_json(&self.db, PRINT_FAVORITE_IDS_CONFIG_KEY, ids)
+            .map_err(crate::map_persistence_error)
     }
 }
 

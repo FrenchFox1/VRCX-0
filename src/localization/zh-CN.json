@@ -463,6 +463,9 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "无法在 VRChat 中打开房间，将向自身发送游戏内邀请",
             "failed_to_save_memo": "保存本地备注失败"
         },
+        "picker": {
+            "more_not_shown": "还有 {count} 位未显示，缩小搜索范围即可找到。"
+        },
         "affinity": {
             "friend": "好友",
             "favorite": "收藏"
@@ -913,6 +916,7 @@
             "favorites_section": "收藏",
             "group_by_instance": "按房间分组",
             "split_favorite_friends": "按分组显示好友",
+            "show_grouped_friends": "显示同一房间中的好友",
             "same_instance_above_favorites": "优先显示同一房间中的好友",
             "sort_secondary": "次要排序方式",
             "sort_tertiary": "第三排序方式",
@@ -1144,6 +1148,12 @@
         },
         "friends_locations": {
             "online": "在线",
+            "world_friends_one": "{count} 人",
+            "world_friends_other": "{count} 人",
+            "view_people": "好友视图",
+            "view_worlds": "世界视图",
+            "world_instances_one": "{count} 个房间",
+            "world_instances_other": "{count} 个房间",
             "other_online": "其他在线好友",
             "favorite": "具有分组的好友",
             "same_instance": "同一房间",
@@ -1732,7 +1742,6 @@
                 "username": "用户名",
                 "rank": "等级",
                 "status": "状态",
-                "bio": "简介",
                 "note": "备注",
                 "memo": "本地备注"
             },
@@ -2271,9 +2280,9 @@
             },
             "feedback": {
                 "title": "发送反馈",
-                "description": "反馈默认匿名提交。我们会阅读每一条消息。",
+                "description": "默认匿名提交。Bug 反馈和功能建议都欢迎。",
                 "privacy_note": "不会附带任何账号信息。",
-                "placeholder": "告诉我们哪些好用、哪些不好用，或者你希望看到什么新功能……",
+                "placeholder": "描述一下发生了什么、你期望的结果，以及怎么复现……",
                 "submit": "发送",
                 "submitting": "发送中…",
                 "thanks": "感谢你的反馈！",
@@ -2299,14 +2308,19 @@
                 "favorites": {
                     "header": "收藏"
                 },
+                "friend_bios": {
+                    "header": "好友简介",
+                    "keep_up_to_date": "自动更新好友简介",
+                    "description": "定期获取好友的公开简介，变化会显示在好友动态中。更新可能延迟，部分变化可能漏记。"
+                },
                 "hidden_feed": {
-                    "header": "Feed 隐藏用户",
-                    "description": "从 Feed 视图隐藏所选用户，但不会删除已保存数据。",
-                    "add": "添加用户",
-                    "search_placeholder": "搜索用户",
-                    "empty": "Feed 中没有隐藏用户。",
-                    "remove": "移除隐藏用户",
-                    "unknown_user": "未知用户"
+                    "header": "已隐藏动态的好友",
+                    "description": "隐藏所选好友的动态，不会删除已保存的数据。",
+                    "add": "添加好友",
+                    "search_placeholder": "搜索好友",
+                    "empty": "还没有隐藏任何人。",
+                    "remove": "移除已隐藏的好友",
+                    "unknown_friend": "未知好友"
                 }
             },
             "vr": {
@@ -2810,8 +2824,6 @@
                         "gamelog_description": "关闭后不会保存新的游戏日志历史；当前玩家、正在播放、截图元数据、房间媒体和其他实时日志功能仍可使用。",
                         "feed_history": "保存好友动态历史",
                         "feed_history_description": "关闭后不会保存或加载好友动态历史。好友动态将从空白状态开始，仅显示本次会话收到的实时动态；好友侧栏和其他实时功能仍可使用。",
-                        "avatar_feed_history": "保存模型切换记录",
-                        "avatar_feed_history_description": "关闭后不再将新的模型切换记录写入数据库；好友动态显示和通知推送仍可使用。",
                         "tools": "诊断",
                         "database_usage": "数据库占用",
                         "refresh_database_usage": "刷新数据库占用",
@@ -6178,6 +6190,8 @@
                 "failed_to_save_status_bar_clocks": "保存状态栏时钟失败",
                 "failed_to_open_vrchat_status": "打开 VRChat 状态页失败",
                 "failed_to_open_media_link": "打开媒体链接失败",
+                "media_link_copied": "已复制媒体链接",
+                "failed_to_copy_media_link": "复制媒体链接失败",
                 "failed_to_update_proxy_settings": "更新代理设置失败",
                 "failed_to_start_background_mode": "切换到后台模式失败"
             }

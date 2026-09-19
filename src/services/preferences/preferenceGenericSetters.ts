@@ -352,14 +352,6 @@ export async function setFeedPersistenceDisabledPreference(disabled: boolean) {
     publishPreferenceChanged('feedPersistenceDisabled', disabled);
 }
 
-export async function setAvatarFeedPersistenceDisabledPreference(
-    disabled: boolean
-) {
-    await commands.appAvatarFeedPersistenceSetDisabled(disabled);
-    patchPreferenceValue('avatarFeedPersistenceDisabled', disabled);
-    publishPreferenceChanged('avatarFeedPersistenceDisabled', disabled);
-}
-
 export async function setStringConfigPreference(
     key: StringConfigPreferenceKey,
     value: string

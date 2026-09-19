@@ -7,7 +7,6 @@ export type SettingsAdvancedPrefs = {
     avatarAutoCleanup?: AvatarAutoCleanupPreference;
     gameLogDisabled?: boolean;
     feedPersistenceDisabled?: boolean;
-    avatarFeedPersistenceDisabled?: boolean;
     focusVrchatOnJoin?: boolean;
     logResourceLoad?: boolean;
     relaunchVRChatAfterCrash?: boolean;
@@ -30,7 +29,6 @@ export type SettingsAdvancedModel = {
     onDismissAppDataDirCleanup: SettingsAdvancedAction;
     onGameLogDisabledChange: (disabled: boolean) => void;
     onFeedPersistenceDisabledChange: (disabled: boolean) => void;
-    onAvatarFeedPersistenceDisabledChange: (disabled: boolean) => void;
     onFocusVrchatOnJoinChange: (checked: boolean) => void;
     onLogResourceLoadChange: (checked: boolean) => void;
     onMigrateLegacyVrcxData: SettingsAdvancedAction;

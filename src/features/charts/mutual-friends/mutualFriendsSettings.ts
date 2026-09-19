@@ -22,7 +22,6 @@ export const MUTUAL_GRAPH_LAYOUT_DEFAULTS: MutualFriendsLayoutSettings = {
 
 export const MUTUAL_GRAPH_EMPTY_USER_ID =
     'usr_00000000-0000-0000-0000-000000000000';
-export const MUTUAL_GRAPH_PICKER_RESULT_LIMIT = 120;
 export const MUTUAL_GRAPH_EXCLUDED_FRIENDS_KEY =
     'VRCX_MutualGraphExcludedFriends';
 

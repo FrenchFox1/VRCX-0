@@ -452,12 +452,10 @@ fn insert_feed_entry(
             owner_id,
             avatar_name,
             current_avatar_image_url,
-            current_avatar_thumbnail_image_url,
             previous_current_avatar_image_url,
-            previous_current_avatar_thumbnail_image_url,
             ..
         } => tx.execute_non_query(
-            &format!("INSERT OR IGNORE INTO {user_prefix}_feed_avatar (created_at, user_id, display_name, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url) VALUES (@created_at, @user_id, @display_name, @owner_id, @avatar_name, @current_avatar_image_url, @current_avatar_thumbnail_image_url, @previous_current_avatar_image_url, @previous_current_avatar_thumbnail_image_url)"),
+            &format!("INSERT OR IGNORE INTO {user_prefix}_feed_avatar (created_at, user_id, display_name, owner_id, avatar_name, current_avatar_image_url, previous_current_avatar_image_url) VALUES (@created_at, @user_id, @display_name, @owner_id, @avatar_name, @current_avatar_image_url, @previous_current_avatar_image_url)"),
             &ParamsBuilder::new()
                 .set("created_at", created_at.clone())
                 .set("user_id", user_id.clone())
@@ -465,9 +463,7 @@ fn insert_feed_entry(
                 .set("owner_id", owner_id.clone())
                 .set("avatar_name", avatar_name.clone())
                 .set("current_avatar_image_url", current_avatar_image_url.clone())
-                .set("current_avatar_thumbnail_image_url", current_avatar_thumbnail_image_url.clone())
                 .set("previous_current_avatar_image_url", previous_current_avatar_image_url.clone())
-                .set("previous_current_avatar_thumbnail_image_url", previous_current_avatar_thumbnail_image_url.clone())
                 .build(),
         )?,
         FeedLiveEntry::TrustLevel { .. }

@@ -50,22 +50,17 @@ export function MutualFriendsPage() {
                     settingsSlot={
                         <MutualFriendsSettingsSheet
                             edgeCount={graph.edgeCount}
-                            excludeSearchQuery={exclusions.excludeSearchQuery}
-                            excludedCount={exclusions.excludedCount}
-                            excludedFriendIdSet={exclusions.excludedFriendIdSet}
-                            filteredExcludeOptions={
-                                exclusions.filteredExcludeOptions
+                            excludePickerOptions={
+                                exclusions.excludePickerOptions
                             }
+                            excludedFriendIds={exclusions.excludedFriendIds}
                             layoutSettings={layout.layoutSettings}
                             nodeCount={graph.nodeCount}
-                            onExcludeSearchQueryChange={
-                                exclusions.setExcludeSearchQuery
+                            onExcludedFriendIdsChange={
+                                exclusions.setExcludedFriendIds
                             }
                             onResetLayoutAndHidden={
                                 actions.resetLayoutAndHidden
-                            }
-                            onToggleExcludedFriendId={
-                                actions.toggleExcludedFriendId
                             }
                             setLayoutSetting={layout.setLayoutSetting}
                         />

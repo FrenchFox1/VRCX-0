@@ -463,6 +463,9 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "VRChat でインスタンスを開けなかったため、自分への招待に切り替えます",
             "failed_to_save_memo": "ローカルノートの保存に失敗しました"
         },
+        "picker": {
+            "more_not_shown": "他 {count} 人は表示されていません。検索条件を絞り込んでください。"
+        },
         "affinity": {
             "friend": "フレンド",
             "favorite": "お気に入り"
@@ -913,6 +916,7 @@
             "favorites_section": "お気に入り",
             "group_by_instance": "インスタンスでグループ化",
             "split_favorite_friends": "お気に入りのグループを表示",
+            "show_grouped_friends": "グループ化されたフレンドを表示",
             "same_instance_above_favorites": "同じインスタンスを優先",
             "sort_secondary": "次のソート基準",
             "sort_tertiary": "さらに次のソート基準",
@@ -1144,6 +1148,12 @@
         },
         "friends_locations": {
             "online": "オンライン",
+            "world_friends_one": "{count} 人",
+            "world_friends_other": "{count} 人",
+            "view_people": "フレンド表示",
+            "view_worlds": "ワールド表示",
+            "world_instances_one": "{count} インスタンス",
+            "world_instances_other": "{count} インスタンス",
             "other_online": "その他のオンラインフレンド",
             "favorite": "お気に入り",
             "same_instance": "同じインスタンス",
@@ -1728,7 +1738,6 @@
                 "username": "ユーザー名",
                 "rank": "ランク",
                 "status": "ステータス",
-                "bio": "自己紹介",
                 "note": "ノート",
                 "memo": "ローカルノート"
             },
@@ -2267,9 +2276,9 @@
             },
             "feedback": {
                 "title": "フィードバックを送信",
-                "description": "フィードバックは匿名で送信されます。すべてのメッセージに目を通しています。",
+                "description": "匿名で送信されます。バグ報告・ご要望どちらも歓迎です。",
                 "privacy_note": "アカウント情報は含まれません。",
-                "placeholder": "使い心地、改善してほしい点、ほしい機能などを教えてください…",
+                "placeholder": "何が起きたか、期待していた動作、再現手順を教えてください…",
                 "submit": "送信",
                 "submitting": "送信中…",
                 "thanks": "フィードバックありがとうございます！",
@@ -2295,14 +2304,19 @@
                 "favorites": {
                     "header": "お気に入り"
                 },
+                "friend_bios": {
+                    "header": "フレンドの自己紹介",
+                    "keep_up_to_date": "自己紹介を自動で更新",
+                    "description": "フレンドの公開自己紹介を定期的に取得し、変化をフィードに表示します。反映が遅れたり、一部が抜けたりすることがあります。"
+                },
                 "hidden_feed": {
-                    "header": "フィードで非表示のユーザー",
-                    "description": "保存済みデータを削除せずに、選択したユーザーをフィードから非表示にします。",
-                    "add": "ユーザーを追加",
-                    "search_placeholder": "ユーザーを検索",
-                    "empty": "フィードで非表示のユーザーはいません。",
-                    "remove": "非表示ユーザーを削除",
-                    "unknown_user": "不明なユーザー"
+                    "header": "フィードで非表示のフレンド",
+                    "description": "保存済みデータを削除せずに、選択したフレンドをフィードから非表示にします。",
+                    "add": "フレンドを追加",
+                    "search_placeholder": "フレンドを検索",
+                    "empty": "まだ誰も非表示にしていません。",
+                    "remove": "非表示フレンドを削除",
+                    "unknown_friend": "不明なフレンド"
                 }
             },
             "vr": {
@@ -2806,8 +2820,6 @@
                         "gamelog_description": "オフにすると新しい履歴は保存されません。プレイヤーリストや再生中などのリアルタイム機能は引き続き利用できます。",
                         "feed_history": "フィード履歴を保存",
                         "feed_history_description": "オフにするとフィードは毎回空の状態で始まります。フレンドサイドバーなどのリアルタイム機能は引き続き利用できます。",
-                        "avatar_feed_history": "アバター変更履歴を保存",
-                        "avatar_feed_history_description": "オフにすると、新しいアバター変更はデータベースに保存されません。フィード表示と通知の配信は引き続き利用できます。",
                         "tools": "診断",
                         "database_usage": "データベース使用量",
                         "refresh_database_usage": "データベース使用量を更新",
@@ -6161,6 +6173,8 @@
                 "failed_to_save_status_bar_clocks": "ステータスバーの時計を保存できませんでした",
                 "failed_to_open_vrchat_status": "VRChat ステータスを開けませんでした",
                 "failed_to_open_media_link": "メディアリンクを開けませんでした",
+                "media_link_copied": "メディアリンクをコピーしました",
+                "failed_to_copy_media_link": "メディアリンクをコピーできませんでした",
                 "failed_to_update_proxy_settings": "プロキシ設定の更新に失敗しました",
                 "failed_to_start_background_mode": "バックグラウンドモードへ切り替えられませんでした"
             }

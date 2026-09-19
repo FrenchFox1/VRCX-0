@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
-import { FadeInImage } from '@/components/media/FadeInImage';
+import {
+    FriendMultiSelectList,
+    type FriendMultiSelectOption
+} from '@/components/search/FriendMultiSelectList';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
-import { userImage } from '@/services/entityMediaService';
 import { sendInvitesToLocation } from '@/services/inviteDeliveryService';
 import { toast } from '@/services/toastService';
 import { parseLocation } from '@/shared/utils/location';
@@ -14,9 +16,7 @@ import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -39,17 +39,13 @@ import {
     EmptyHeader,
     EmptyTitle
 } from '@/ui/shadcn/empty';
-import { Field, FieldLabel } from '@/ui/shadcn/field';
-import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import {
     buildFavoriteGroupItems,
     buildFavoriteGroupLabelsByUserId,
     buildFriendsInCurrentInstanceIds,
-    displayNameForUser,
-    filterInviteUserIds,
-    sortInviteUserIdsWithSelectedFirst
+    displayNameForUser
 } from './inviteDialogModel';
 
 export function InstanceInviteDialog({
@@ -93,14 +89,12 @@ export function InstanceInviteDialog({
     );
     const confirm = useModalStore((state) => state.confirm);
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-    const [search, setSearch] = useState('');
     const [sending, setSending] = useState(false);
     const [resolvedWorldName, setResolvedWorldName] = useState('');
 
     useEffect(() => {
         if (open) {
             setSelectedUserIds([]);
-            setSearch('');
             setSending(false);
         }
     }, [open, location]);
@@ -151,31 +145,6 @@ export function InstanceInviteDialog({
         return ids;
     }, [activeIds, currentUserId, onlineIds]);
 
-    const filteredUserIds = useMemo(
-        () =>
-            filterInviteUserIds({
-                selectableUserIds,
-                search,
-                friendsById,
-                currentUser
-            }),
-        [currentUser, friendsById, search, selectableUserIds]
-    );
-
-    const selectedUserIdSet = useMemo(
-        () => new Set(selectedUserIds.map(normalizeId).filter(Boolean)),
-        [selectedUserIds]
-    );
-
-    const sortedFilteredUserIds = useMemo(
-        () =>
-            sortInviteUserIdsWithSelectedFirst(
-                filteredUserIds,
-                selectedUserIdSet
-            ),
-        [filteredUserIds, selectedUserIdSet]
-    );
-
     const favoriteGroupLabelsByUserId = useMemo(
         () =>
             buildFavoriteGroupLabelsByUserId({
@@ -189,6 +158,39 @@ export function InstanceInviteDialog({
             groupedFavoriteFriendIdsByGroupKey,
             localFriendFavoriteGroups,
             localFriendFavorites
+        ]
+    );
+
+    const inviteOptions = useMemo<FriendMultiSelectOption[]>(
+        () =>
+            selectableUserIds.map((userId) => {
+                const label = displayNameForUser(
+                    userId,
+                    friendsById,
+                    currentUser
+                );
+                const [firstGroup, ...restGroups] =
+                    favoriteGroupLabelsByUserId[userId] || [];
+                return {
+                    value: userId,
+                    label,
+                    search: `${label} ${userId}`,
+                    user:
+                        friendsById[userId] ??
+                        (userId === normalizeId(currentUser?.id)
+                            ? currentUser
+                            : null),
+                    badge:
+                        firstGroup && restGroups.length
+                            ? `${firstGroup} +${restGroups.length}`
+                            : firstGroup
+                };
+            }),
+        [
+            currentUser,
+            favoriteGroupLabelsByUserId,
+            friendsById,
+            selectableUserIds
         ]
     );
 
@@ -225,18 +227,6 @@ export function InstanceInviteDialog({
             return;
         }
         setSelectedUserIds((current) => [...new Set([...current, ...ids])]);
-    }
-
-    function toggleUserId(userId: string) {
-        const normalizedUserId = normalizeId(userId);
-        if (!normalizedUserId) {
-            return;
-        }
-        setSelectedUserIds((current) =>
-            current.includes(normalizedUserId)
-                ? current.filter((entry) => entry !== normalizedUserId)
-                : [...current, normalizedUserId]
-        );
     }
 
     async function sendInvites() {
@@ -355,7 +345,7 @@ export function InstanceInviteDialog({
                         )}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex flex-col gap-4 overflow-hidden">
+                <div className="flex flex-col gap-4">
                     <div className="bg-muted/30 rounded-md border p-3 text-sm">
                         <Location
                             location={location}
@@ -447,89 +437,17 @@ export function InstanceInviteDialog({
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
-                    <Input
-                        value={search}
+                    <FriendMultiSelectList
+                        autoFocus
                         disabled={sending}
+                        options={inviteOptions}
+                        values={selectedUserIds}
+                        onChange={setSelectedUserIds}
                         placeholder={t(
                             'dialog.invite.action.search_online_friends'
                         )}
-                        onChange={(event) => setSearch(event.target.value)}
-                    />
-                    <div className="max-h-72 overflow-auto rounded-md border">
-                        {sortedFilteredUserIds.length ? (
-                            sortedFilteredUserIds.map((userId) => {
-                                const friend = friendsById[userId];
-                                const displayName = displayNameForUser(
-                                    userId,
-                                    friendsById,
-                                    currentUser
-                                );
-                                const checked = selectedUserIdSet.has(
-                                    normalizeId(userId)
-                                );
-                                const imageUrl = friend
-                                    ? userImage(friend)
-                                    : userImage(currentUser);
-                                const favoriteGroupLabels =
-                                    favoriteGroupLabelsByUserId[
-                                        normalizeId(userId)
-                                    ] || [];
-                                return (
-                                    <Field
-                                        key={userId}
-                                        orientation="horizontal"
-                                        data-disabled={sending}
-                                        className="cursor-pointer gap-3 border-b px-3 py-2 last:border-b-0"
-                                    >
-                                        <Checkbox
-                                            id={`invite-user-${userId}`}
-                                            checked={checked}
-                                            disabled={sending}
-                                            onCheckedChange={() =>
-                                                toggleUserId(userId)
-                                            }
-                                        />
-                                        <FieldLabel
-                                            htmlFor={`invite-user-${userId}`}
-                                            className="min-w-0 flex-1 cursor-pointer items-center gap-3 font-normal"
-                                        >
-                                            {imageUrl ? (
-                                                <FadeInImage
-                                                    src={imageUrl}
-                                                    alt=""
-                                                    loading="lazy"
-                                                    className="size-8 rounded-full object-cover"
-                                                />
-                                            ) : (
-                                                <span className="bg-muted text-muted-foreground flex size-8 items-center justify-center rounded-full">
-                                                    <UserIcon className="size-4" />
-                                                </span>
-                                            )}
-                                            <span className="min-w-0 flex-1">
-                                                <span className="block truncate text-sm font-medium">
-                                                    {displayName}
-                                                </span>
-                                            </span>
-                                            {favoriteGroupLabels.length ? (
-                                                <span className="ml-auto flex max-w-[45%] shrink-0 flex-wrap justify-end gap-1">
-                                                    {favoriteGroupLabels.map(
-                                                        (label) => (
-                                                            <Badge
-                                                                key={label}
-                                                                variant="outline"
-                                                                className="max-w-full truncate"
-                                                            >
-                                                                {label}
-                                                            </Badge>
-                                                        )
-                                                    )}
-                                                </span>
-                                            ) : null}
-                                        </FieldLabel>
-                                    </Field>
-                                );
-                            })
-                        ) : (
+                        listClassName="h-64"
+                        emptyContent={
                             <Empty className="min-h-32 border-0">
                                 <EmptyHeader>
                                     <EmptyTitle>
@@ -544,8 +462,8 @@ export function InstanceInviteDialog({
                                     </EmptyDescription>
                                 </EmptyHeader>
                             </Empty>
-                        )}
-                    </div>
+                        }
+                    />
                 </div>
                 <DialogFooter>
                     <Button
@@ -565,6 +483,9 @@ export function InstanceInviteDialog({
                     >
                         {sending ? <Spinner data-icon="inline-start" /> : null}
                         {t('dialog.invite.invite')}
+                        {selectedUserIds.length
+                            ? ` (${selectedUserIds.length})`
+                            : null}
                     </Button>
                 </DialogFooter>
             </DialogContent>

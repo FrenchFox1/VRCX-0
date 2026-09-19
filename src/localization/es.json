@@ -463,6 +463,9 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "No se pudo abrir la instancia en VRChat, se recurrirá a una autoinvitación",
             "failed_to_save_memo": "No se pudo guardar la nota local"
         },
+        "picker": {
+            "more_not_shown": "{count} más no se muestran. Acota la búsqueda para encontrarlos."
+        },
         "affinity": {
             "friend": "Amigo",
             "favorite": "Favorito"
@@ -913,6 +916,7 @@
             "favorites_section": "Favoritos",
             "group_by_instance": "Agrupar por instancia",
             "split_favorite_friends": "Mostrar grupos de favoritos",
+            "show_grouped_friends": "Mostrar amigos agrupados",
             "same_instance_above_favorites": "Priorizar misma instancia",
             "sort_secondary": "Luego por",
             "sort_tertiary": "Luego por",
@@ -1144,6 +1148,12 @@
         },
         "friends_locations": {
             "online": "En línea",
+            "world_friends_one": "{count} amigo",
+            "world_friends_other": "{count} amigos",
+            "view_people": "Vista de amigos",
+            "view_worlds": "Vista de mundos",
+            "world_instances_one": "{count} instancia",
+            "world_instances_other": "{count} instancias",
             "other_online": "Otros amigos en línea",
             "favorite": "Favoritos",
             "same_instance": "Misma instancia",
@@ -1732,7 +1742,6 @@
                 "username": "Nombre de usuario",
                 "rank": "Rango",
                 "status": "Estado",
-                "bio": "Biografía",
                 "note": "Nota",
                 "memo": "Nota local"
             },
@@ -2271,9 +2280,9 @@
             },
             "feedback": {
                 "title": "Enviar comentarios",
-                "description": "Los comentarios se envían de forma anónima por defecto. Leemos todos los mensajes.",
+                "description": "Anónimo por defecto. Informes de errores y sugerencias son bienvenidos.",
                 "privacy_note": "No se adjuntan datos de la cuenta.",
-                "placeholder": "Cuéntanos qué funciona, qué no, o qué te gustaría ver…",
+                "placeholder": "Describe qué ocurrió, qué esperabas y cómo reproducirlo…",
                 "submit": "Enviar",
                 "submitting": "Enviando…",
                 "thanks": "¡Gracias por tu opinión!",
@@ -2299,14 +2308,19 @@
                 "favorites": {
                     "header": "Favoritos"
                 },
+                "friend_bios": {
+                    "header": "Biografías de amigos",
+                    "keep_up_to_date": "Mantener actualizadas las biografías de amigos",
+                    "description": "Obtiene periódicamente las biografías públicas de tus amigos y muestra los cambios en el feed. Las actualizaciones pueden retrasarse y algunos cambios pueden pasar inadvertidos."
+                },
                 "hidden_feed": {
-                    "header": "Usuarios ocultos en feed",
-                    "description": "Oculta usuarios seleccionados en feed sin eliminar datos guardados.",
-                    "add": "Añadir usuario",
-                    "search_placeholder": "Buscar usuarios",
-                    "empty": "No hay usuarios ocultos en feed.",
-                    "remove": "Quitar usuario oculto",
-                    "unknown_user": "Usuario desconocido"
+                    "header": "Amigos ocultos en el feed",
+                    "description": "Oculta amigos seleccionados en el feed sin eliminar datos guardados.",
+                    "add": "Añadir amigo",
+                    "search_placeholder": "Buscar amigos",
+                    "empty": "Aún no has ocultado a nadie.",
+                    "remove": "Quitar amigo oculto",
+                    "unknown_friend": "Amigo desconocido"
                 }
             },
             "vr": {
@@ -2810,8 +2824,6 @@
                         "gamelog_description": "Al desactivarlo, no se guarda nuevo historial. Funciones en tiempo real como Lista de jugadores y Reproduciendo ahora siguen disponibles.",
                         "feed_history": "Guardar historial del Feed",
                         "feed_history_description": "Al desactivarlo, el Feed empieza vacío en cada sesión. Funciones en tiempo real como la barra lateral de amigos siguen disponibles.",
-                        "avatar_feed_history": "Guardar historial de cambios de avatar",
-                        "avatar_feed_history_description": "Al desactivarlo, los nuevos cambios de avatar no se escriben en la base de datos. El Feed y la entrega de notificaciones siguen funcionando.",
                         "tools": "Diagnóstico",
                         "database_usage": "Uso de la base de datos",
                         "refresh_database_usage": "Actualizar uso de la base de datos",
@@ -6129,6 +6141,8 @@
                 "failed_to_save_status_bar_clocks": "No se pudieron guardar los relojes de la barra de estado",
                 "failed_to_open_vrchat_status": "No se pudo abrir el estado de VRChat",
                 "failed_to_open_media_link": "No se pudo abrir el enlace multimedia",
+                "media_link_copied": "Enlace multimedia copiado",
+                "failed_to_copy_media_link": "No se pudo copiar el enlace multimedia",
                 "failed_to_update_proxy_settings": "No se pudo actualizar la configuración del proxy",
                 "failed_to_start_background_mode": "No se pudo cambiar al modo en segundo plano"
             }

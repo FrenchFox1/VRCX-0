@@ -147,34 +147,9 @@ const NAMED_FIELDS: &[NamedField] = &[
         set: |record, value| record.status_description = value.into(),
     },
     NamedField {
-        keys: &["bio"],
-        get: |record| &record.bio,
-        set: |record, value| record.bio = value.into(),
-    },
-    NamedField {
         keys: &["iconUrl"],
         get: |record| &record.icon_url,
         set: |record, value| record.icon_url = value.into(),
-    },
-    NamedField {
-        keys: &["currentAvatarImageUrl"],
-        get: |record| &record.current_avatar_image_url,
-        set: |record, value| record.current_avatar_image_url = value.into(),
-    },
-    NamedField {
-        keys: &["currentAvatarThumbnailImageUrl"],
-        get: |record| &record.current_avatar_thumbnail_image_url,
-        set: |record, value| record.current_avatar_thumbnail_image_url = value.into(),
-    },
-    NamedField {
-        keys: &["currentAvatarAuthorId"],
-        get: |record| &record.current_avatar_author_id,
-        set: |record, value| record.current_avatar_author_id = value.into(),
-    },
-    NamedField {
-        keys: &["currentAvatarName"],
-        get: |record| &record.current_avatar_name,
-        set: |record, value| record.current_avatar_name = value.into(),
     },
 ];
 
@@ -276,19 +251,6 @@ pub(in crate::realtime::friends::runtime) fn record_string(
         return (field.get)(record).as_str().unwrap_or_default().to_string();
     }
     record.extra.text_field(key)
-}
-
-pub(in crate::realtime::friends::runtime) fn record_value(
-    record: &FriendRecord,
-    key: &str,
-) -> Value {
-    if let Some(field) = named_field(key) {
-        return Value::String((field.get)(record).to_string());
-    }
-    if let Some(field) = optional_field(key) {
-        return serde_json::to_value((field.get)(record)).unwrap_or(Value::Null);
-    }
-    record.extra.get(key).cloned().unwrap_or(Value::Null)
 }
 
 #[cfg(test)]

@@ -64,48 +64,6 @@ fn recent_candidate(activity_type: &str, user_id: &str) -> OverlayActivityCandid
 }
 
 #[test]
-fn friend_projection_feed_entries_are_ingested_with_canonical_activity_types() {
-    let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
-        "version": 1,
-        "wrist": {
-            "types": {
-                "AvatarChange": {
-                    "scope": "friends",
-                    "favoriteGroupKeys": "all"
-                }
-            }
-        }
-    })));
-    runtime.set_friend_user_ids(["usr_avatar"]);
-    let projection = FriendProjection {
-        feed_entries: vec![FeedLiveEntry::Avatar {
-            created_at: "2026-05-31T00:01:00.000Z".into(),
-            user_id: "usr_avatar".into(),
-            display_name: "Avatar User".into(),
-            owner_id: String::new(),
-            previous_owner_id: String::new(),
-            avatar_name: String::new(),
-            previous_avatar_name: String::new(),
-            current_avatar_image_url: String::new(),
-            current_avatar_thumbnail_image_url: String::new(),
-            previous_current_avatar_image_url: String::new(),
-            previous_current_avatar_thumbnail_image_url: String::new(),
-            current_avatar_tags: None,
-            previous_current_avatar_tags: None,
-            owner_user_id: String::new(),
-        }],
-        ..FriendProjection::new(0, 0)
-    };
-
-    runtime.ingest_friend_projection(&projection);
-
-    let entries = runtime.snapshot().entries;
-    assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0].activity_type, "AvatarChange");
-    assert_eq!(entries[0].actor_user_id, "usr_avatar");
-}
-
-#[test]
 fn trust_level_friend_projection_preserves_new_level_in_overlay_content() {
     let runtime = OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(json!({
         "version": 1,

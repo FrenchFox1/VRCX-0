@@ -410,7 +410,6 @@ export function ContextRulesTab({
                                         {t('common.affinity.friend')}
                                     </FieldLabel>
                                     <FriendMultiSelect
-                                        idPrefix={selectedRule.id}
                                         values={
                                             selectedRule.specificFriendIds || []
                                         }

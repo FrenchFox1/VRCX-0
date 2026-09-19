@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use tokio::sync::{mpsc, oneshot};
 use vrcx_0_application_activity::notification::{
-    extract_file_id, extract_file_version, fallback_file_version, load_notification_locale,
+    extract_file_version, fallback_file_version, load_notification_locale,
     normalize_avatar_image_url_128, render_delivery, NotificationConfig, OverlayLocale,
     RealtimeUserImageResolverSlot, RenderedNotification,
 };
@@ -25,6 +25,7 @@ use super::{
     decide_notification_plan, load_preferences, NotificationDeliveryGameState,
     NotificationDeliveryPlan, NotificationDeliveryPreferences, NotificationDoNotDisturbRuntime,
 };
+use vrcx_0_core::files::extract_file_id;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::OwnerId;
 

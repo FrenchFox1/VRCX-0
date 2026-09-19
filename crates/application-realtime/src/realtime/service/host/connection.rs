@@ -46,13 +46,6 @@ impl RealtimeHostRuntime {
                 tracing::warn!("Feed persistence preference read failed: {error}");
                 false
             });
-        let avatar_feed_persistence_disabled = deps
-            .store
-            .get_bool("avatarFeedPersistenceDisabled", false)
-            .unwrap_or_else(|error| {
-                tracing::warn!("Avatar Feed persistence preference read failed: {error}");
-                false
-            });
         Self {
             deps,
             state: Mutex::new(RealtimeHostRuntimeState::default()),
@@ -67,7 +60,6 @@ impl RealtimeHostRuntime {
             feed_owner_lock: Mutex::new(()),
             feed_live_cache: Mutex::new(super::feed::FeedLiveCache::default()),
             feed_persistence_disabled: AtomicBool::new(feed_persistence_disabled),
-            avatar_feed_persistence_disabled: AtomicBool::new(avatar_feed_persistence_disabled),
             notification_apply_lock: tokio::sync::Mutex::new(()),
             friend_profile_bulk_load: Mutex::new(
                 super::friend_profile_bulk_load::FriendProfileBulkLoadState::default(),

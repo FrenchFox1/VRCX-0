@@ -463,6 +463,9 @@
             "failed_open_instance_in_vrchat_falling_back_to_self_invite": "Failed to open instance in VRChat, falling back to self invite",
             "failed_to_save_memo": "Failed to save local note"
         },
+        "picker": {
+            "more_not_shown": "{count} more not shown. Narrow your search to find them."
+        },
         "affinity": {
             "friend": "Friend",
             "favorite": "Favorite"
@@ -913,6 +916,7 @@
             "favorites_section": "Favorites",
             "group_by_instance": "Group by Instance",
             "split_favorite_friends": "Show Favorite Groups",
+            "show_grouped_friends": "Show Grouped Friends",
             "same_instance_above_favorites": "Prioritize Same Instance",
             "sort_secondary": "Then by",
             "sort_tertiary": "Then by",
@@ -1144,6 +1148,12 @@
         },
         "friends_locations": {
             "online": "Online",
+            "world_friends_one": "{count} friend",
+            "world_friends_other": "{count} friends",
+            "view_people": "Friends view",
+            "view_worlds": "Worlds view",
+            "world_instances_one": "{count} instance",
+            "world_instances_other": "{count} instances",
             "other_online": "Other online friends",
             "favorite": "Favorites",
             "same_instance": "Same instance",
@@ -1732,7 +1742,6 @@
                 "username": "User Name",
                 "rank": "Rank",
                 "status": "Status",
-                "bio": "Bio",
                 "note": "Note",
                 "memo": "Local Note"
             },
@@ -2271,9 +2280,9 @@
             },
             "feedback": {
                 "title": "Send feedback",
-                "description": "Feedback is anonymous by default. We read every message.",
+                "description": "Anonymous by default. Bug reports and suggestions both welcome.",
                 "privacy_note": "No account info is attached.",
-                "placeholder": "Tell us what's working, what's not, or what you'd like to see...",
+                "placeholder": "Describe what happened, what you expected, and how to reproduce it...",
                 "submit": "Send",
                 "submitting": "Sending…",
                 "thanks": "Thanks for your feedback!",
@@ -2299,14 +2308,19 @@
                 "favorites": {
                     "header": "Favorites"
                 },
+                "friend_bios": {
+                    "header": "Friend bios",
+                    "keep_up_to_date": "Keep friend bios up to date",
+                    "description": "Periodically fetches friends' public bios and shows changes in the feed. Updates may be delayed, and some changes may go unrecorded."
+                },
                 "hidden_feed": {
-                    "header": "Hidden Feed Users",
-                    "description": "Hide selected users from Feed without deleting saved data.",
-                    "add": "Add user",
-                    "search_placeholder": "Search users",
-                    "empty": "No hidden Feed users.",
-                    "remove": "Remove hidden user",
-                    "unknown_user": "Unknown user"
+                    "header": "Hidden Feed Friends",
+                    "description": "Hide selected friends from the feed without deleting saved data.",
+                    "add": "Add friend",
+                    "search_placeholder": "Search friends",
+                    "empty": "You haven't hidden anyone yet.",
+                    "remove": "Remove hidden friend",
+                    "unknown_friend": "Unknown friend"
                 }
             },
             "vr": {
@@ -2810,8 +2824,6 @@
                         "gamelog_description": "When off, new history is not saved. Live features like Player List and Now Playing still work.",
                         "feed_history": "Save Feed history",
                         "feed_history_description": "When off, Feed starts empty each session. Realtime features like Friends Sidebar still work.",
-                        "avatar_feed_history": "Save avatar change history",
-                        "avatar_feed_history_description": "When off, new avatar changes are not written to the database. Feed display and notification delivery continue to work.",
                         "tools": "Diagnostics",
                         "database_usage": "Database usage",
                         "refresh_database_usage": "Refresh database usage",
@@ -6177,6 +6189,8 @@
                 "failed_to_save_status_bar_clocks": "Failed to save status bar clocks",
                 "failed_to_open_vrchat_status": "Failed to open VRChat status",
                 "failed_to_open_media_link": "Failed to open media link",
+                "media_link_copied": "Media link copied",
+                "failed_to_copy_media_link": "Failed to copy media link",
                 "failed_to_update_proxy_settings": "Failed to update proxy settings",
                 "failed_to_start_background_mode": "Failed to switch to Background Mode"
             }

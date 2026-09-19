@@ -21,10 +21,7 @@ import {
     mutualFriendsCommunityPalette,
     mutualFriendsNeutralCommunityColor
 } from './mutualFriendsPalette';
-import {
-    buildMutualFriendExcludePickerOptions,
-    filterMutualFriendPickerOptions
-} from './mutualFriendsPicker';
+import { buildMutualFriendExcludePickerOptions } from './mutualFriendsPicker';
 import {
     normalizeExcludedMutualFriendIds,
     normalizeMutualFriendId,
@@ -49,7 +46,6 @@ export function useMutualFriendsPageState() {
         resolvedTheme
     } = useMutualFriendsRuntime();
     const currentUserIdRef = useRef(currentUserId);
-    const [excludeSearchQuery, setExcludeSearchQuery] = useState('');
     const [selectedNodeId, setSelectedNodeId] = useState('');
     const selectedNodeIdRef = useRef('');
     const [excludedFriendIds, setExcludedFriendIds] = useState(
@@ -160,20 +156,9 @@ export function useMutualFriendsPageState() {
         [currentUserId, friendsById, snapshot.snapshotData.snapshot]
     );
 
-    const excludedFriendIdSet = useMemo(
-        () => new Set(normalizeExcludedMutualFriendIds(excludedFriendIds)),
+    const normalizedExcludedFriendIds = useMemo(
+        () => normalizeExcludedMutualFriendIds(excludedFriendIds),
         [excludedFriendIds]
-    );
-
-    const filteredExcludeOptions = useMemo(
-        () =>
-            filterMutualFriendPickerOptions(
-                excludePickerOptions,
-                excludeSearchQuery,
-                undefined,
-                excludedFriendIdSet
-            ),
-        [excludePickerOptions, excludeSearchQuery, excludedFriendIdSet]
     );
 
     const selectedNode = useMemo(
@@ -331,11 +316,10 @@ export function useMutualFriendsPageState() {
             toggleFocusedCommunity
         },
         exclusions: {
-            excludeSearchQuery,
-            excludedCount: excludedFriendIds.length,
-            excludedFriendIdSet,
-            filteredExcludeOptions,
-            setExcludeSearchQuery
+            excludePickerOptions,
+            excludedFriendIds: normalizedExcludedFriendIds,
+            setExcludedFriendIds: (next: string[]) =>
+                setExcludedFriendIds(normalizeExcludedMutualFriendIds(next))
         },
         fetch: {
             fetchProgress

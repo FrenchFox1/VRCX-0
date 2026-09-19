@@ -18,11 +18,6 @@ export const FRIEND_PROFILE_STRING_FIELDS = [
     'bannerColor',
     'bannerType',
     'bannerUrl',
-    'bio',
-    'currentAvatarAuthorId',
-    'currentAvatarImageUrl',
-    'currentAvatarName',
-    'currentAvatarThumbnailImageUrl',
     'discordId',
     'friendKey',
     'iconFrame',
@@ -51,8 +46,6 @@ export type FriendProfileFields = Partial<
         $travelingToLocation?: FriendLocationProjection | null;
         $travelingToTime?: number | string | null;
         badges?: unknown[];
-        bioLinks?: string[];
-        currentAvatarTags?: string[];
     };
 
 export type FriendRecordInput = Record<string, unknown> & {

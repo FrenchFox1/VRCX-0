@@ -47,7 +47,6 @@ function createInput(
         handleCropInstancePrintsChange: callback,
         handleGameLogDisabledChange: callback,
         handleFeedPersistenceDisabledChange: callback,
-        handleAvatarFeedPersistenceDisabledChange: callback,
         hmdNotificationsDialogOpen: false,
         integrationStatus: {
             youtube: 'idle',
@@ -398,7 +397,7 @@ describe('settingsPageStateSections', () => {
         }
     });
 
-    it('routes Friend Log preferences through the social section', () => {
+    it('routes social bool preferences through the social section', () => {
         const saveBoolPreference = vi.fn();
         const sections = buildSettingsPageStateSections(
             createInput({
@@ -411,6 +410,7 @@ describe('settingsPageStateSections', () => {
 
         sections.social.onFriendLogNotificationDotChange(false);
         sections.social.onHideUnfriendsChange(true);
+        sections.social.onProfileBioScanEnabledChange(true);
 
         expect(saveBoolPreference).toHaveBeenNthCalledWith(
             1,
@@ -421,6 +421,11 @@ describe('settingsPageStateSections', () => {
         expect(saveBoolPreference).toHaveBeenCalledWith(
             'hideUnfriends',
             'hideUnfriends',
+            true
+        );
+        expect(saveBoolPreference).toHaveBeenCalledWith(
+            'profileBioScanEnabled',
+            'profileBioScanEnabled',
             true
         );
     });

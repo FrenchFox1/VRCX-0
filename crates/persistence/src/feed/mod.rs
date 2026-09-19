@@ -1,6 +1,6 @@
 mod query;
-#[cfg(test)]
-pub(crate) mod test_support;
+#[cfg(any(test, feature = "test-utils"))]
+pub mod test_support;
 mod types;
 mod write;
 

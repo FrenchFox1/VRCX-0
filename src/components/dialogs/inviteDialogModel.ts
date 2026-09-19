@@ -58,48 +58,6 @@ export function pushUniqueLabel(labels: string[], label: string) {
     }
 }
 
-export function filterInviteUserIds({
-    selectableUserIds,
-    search,
-    friendsById,
-    currentUser
-}: {
-    selectableUserIds: string[];
-    search: string;
-    friendsById: FriendRosterInputById;
-    currentUser: InviteCurrentUser;
-}) {
-    const query = search.trim().toLowerCase();
-    if (!query) {
-        return selectableUserIds;
-    }
-    return selectableUserIds.filter((userId) => {
-        const displayName = displayNameForUser(
-            userId,
-            friendsById,
-            currentUser
-        );
-        return (
-            userId.toLowerCase().includes(query) ||
-            displayName.toLowerCase().includes(query)
-        );
-    });
-}
-
-export function sortInviteUserIdsWithSelectedFirst(
-    filteredUserIds: string[],
-    selectedUserIdSet: ReadonlySet<string>
-) {
-    return [...filteredUserIds].sort((left, right) => {
-        const leftSelected = selectedUserIdSet.has(normalizeId(left));
-        const rightSelected = selectedUserIdSet.has(normalizeId(right));
-        if (leftSelected !== rightSelected) {
-            return leftSelected ? -1 : 1;
-        }
-        return 0;
-    });
-}
-
 export function buildFavoriteGroupLabelsByUserId({
     favoriteFriendGroups,
     groupedFavoriteFriendIdsByGroupKey,

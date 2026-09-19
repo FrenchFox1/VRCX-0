@@ -56,6 +56,21 @@ export function statusFeedEntry(
     };
 }
 
+export function bioFeedEntry(
+    overrides: Partial<FeedLiveEntryOf<'Bio'>> = {}
+): FeedLiveEntryPayload {
+    return {
+        type: 'Bio',
+        created_at: '2026-08-11T00:00:00Z',
+        userId: 'usr_friend',
+        displayName: 'Friend',
+        bio: '',
+        previousBio: '',
+        ownerUserId: '',
+        ...overrides
+    };
+}
+
 export function avatarFeedEntry(
     overrides: Partial<FeedLiveEntryOf<'Avatar'>> = {}
 ): FeedLiveEntryPayload {
@@ -69,9 +84,7 @@ export function avatarFeedEntry(
         avatarName: '',
         previousAvatarName: '',
         currentAvatarImageUrl: '',
-        currentAvatarThumbnailImageUrl: '',
         previousCurrentAvatarImageUrl: '',
-        previousCurrentAvatarThumbnailImageUrl: '',
         ownerUserId: '',
         ...overrides
     };

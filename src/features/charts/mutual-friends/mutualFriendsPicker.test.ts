@@ -5,12 +5,9 @@ import type { FriendRecord } from '@/domain/friends/types';
 import {
     buildMutualFriendExcludePickerOptions,
     buildMutualFriendPickerOption,
-    filterMutualFriendPickerOptions,
-    mutualFriendPickerOptionMatches,
     truncateMutualFriendLabel
 } from './mutualFriendsPicker';
 import { MUTUAL_GRAPH_EMPTY_USER_ID } from './mutualFriendsSettings';
-import type { MutualFriendPickerOption } from './mutualFriendsTypes';
 
 function friend(patch: Partial<FriendRecord> = {}): FriendRecord {
     return {
@@ -31,18 +28,8 @@ function friend(patch: Partial<FriendRecord> = {}): FriendRecord {
     };
 }
 
-function option(value: string, label: string): MutualFriendPickerOption {
-    return {
-        value,
-        label,
-        displayLabel: label,
-        search: `${label} ${value}`,
-        user: null
-    };
-}
-
 describe('mutualFriendsPicker', () => {
-    it('searches picker options by the text users can see or identify', () => {
+    it('builds picker search text from the name, username and id', () => {
         const built = buildMutualFriendPickerOption(
             ' usr_ava ',
             {
@@ -56,34 +43,8 @@ describe('mutualFriendsPicker', () => {
             5
         );
 
-        expect(mutualFriendPickerOptionMatches(built, 'ava usr_ava')).toBe(
-            true
-        );
-        expect(mutualFriendPickerOptionMatches(built, 'missing')).toBe(false);
-        expect(
-            filterMutualFriendPickerOptions(
-                [built, option('usr_ben', 'Ben')].filter(
-                    (item): item is MutualFriendPickerOption => Boolean(item)
-                ),
-                'usr',
-                1
-            )
-        ).toHaveLength(1);
-    });
-
-    it('keeps selected exclude-picker options at the top before limiting results', () => {
-        const options = filterMutualFriendPickerOptions(
-            [
-                option('usr_a', 'Ava'),
-                option('usr_b', 'Ben'),
-                option('usr_c', 'Cyd')
-            ],
-            '',
-            2,
-            new Set(['usr_c'])
-        );
-
-        expect(options.map((item) => item.value)).toEqual(['usr_c', 'usr_a']);
+        expect(built?.search).toBe('Ava Star ava_user usr_ava');
+        expect(built?.displayLabel).toBe('Ava Star (5)');
     });
 
     it('builds hidden-friend picker choices from all cached graph ids without duplicates or self', () => {

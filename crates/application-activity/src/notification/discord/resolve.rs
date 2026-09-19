@@ -3,9 +3,9 @@ use std::time::Duration;
 use crate::OverlayActivityDelivery;
 use vrcx_0_core::location::parse_location;
 
-use crate::notification::image_file::extract_file_id;
 use crate::notification::user_image::UserImageCache;
 use crate::notification::NotificationRemote;
+use vrcx_0_core::files::extract_file_id;
 
 const DISCORD_RESOLVE_TIMEOUT: Duration = Duration::from_secs(10);
 

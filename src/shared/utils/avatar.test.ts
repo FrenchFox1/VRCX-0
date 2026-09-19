@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-    compareUnityVersion,
-    getPlatformInfo,
-    parseAvatarUrl,
-    parseAvatarImageMetadata
-} from './avatar';
+import { compareUnityVersion, getPlatformInfo, parseAvatarUrl } from './avatar';
 
 describe('avatar utils', () => {
     afterEach(() => {
@@ -65,20 +60,6 @@ describe('avatar utils', () => {
             pc: pcGood,
             android,
             ios: {}
-        });
-    });
-
-    it('parses avatar image metadata without storing a frontend mirror', () => {
-        const result = parseAvatarImageMetadata({
-            name: 'Avatar - Test Avatar - Image - 01',
-            ownerId: 'usr_owner',
-            versions: [{ created_at: '2026-01-02T03:04:05Z' }]
-        });
-
-        expect(result).toEqual({
-            ownerId: 'usr_owner',
-            avatarName: 'Test Avatar',
-            fileCreatedAt: '2026-01-02T03:04:05Z'
         });
     });
 });

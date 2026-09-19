@@ -12,25 +12,8 @@ use vrcx_0_persistence::realtime::{
 
 use super::*;
 use crate::test_support::test_runtime;
-use vrcx_0_application_core::FeedLiveEntry;
 use vrcx_0_core::OwnerId;
-
-fn bio_feed_entry(
-    created_at: &str,
-    user_id: &str,
-    display_name: &str,
-    bio: &str,
-    previous_bio: &str,
-) -> FeedLiveEntry {
-    FeedLiveEntry::Bio {
-        created_at: created_at.into(),
-        user_id: user_id.into(),
-        display_name: display_name.into(),
-        bio: bio.into(),
-        previous_bio: previous_bio.into(),
-        owner_user_id: String::new(),
-    }
-}
+use vrcx_0_persistence::feed::test_support::seed_feed_bio_row;
 
 #[derive(Clone, Copy)]
 struct DiscardTaskExecutor;
@@ -130,33 +113,35 @@ async fn friend_feed_search_resolves_target_pages_results_and_guards_global_hist
                 created_at: "2026-08-01T00:00:00.000Z".into(),
                 force_history: false,
             }],
-            feed_entries: vec![
-                bio_feed_entry(
-                    "2026-08-12T10:00:00.000Z",
-                    "usr_alice",
-                    "Alice",
-                    "new needle text",
-                    "older text",
-                ),
-                bio_feed_entry(
-                    "2026-08-11T10:00:00.000Z",
-                    "usr_alice",
-                    "Alice",
-                    "older needle text",
-                    "oldest text",
-                ),
-                bio_feed_entry(
-                    "2026-08-12T11:00:00.000Z",
-                    "usr_bob",
-                    "Bob",
-                    "other needle text",
-                    "",
-                ),
-            ],
             ..RealtimePersistenceBatch::default()
         },
     )
     .unwrap();
+    for row in [
+        (
+            "2026-08-12T10:00:00.000Z",
+            "usr_alice",
+            "Alice",
+            "new needle text",
+            "older text",
+        ),
+        (
+            "2026-08-11T10:00:00.000Z",
+            "usr_alice",
+            "Alice",
+            "older needle text",
+            "oldest text",
+        ),
+        (
+            "2026-08-12T11:00:00.000Z",
+            "usr_bob",
+            "Bob",
+            "other needle text",
+            "",
+        ),
+    ] {
+        seed_feed_bio_row(db.as_ref(), "usr_owner", row).unwrap();
+    }
     let tools = spawn_in_process_tools(runtime).await.unwrap();
 
     let first = tools

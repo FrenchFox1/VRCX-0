@@ -23,6 +23,7 @@ import {
     normalizeFriendsLocationId as normalizeId,
     resolveWorldDialogTarget
 } from './friendsLocationsRows';
+import type { FriendsLocationsWorldGroup } from './friendsLocationsWorlds';
 
 type FriendsLocationsSectionActionTarget = Record<string, unknown> & {
     groupId?: string;
@@ -280,6 +281,13 @@ export function useFriendsLocationsActions({
         });
     }
 
+    function openWorldGroup(group: FriendsLocationsWorldGroup, name: string) {
+        openWorldDialog({
+            worldId: group.worldId,
+            title: name || undefined
+        });
+    }
+
     function openSectionGroup(section: FriendsLocationsSectionActionTarget) {
         openGroupDialog({
             groupId: section.groupId,
@@ -312,6 +320,7 @@ export function useFriendsLocationsActions({
         openFriendWorld,
         openSectionGroup,
         openSectionWorld,
+        openWorldGroup,
         requestFriendInvite,
         selfInviteFriendLocation,
         sendFriendBoop,

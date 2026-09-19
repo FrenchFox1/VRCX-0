@@ -27,6 +27,7 @@ pub mod notification;
 mod privacy_lock;
 mod process_monitor;
 mod profile_backup;
+mod profile_bio;
 mod registry_backup;
 mod screenshot;
 pub mod sidebar_auto_hide;

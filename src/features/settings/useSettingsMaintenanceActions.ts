@@ -88,9 +88,6 @@ type SettingsMaintenanceActionsDeps = {
         disabled: boolean
     ) => Promise<void>;
     setFeedPersistenceDisabledPreference: (disabled: boolean) => Promise<void>;
-    setAvatarFeedPersistenceDisabledPreference: (
-        disabled: boolean
-    ) => Promise<void>;
     setIntConfigPreference: (
         key: IntConfigPreferenceKey,
         value: string | number,
@@ -122,7 +119,6 @@ export function createSettingsMaintenanceActions({
     setCropInstancePrintsPreference,
     setGameLogPersistenceDisabledPreference,
     setFeedPersistenceDisabledPreference,
-    setAvatarFeedPersistenceDisabledPreference,
     setIntConfigPreference,
     setPrefs,
     setPurgeDialogOpen,
@@ -535,15 +531,6 @@ export function createSettingsMaintenanceActions({
             setFeedPersistenceDisabledPreference(disabled)
         );
     }
-    async function handleAvatarFeedPersistenceDisabledChange(
-        disabled: boolean
-    ) {
-        await savePreferenceValue(
-            'avatarFeedPersistenceDisabled',
-            disabled,
-            () => setAvatarFeedPersistenceDisabledPreference(disabled)
-        );
-    }
     return {
         saveNotificationTtsMode,
         saveNotificationTtsVoice,
@@ -560,7 +547,6 @@ export function createSettingsMaintenanceActions({
         handleCropInstancePrintsChange,
         handleGameLogDisabledChange,
         handleFeedPersistenceDisabledChange,
-        handleAvatarFeedPersistenceDisabledChange,
         migrateLegacyVrcxData
     };
 }

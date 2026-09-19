@@ -1,10 +1,9 @@
 import { LockIcon } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
-import { memo, useEffect, useState } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { LoadStatus } from '@/domain/shared/types';
 import { cn } from '@/lib/utils';
+import { commands } from '@/platform/tauri/bindings';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import { openAvatarDialog, openUserDialog } from '@/services/dialogService';
@@ -14,26 +13,11 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 
 import { normalizeFeedId as normalizeId } from './feedRows';
+import { useAvatarImageInfo } from './useAvatarImageInfo';
 
 type ResolvedAvatarRecord = Record<string, unknown> & {
     id?: string;
     name?: string;
-};
-
-type AvatarInfoLineStatus = LoadStatus;
-
-type AvatarInfoLineState = {
-    avatarName: string;
-    ownerId: string;
-    status: AvatarInfoLineStatus;
-    cacheKey: string;
-};
-
-type AvatarInfoLineStateInput = {
-    avatarName?: string;
-    ownerId?: string;
-    status?: AvatarInfoLineStatus;
-    cacheKey?: string;
 };
 
 type AvatarInfoLineProps = {
@@ -101,89 +85,6 @@ async function findAvatarByImageUrl({
     );
 }
 
-function getAvatarInfoLineCacheKey(imageUrl: string, endpoint: string): string {
-    const normalizedImageUrl = imageUrl.trim();
-    if (!normalizedImageUrl) {
-        return '';
-    }
-    return `${endpoint.trim()}\n${normalizedImageUrl}`;
-}
-
-function normalizeAvatarInfoLineState({
-    avatarName = '',
-    ownerId = '',
-    status = 'idle',
-    cacheKey = ''
-}: AvatarInfoLineStateInput = {}): AvatarInfoLineState {
-    return {
-        avatarName: avatarName.trim(),
-        ownerId: normalizeId(ownerId),
-        status,
-        cacheKey
-    };
-}
-
-function isSameAvatarInfoLineState(
-    left: AvatarInfoLineState | undefined,
-    right: AvatarInfoLineState | undefined
-): boolean {
-    return (
-        left?.avatarName === right?.avatarName &&
-        left?.ownerId === right?.ownerId &&
-        left?.status === right?.status &&
-        left?.cacheKey === right?.cacheKey
-    );
-}
-
-function setAvatarInfoLineState(
-    setInfo: Dispatch<SetStateAction<AvatarInfoLineState>>,
-    nextInfo: AvatarInfoLineState
-): void {
-    setInfo((current) =>
-        isSameAvatarInfoLineState(current, nextInfo) ? current : nextInfo
-    );
-}
-
-function resolveInitialAvatarInfoLineState({
-    avatarName,
-    imageUrl,
-    ownerId,
-    endpoint
-}: {
-    avatarName?: string | null;
-    imageUrl?: string | null;
-    ownerId?: string | null;
-    endpoint: string;
-}): AvatarInfoLineState {
-    const hintedName = avatarName?.trim() ?? '';
-    const hintedOwnerId = normalizeId(ownerId);
-    const cacheKey = getAvatarInfoLineCacheKey(imageUrl ?? '', endpoint);
-
-    if (!cacheKey) {
-        return normalizeAvatarInfoLineState({
-            avatarName: hintedName,
-            ownerId: hintedOwnerId,
-            status: 'idle',
-            cacheKey
-        });
-    }
-
-    if (hintedName || hintedOwnerId) {
-        const nextInfo = normalizeAvatarInfoLineState({
-            avatarName: hintedName,
-            ownerId: hintedOwnerId,
-            status: 'ready',
-            cacheKey
-        });
-        return nextInfo;
-    }
-
-    return normalizeAvatarInfoLineState({
-        status: 'running',
-        cacheKey
-    });
-}
-
 function isEmptyAvatarTags(value: unknown): boolean {
     if (typeof value === 'string' || Array.isArray(value)) {
         return value.length === 0;
@@ -219,99 +120,10 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
     userId
 }: AvatarInfoLineProps) {
     const { t } = useTranslation();
-    const currentEndpoint = useRuntimeStore(
-        (state) => state.auth.currentUserEndpoint
-    );
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
     );
-    const [info, setInfo] = useState(() =>
-        resolveInitialAvatarInfoLineState({
-            avatarName,
-            imageUrl,
-            ownerId,
-            endpoint: currentEndpoint
-        })
-    );
-
-    useEffect(() => {
-        const hintedName = avatarName?.trim() ?? '';
-        const hintedOwnerId = normalizeId(ownerId);
-        const resolvedImageUrl = imageUrl?.trim() ?? '';
-        const cacheKey = getAvatarInfoLineCacheKey(
-            resolvedImageUrl,
-            currentEndpoint
-        );
-
-        if (!cacheKey) {
-            setAvatarInfoLineState(setInfo, {
-                avatarName: hintedName,
-                ownerId: hintedOwnerId,
-                status: 'idle',
-                cacheKey
-            });
-            return undefined;
-        }
-
-        if (hintedName || hintedOwnerId) {
-            const nextInfo = normalizeAvatarInfoLineState({
-                avatarName: hintedName,
-                ownerId: hintedOwnerId,
-                status: 'ready',
-                cacheKey
-            });
-            setAvatarInfoLineState(setInfo, nextInfo);
-            return undefined;
-        }
-
-        let active = true;
-        setInfo((current) => {
-            if (current.cacheKey === cacheKey && current.status === 'ready') {
-                return current;
-            }
-            const nextInfo = normalizeAvatarInfoLineState({
-                status: 'running',
-                cacheKey
-            });
-            return isSameAvatarInfoLineState(current, nextInfo)
-                ? current
-                : nextInfo;
-        });
-
-        avatarProfileRepository
-            .getAvatarNameFromImageUrl(resolvedImageUrl)
-            .then((nextInfo) => {
-                if (!active) {
-                    return;
-                }
-
-                const resolvedInfo = normalizeAvatarInfoLineState({
-                    avatarName:
-                        typeof nextInfo?.avatarName === 'string'
-                            ? nextInfo.avatarName.trim()
-                            : '',
-                    ownerId: normalizeId(nextInfo?.ownerId),
-                    status: 'ready',
-                    cacheKey
-                });
-                setAvatarInfoLineState(setInfo, resolvedInfo);
-            })
-            .catch(() => {
-                if (!active) {
-                    return;
-                }
-                setAvatarInfoLineState(setInfo, {
-                    avatarName: hintedName,
-                    ownerId: hintedOwnerId,
-                    status: 'error',
-                    cacheKey
-                });
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [avatarName, currentEndpoint, imageUrl, ownerId]);
+    const info = useAvatarImageInfo({ avatarName, imageUrl, ownerId });
 
     const normalizedOwnerId = normalizeId(info.ownerId);
     const normalizedUserId = normalizeId(userId);
@@ -352,12 +164,10 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         let nextAvatarName = info.avatarName;
         if (!nextOwnerId) {
             try {
-                const nextInfo =
-                    await avatarProfileRepository.getAvatarNameFromImageUrl(
-                        resolvedImageUrl
-                    );
-                nextOwnerId = normalizeId(nextInfo?.ownerId);
-                nextAvatarName = nextInfo?.avatarName || nextAvatarName;
+                const file =
+                    await commands.appFileMetadataGet(resolvedImageUrl);
+                nextOwnerId = normalizeId(file?.ownerId);
+                nextAvatarName = file?.avatarName || nextAvatarName;
             } catch (error) {
                 toast.add({
                     type: 'error',

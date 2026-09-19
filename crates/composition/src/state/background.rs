@@ -4,15 +4,18 @@ use std::sync::{atomic::AtomicBool, Arc, Mutex};
 use super::{
     run_background_current_user_refresh, run_background_group_instance_notification_refresh,
     run_background_group_instance_refresh, run_background_moderation_refresh,
-    run_background_print_cleanup, run_background_social_baseline_refresh,
-    AuthenticatedSessionProjection, BackendRuntime, BackendRuntimePhase, BackendRuntimeSnapshot,
-    BackendRuntimeTelemetryKind, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
-    BackgroundTickContext, DatabaseService, RealtimeHostRuntime, RuntimeBackgroundJobs,
-    RuntimeHostContext, RuntimeHostState, SocialBaselineRefreshOutput, WebClient,
+    run_background_print_cleanup, run_background_profile_bio_scan,
+    run_background_social_baseline_refresh, AuthenticatedSessionProjection, BackendRuntime,
+    BackendRuntimePhase, BackendRuntimeSnapshot, BackendRuntimeTelemetryKind,
+    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, BackgroundTickContext,
+    DatabaseService, RealtimeHostRuntime, RuntimeBackgroundJobs, RuntimeHostContext,
+    RuntimeHostState, SocialBaselineRefreshOutput, WebClient,
 };
 use crate::GroupOrderSource;
 use futures_util::future::BoxFuture;
-use vrcx_0_application::social::{AuthenticatedRuntimeOrchestrator, SocialMaintenanceActions};
+use vrcx_0_application::social::{
+    AuthenticatedRuntimeOrchestrator, ProfileBioScanPacer, SocialMaintenanceActions,
+};
 use vrcx_0_application_activity::OverlayFavoriteGroups;
 use vrcx_0_core::OwnerId;
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
@@ -29,6 +32,7 @@ pub(super) struct RuntimeHostSocialMaintenanceActions {
     pub(super) group_instances_refresh_running: Arc<AtomicBool>,
     pub(super) group_order_source: Arc<dyn GroupOrderSource>,
     pub(super) group_notification_group_ids: Mutex<Option<GroupNotificationGroupIds>>,
+    pub(super) profile_bio_pacer: ProfileBioScanPacer,
 }
 
 pub(super) struct GroupNotificationGroupIds {
@@ -190,6 +194,12 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
 
     fn schedule_print_cleanup(&self) {
         run_background_print_cleanup(&self.tick_context());
+    }
+
+    fn scan_profile_bio(&self) -> BoxFuture<'_, ()> {
+        Box::pin(async move {
+            run_background_profile_bio_scan(&self.tick_context(), &self.profile_bio_pacer).await
+        })
     }
 }
 

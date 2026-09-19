@@ -5,6 +5,7 @@ pub mod config;
 pub mod database_maintenance;
 pub mod favorites;
 pub mod feed;
+pub mod files;
 pub mod friends;
 pub mod game_log;
 pub mod local_moderation;

@@ -47,6 +47,7 @@ describe('useFriendsLocationsPreferences', () => {
 
     it('loads persisted preferences and writes changes back', async () => {
         mocks.stringValues.set('FriendLocationDensity', 'dense');
+        mocks.stringValues.set('FriendLocationViewMode', 'worlds');
         mocks.boolValues.set('FriendLocationShowSameInstance', true);
         mocks.stringValues.set('sidebarFavoriteGroups', '["group_a"]');
         mocks.stringValues.set('sidebarSortMethod3', 'Sort by Time');
@@ -54,6 +55,7 @@ describe('useFriendsLocationsPreferences', () => {
 
         await waitFor(() => expect(result.current.preferencesReady).toBe(true));
         expect(result.current.density).toBe('dense');
+        expect(result.current.viewMode).toBe('worlds');
         expect(result.current.showSameInstanceInOnline).toBe(true);
         expect(result.current.sidebarFavoritePrefs.selectedGroups).toEqual([
             'group_a'
@@ -72,6 +74,16 @@ describe('useFriendsLocationsPreferences', () => {
         expect(mocks.setBool).toHaveBeenCalledWith(
             'FriendLocationShowSameInstance',
             false
+        );
+
+        act(() => {
+            result.current.changeViewMode('people');
+        });
+
+        expect(result.current.viewMode).toBe('people');
+        expect(mocks.setString).toHaveBeenCalledWith(
+            'FriendLocationViewMode',
+            'people'
         );
     });
 

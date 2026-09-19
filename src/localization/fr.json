@@ -2306,7 +2306,7 @@
                     "search_placeholder": "Rechercher des utilisateurs",
                     "empty": "Aucun utilisateur masqué du flux.",
                     "remove": "Retirer l'utilisateur masqué",
-                    "unknown_user": "Utilisateur inconnu"
+                    "unknown_friend": "Utilisateur inconnu"
                 }
             },
             "vr": {

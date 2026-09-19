@@ -110,6 +110,7 @@ type StatusBarFooterModel = {
     friendProfileLoad: StatusBarFriendProfileLoad;
     mutualGraph: StatusBarMutualGraph;
     nowPlaying: StatusBarNowPlaying;
+    onCopyMediaLink: () => void;
     onOpenMediaLink: () => void;
     onOpenStatusPage: () => Promise<void>;
     onProxyDraftEnabledChange: (enabled: boolean) => void;

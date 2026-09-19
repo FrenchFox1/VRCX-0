@@ -1,3 +1,4 @@
+import { GlobeIcon, LayoutGridIcon } from 'lucide-react';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -5,6 +6,7 @@ import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
     ToolbarSearch,
+    ToolbarSegmented,
     ToolbarTabs,
     ToolbarViewMenu,
     ToolbarViews,
@@ -24,6 +26,7 @@ import {
     sanitizeFriendsLocationsDensity,
     type FriendsLocationsDensity
 } from '../friendsLocationsDensity';
+import type { FriendsLocationsViewMode } from '../friendsLocationsWorlds';
 
 type FriendsLocationsSegmentOption = {
     value: FriendsLocationsSegment;
@@ -36,9 +39,11 @@ type FriendsLocationsToolbarProps = {
     searchQuery: string;
     showSameInstanceInOnline: boolean;
     density: FriendsLocationsDensity;
+    viewMode: FriendsLocationsViewMode;
     onSearchQueryChange: (value: string) => void;
     onShowSameInstanceInOnlineChange: (value: boolean) => void;
     onDensityChange: (value: FriendsLocationsDensity) => void;
+    onViewModeChange: (value: FriendsLocationsViewMode) => void;
 };
 
 export function FriendsLocationsToolbar({
@@ -46,9 +51,11 @@ export function FriendsLocationsToolbar({
     searchQuery,
     showSameInstanceInOnline,
     density,
+    viewMode,
     onSearchQueryChange,
     onShowSameInstanceInOnlineChange,
-    onDensityChange
+    onDensityChange,
+    onViewModeChange
 }: FriendsLocationsToolbarProps) {
     const { t } = useTranslation();
     const options: ToolbarSegmentOption<FriendsLocationsSegment>[] =
@@ -62,7 +69,26 @@ export function FriendsLocationsToolbar({
         <PageToolbar>
             <PageToolbarRow>
                 <ToolbarViews>
-                    <ToolbarTabs options={options} />
+                    <ToolbarSegmented
+                        iconOnly
+                        value={viewMode}
+                        onValueChange={onViewModeChange}
+                        options={[
+                            {
+                                value: 'people',
+                                label: t('view.friends_locations.view_people'),
+                                icon: LayoutGridIcon
+                            },
+                            {
+                                value: 'worlds',
+                                label: t('view.friends_locations.view_worlds'),
+                                icon: GlobeIcon
+                            }
+                        ]}
+                    />
+                    {viewMode === 'worlds' ? null : (
+                        <ToolbarTabs options={options} />
+                    )}
                 </ToolbarViews>
 
                 <ToolbarSearch

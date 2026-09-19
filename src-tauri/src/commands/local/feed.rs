@@ -22,19 +22,6 @@ pub fn app__feed_persistence_set_disabled(
         .map_err(AppError::from)
 }
 
-#[tauri::command(async)]
-#[specta::specta]
-pub fn app__avatar_feed_persistence_set_disabled(
-    state: State<'_, AppState>,
-    disabled: bool,
-) -> Result<(), AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .set_avatar_feed_persistence_disabled(disabled)
-        .map_err(AppError::from)
-}
-
 #[tauri::command]
 #[specta::specta]
 pub async fn app__avatar_feed_history_cleanup(

@@ -550,6 +550,7 @@ impl DesktopRuntimeHostState {
             runtime.desktop_assembly().tasks().clone(),
             Arc::clone(runtime.desktop_assembly().avatar_cache()),
             Arc::clone(runtime.desktop_assembly().world_cache()),
+            runtime.desktop_assembly().file_cache().clone(),
             Arc::clone(runtime.realtime_runtime()),
             desktop_services.overlay_activity(),
             runtime.desktop_assembly().favorite_mutations().clone(),
@@ -625,7 +626,15 @@ impl DesktopRuntimeHostState {
                 world_cache: Arc::clone(runtime.desktop_assembly().world_cache()),
             },
         );
-        let vrchat_remote = DesktopVrchatRemoteFacade::new(vrchat_api.clone(), media.clone());
+        let vrchat_remote = DesktopVrchatRemoteFacade::new(
+            vrchat_api.clone(),
+            media.clone(),
+            crate::profile_bio::ProfileBioObserver::new(
+                Arc::clone(runtime.database()),
+                Arc::clone(runtime.realtime_runtime()),
+                runtime.desktop_assembly().auth_scope().clone(),
+            ),
+        );
         let vrchat_config = VrchatConfigRuntime::new(
             vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT.into(),
             Arc::new(vrcx_0_outbound_adapters::VrchatConfigAdapter::new(

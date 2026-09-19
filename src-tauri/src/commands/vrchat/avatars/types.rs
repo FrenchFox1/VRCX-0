@@ -28,13 +28,6 @@ pub struct VrchatAvatarListByUserInput {
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct VrchatAvatarFileInput {
-    #[serde(default)]
-    pub(crate) file_id: String,
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatAvatarSaveInput {
     #[serde(default)]
     pub(crate) avatar_id: String,

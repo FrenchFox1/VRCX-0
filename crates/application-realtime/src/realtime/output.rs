@@ -8,6 +8,15 @@ use super::projection::{
 use super::runtime_types::PendingOfflineTimerAction;
 use vrcx_0_core::OwnerId;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FriendIconChange {
+    pub user_id: String,
+    pub display_name: String,
+    pub previous_icon_url: String,
+    pub next_icon_url: String,
+    pub created_at: String,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct RealtimeFriendOutput {
     pub owner_user_id: OwnerId,
@@ -15,6 +24,7 @@ pub struct RealtimeFriendOutput {
     pub persistence: RealtimePersistenceBatch,
     pub timer_action: PendingOfflineTimerAction,
     pub profile_refetch_user_ids: Vec<String>,
+    pub icon_changes: Vec<FriendIconChange>,
 }
 
 impl RealtimeFriendOutput {
@@ -32,6 +42,7 @@ impl RealtimeFriendOutput {
             persistence: RealtimePersistenceBatch::default(),
             timer_action: PendingOfflineTimerAction::None,
             profile_refetch_user_ids: Vec::new(),
+            icon_changes: Vec::new(),
         }
     }
 }

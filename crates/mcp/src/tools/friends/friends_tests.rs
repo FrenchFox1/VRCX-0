@@ -158,7 +158,6 @@ fn fallback_friend_profile_current_builds_from_display_name_only() {
     assert_eq!(result.status, "");
     assert_eq!(result.status_description, "");
     assert_eq!(result.platform, "");
-    assert_eq!(result.current_avatar_name, "");
 }
 
 #[test]

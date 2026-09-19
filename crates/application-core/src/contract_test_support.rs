@@ -251,6 +251,42 @@ impl ImageCachePort for NoopImageCachePort {
     }
 }
 
+#[derive(Clone, Default)]
+pub struct MemoryFileCachePort {
+    files: Arc<Mutex<HashMap<String, vrcx_0_contracts::FileMetadataOutput>>>,
+    resolve_calls: Arc<CallRecorder<String>>,
+}
+
+impl MemoryFileCachePort {
+    pub fn insert(&self, file: vrcx_0_contracts::FileMetadataOutput) {
+        self.files
+            .lock()
+            .expect("memory file cache lock")
+            .insert(file.id.clone(), file);
+    }
+
+    pub fn resolve_calls(&self) -> Vec<String> {
+        self.resolve_calls.snapshot()
+    }
+}
+
+#[async_trait::async_trait]
+impl crate::FileCachePort for MemoryFileCachePort {
+    async fn resolve(
+        &self,
+        _web: &WebClient,
+        _endpoint: &str,
+        file_id: &str,
+    ) -> Option<vrcx_0_contracts::FileMetadataOutput> {
+        self.resolve_calls.record(file_id.to_string());
+        self.files
+            .lock()
+            .expect("memory file cache lock")
+            .get(file_id)
+            .cloned()
+    }
+}
+
 #[derive(Default)]
 pub struct NoopWorldCachePort;
 

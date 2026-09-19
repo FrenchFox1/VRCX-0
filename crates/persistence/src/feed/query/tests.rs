@@ -9,7 +9,7 @@ use super::{
     FeedRowsQueryInput,
 };
 use crate::database::DatabaseService;
-use crate::feed::test_support::seed_feed_gps_rows;
+use crate::feed::test_support::{seed_feed_avatar_row, seed_feed_bio_row, seed_feed_gps_rows};
 use crate::ownership::OwnerId;
 use crate::realtime::{write_realtime_batch, RealtimePersistenceBatch};
 
@@ -41,31 +41,6 @@ fn gps_world_entry(
     entry
 }
 
-fn avatar_entry(
-    created_at: &str,
-    user_id: &str,
-    display_name: &str,
-    owner_id: &str,
-    avatar_name: &str,
-) -> FeedLiveEntry {
-    FeedLiveEntry::Avatar {
-        created_at: created_at.into(),
-        user_id: user_id.into(),
-        display_name: display_name.into(),
-        owner_id: owner_id.into(),
-        previous_owner_id: String::new(),
-        avatar_name: avatar_name.into(),
-        previous_avatar_name: String::new(),
-        current_avatar_image_url: String::new(),
-        current_avatar_thumbnail_image_url: String::new(),
-        previous_current_avatar_image_url: String::new(),
-        previous_current_avatar_thumbnail_image_url: String::new(),
-        current_avatar_tags: None,
-        previous_current_avatar_tags: None,
-        owner_user_id: String::new(),
-    }
-}
-
 fn status_entry(
     created_at: &str,
     user_id: &str,
@@ -80,23 +55,6 @@ fn status_entry(
         status_description: String::new(),
         previous_status: String::new(),
         previous_status_description: String::new(),
-        owner_user_id: String::new(),
-    }
-}
-
-fn bio_entry(
-    created_at: &str,
-    user_id: &str,
-    display_name: &str,
-    bio: &str,
-    previous_bio: &str,
-) -> FeedLiveEntry {
-    FeedLiveEntry::Bio {
-        created_at: created_at.into(),
-        user_id: user_id.into(),
-        display_name: display_name.into(),
-        bio: bio.into(),
-        previous_bio: previous_bio.into(),
         owner_user_id: String::new(),
     }
 }
@@ -277,125 +235,6 @@ fn user_scope_drops_live_entries_and_existing_rows_outside_the_scope() {
         .map(|row| row.user_id.as_deref().unwrap_or_default())
         .collect::<Vec<_>>();
     assert_eq!(user_ids, vec!["usr_scoped", "usr_scoped"]);
-}
-
-#[test]
-fn live_feed_rows_keep_avatar_fields_that_only_exist_on_live_entries() {
-    let output = merge_case(MergeCase {
-        rows: Vec::new(),
-        current_user_id: "usr_self".into(),
-        filters: Vec::new(),
-        search: String::new(),
-        date_from: String::new(),
-        date_to: String::new(),
-        favorites_only: false,
-        favorite_user_ids: Vec::new(),
-        scoped_user_ids: Vec::new(),
-        excluded_user_ids: Vec::new(),
-        live_entries: vec![live(
-            1,
-            FeedLiveEntry::Avatar {
-                created_at: "2026-05-15T00:00:00Z".into(),
-                user_id: "usr_friend".into(),
-                display_name: "Friend".into(),
-                owner_id: "usr_owner".into(),
-                previous_owner_id: "usr_previous_owner".into(),
-                avatar_name: "Current".into(),
-                previous_avatar_name: "Previous".into(),
-                current_avatar_image_url: String::new(),
-                current_avatar_thumbnail_image_url: String::new(),
-                previous_current_avatar_image_url: String::new(),
-                previous_current_avatar_thumbnail_image_url: String::new(),
-                current_avatar_tags: Some(vec!["content_horror".into()]),
-                previous_current_avatar_tags: Some(Vec::new()),
-                owner_user_id: String::new(),
-            },
-        )],
-        min_live_sequence: 0,
-        max_rows: 10,
-    });
-
-    assert_eq!(output.rows.len(), 1);
-    let row = &output.rows[0];
-    assert_eq!(row.previous_avatar_name.as_deref(), Some("Previous"));
-    assert_eq!(row.previous_owner_id.as_deref(), Some("usr_previous_owner"));
-    assert_eq!(
-        row.current_avatar_tags.as_deref(),
-        Some(["content_horror".to_string()].as_slice())
-    );
-    assert_eq!(
-        row.previous_current_avatar_tags.as_deref(),
-        Some([].as_slice())
-    );
-    assert_eq!(row.row_id, None);
-}
-
-#[test]
-fn live_avatar_search_matches_private_and_public_with_dates_and_filters() {
-    let live_entries = vec![
-        live(
-            1,
-            avatar_entry("2026-05-01T00:00:00Z", "usr_old", "", "usr_old", "Old"),
-        ),
-        live(
-            2,
-            avatar_entry(
-                "2026-05-20T00:00:00Z",
-                "usr_private",
-                "",
-                "usr_private",
-                "Owned Avatar",
-            ),
-        ),
-        live(
-            3,
-            avatar_entry(
-                "2026-05-21T00:00:00Z",
-                "usr_public",
-                "",
-                "usr_author",
-                "Shared Avatar",
-            ),
-        ),
-        live(
-            4,
-            avatar_entry(
-                "2026-05-21T00:00:00Z",
-                "usr_missing_owner",
-                "",
-                "",
-                "Missing Owner",
-            ),
-        ),
-        live(5, gps_entry("2026-05-20T00:00:00Z", "usr_gps", "", "")),
-    ];
-
-    let private_output = merge_case(MergeCase {
-        filters: vec![FeedFilter::Avatar],
-        search: "private".into(),
-        date_from: "2026-05-10T00:00:00Z".into(),
-        date_to: "2026-05-20T00:00:00Z".into(),
-        live_entries: live_entries.clone(),
-        max_rows: 10,
-        ..MergeCase::default()
-    });
-    assert_eq!(private_output.rows.len(), 1);
-    assert_eq!(
-        private_output.rows[0].user_id.as_deref(),
-        Some("usr_private")
-    );
-
-    let public_output = merge_case(MergeCase {
-        filters: vec![FeedFilter::Avatar],
-        search: "public".into(),
-        date_from: "2026-05-21T00:00:00Z".into(),
-        date_to: "2026-05-21T00:00:00Z".into(),
-        live_entries,
-        max_rows: 10,
-        ..MergeCase::default()
-    });
-    assert_eq!(public_output.rows.len(), 1);
-    assert_eq!(public_output.rows[0].user_id.as_deref(), Some("usr_public"));
 }
 
 #[test]
@@ -667,28 +506,27 @@ fn world_id_search_honors_the_date_window() -> Result<(), crate::Error> {
 fn private_avatar_search_applies_dates_to_every_match_branch() -> Result<(), crate::Error> {
     let dir = TestDir::new("feed-search-private-avatar-date-window");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-    write_realtime_batch(
+    seed_feed_avatar_row(
         &db,
-        &OwnerId::new("usr_self"),
-        &RealtimePersistenceBatch {
-            feed_entries: vec![
-                avatar_entry(
-                    "2026-05-01T00:00:00Z",
-                    "usr_old",
-                    "Private Collector",
-                    "usr_old",
-                    "Old Avatar",
-                ),
-                avatar_entry(
-                    "2026-05-20T00:00:00Z",
-                    "usr_new",
-                    "New",
-                    "usr_new",
-                    "New Avatar",
-                ),
-            ],
-            ..RealtimePersistenceBatch::default()
-        },
+        "usr_self",
+        (
+            "2026-05-01T00:00:00Z",
+            "usr_old",
+            "Private Collector",
+            "usr_old",
+            "Old Avatar",
+        ),
+    )?;
+    seed_feed_avatar_row(
+        &db,
+        "usr_self",
+        (
+            "2026-05-20T00:00:00Z",
+            "usr_new",
+            "New",
+            "usr_new",
+            "New Avatar",
+        ),
     )?;
 
     let rows = feed_rows_query_interruptible(
@@ -790,36 +628,31 @@ fn date_window_preserves_millisecond_boundaries() -> Result<(), crate::Error> {
 fn search_matches_previous_values_and_escapes_like_wildcards() -> Result<(), crate::Error> {
     let dir = TestDir::new("feed-search-previous-literal");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
-    write_realtime_batch(
-        &db,
-        &OwnerId::new("usr_self"),
-        &RealtimePersistenceBatch {
-            feed_entries: vec![
-                bio_entry(
-                    "2026-05-20T00:00:00.000Z",
-                    "usr_previous",
-                    "Previous",
-                    "new value",
-                    "removed needle",
-                ),
-                bio_entry(
-                    "2026-05-19T00:00:00.000Z",
-                    "usr_percent",
-                    "Percent",
-                    "100% literal",
-                    "old",
-                ),
-                bio_entry(
-                    "2026-05-18T00:00:00.000Z",
-                    "usr_other",
-                    "Other",
-                    "ordinary text",
-                    "old",
-                ),
-            ],
-            ..RealtimePersistenceBatch::default()
-        },
-    )?;
+    for row in [
+        (
+            "2026-05-20T00:00:00.000Z",
+            "usr_previous",
+            "Previous",
+            "new value",
+            "removed needle",
+        ),
+        (
+            "2026-05-19T00:00:00.000Z",
+            "usr_percent",
+            "Percent",
+            "100% literal",
+            "old",
+        ),
+        (
+            "2026-05-18T00:00:00.000Z",
+            "usr_other",
+            "Other",
+            "ordinary text",
+            "old",
+        ),
+    ] {
+        seed_feed_bio_row(&db, "usr_self", row)?;
+    }
 
     let search = |text: &str| {
         feed_rows_query(
@@ -887,13 +720,21 @@ fn cursor_pagination_walks_same_timestamp_rows_across_tables_in_full_page_order(
     let dir = TestDir::new("feed-cursor-ties");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
     let tie = "2026-05-15T00:10:00Z";
+    seed_feed_bio_row(
+        &db,
+        "usr_self",
+        (tie, "usr_bio", "bio-20", "new bio", "old bio"),
+    )?;
+    seed_feed_avatar_row(
+        &db,
+        "usr_self",
+        (tie, "usr_avatar", "avatar-30", "usr_owner", "Avatar"),
+    )?;
     write_realtime_batch(
         &db,
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             feed_entries: vec![
-                bio_entry(tie, "usr_bio", "bio-20", "new bio", "old bio"),
-                avatar_entry(tie, "usr_avatar", "avatar-30", "usr_owner", "Avatar"),
                 status_entry(tie, "usr_status", "status-40", "join me"),
                 gps_entry(tie, "usr_gps_a", "gps-60-a", "wrld_1:a"),
                 gps_entry(tie, "usr_gps_b", "gps-60-b", "wrld_1:b"),

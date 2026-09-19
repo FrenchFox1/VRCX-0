@@ -1,10 +1,9 @@
-use std::collections::HashMap;
 use std::iter::once_with;
 use vrcx_0_core::derived_keys;
 
 use chrono::Utc;
 use compact_str::CompactString;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value};
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::realtime::FriendLogUpsert;
 use vrcx_0_core::friends::{FriendRecord, StateBucket};
@@ -12,12 +11,12 @@ use vrcx_0_core::friends::{FriendRecord, StateBucket};
 use crate::realtime::location_predicates::is_real_instance;
 use crate::realtime::RealtimeFriendOutput;
 
-use super::event_patch::{record_string, record_value};
+use super::event_patch::record_string;
 use super::utils::{first_non_empty, first_owned, parse_location, string_or_previous, JsonExt};
 
-mod feed_entry;
-
-use feed_entry::{feed_avatar_tags, feed_duration_ms};
+fn feed_duration_ms(duration_ms: i64) -> Option<i64> {
+    (duration_ms > 0).then_some(duration_ms)
+}
 
 struct ResolvedLocationNames {
     world_name: String,
@@ -82,72 +81,14 @@ impl FriendRelationshipFeedKind {
     }
 }
 
-#[derive(Clone, Debug)]
-pub(super) struct FriendFieldChange {
-    next: Value,
-    previous: Value,
-}
-
-#[derive(Clone, Debug, Default)]
-pub(super) struct FriendChangedProps {
-    changes: HashMap<String, FriendFieldChange>,
-}
-
-impl FriendChangedProps {
-    pub(super) fn from_patch(patch: &Value, previous: Option<&FriendRecord>) -> Self {
-        let Some(previous) = previous else {
-            return Self::default();
-        };
-        let Some(patch_object) = patch.as_object() else {
-            return Self::default();
-        };
-        let mut changes = HashMap::new();
-        for (key, next) in patch_object {
-            let previous = previous_value_for_diff(previous, key);
-            if value_equal_for_diff(next, &previous) {
-                continue;
-            }
-            changes.insert(
-                key.clone(),
-                FriendFieldChange {
-                    next: next.clone(),
-                    previous,
-                },
-            );
-        }
-        Self { changes }
+pub(super) fn patch_field_changed(patch: &Value, previous: &FriendRecord, key: &str) -> bool {
+    let previous_value = record_string(previous, key);
+    match patch.get(key) {
+        None => false,
+        Some(Value::Null) => !previous_value.is_empty(),
+        Some(Value::String(next)) => *next != previous_value,
+        Some(_) => true,
     }
-
-    fn get(&self, key: &str) -> Option<&FriendFieldChange> {
-        self.changes.get(key)
-    }
-
-    pub(super) fn has(&self, key: &str) -> bool {
-        self.changes.contains_key(key)
-    }
-}
-
-fn previous_value_for_diff(previous: &FriendRecord, key: &str) -> Value {
-    let value = record_value(previous, key);
-    if !value.is_null() {
-        return value;
-    }
-    match key {
-        "currentAvatarTags" => json!([]),
-        _ => Value::String(String::new()),
-    }
-}
-
-pub(super) fn value_equal_for_diff(next: &Value, previous: &Value) -> bool {
-    if next == previous {
-        return true;
-    }
-    let next_empty_string = next.as_str().map(|value| value.is_empty()).unwrap_or(false);
-    let previous_empty_string = previous
-        .as_str()
-        .map(|value| value.is_empty())
-        .unwrap_or(false);
-    next.is_null() && previous_empty_string || previous.is_null() && next_empty_string
 }
 
 pub(super) fn friend_log_upsert(
@@ -201,14 +142,13 @@ pub(super) fn add_profile_diff_feed_entries(
     user_id: &str,
     patch: &Value,
     previous: Option<&FriendRecord>,
-    changes: &FriendChangedProps,
     created_at: &str,
 ) {
     let Some(previous) = previous.filter(|previous| is_online_state(previous)) else {
         return;
     };
-    let status_changed = changes.has("status");
-    let status_description_changed = changes.has("statusDescription");
+    let status_changed = patch_field_changed(patch, previous, "status");
+    let status_description_changed = patch_field_changed(patch, previous, "statusDescription");
     let next_status = string_or_previous(patch, previous, "status");
     if (status_changed || status_description_changed)
         && next_status != "offline"
@@ -222,82 +162,6 @@ pub(super) fn add_profile_diff_feed_entries(
             status_description: string_or_previous(patch, previous, "statusDescription"),
             previous_status: previous.status.to_string(),
             previous_status_description: previous.status_description.to_string(),
-            owner_user_id: String::new(),
-        });
-    }
-    // TODO: VRChat stopped sending `bio` and `currentAvatar*` for other users (REST + WS)
-    // since 2026-09, so the Bio/Avatar feed below no longer fires; kept until confirmed dead.
-    if changes.has("bio") && !patch.text_field("bio").is_empty() && !previous.bio.is_empty() {
-        output.persistence.feed_entries.push(FeedLiveEntry::Bio {
-            created_at: created_at.to_string(),
-            user_id: user_id.to_string(),
-            display_name: display_name(user_id, patch, Some(previous)),
-            bio: patch.text_field("bio"),
-            previous_bio: previous.bio.clone(),
-            owner_user_id: String::new(),
-        });
-    }
-    let avatar_image_changed =
-        changes.has("currentAvatarImageUrl") || changes.has("currentAvatarThumbnailImageUrl");
-    let avatar_tags_changed = changes.has("currentAvatarTags");
-    let should_write_avatar = avatar_image_changed || avatar_tags_changed;
-    let current_avatar = first_owned([
-        string_or_previous(patch, previous, "currentAvatarImageUrl"),
-        string_or_previous(patch, previous, "currentAvatarThumbnailImageUrl"),
-    ]);
-    let previous_avatar = first_owned([
-        previous.current_avatar_image_url.clone(),
-        previous.current_avatar_thumbnail_image_url.clone(),
-    ]);
-    if should_write_avatar && !previous_avatar.is_empty() && !current_avatar.is_empty() {
-        let current_avatar_tags = feed_avatar_tags(
-            changes
-                .get("currentAvatarTags")
-                .map(|change| &change.next)
-                .or_else(|| previous.extra.get("currentAvatarTags")),
-        );
-        let previous_avatar_tags = feed_avatar_tags(
-            changes
-                .get("currentAvatarTags")
-                .map(|change| &change.previous)
-                .or_else(|| previous.extra.get("currentAvatarTags")),
-        );
-        output.persistence.feed_entries.push(FeedLiveEntry::Avatar {
-            created_at: created_at.to_string(),
-            user_id: user_id.to_string(),
-            display_name: display_name(user_id, patch, Some(previous)),
-            owner_id: first_owned([
-                patch.text_field("currentAvatarAuthorId"),
-                patch.text_field("authorId"),
-                previous.current_avatar_author_id.clone(),
-                record_string(previous, "authorId"),
-            ]),
-            previous_owner_id: first_owned([
-                previous.current_avatar_author_id.clone(),
-                record_string(previous, "authorId"),
-            ]),
-            avatar_name: first_owned([
-                patch.text_field("currentAvatarName"),
-                patch.text_field("avatarName"),
-                previous.current_avatar_name.clone(),
-                record_string(previous, "avatarName"),
-            ]),
-            previous_avatar_name: first_owned([
-                previous.current_avatar_name.clone(),
-                record_string(previous, "avatarName"),
-            ]),
-            current_avatar_image_url: string_or_previous(patch, previous, "currentAvatarImageUrl"),
-            current_avatar_thumbnail_image_url: string_or_previous(
-                patch,
-                previous,
-                "currentAvatarThumbnailImageUrl",
-            ),
-            previous_current_avatar_image_url: previous.current_avatar_image_url.clone(),
-            previous_current_avatar_thumbnail_image_url: previous
-                .current_avatar_thumbnail_image_url
-                .clone(),
-            current_avatar_tags,
-            previous_current_avatar_tags: previous_avatar_tags,
             owner_user_id: String::new(),
         });
     }

@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     appAvatarGet: vi.fn(),
     appAvatarFindByImageUrl: vi.fn(),
-    appVrchatAvatarFileGet: vi.fn(),
     appVrchatAvatarSelect: vi.fn(),
     appVrchatAvatarSelectFallback: vi.fn()
 }));
@@ -12,7 +11,6 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appAvatarGet: mocks.appAvatarGet,
         appAvatarFindByImageUrl: mocks.appAvatarFindByImageUrl,
-        appVrchatAvatarFileGet: mocks.appVrchatAvatarFileGet,
         appVrchatAvatarSelect: mocks.appVrchatAvatarSelect,
         appVrchatAvatarSelectFallback: mocks.appVrchatAvatarSelectFallback
     }
@@ -20,9 +18,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 import { queryClient } from '@/lib/queryClient';
 
-import avatarProfileRepository, {
-    getAvatarNameFromImageUrl
-} from './avatarProfileRepository';
+import avatarProfileRepository from './avatarProfileRepository';
 import * as avatarProfileExports from './avatarProfileRepository';
 
 beforeEach(() => {
@@ -150,8 +146,7 @@ describe('AvatarProfileRepository', () => {
             'deleteImposter',
             'getAvatarModerations',
             'sendAvatarModeration',
-            'deleteAvatarModeration',
-            'getAvatarNameFromImageUrl'
+            'deleteAvatarModeration'
         ];
 
         expect(Object.isFrozen(avatarProfileRepository)).toBe(true);
@@ -222,30 +217,5 @@ describe('AvatarProfileRepository', () => {
         expect(mocks.appVrchatAvatarSelectFallback).toHaveBeenCalledWith({
             avatarId: 'avtr_selected'
         });
-    });
-
-    it('reuses the bounded file query result without a second module cache', async () => {
-        mocks.appVrchatAvatarFileGet.mockResolvedValue({
-            status: 200,
-            data: JSON.stringify({
-                name: 'Avatar - Shared cache - Image - 1',
-                ownerId: 'usr_owner',
-                versions: [{ created_at: '2026-01-03T00:00:00.000Z' }]
-            })
-        });
-
-        const imageUrl =
-            'https://api.vrchat.cloud/api/1/file/file_avatar_profile/1/file';
-        const first = await getAvatarNameFromImageUrl(imageUrl);
-        const second =
-            await avatarProfileRepository.getAvatarNameFromImageUrl(imageUrl);
-
-        expect(first).toEqual({
-            ownerId: 'usr_owner',
-            avatarName: 'Shared cache',
-            fileCreatedAt: '2026-01-03T00:00:00.000Z'
-        });
-        expect(second).toEqual(first);
-        expect(mocks.appVrchatAvatarFileGet).toHaveBeenCalledTimes(1);
     });
 });

@@ -126,7 +126,6 @@ export type BuildSettingsPageStateSectionsInput = DialogSectionInput &
         handleCropInstancePrintsChange: SettingsCallback<[boolean]>;
         handleGameLogDisabledChange: SettingsCallback<[boolean]>;
         handleFeedPersistenceDisabledChange: SettingsCallback<[boolean]>;
-        handleAvatarFeedPersistenceDisabledChange: SettingsCallback<[boolean]>;
         hmdNotificationsDialogOpen: boolean;
         integrationPrefs: SettingsIntegrationPrefs;
         locale: string;

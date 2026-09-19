@@ -12,8 +12,8 @@ const webview2BuildTarget = {
     browserslist: 'Edge 146'
 };
 const webkitLegacyBuildTarget = {
-    vite: 'safari17',
-    browserslist: 'Safari 17.0'
+    vite: 'safari17.4',
+    browserslist: 'Safari 17.4'
 };
 const webkitModernBuildTarget = {
     vite: 'safari18.2',
@@ -24,7 +24,7 @@ function getPlatformBuildTarget() {
     const webkitBuildTargetOverride =
         process.env['VRCX_0_WEBKIT_BUILD_TARGET']?.trim();
 
-    if (webkitBuildTargetOverride === 'safari17') {
+    if (webkitBuildTargetOverride === 'safari17.4') {
         return webkitLegacyBuildTarget;
     }
     if (webkitBuildTargetOverride === 'safari18.2') {

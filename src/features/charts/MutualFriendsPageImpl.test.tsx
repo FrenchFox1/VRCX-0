@@ -63,11 +63,9 @@ function controllerValue(currentUserId: string, friendCount: number) {
             toggleFocusedCommunity: noop
         },
         exclusions: {
-            excludeSearchQuery: '',
-            excludedCount: 0,
-            excludedFriendIdSet: new Set<string>(),
-            filteredExcludeOptions: [],
-            setExcludeSearchQuery: noop
+            excludePickerOptions: [],
+            excludedFriendIds: [],
+            setExcludedFriendIds: noop
         },
         fetch: {
             fetchProgress: {

@@ -11,6 +11,10 @@ import {
     FriendsLocationsCollapsibleGroupHeader,
     FriendsLocationsSectionHeader
 } from './FriendsLocationsViewParts';
+import {
+    FriendsLocationsFriendChips,
+    FriendsLocationsWorldSection
+} from './FriendsLocationsWorldSection';
 
 type FriendsLocationsPageControllerState = ReturnType<
     typeof useFriendsLocationsPageController
@@ -32,6 +36,8 @@ export function FriendsLocationsVirtualList({
     scroll
 }: FriendsLocationsVirtualListProps) {
     const { t } = useTranslation();
+    const privateCollapsed = filters.collapsedGroups.has('private-location');
+    const worldChipsTwoLine = derived.densityConfig.worldChipLines === 2;
 
     return (
         <div
@@ -54,8 +60,59 @@ export function FriendsLocationsVirtualList({
                         )
                     }
                 />
+            ) : derived.hasVisibleSections && derived.viewMode === 'worlds' ? (
+                <div
+                    key="worlds"
+                    className="divide-border/60 flex flex-col divide-y py-1 pr-1 [&>*]:py-4 [&>*:first-child]:pt-1 [&>*:last-child]:pb-1"
+                >
+                    {derived.worldGroups.map((group) => (
+                        <FriendsLocationsWorldSection
+                            key={group.worldId}
+                            group={group}
+                            summary={derived.worldSummaries.get(group.worldId)}
+                            densityConfig={derived.densityConfig}
+                            currentUserId={runtime.currentUserId}
+                            favoriteIds={derived.favoriteIds}
+                            onOpenWorld={locationCommands.openWorldGroup}
+                            onOpenGroup={(groupId) =>
+                                locationCommands.openSectionGroup({ groupId })
+                            }
+                            onOpenUser={locationCommands.openFriendUser}
+                        />
+                    ))}
+                    {derived.privateWorldFriends.length ? (
+                        <div className="flex flex-col gap-2">
+                            <FriendsLocationsCollapsibleGroupHeader
+                                section={{
+                                    key: 'worlds:private-location',
+                                    type: 'collapsibleGroup',
+                                    groupKey: 'private-location',
+                                    title: t('location.private'),
+                                    description: '',
+                                    friends: derived.privateWorldFriends,
+                                    worldId: '',
+                                    groupId: '',
+                                    collapsed: privateCollapsed
+                                }}
+                                onToggle={
+                                    locationCommands.toggleCollapsibleGroup
+                                }
+                            />
+                            {privateCollapsed ? null : (
+                                <FriendsLocationsFriendChips
+                                    friends={derived.privateWorldFriends}
+                                    currentUserId={runtime.currentUserId}
+                                    favoriteIds={derived.favoriteIds}
+                                    twoLine={worldChipsTwoLine}
+                                    onOpenUser={locationCommands.openFriendUser}
+                                />
+                            )}
+                        </div>
+                    ) : null}
+                </div>
             ) : derived.hasVisibleSections ? (
                 <div
+                    key="people"
                     className="relative"
                     style={{
                         height: `${derived.positionedRows.totalHeight}px`

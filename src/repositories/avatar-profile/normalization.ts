@@ -14,7 +14,7 @@ import {
     normalizeTimestamp,
     parseInteger
 } from './shared';
-import type { AvatarFileVersion, AvatarProfileExtras } from './types';
+import type { AvatarProfileExtras } from './types';
 
 export function normalizeLocalTags(values: unknown): AvatarLocalTag[] {
     if (!Array.isArray(values)) {
@@ -40,22 +40,6 @@ function normalizeUnityPackages(values: unknown): UnityPackageRecord[] {
     return values.filter((value): value is EntityRecord =>
         Boolean(value && typeof value === 'object')
     );
-}
-
-export function normalizeFileResponse(json: unknown): {
-    versions: AvatarFileVersion[];
-    name?: string;
-    ownerId?: string;
-} {
-    if (isRecord(json) && Array.isArray(json.versions)) {
-        return {
-            versions: json.versions.filter(isRecord),
-            name: typeof json.name === 'string' ? json.name : '',
-            ownerId: typeof json.ownerId === 'string' ? json.ownerId : ''
-        };
-    }
-
-    return { versions: [], name: '', ownerId: '' };
 }
 
 function normalizeAvatarProfile(

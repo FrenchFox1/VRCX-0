@@ -36,11 +36,13 @@ export function FriendsLocationsPage({
                         preferences.showSameInstanceInOnline
                     }
                     density={preferences.density}
+                    viewMode={preferences.viewMode}
                     onSearchQueryChange={filters.setSearchQuery}
                     onShowSameInstanceInOnlineChange={
                         preferences.changeShowSameInstanceInOnline
                     }
                     onDensityChange={preferences.changeDensityPreference}
+                    onViewModeChange={preferences.changeViewMode}
                 />
                 <TabsContent
                     value={filters.activeSegment}

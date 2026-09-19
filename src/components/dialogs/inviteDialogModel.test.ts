@@ -5,10 +5,8 @@ import {
     buildFavoriteGroupLabelsByUserId,
     buildFriendsInCurrentInstanceIds,
     displayNameForUser,
-    filterInviteUserIds,
     onlineFriendIdsFromGroup,
-    pushUniqueLabel,
-    sortInviteUserIdsWithSelectedFirst
+    pushUniqueLabel
 } from './inviteDialogModel';
 
 describe('inviteDialogModel', () => {
@@ -111,88 +109,6 @@ describe('inviteDialogModel', () => {
         pushUniqueLabel(labels, 'Another');
 
         expect(labels).toEqual(['Existing', 'New', 'Another']);
-    });
-
-    it('filters invite users by id or display name', () => {
-        const selectableUserIds = [
-            'usr_self',
-            'usr_bucket_online',
-            'usr_state_online',
-            'usr_name_only'
-        ];
-        const currentUser = {
-            id: 'usr_self',
-            displayName: 'Current User'
-        };
-
-        expect(
-            filterInviteUserIds({
-                selectableUserIds,
-                search: '',
-                friendsById,
-                currentUser
-            })
-        ).toBe(selectableUserIds);
-        expect(
-            filterInviteUserIds({
-                selectableUserIds,
-                search: 'bucket',
-                friendsById,
-                currentUser
-            })
-        ).toEqual(['usr_bucket_online']);
-        expect(
-            filterInviteUserIds({
-                selectableUserIds,
-                search: 'STATE',
-                friendsById,
-                currentUser
-            })
-        ).toEqual(['usr_state_online']);
-        expect(
-            filterInviteUserIds({
-                selectableUserIds,
-                search: 'usr_name',
-                friendsById,
-                currentUser
-            })
-        ).toEqual(['usr_name_only']);
-    });
-
-    it('sorts selected invite users first without mutating input order', () => {
-        const filteredUserIds = [
-            'usr_bucket_online',
-            'usr_state_online',
-            'usr_name_only',
-            'usr_offline'
-        ];
-
-        expect(
-            sortInviteUserIdsWithSelectedFirst(
-                filteredUserIds,
-                new Set(['usr_name_only', 'usr_state_online'])
-            )
-        ).toEqual([
-            'usr_state_online',
-            'usr_name_only',
-            'usr_bucket_online',
-            'usr_offline'
-        ]);
-        expect(filteredUserIds).toEqual([
-            'usr_bucket_online',
-            'usr_state_online',
-            'usr_name_only',
-            'usr_offline'
-        ]);
-    });
-
-    it('keeps relative order within the selected and unselected groups', () => {
-        expect(
-            sortInviteUserIdsWithSelectedFirst(
-                ['a', 'b', 'c', 'd', 'e'],
-                new Set(['a', 'c'])
-            )
-        ).toEqual(['a', 'c', 'b', 'd', 'e']);
     });
 
     it('builds favorite group labels per user from remote and local sources', () => {

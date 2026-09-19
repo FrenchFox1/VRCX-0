@@ -6,9 +6,9 @@ use serde_json::Value;
 use crate::common::{normalize_text, row_i64, row_json, row_string, value_as_i64, ParamsBuilder};
 use crate::database::schema::{
     add_column_if_missing, add_legacy_indexes, add_notification_indexes, add_v17_global_indexes,
-    backfill_vrcx0_schema_version, drop_column_if_exists, ensure_global_store_tables,
-    ensure_user_store_tables, read_vrcx0_schema_version, safe_identifier, select_table_names,
-    table_column_names, VRCX0_SCHEMA_VERSION,
+    drop_column_if_exists, ensure_global_store_tables, ensure_user_store_tables,
+    read_vrcx0_schema_version, safe_identifier, select_table_names, table_column_names,
+    VRCX0_SCHEMA_VERSION,
 };
 use crate::game_log::{claim_legacy_ownership, ensure_game_log_tables};
 use crate::ownership::OwnerId;
@@ -110,6 +110,7 @@ pub enum DatabaseMaintenanceTask {
     FixCancelFriendRequestTypo,
     FixBrokenGameLogDisplayNames,
     RepairZeroCopresenceDurations,
+    ImportUpstreamPrintFavorites,
 }
 
 impl DatabaseMaintenanceTask {
@@ -144,6 +145,9 @@ impl DatabaseMaintenanceTask {
             task if task == "repairZeroCopresenceDurations" => {
                 Ok(Self::RepairZeroCopresenceDurations)
             }
+            task if task == "importUpstreamPrintFavorites" => {
+                Ok(Self::ImportUpstreamPrintFavorites)
+            }
             task => Err(Error::Custom(format!("Unknown maintenance task: {task}"))),
         }
     }
@@ -171,6 +175,7 @@ impl DatabaseMaintenanceTask {
             Self::FixCancelFriendRequestTypo => "fixCancelFriendRequestTypo",
             Self::FixBrokenGameLogDisplayNames => "fixBrokenGameLogDisplayNames",
             Self::RepairZeroCopresenceDurations => "repairZeroCopresenceDurations",
+            Self::ImportUpstreamPrintFavorites => "importUpstreamPrintFavorites",
         }
     }
 }
@@ -198,8 +203,7 @@ pub fn database_maintenance_run(
 
 pub fn ensure_required_database_schema(db: &DatabaseService) -> Result<(), Error> {
     ensure_game_log_tables(db)?;
-    ensure_global_store_tables(db)?;
-    backfill_vrcx0_schema_version(db)
+    ensure_global_store_tables(db)
 }
 
 fn run_database_maintenance_task(
@@ -410,7 +414,40 @@ fn run_database_maintenance_task(
         DatabaseMaintenanceTask::RepairZeroCopresenceDurations => {
             repair_zero_copresence_durations(db)?;
         }
+        DatabaseMaintenanceTask::ImportUpstreamPrintFavorites => {
+            import_upstream_print_favorites(db)?;
+        }
     }
+    Ok(())
+}
+
+pub const PRINT_FAVORITE_IDS_CONFIG_KEY: &str = "autoDeletePrintsFavoriteIds";
+
+fn import_upstream_print_favorites(db: &DatabaseService) -> Result<(), Error> {
+    if select_table_names(db, "name = 'favorite_print'")?.is_empty() {
+        return Ok(());
+    }
+    let existing = crate::config::get_json(db, PRINT_FAVORITE_IDS_CONFIG_KEY, Value::Null)?;
+    let imported = db.execute(
+        "SELECT print_id FROM favorite_print ORDER BY created_at, id",
+        &Default::default(),
+    )?;
+    let mut ids: Vec<String> = Vec::new();
+    for value in existing
+        .as_array()
+        .into_iter()
+        .flatten()
+        .chain(imported.iter().filter_map(|row| row.first()))
+    {
+        let Some(id) = value.as_str().map(str::trim).filter(|id| !id.is_empty()) else {
+            continue;
+        };
+        if !ids.iter().any(|seen| seen == id) {
+            ids.push(id.to_string());
+        }
+    }
+    crate::config::set_json(db, PRINT_FAVORITE_IDS_CONFIG_KEY, &Value::from(ids))?;
+    db.execute_non_query("DROP TABLE favorite_print", &Default::default())?;
     Ok(())
 }
 

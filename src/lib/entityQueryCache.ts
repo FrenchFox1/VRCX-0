@@ -86,12 +86,6 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
-    fileObject: Object.freeze({
-        staleTime: 10 * MINUTE_MS,
-        gcTime: 40 * MINUTE_MS,
-        retry: 1,
-        refetchOnWindowFocus: false
-    }),
     avatarStyles: Object.freeze({
         staleTime: 60 * MINUTE_MS,
         gcTime: 240 * MINUTE_MS,
@@ -242,8 +236,6 @@ export const queryKeys = Object.freeze({
         }: { fileId?: string; variant?: string; version?: number } = {},
         endpoint: string = ''
     ) => withEndpoint(['analysis', fileId, version, variant], endpoint),
-    file: (fileId: string, endpoint: string = '') =>
-        withEndpoint(['file', fileId], endpoint),
     avatarStyles: (endpoint: string = '') =>
         withEndpoint(['avatar', 'styles'], endpoint),
     representedGroup: (userId: string, endpoint: string = '') =>

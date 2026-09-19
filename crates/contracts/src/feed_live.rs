@@ -95,13 +95,7 @@ pub enum FeedLiveEntry {
         avatar_name: String,
         previous_avatar_name: String,
         current_avatar_image_url: String,
-        current_avatar_thumbnail_image_url: String,
         previous_current_avatar_image_url: String,
-        previous_current_avatar_thumbnail_image_url: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        current_avatar_tags: Option<Vec<String>>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        previous_current_avatar_tags: Option<Vec<String>>,
         #[serde(default, skip_serializing_if = "String::is_empty")]
         owner_user_id: String,
     },
@@ -569,11 +563,7 @@ impl From<&FeedLiveEntry> for FeedRowOutput {
                 avatar_name,
                 previous_avatar_name,
                 current_avatar_image_url,
-                current_avatar_thumbnail_image_url,
                 previous_current_avatar_image_url,
-                previous_current_avatar_thumbnail_image_url,
-                current_avatar_tags,
-                previous_current_avatar_tags,
                 ..
             } => FeedRowOutput {
                 owner_id: optional_text(owner_id),
@@ -581,15 +571,7 @@ impl From<&FeedLiveEntry> for FeedRowOutput {
                 avatar_name: optional_text(avatar_name),
                 previous_avatar_name: optional_text(previous_avatar_name),
                 current_avatar_image_url: optional_text(current_avatar_image_url),
-                current_avatar_thumbnail_image_url: optional_text(
-                    current_avatar_thumbnail_image_url,
-                ),
                 previous_current_avatar_image_url: optional_text(previous_current_avatar_image_url),
-                previous_current_avatar_thumbnail_image_url: optional_text(
-                    previous_current_avatar_thumbnail_image_url,
-                ),
-                current_avatar_tags: current_avatar_tags.clone(),
-                previous_current_avatar_tags: previous_current_avatar_tags.clone(),
                 ..row
             },
             FeedLiveEntry::TrustLevel { .. }

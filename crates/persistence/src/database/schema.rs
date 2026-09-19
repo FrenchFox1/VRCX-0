@@ -16,6 +16,7 @@ pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Err
         for sql in [
             "CREATE TABLE IF NOT EXISTS cache_avatar (id TEXT PRIMARY KEY, added_at TEXT, author_id TEXT, author_name TEXT, created_at TEXT, description TEXT, image_url TEXT, name TEXT, release_status TEXT, thumbnail_image_url TEXT, updated_at TEXT, version INTEGER)",
             "CREATE TABLE IF NOT EXISTS cache_world (id TEXT PRIMARY KEY, added_at TEXT, author_id TEXT, author_name TEXT, created_at TEXT, description TEXT, image_url TEXT, name TEXT, release_status TEXT, thumbnail_image_url TEXT, updated_at TEXT, version INTEGER)",
+            "CREATE TABLE IF NOT EXISTS cache_file (id TEXT PRIMARY KEY, name TEXT NOT NULL DEFAULT '', owner_id TEXT NOT NULL DEFAULT '', fetched_at TEXT NOT NULL DEFAULT '')",
             "CREATE TABLE IF NOT EXISTS favorite_world (id INTEGER PRIMARY KEY, created_at TEXT, world_id TEXT, group_name TEXT)",
             "CREATE TABLE IF NOT EXISTS favorite_avatar (id INTEGER PRIMARY KEY, created_at TEXT, avatar_id TEXT, group_name TEXT)",
             "CREATE TABLE IF NOT EXISTS favorite_friend (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, group_name TEXT, owner_id INTEGER NOT NULL DEFAULT 0)",
@@ -452,16 +453,22 @@ pub(crate) fn add_legacy_indexes(db: &DatabaseService) -> Result<(), Error> {
     Ok(())
 }
 
+/// VRCX-0's own schema generation, stored under `VRCX_0_databaseVersion`.
+/// It is a separate number line from upstream VRCX's `databaseVersion`; the two
+/// are never compared or copied into each other.
 pub const VRCX0_SCHEMA_VERSION: i64 = 18;
 
 pub const VRCX0_SCHEMA_VERSION_KEY: &str = "VRCX_0_databaseVersion";
-const UPSTREAM_DATABASE_VERSION_KEY: &str = "databaseVersion";
+/// Upstream VRCX's schema generation, as written by upstream into an imported
+/// database. VRCX-0 only advances it after applying upstream's own catch-up
+/// fixes, so it always names the upstream layout the database matches.
+const UPSTREAM_SCHEMA_VERSION_KEY: &str = "databaseVersion";
 
 fn parse_version(value: &str) -> i64 {
     value.trim().parse::<i64>().unwrap_or(0)
 }
 
-pub(crate) fn read_vrcx0_schema_version(db: &DatabaseService) -> Result<i64, Error> {
+pub fn read_vrcx0_schema_version(db: &DatabaseService) -> Result<i64, Error> {
     Ok(parse_version(&crate::config::get_string(
         db,
         VRCX0_SCHEMA_VERSION_KEY,
@@ -469,40 +476,20 @@ pub(crate) fn read_vrcx0_schema_version(db: &DatabaseService) -> Result<i64, Err
     )?))
 }
 
-pub(crate) fn set_vrcx0_schema_version(db: &DatabaseService, version: i64) -> Result<(), Error> {
+pub fn write_vrcx0_schema_version(db: &DatabaseService, version: i64) -> Result<(), Error> {
     crate::config::set_string(db, VRCX0_SCHEMA_VERSION_KEY, &version.to_string())
 }
 
-// Databases predating the private marker key only carry the shared
-// `config:vrcx_databaseversion` row. Adopt that value as our generation so the
-// upgrade flow sees the true starting point: an earlier VRCX-0 database reports
-// 17 (already current), while a freshly imported legacy database reports its
-// real version (e.g. 16) instead of 0 — preserving the lighter upgrade path and
-// its progress dialog. A value above our own generation is never ours (upstream
-// never wrote it), so leave the marker unset.
-pub(crate) fn backfill_vrcx0_schema_version(db: &DatabaseService) -> Result<(), Error> {
-    if read_vrcx0_schema_version(db)? > 0 {
-        return Ok(());
-    }
-    let shared = parse_version(&crate::config::get_string(
+pub fn read_upstream_schema_version(db: &DatabaseService) -> Result<i64, Error> {
+    Ok(parse_version(&crate::config::get_string(
         db,
-        UPSTREAM_DATABASE_VERSION_KEY,
+        UPSTREAM_SCHEMA_VERSION_KEY,
         "0",
-    )?);
-    if (1..=VRCX0_SCHEMA_VERSION).contains(&shared) {
-        set_vrcx0_schema_version(db, shared)?;
-    }
-    Ok(())
+    )?))
 }
 
-pub fn prepare_vrcx0_schema_version(db: &DatabaseService) -> Result<i64, Error> {
-    backfill_vrcx0_schema_version(db)?;
-    read_vrcx0_schema_version(db)
-}
-
-pub fn write_database_schema_versions(db: &DatabaseService, version: i64) -> Result<(), Error> {
-    set_vrcx0_schema_version(db, version)?;
-    crate::config::set_string(db, UPSTREAM_DATABASE_VERSION_KEY, &version.to_string())
+pub fn write_upstream_schema_version(db: &DatabaseService, version: i64) -> Result<(), Error> {
+    crate::config::set_string(db, UPSTREAM_SCHEMA_VERSION_KEY, &version.to_string())
 }
 
 #[cfg(test)]
@@ -522,51 +509,16 @@ mod schema_version_tests {
     }
 
     #[test]
-    fn backfills_marker_from_existing_vrcx0_database() {
-        let db = test_db("schema-version-backfill");
-        crate::config::set_string(
-            &db,
-            UPSTREAM_DATABASE_VERSION_KEY,
-            &VRCX0_SCHEMA_VERSION.to_string(),
-        )
-        .unwrap();
-
-        backfill_vrcx0_schema_version(&db).unwrap();
-
-        assert_eq!(
-            read_vrcx0_schema_version(&db).unwrap(),
-            VRCX0_SCHEMA_VERSION
-        );
-    }
-
-    #[test]
-    fn adopts_legacy_version_for_imported_database() {
-        let db = test_db("schema-version-legacy");
-        crate::config::set_string(&db, UPSTREAM_DATABASE_VERSION_KEY, "16").unwrap();
-
-        backfill_vrcx0_schema_version(&db).unwrap();
-
-        assert_eq!(read_vrcx0_schema_version(&db).unwrap(), 16);
-    }
-
-    #[test]
-    fn does_not_adopt_version_above_generation() {
-        let db = test_db("schema-version-above");
-        crate::config::set_string(&db, UPSTREAM_DATABASE_VERSION_KEY, "99").unwrap();
-
-        backfill_vrcx0_schema_version(&db).unwrap();
-
+    fn schema_version_lines_are_independent() {
+        let db = test_db("schema-version-lines");
         assert_eq!(read_vrcx0_schema_version(&db).unwrap(), 0);
-    }
+        assert_eq!(read_upstream_schema_version(&db).unwrap(), 0);
 
-    #[test]
-    fn backfill_is_noop_when_marker_already_set() {
-        let db = test_db("schema-version-existing-marker");
-        set_vrcx0_schema_version(&db, VRCX0_SCHEMA_VERSION).unwrap();
-        crate::config::set_string(&db, UPSTREAM_DATABASE_VERSION_KEY, "99").unwrap();
+        write_upstream_schema_version(&db, 17).unwrap();
+        assert_eq!(read_vrcx0_schema_version(&db).unwrap(), 0);
 
-        backfill_vrcx0_schema_version(&db).unwrap();
-
+        write_vrcx0_schema_version(&db, VRCX0_SCHEMA_VERSION).unwrap();
+        assert_eq!(read_upstream_schema_version(&db).unwrap(), 17);
         assert_eq!(
             read_vrcx0_schema_version(&db).unwrap(),
             VRCX0_SCHEMA_VERSION

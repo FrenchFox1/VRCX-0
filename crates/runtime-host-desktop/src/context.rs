@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use vrcx_0_application::auth::AuthCredentialStore;
 use vrcx_0_application_activity::notification::{
-    extract_file_id, extract_file_version, fallback_file_version, load_overlay_activity_filters,
+    extract_file_version, fallback_file_version, load_overlay_activity_filters,
     normalize_avatar_image_url_128, CachedNotificationUserImageResolver, NotificationConfig,
     RealtimeUserImageResolverSlot,
 };
@@ -20,6 +20,7 @@ use vrcx_0_application_game::{
     RuntimeSnapshotStore,
 };
 use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeHostRuntime};
+use vrcx_0_core::files::extract_file_id;
 use vrcx_0_core::friends::StateBucket;
 use vrcx_0_host_desktop::tts::{SystemTtsEngine, TtsEngine};
 #[cfg(any(windows, target_os = "linux"))]

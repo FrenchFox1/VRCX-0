@@ -50,6 +50,12 @@ import {
     sortActiveFriendsBySidebarPrefs,
     sortFriendsBySidebarPrefs
 } from './friendsLocationsSections';
+import {
+    buildFriendWorldGroups,
+    type FriendsLocationsViewMode,
+    type FriendsLocationsWorldGroup
+} from './friendsLocationsWorlds';
+import { useFriendsLocationsWorldSummaries } from './useFriendsLocationsWorldSummaries';
 
 type FriendsLocationsFavoritePreferences = {
     isDivideByGroup: boolean;
@@ -73,7 +79,7 @@ type FriendsLocationsCurrentUserSnapshot = InviteLocationCurrentUserSnapshot &
 
 export type FriendsLocationsSection = {
     key: string;
-    type?: 'favoriteGroup' | string;
+    type?: 'favoriteGroup' | 'collapsibleGroup';
     groupKey?: string;
     title: string;
     description: string;
@@ -149,6 +155,7 @@ type FriendsLocationsPageDerivedStateInput = {
     showSameInstanceInOnline: boolean;
     sidebarFavoritePrefs: FriendsLocationsFavoritePreferences;
     sidebarSortMethods: string[];
+    viewMode: FriendsLocationsViewMode;
 };
 
 function isPresent<T>(value: T | null | undefined): value is T {
@@ -176,7 +183,8 @@ export function useFriendsLocationsPageDerivedState({
     scrollMetrics,
     showSameInstanceInOnline,
     sidebarFavoritePrefs,
-    sidebarSortMethods
+    sidebarSortMethods,
+    viewMode
 }: FriendsLocationsPageDerivedStateInput) {
     const { t } = useTranslation();
     const locationTimes = useFriendLocationTimeStore((state) => state.byUserId);
@@ -335,6 +343,44 @@ export function useFriendsLocationsPageDerivedState({
             ),
         [onlineFavoriteExclusionIds, onlineFriends]
     );
+    const currentUserRecord = useMemo<FriendRecord | null>(() => {
+        if (
+            !currentUserId ||
+            !currentUserSnapshot ||
+            normalizeId(currentUserSnapshot.id) !== currentUserId
+        ) {
+            return null;
+        }
+        const profile = buildCurrentUserPresenceView(currentUserSnapshot, {
+            gameState
+        });
+        const tags = Array.isArray(profile.tags)
+            ? profile.tags.filter(
+                  (tag): tag is string => typeof tag === 'string'
+              )
+            : [];
+        const trust = computeTrustLevel(
+            tags,
+            normalizeId(profile.developerType)
+        );
+        return {
+            ...profile,
+            id: currentUserId,
+            displayName: normalizeId(profile.displayName) || currentUserId,
+            tags,
+            state: 'online',
+            stateBucket: 'online',
+            location: currentInviteLocation,
+            $friendNumber: 0,
+            $trustLevel: trust.trustLevel,
+            $trustClass: trust.trustClass,
+            $trustSortNum: trust.trustSortNum,
+            $isModerator: trust.isModerator,
+            $isTroll: trust.isTroll,
+            $isProbableTroll: trust.isProbableTroll,
+            $platform: computeUserPlatform(normalizeId(profile.last_platform))
+        };
+    }, [currentInviteLocation, currentUserId, currentUserSnapshot, gameState]);
     const sameInstanceGroups = useMemo<
         FriendsLocationsSameInstanceGroup[]
     >(() => {
@@ -365,48 +411,15 @@ export function useFriendsLocationsPageDerivedState({
                 locationTimes
             }
         );
-        if (
-            !currentUserId ||
-            !currentUserSnapshot ||
-            normalizeId(currentUserSnapshot.id) !== currentUserId
-        ) {
+        if (!currentUserRecord) {
             return groups;
         }
-        const profile = buildCurrentUserPresenceView(currentUserSnapshot, {
-            gameState
-        });
-        const tags = Array.isArray(profile.tags)
-            ? profile.tags.filter(
-                  (tag): tag is string => typeof tag === 'string'
-              )
-            : [];
-        const trust = computeTrustLevel(
-            tags,
-            normalizeId(profile.developerType)
-        );
-        const currentUser: FriendRecord = {
-            ...profile,
-            id: currentUserId,
-            displayName: normalizeId(profile.displayName) || currentUserId,
-            tags,
-            state: 'online',
-            stateBucket: 'online',
-            location: currentInviteLocation,
-            $friendNumber: 0,
-            $trustLevel: trust.trustLevel,
-            $trustClass: trust.trustClass,
-            $trustSortNum: trust.trustSortNum,
-            $isModerator: trust.isModerator,
-            $isTroll: trust.isTroll,
-            $isProbableTroll: trust.isProbableTroll,
-            $platform: computeUserPlatform(normalizeId(profile.last_platform))
-        };
         return groups.map((group) =>
             group.location === currentInviteLocation
                 ? {
                       ...group,
                       friends: [
-                          currentUser,
+                          currentUserRecord,
                           ...group.friends.filter(
                               (friend) => friend.id !== currentUserId
                           )
@@ -418,9 +431,8 @@ export function useFriendsLocationsPageDerivedState({
         currentInviteLocation,
         currentLocationSnapshot,
         currentUserId,
-        currentUserSnapshot,
+        currentUserRecord,
         friendsById,
-        gameState,
         locationTimes,
         onlineFriends,
         sidebarSortMethods
@@ -786,13 +798,65 @@ export function useFriendsLocationsPageDerivedState({
         visibleFriends,
         t
     ]);
+    const worldViewFriends = useMemo<FriendRecord[]>(
+        () =>
+            viewMode === 'worlds'
+                ? sortActiveFriendsBySidebarPrefs(
+                      onlineFriends.filter((friend) =>
+                          matchesSearch(
+                              friend,
+                              deferredSearchQuery,
+                              favoriteIds
+                          )
+                      ),
+                      sidebarSortMethods
+                  )
+                : [],
+        [
+            deferredSearchQuery,
+            favoriteIds,
+            onlineFriends,
+            sidebarSortMethods,
+            viewMode
+        ]
+    );
+    const worldGroups = useMemo<FriendsLocationsWorldGroup[]>(
+        () =>
+            viewMode === 'worlds'
+                ? buildFriendWorldGroups(
+                      currentUserRecord
+                          ? [currentUserRecord, ...worldViewFriends]
+                          : worldViewFriends,
+                      currentInviteLocation
+                  )
+                : [],
+        [currentInviteLocation, currentUserRecord, viewMode, worldViewFriends]
+    );
+    const privateWorldFriends = useMemo<FriendRecord[]>(
+        () =>
+            partitionFriendsByPrivateLocation(worldViewFriends).privateLocation,
+        [worldViewFriends]
+    );
+    const worldIds = useMemo(
+        () => worldGroups.map((group) => group.worldId),
+        [worldGroups]
+    );
+    const worldSummaries = useFriendsLocationsWorldSummaries(worldIds);
     const hasVisibleSections = useMemo(
         () =>
-            visibleSections.some(
-                (section) =>
-                    Array.isArray(section.friends) && section.friends.length > 0
-            ),
-        [visibleSections]
+            viewMode === 'worlds'
+                ? worldGroups.length > 0 || privateWorldFriends.length > 0
+                : visibleSections.some(
+                      (section) =>
+                          Array.isArray(section.friends) &&
+                          section.friends.length > 0
+                  ),
+        [
+            privateWorldFriends.length,
+            viewMode,
+            visibleSections,
+            worldGroups.length
+        ]
     );
     const isLoading =
         rosterStatus === 'running' &&
@@ -873,7 +937,7 @@ export function useFriendsLocationsPageDerivedState({
                 const topGap = showHeader && index === 0 ? sectionHeaderGap : 0;
                 rows.push({
                     type: 'cards',
-                    key: `cards:${section.key}:${index}`,
+                    key: `cards::`,
                     height: gridRowHeight + cardGridGap + topGap,
                     topGap,
                     gridRowHeight,
@@ -923,7 +987,11 @@ export function useFriendsLocationsPageDerivedState({
         hasVisibleSections,
         isLoading,
         positionedRows,
+        privateWorldFriends,
         segmentOptions,
-        visibleVirtualRows
+        viewMode,
+        visibleVirtualRows,
+        worldGroups,
+        worldSummaries
     };
 }

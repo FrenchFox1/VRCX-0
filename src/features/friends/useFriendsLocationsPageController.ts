@@ -68,11 +68,13 @@ export function useFriendsLocationsPageController() {
     const {
         changeDensityPreference,
         changeShowSameInstanceInOnline,
+        changeViewMode,
         density,
         preferencesReady,
         showSameInstanceInOnline,
         sidebarFavoritePrefs,
-        sidebarSortMethods
+        sidebarSortMethods,
+        viewMode
     } = useFriendsLocationsPreferences();
     const deferredSearchQuery = useDeferredValue(searchQuery);
     const {
@@ -87,7 +89,8 @@ export function useFriendsLocationsPageController() {
         activeSegment,
         deferredSearchQuery,
         resetScrollTop,
-        showSameInstanceInOnline
+        showSameInstanceInOnline,
+        viewMode
     ]);
 
     const derived = useFriendsLocationsPageDerivedState({
@@ -112,7 +115,8 @@ export function useFriendsLocationsPageController() {
         scrollMetrics,
         showSameInstanceInOnline,
         sidebarFavoritePrefs,
-        sidebarSortMethods
+        sidebarSortMethods,
+        viewMode
     });
     const instanceActionGateTargets = useMemo(
         () =>
@@ -158,6 +162,7 @@ export function useFriendsLocationsPageController() {
         actions,
         filters: {
             activeSegment,
+            collapsedGroups,
             searchQuery,
             setActiveSegment,
             setSearchQuery
@@ -165,9 +170,11 @@ export function useFriendsLocationsPageController() {
         preferences: {
             changeDensityPreference,
             changeShowSameInstanceInOnline,
+            changeViewMode,
             density,
             preferencesReady,
-            showSameInstanceInOnline
+            showSameInstanceInOnline,
+            viewMode
         },
         runtime: {
             canBoop: runtime.canBoop,

@@ -7,7 +7,7 @@ pub use vrcx_0_contracts::{LegacyVrcxDiscovery, LegacyVrcxMigrationStatus, Legac
 // Highest upstream VRCX schema generation VRCX-0 knows how to import directly.
 // This is intentionally separate from VRCX-0's own schema generation (see
 // `VRCX0_SCHEMA_VERSION`): the two version spaces must never be compared.
-pub const MAX_IMPORTABLE_UPSTREAM_VERSION: i64 = 16;
+pub const MAX_IMPORTABLE_UPSTREAM_VERSION: i64 = 17;
 
 pub fn discover_legacy_vrcx_migration(
     target_db: &Path,
@@ -61,8 +61,9 @@ pub fn validate_legacy_source(source: &LegacyVrcxSource) -> Result<(), String> {
 // Single extension point for upstream VRCX databases newer than
 // `MAX_IMPORTABLE_UPSTREAM_VERSION`. Today every such version is rejected (the
 // migration status carries `version` so the frontend can surface it). When a
-// concrete future upstream schema is reverse-engineered, its transform into the
-// VRCX-0 layout belongs here instead of a blanket reject.
+// concrete future upstream schema is reverse-engineered, raise the ceiling and
+// add its transform into the VRCX-0 layout to the upgrade path (see
+// `DatabaseMaintenanceTask::ImportUpstreamPrintFavorites` for upstream 17).
 fn import_from_upstream_version(version: i64) -> Result<(), String> {
     Err(format!(
         "Legacy VRCX database version {version} is newer than the highest importable version {MAX_IMPORTABLE_UPSTREAM_VERSION}; importing it is not supported yet."

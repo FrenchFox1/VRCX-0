@@ -212,6 +212,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
             formatClock,
             formatDuration,
             formatStatusDate,
+            onCopyMediaLink,
             onOpenMediaLink,
             onOpenStatusPage,
             onStartBackgroundMode,
@@ -519,6 +520,11 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             label={t('status_bar.now_playing')}
                             value={nowPlaying.name || nowPlaying.url}
                             onClick={onOpenMediaLink}
+                            onContextMenu={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                onCopyMediaLink();
+                            }}
                             className="max-w-96 shrink overflow-hidden"
                         >
                             <NowPlayingProgress

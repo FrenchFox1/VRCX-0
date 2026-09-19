@@ -8,6 +8,8 @@ use std::time::{Duration, Instant};
 use futures_util::future::BoxFuture;
 use vrcx_0_application_core::{RuntimeBackgroundJobs, RuntimeOperationStatus, TaskSupervisor};
 
+use super::PROFILE_BIO_SCAN_INTERVAL;
+
 pub const BACKGROUND_CURRENT_USER_REFRESH_JOB: &str = "backgroundCurrentUserRefresh";
 pub const BACKGROUND_GROUP_INSTANCE_REFRESH_JOB: &str = "backgroundGroupInstanceRefresh";
 pub const BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB: &str =
@@ -15,6 +17,7 @@ pub const BACKGROUND_GROUP_INSTANCE_NOTIFICATION_REFRESH_JOB: &str =
 pub const BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB: &str = "backgroundSocialBaselineRefresh";
 pub const BACKGROUND_MODERATION_REFRESH_JOB: &str = "backgroundModerationRefresh";
 pub const BACKGROUND_PRINT_CLEANUP_JOB: &str = "printAutoCleanup";
+pub const BACKGROUND_PROFILE_BIO_SCAN_JOB: &str = "backgroundProfileBioScan";
 pub const BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS: u64 = 300;
 pub const BACKGROUND_GROUP_INSTANCE_NOTIFICATION_CADENCE_SECONDS: u64 = 120;
 pub const BACKGROUND_CURRENT_USER_CADENCE_SECONDS: u64 = 300;
@@ -49,6 +52,8 @@ pub trait SocialMaintenanceActions: Send + Sync {
     fn refresh_moderation(&self) -> BoxFuture<'_, ()>;
 
     fn schedule_print_cleanup(&self);
+
+    fn scan_profile_bio(&self) -> BoxFuture<'_, ()>;
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -61,6 +66,7 @@ struct SocialMaintenanceTickPlan {
     refresh_social_baseline: bool,
     refresh_moderation: bool,
     schedule_print_cleanup: bool,
+    scan_profile_bio: bool,
 }
 
 struct SocialMaintenanceSchedule {
@@ -73,6 +79,7 @@ struct SocialMaintenanceSchedule {
     next_social: Instant,
     next_moderation: Instant,
     next_print_cleanup: Instant,
+    next_profile_bio: Instant,
 }
 
 impl SocialMaintenanceSchedule {
@@ -91,6 +98,7 @@ impl SocialMaintenanceSchedule {
             next_social: now + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS),
             next_moderation: now,
             next_print_cleanup: now,
+            next_profile_bio: now,
         }
     }
 
@@ -111,6 +119,7 @@ impl SocialMaintenanceSchedule {
                 now + Duration::from_secs(BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS);
             self.next_moderation = now;
             self.next_print_cleanup = now;
+            self.next_profile_bio = now;
         }
 
         if self.group_instance_notification_group_ids != group_instance_notification_group_ids {
@@ -149,6 +158,10 @@ impl SocialMaintenanceSchedule {
             self.next_print_cleanup =
                 now + Duration::from_secs(BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS);
         }
+        let scan_profile_bio = now >= self.next_profile_bio;
+        if scan_profile_bio {
+            self.next_profile_bio = now + PROFILE_BIO_SCAN_INTERVAL;
+        }
 
         SocialMaintenanceTickPlan {
             reset_scope_state,
@@ -159,6 +172,7 @@ impl SocialMaintenanceSchedule {
             refresh_social_baseline,
             refresh_moderation,
             schedule_print_cleanup,
+            scan_profile_bio,
         }
     }
 
@@ -247,6 +261,9 @@ impl SocialMaintenanceRuntime {
                 if plan.schedule_print_cleanup {
                     actions.schedule_print_cleanup();
                 }
+                if plan.scan_profile_bio {
+                    actions.scan_profile_bio().await;
+                }
 
                 tokio::time::sleep(SOCIAL_MAINTENANCE_SLEEP_CHUNK).await;
             }
@@ -300,6 +317,11 @@ fn register_social_maintenance_jobs(background_jobs: &RuntimeBackgroundJobs) {
             BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS,
             "Print auto cleanup fallback is scheduled.",
         ),
+        (
+            BACKGROUND_PROFILE_BIO_SCAN_JOB,
+            PROFILE_BIO_SCAN_INTERVAL.as_secs(),
+            "Background profile bio scan is scheduled.",
+        ),
     ] {
         background_jobs.register_job(
             name,
@@ -337,6 +359,10 @@ fn mark_social_maintenance_jobs_stopped(background_jobs: &RuntimeBackgroundJobs)
             BACKGROUND_PRINT_CLEANUP_JOB,
             "Print auto cleanup fallback stopped.",
         ),
+        (
+            BACKGROUND_PROFILE_BIO_SCAN_JOB,
+            "Background profile bio scan stopped.",
+        ),
     ] {
         background_jobs.mark_completed(name, detail);
     }
@@ -361,8 +387,34 @@ mod tests {
                 refresh_group_instances: true,
                 refresh_moderation: true,
                 schedule_print_cleanup: true,
+                scan_profile_bio: true,
                 ..Default::default()
             }
+        );
+    }
+
+    #[test]
+    fn profile_bio_scan_ticks_every_few_seconds() {
+        let now = Instant::now();
+        let mut schedule = SocialMaintenanceSchedule::new(now, "scope-a".into(), Vec::new());
+        assert!(
+            schedule
+                .plan(now, "scope-a".into(), Vec::new())
+                .scan_profile_bio
+        );
+        assert!(
+            !schedule
+                .plan(now + Duration::from_secs(2), "scope-a".into(), Vec::new())
+                .scan_profile_bio
+        );
+        assert!(
+            schedule
+                .plan(
+                    now + PROFILE_BIO_SCAN_INTERVAL,
+                    "scope-a".into(),
+                    Vec::new()
+                )
+                .scan_profile_bio
         );
     }
 
@@ -379,6 +431,7 @@ mod tests {
         assert!(!five_minutes.refresh_social_baseline);
         assert!(!five_minutes.refresh_moderation);
         assert!(!five_minutes.schedule_print_cleanup);
+        assert!(five_minutes.scan_profile_bio);
 
         let one_hour = schedule.plan(
             now + Duration::from_secs(3_600),

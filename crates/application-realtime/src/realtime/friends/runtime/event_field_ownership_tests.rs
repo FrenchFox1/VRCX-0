@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use super::super::*;
+    use crate::realtime::FriendIconChange;
 
     fn runtime_with_friend(record: FriendRecord) -> RealtimeFriendsRuntime {
         let runtime = RealtimeFriendsRuntime::default();
@@ -76,7 +77,6 @@ mod tests {
                     "state": "offline",
                     "status": "join me",
                     "statusDescription": "come vibe",
-                    "bio": "hi there",
                     "tags": ["system_trust_veteran"],
                     "last_platform": "standalonewindows"
                 }
@@ -93,7 +93,6 @@ mod tests {
         assert_eq!(patch.patch.platform, "standalonewindows");
         assert_eq!(patch.patch.status, "join me");
         assert_eq!(patch.patch.status_description, "come vibe");
-        assert_eq!(patch.patch.bio, "hi there");
         assert_eq!(patch.patch.display_name, "Friend");
         assert_eq!(patch.patch.extra["$trustLevel"], "Trusted User");
         assert!(output
@@ -502,7 +501,7 @@ mod tests {
     #[test]
     fn friend_update_profile_merge_is_defined_only() {
         let mut baseline = friend_record("online", "wrld_1:123~region(jp)");
-        baseline.bio = "original".into();
+        baseline.icon_url = "https://images.example/original/256".into();
         let runtime = runtime_with_friend(baseline);
 
         let RealtimeFriendApplyResult::Output(_) = runtime.apply_ws_message(&ws(json!({
@@ -512,14 +511,17 @@ mod tests {
                 "user": {
                     "id": "usr_friend",
                     "displayName": "Friend",
-                    "bio": "first bio",
+                    "iconUrl": "https://images.example/first/256",
                     "status": "join me"
                 }
             }
         }))) else {
-            panic!("friend-update with bio should produce an output");
+            panic!("friend-update with iconUrl should produce an output");
         };
-        assert_eq!(snapshot_friend(&runtime).bio, "first bio");
+        assert_eq!(
+            snapshot_friend(&runtime).icon_url,
+            "https://images.example/first/256"
+        );
 
         let RealtimeFriendApplyResult::Output(_) = runtime.apply_ws_message(&ws(json!({
             "type": "friend-update",
@@ -531,9 +533,12 @@ mod tests {
                 }
             }
         }))) else {
-            panic!("friend-update without bio should still produce an output");
+            panic!("friend-update without iconUrl should still produce an output");
         };
-        assert_eq!(snapshot_friend(&runtime).bio, "first bio");
+        assert_eq!(
+            snapshot_friend(&runtime).icon_url,
+            "https://images.example/first/256"
+        );
 
         let RealtimeFriendApplyResult::Output(_) = runtime.apply_ws_message(&ws(json!({
             "type": "friend-update",
@@ -541,13 +546,97 @@ mod tests {
                 "userId": "usr_friend",
                 "user": {
                     "id": "usr_friend",
-                    "bio": Value::Null,
+                    "iconUrl": Value::Null,
                     "status": "ask me"
                 }
             }
         }))) else {
-            panic!("friend-update with null bio should still produce an output");
+            panic!("friend-update with null iconUrl should still produce an output");
         };
-        assert_eq!(snapshot_friend(&runtime).bio, "first bio");
+        assert_eq!(
+            snapshot_friend(&runtime).icon_url,
+            "https://images.example/first/256"
+        );
+    }
+
+    #[test]
+    fn friend_update_icon_file_change_reports_previous_and_next_file_ids() {
+        let mut baseline = friend_record("online", "wrld_1:123~region(jp)");
+        baseline.icon_url = "https://api.vrchat.cloud/api/1/image/file_old/1/256".into();
+        let runtime = runtime_with_friend(baseline);
+
+        let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
+            "type": "friend-update",
+            "content": {
+                "userId": "usr_friend",
+                "user": {
+                    "id": "usr_friend",
+                    "displayName": "Friend",
+                    "iconUrl": "https://api.vrchat.cloud/api/1/image/file_new/2/256"
+                }
+            }
+        }))) else {
+            panic!("friend-update should produce an output");
+        };
+
+        assert_eq!(
+            output.icon_changes,
+            vec![FriendIconChange {
+                user_id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                previous_icon_url: "https://api.vrchat.cloud/api/1/image/file_old/1/256".into(),
+                next_icon_url: "https://api.vrchat.cloud/api/1/image/file_new/2/256".into(),
+                created_at: output.icon_changes[0].created_at.clone(),
+            }]
+        );
+        assert!(!output.icon_changes[0].created_at.is_empty());
+    }
+
+    #[test]
+    fn icon_url_changes_without_a_new_file_id_are_not_reported() {
+        let mut baseline = friend_record("online", "wrld_1:123~region(jp)");
+        baseline.icon_url = "https://api.vrchat.cloud/api/1/image/file_same/1/256".into();
+        let runtime = runtime_with_friend(baseline);
+
+        let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
+            "type": "friend-location",
+            "content": {
+                "userId": "usr_friend",
+                "location": "wrld_1:456~region(jp)",
+                "travelingToLocation": "",
+                "worldId": "wrld_1",
+                "platform": "standalonewindows",
+                "user": {
+                    "id": "usr_friend",
+                    "iconUrl": "https://api.vrchat.cloud/api/1/image/file_same/2/128"
+                }
+            }
+        }))) else {
+            panic!("friend-location should produce an output");
+        };
+        assert!(output.icon_changes.is_empty());
+    }
+
+    #[test]
+    fn first_seen_icon_urls_are_not_reported_as_changes() {
+        let runtime = runtime_with_friend(friend_record("online", "wrld_1:123~region(jp)"));
+
+        let RealtimeFriendApplyResult::Output(output) = runtime.apply_ws_message(&ws(json!({
+            "type": "friend-update",
+            "content": {
+                "userId": "usr_friend",
+                "user": {
+                    "id": "usr_friend",
+                    "iconUrl": "https://api.vrchat.cloud/api/1/image/file_new/1/256"
+                }
+            }
+        }))) else {
+            panic!("friend-update should produce an output");
+        };
+        assert!(output.icon_changes.is_empty());
+        assert_eq!(
+            snapshot_friend(&runtime).icon_url,
+            "https://api.vrchat.cloud/api/1/image/file_new/1/256"
+        );
     }
 }

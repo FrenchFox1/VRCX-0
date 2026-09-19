@@ -182,6 +182,43 @@ fn writes_friend_log_and_feed_rows() -> Result<(), crate::Error> {
 }
 
 #[test]
+fn writes_bio_feed_rows() -> Result<(), crate::Error> {
+    let dir = TestDir::new("realtime-feed-bio");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let counts = write_realtime_batch(
+        &db,
+        &OwnerId::new("usr_self"),
+        &RealtimePersistenceBatch {
+            feed_entries: vec![FeedLiveEntry::Bio {
+                created_at: "2026-09-18T00:00:00Z".into(),
+                user_id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                bio: "new bio".into(),
+                previous_bio: "old bio".into(),
+                owner_user_id: String::new(),
+            }],
+            ..RealtimePersistenceBatch::default()
+        },
+    )?;
+    assert_eq!(counts.affected_count, 1);
+
+    let feed = db.execute(
+        "SELECT created_at, display_name, bio, previous_bio FROM usrself_feed_bio WHERE user_id = @user_id",
+        &ParamsBuilder::new().set("user_id", "usr_friend").build(),
+    )?;
+    assert_eq!(
+        feed[0],
+        vec![
+            json!("2026-09-18T00:00:00Z"),
+            json!("Friend"),
+            json!("new bio"),
+            json!("old bio")
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn writes_remote_location_intervals_and_allows_same_location_after_closed_interval(
 ) -> Result<(), crate::Error> {
     let dir = TestDir::new("realtime-remote-location-interval");

@@ -12,7 +12,6 @@ const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
     'displayName',
     'rank',
     'status',
-    'bio',
     'note',
     'memo'
 ];
@@ -217,15 +216,6 @@ export function matchesFriendListSearch(
     if (
         filters.has('status') &&
         `${friend?.statusDescription || ''} ${friend?.status || ''} ${friend?.stateBucket || ''}`
-            .toLowerCase()
-            .includes(loweredQuery)
-    ) {
-        return true;
-    }
-
-    if (
-        filters.has('bio') &&
-        String(friend?.bio || '')
             .toLowerCase()
             .includes(loweredQuery)
     ) {

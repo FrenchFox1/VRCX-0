@@ -28,22 +28,6 @@ export type AvatarGalleryFile = AvatarRecord & {
     >;
 };
 
-export type AvatarFileVersion = AvatarRecord & {
-    created_at?: string;
-    status?: string;
-    version?: number;
-};
-
-export type AvatarFileRecord = AvatarRecord & {
-    extension?: string;
-    id?: string;
-    mimeType?: string;
-    name?: string;
-    ownerId?: string;
-    tags?: string[];
-    versions?: AvatarFileVersion[];
-};
-
 export type AvatarModerationRecord = AvatarRecord & {
     avatarModerationType?: string;
     created?: string | number;

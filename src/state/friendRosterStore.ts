@@ -132,20 +132,6 @@ function normalizeFriendProfileFields(
     if (badges !== undefined) {
         profile.badges = badges;
     }
-    const bioLinks = normalizeOptionalStringArray(
-        source.bioLinks,
-        previous?.bioLinks
-    );
-    if (bioLinks !== undefined) {
-        profile.bioLinks = bioLinks;
-    }
-    const currentAvatarTags = normalizeOptionalStringArray(
-        source.currentAvatarTags,
-        previous?.currentAvatarTags
-    );
-    if (currentAvatarTags !== undefined) {
-        profile.currentAvatarTags = currentAvatarTags;
-    }
 
     return profile;
 }

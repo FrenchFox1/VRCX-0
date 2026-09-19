@@ -14,9 +14,7 @@ describe('friendRosterStore', () => {
             patch: {
                 state: 'online',
                 tags: ['system_trust_basic'],
-                bioLinks: ['https://example.com'],
                 badges: [{ badgeId: 'badge_one' }],
-                currentAvatarTags: ['avatar_tag'],
                 $location: { worldId: 'wrld_one' },
                 externalMetadata: { nested: ['preserved'] }
             }
@@ -32,9 +30,7 @@ describe('friendRosterStore', () => {
         expect(next.statusDescription).toBe('new status');
         expect(next.state).toBe('online');
         expect(next.tags).toBe(previous.tags);
-        expect(next.bioLinks).toBe(previous.bioLinks);
         expect(next.badges).toBe(previous.badges);
-        expect(next.currentAvatarTags).toBe(previous.currentAvatarTags);
         expect(next.$location).toBe(previous.$location);
         expect(next.externalMetadata).toBe(previous.externalMetadata);
     });
@@ -42,7 +38,6 @@ describe('friendRosterStore', () => {
     it('preserves open nested fields and reuses equal patch data', () => {
         const store = useFriendRosterStore.getState();
         const patch = {
-            bioLinks: ['https://example.com'],
             externalMetadata: { nested: { value: 'before' }, unchanged: [1, 2] }
         };
         store.applyFriendPatch({ userId: 'usr_extra', patch });
@@ -69,9 +64,6 @@ describe('friendRosterStore', () => {
         });
         expect(previousState.friendsById.usr_extra.externalMetadata).toEqual(
             patch.externalMetadata
-        );
-        expect(next.bioLinks).toBe(
-            previousState.friendsById.usr_extra.bioLinks
         );
     });
 

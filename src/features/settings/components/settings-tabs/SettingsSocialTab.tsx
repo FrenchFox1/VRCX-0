@@ -67,7 +67,8 @@ export function SettingsSocialTab() {
             recentActionCooldownEnabled: state.recentActionCooldownEnabled,
             recentActionCooldownMinutes: state.recentActionCooldownMinutes,
             friendLogNotificationDot: state.friendLogNotificationDot,
-            hideUnfriends: state.hideUnfriends
+            hideUnfriends: state.hideUnfriends,
+            profileBioScanEnabled: state.profileBioScanEnabled
         }))
     );
     const {
@@ -80,6 +81,7 @@ export function SettingsSocialTab() {
         onAddFeedHiddenUser,
         onFriendLogNotificationDotChange,
         onHideUnfriendsChange,
+        onProfileBioScanEnabledChange,
         onRemoveFeedHiddenUser,
         onRecentActionCooldownEnabledChange,
         onRecentActionCooldownMinutesChange,
@@ -138,7 +140,7 @@ export function SettingsSocialTab() {
                 value: normalizeUserId(user.id),
                 label:
                     knownUserName(user) ||
-                    t('view.settings.social.hidden_feed.unknown_user'),
+                    t('view.settings.social.hidden_feed.unknown_friend'),
                 user
             }))
             .filter((option) => {
@@ -245,6 +247,24 @@ export function SettingsSocialTab() {
                     <Switch
                         checked={prefs.hideUnfriends}
                         onCheckedChange={onHideUnfriendsChange}
+                    />
+                </Field>
+            </SettingsCard>
+            <SettingsCard
+                cardId="social.friend-bios"
+                title={t('view.settings.social.friend_bios.header')}
+            >
+                <Field
+                    label={t(
+                        'view.settings.social.friend_bios.keep_up_to_date'
+                    )}
+                    description={t(
+                        'view.settings.social.friend_bios.description'
+                    )}
+                >
+                    <Switch
+                        checked={prefs.profileBioScanEnabled}
+                        onCheckedChange={onProfileBioScanEnabledChange}
                     />
                 </Field>
             </SettingsCard>
