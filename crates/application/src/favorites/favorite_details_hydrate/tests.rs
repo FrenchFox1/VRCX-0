@@ -75,10 +75,10 @@ fn world_decision_upserts_public_complete_snapshots() {
 }
 
 #[test]
-fn world_decision_inserts_private_complete_snapshots_only_when_missing() {
+fn world_decision_upserts_private_complete_snapshots() {
     assert_eq!(
         cache_write_decision(FavoriteCacheKind::World, &complete("private")),
-        CacheWriteDecision::InsertIfMissing
+        CacheWriteDecision::Upsert
     );
 }
 

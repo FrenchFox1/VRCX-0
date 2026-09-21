@@ -1082,6 +1082,9 @@ const generatedCommands = {
     ): Promise<LocalFavoriteSnapshot> {
         return await TAURI_INVOKE('app__favorite_local_snapshot', { kind });
     },
+    async appFavoriteLocalWorldDetailsRefresh(): Promise<LocalWorldDetailsRefreshOutput> {
+        return await TAURI_INVOKE('app__favorite_local_world_details_refresh');
+    },
     async appSavedGroupFavoritesGet(): Promise<SavedGroupFavoritesSnapshot> {
         return await TAURI_INVOKE('app__saved_group_favorites_get');
     },
@@ -5096,6 +5099,10 @@ export type LocalModerationOutput = {
     displayName: string;
     block: boolean;
     mute: boolean;
+};
+export type LocalWorldDetailsRefreshOutput = {
+    requested: number;
+    refreshed: number;
 };
 export type LogLocationSnapshot = {
     location: string;

@@ -65,6 +65,26 @@ describe('ConfigRepository', () => {
         );
     });
 
+    it('reads initialized values from the cache without waiting for I/O', async () => {
+        const repository = createRepository();
+
+        expect(repository.getCachedString('ThemeMode', 'system')).toBe(
+            'system'
+        );
+
+        await repository.init([
+            {
+                key: 'config:vrcx_thememode',
+                value: 'dark'
+            }
+        ]);
+
+        expect(repository.getCachedString('VRCX_ThemeMode', 'system')).toBe(
+            'dark'
+        );
+        expect(commandMocks.appConfigListValues).not.toHaveBeenCalled();
+    });
+
     it('updates the cache after set, setMany, and remove operations', async () => {
         const repository = createRepository();
 

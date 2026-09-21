@@ -88,7 +88,8 @@ export async function loadRemoteEntityCacheFallbacksById(
 
 export function useRemoteEntityCacheFallbackLoader(
     fallbackIds: string[],
-    fetchById: FetchEntityById
+    fetchById: FetchEntityById,
+    revision = 0
 ): DetailMap {
     const fallbackKey = JSON.stringify(fallbackIds);
     const stableFallbackIds = useMemo(() => {
@@ -111,7 +112,6 @@ export function useRemoteEntityCacheFallbackLoader(
             };
         }
 
-        setFallbacksById(EMPTY_FALLBACKS);
         loadRemoteEntityCacheFallbacksById(stableFallbackIds, fetchById)
             .then((nextFallbacksById) => {
                 if (active) {
@@ -127,7 +127,7 @@ export function useRemoteEntityCacheFallbackLoader(
         return () => {
             active = false;
         };
-    }, [fetchById, stableFallbackIds]);
+    }, [fetchById, revision, stableFallbackIds]);
 
     return useMemo(
         () =>

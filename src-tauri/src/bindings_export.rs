@@ -332,6 +332,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::worlds::app__world_friend_visits,
             commands::local::favorites::app__favorite_list,
             commands::local::favorites::app__favorite_local_snapshot,
+            commands::local::favorites::app__favorite_local_world_details_refresh,
             commands::local::favorites::app__saved_group_favorites_get,
             commands::local::favorites::app__saved_group_collection_create,
             commands::local::favorites::app__saved_group_collection_delete,

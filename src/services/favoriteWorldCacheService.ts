@@ -1,5 +1,6 @@
 import { commands } from '@/platform/tauri/bindings';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 
 import {
@@ -15,11 +16,15 @@ export async function cacheWorldDetails(
     if (!entity) {
         return false;
     }
-    return commands.appFavoriteCacheSnapshot({
+    const written = await commands.appFavoriteCacheSnapshot({
         kind: 'world',
         entity,
         fallbackEntityId: normalizeFavoriteCacheEntityId(fallbackWorldId)
     });
+    if (written) {
+        useFavoriteRevisionStore.getState().bumpWorldDetails();
+    }
+    return written;
 }
 
 async function isFavoriteWorldId(id: string): Promise<boolean> {

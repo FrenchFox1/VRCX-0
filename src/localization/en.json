@@ -6094,6 +6094,7 @@
         "clocks_none": "None",
         "timezone": "Timezone",
         "now_playing": "Now Playing",
+        "now_playing_hint": "Right-click to copy link",
         "instance_queue": "Queue",
         "instance_queue_waiting": "Waiting",
         "instance_queue_position": "#{position}",

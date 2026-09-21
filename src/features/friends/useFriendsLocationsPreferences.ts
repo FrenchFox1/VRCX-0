@@ -26,8 +26,13 @@ export function useFriendsLocationsPreferences() {
     const [showSameInstanceInOnline, setShowSameInstanceInOnline] =
         useState(false);
     const [density, setDensity] = useState(DEFAULT_FRIENDS_LOCATIONS_DENSITY);
-    const [viewMode, setViewMode] = useState<FriendsLocationsViewMode>(
-        DEFAULT_FRIENDS_LOCATIONS_VIEW_MODE
+    const [viewMode, setViewMode] = useState<FriendsLocationsViewMode>(() =>
+        sanitizeFriendsLocationsViewMode(
+            configRepository.getCachedString(
+                'FriendLocationViewMode',
+                DEFAULT_FRIENDS_LOCATIONS_VIEW_MODE
+            )
+        )
     );
     const [sidebarFavoritePrefs, setSidebarFavoritePrefs] =
         useState<FriendsLocationsSidebarFavoritePrefs>({

@@ -68,7 +68,7 @@ export function FriendsLocationsToolbar({
     return (
         <PageToolbar>
             <PageToolbarRow>
-                <ToolbarViews>
+                <ToolbarViews className="min-h-9.5 sm:min-h-8.5">
                     <ToolbarSegmented
                         iconOnly
                         value={viewMode}

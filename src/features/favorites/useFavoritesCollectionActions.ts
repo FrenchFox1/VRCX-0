@@ -2,15 +2,17 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { FavoriteKind } from '@/domain/favorites/types';
-import type {
-    AvatarCacheOutput,
-    FavoriteGroupVisibility
+import {
+    type AvatarCacheOutput,
+    commands,
+    type FavoriteGroupVisibility
 } from '@/platform/tauri/bindings';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { bootstrapFavorites } from '@/services/favoriteBootstrapService';
 import { toast } from '@/services/toastService';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useModalStore } from '@/state/modalStore';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
@@ -83,6 +85,10 @@ export function useFavoritesCollectionActions({
                 currentUserSnapshot
             });
             if (kind === 'world') {
+                if (!silent) {
+                    await commands.appFavoriteLocalWorldDetailsRefresh();
+                    useFavoriteRevisionStore.getState().bumpWorldDetails();
+                }
                 await reloadLocalWorldFavorites();
             }
             if (kind === 'avatar') {

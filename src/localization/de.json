@@ -6046,6 +6046,7 @@
         "clocks_none": "Keine",
         "timezone": "Zeitzone",
         "now_playing": "Läuft gerade",
+        "now_playing_hint": "Rechtsklick zum Kopieren des Links",
         "instance_queue": "Warteschlange",
         "instance_queue_waiting": "Wartend",
         "instance_queue_position": "#{position}",

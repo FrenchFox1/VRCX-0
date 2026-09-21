@@ -6047,6 +6047,7 @@
         "clocks_none": "Nenhum",
         "timezone": "Fuso Horário",
         "now_playing": "Tocando Agora",
+        "now_playing_hint": "Clique com o botão direito para copiar o link",
         "instance_queue": "Fila",
         "instance_queue_waiting": "Aguardando",
         "instance_queue_position": "#{position}",

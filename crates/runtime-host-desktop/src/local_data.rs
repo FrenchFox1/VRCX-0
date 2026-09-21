@@ -4,7 +4,7 @@ use std::sync::Arc;
 use serde_json::Value;
 use vrcx_0_application::avatars::AvatarFeedCleanupOutcome;
 use vrcx_0_application::favorites::{
-    FavoriteMutationCoordinator, FavoriteRow, LocalFavoriteSnapshot,
+    FavoriteMutationCoordinator, FavoriteRow, LocalFavoriteSnapshot, LocalWorldDetailsRefreshOutput,
 };
 use vrcx_0_application::social::{
     get_user_mutual_friends_list, refresh_mutual_graph_friend, MutualGraphFetchCancelInput,
@@ -630,6 +630,26 @@ impl LocalDataRuntime {
             &self.current_owner(),
             kind,
         )
+    }
+
+    pub async fn favorite_local_world_details_refresh(
+        &self,
+    ) -> Result<LocalWorldDetailsRefreshOutput> {
+        let store = vrcx_0_outbound_adapters::LocalFavoriteStore::new(Arc::clone(&self.db));
+        let auth_scope = self.auth_scope.snapshot();
+        let endpoint = if auth_scope.endpoint.is_empty() {
+            VRCHAT_API_DEFAULT_ENDPOINT
+        } else {
+            auth_scope.endpoint.as_str()
+        };
+        vrcx_0_application::favorites::refresh_local_world_details(
+            &store,
+            &OwnerId::new(auth_scope.current_user_id.clone()),
+            self.world_cache.as_ref(),
+            self.web.as_ref(),
+            endpoint,
+        )
+        .await
     }
 
     pub fn cleanup_avatar_feed_history(

@@ -201,6 +201,42 @@ describe('useFriendsLocationsPageDerivedState', () => {
         }
     );
 
+    it('uses distinct card row keys when switching segments', () => {
+        const onlineFriend = friendAt('wrld_remote:1');
+        const offlineFriend = {
+            ...friendAt('offline'),
+            id: 'usr_offline',
+            displayName: 'Offline Friend',
+            state: 'offline' as const,
+            stateBucket: 'offline' as const
+        };
+        const input = pageInput([onlineFriend, offlineFriend]);
+        input.activeSegment = 'online';
+        input.gameState = undefined;
+        const { result, rerender } = renderHook(() =>
+            useFriendsLocationsPageDerivedState(input)
+        );
+
+        const onlineRow = result.current.visibleVirtualRows.find(
+            (row) => row.type === 'cards'
+        );
+        expect(onlineRow?.key).toBe('cards:online:remaining:0');
+
+        input.activeSegment = 'offline';
+        rerender();
+
+        const offlineRow = result.current.visibleVirtualRows.find(
+            (row) => row.type === 'cards'
+        );
+        expect(offlineRow?.key).toBe('cards:flat:0');
+        expect(offlineRow?.key).not.toBe(onlineRow?.key);
+        expect(
+            offlineRow?.type === 'cards'
+                ? offlineRow.friends.map((friend) => friend.id)
+                : []
+        ).toEqual(['usr_offline']);
+    });
+
     it.each([
         ['online', 'usr_friend'],
         ['active', 'usr_friend'],

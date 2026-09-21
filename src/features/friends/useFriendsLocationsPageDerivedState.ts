@@ -937,7 +937,7 @@ export function useFriendsLocationsPageDerivedState({
                 const topGap = showHeader && index === 0 ? sectionHeaderGap : 0;
                 rows.push({
                     type: 'cards',
-                    key: `cards::`,
+                    key: `cards:${section.key}:${index}`,
                     height: gridRowHeight + cardGridGap + topGap,
                     topGap,
                     gridRowHeight,

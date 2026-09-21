@@ -6078,6 +6078,7 @@
         "clocks_none": "なし",
         "timezone": "タイムゾーン",
         "now_playing": "再生中",
+        "now_playing_hint": "右クリックでリンクをコピー",
         "instance_queue": "キュー",
         "instance_queue_waiting": "待機中",
         "instance_queue_position": "#{position}",

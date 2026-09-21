@@ -6055,6 +6055,7 @@
         "clocks_none": "Нет",
         "timezone": "Временная пояса",
         "now_playing": "Теперь играем",
+        "now_playing_hint": "ПКМ — скопировать ссылку",
         "instance_queue": "Квью",
         "instance_queue_waiting": "Ожидание",
         "instance_queue_position": "#{position}",

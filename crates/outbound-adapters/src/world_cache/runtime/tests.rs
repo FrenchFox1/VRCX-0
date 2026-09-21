@@ -115,7 +115,7 @@ fn hydrate_from_payload_caches_bounded_card_fields_and_persists_summary() {
 }
 
 #[test]
-fn favorite_hydrate_inserts_private_summary_without_overwriting_existing_cache() {
+fn favorite_hydrate_overwrites_existing_cache_with_private_summary() {
     let (_dir, db) = test_db("favorite-private-summary");
     let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
     let private_world = json!({
@@ -146,6 +146,43 @@ fn favorite_hydrate_inserts_private_summary_without_overwriting_existing_cache()
             .unwrap()
             .unwrap()
             .name,
+        "Private World"
+    );
+}
+
+#[test]
+fn unavailable_world_responses_never_overwrite_existing_cache() {
+    let (_dir, db) = test_db("unavailable-preserves-cache");
+    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    world_cache_upsert(
+        db.as_ref(),
+        world_entry("wrld_gone", "Existing World", "2026-01-02T00:00:00.000Z"),
+    )
+    .unwrap();
+
+    cache.hydrate_response(&execute_response(
+        404,
+        json!({ "error": { "message": "World not found", "status_code": 404 } }).to_string(),
+    ));
+    cache.hydrate_favorite_payloads([&json!({
+        "id": "wrld_gone",
+        "name": "",
+        "imageUrl": "",
+        "releaseStatus": "private"
+    })]);
+    cache.hydrate_from_payload(&json!({
+        "id": "wrld_gone",
+        "name": "wrld_gone",
+        "releaseStatus": "private"
+    }));
+
+    let row = world_cache_get(db.as_ref(), "wrld_gone".into())
+        .unwrap()
+        .unwrap();
+    assert_eq!(row.name, "Existing World");
+    assert_eq!(row.image_url, "image.png");
+    assert_eq!(
+        cache.get_summary("wrld_gone").unwrap().unwrap().name,
         "Existing World"
     );
 }

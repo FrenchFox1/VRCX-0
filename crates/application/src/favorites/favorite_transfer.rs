@@ -1045,17 +1045,14 @@ fn cache_world_snapshot_if_safe(
     let Some(entity) = item.entity.as_ref().map(RawJson::as_value) else {
         return Ok(());
     };
-    let Some(entry) = build_public_world_cache_entry(entity, &item.entity_id) else {
+    let Some(entry) = build_world_cache_entry(entity, &item.entity_id) else {
         return Ok(());
     };
     store.cache_upsert(FavoriteCacheKind::World, entry)?;
     Ok(())
 }
 
-fn build_public_world_cache_entry(
-    world: &Value,
-    fallback_world_id: &str,
-) -> Option<CacheEntityInput> {
+fn build_world_cache_entry(world: &Value, fallback_world_id: &str) -> Option<CacheEntityInput> {
     if cache_write_decision(FavoriteCacheKind::World, world) != CacheWriteDecision::Upsert {
         return None;
     }
@@ -1184,43 +1181,43 @@ mod tests {
     }
 
     #[test]
-    fn build_public_world_cache_entry_rejects_non_public_world() {
+    fn build_world_cache_entry_rejects_unknown_release_status() {
         let world = serde_json::json!({
             "id": "wrld_1",
-            "releaseStatus": "private",
+            "releaseStatus": "unknown",
             "name": "Test",
             "thumbnailImageUrl": "https://example.test/thumb.png",
         });
 
-        assert!(build_public_world_cache_entry(&world, "wrld_fallback").is_none());
+        assert!(build_world_cache_entry(&world, "wrld_fallback").is_none());
     }
 
     #[test]
-    fn build_public_world_cache_entry_rejects_missing_image() {
+    fn build_world_cache_entry_rejects_missing_image() {
         let world = serde_json::json!({
             "id": "wrld_1",
             "releaseStatus": "public",
             "name": "Test",
         });
 
-        assert!(build_public_world_cache_entry(&world, "wrld_fallback").is_none());
+        assert!(build_world_cache_entry(&world, "wrld_fallback").is_none());
     }
 
     #[test]
-    fn build_public_world_cache_entry_falls_back_to_provided_world_id() {
+    fn build_world_cache_entry_falls_back_to_provided_world_id() {
         let world = serde_json::json!({
             "releaseStatus": "public",
             "name": "Test",
             "imageUrl": "https://example.test/image.png",
         });
 
-        let entry = build_public_world_cache_entry(&world, "wrld_fallback").unwrap();
+        let entry = build_world_cache_entry(&world, "wrld_fallback").unwrap();
 
         assert_eq!(entry.id, Value::String("wrld_fallback".to_string()));
     }
 
     #[test]
-    fn build_public_world_cache_entry_builds_entry_from_full_payload() {
+    fn build_world_cache_entry_builds_entry_from_full_payload() {
         let world = serde_json::json!({
             "id": "wrld_1",
             "releaseStatus": "public",
@@ -1235,7 +1232,7 @@ mod tests {
             "version": 3,
         });
 
-        let entry = build_public_world_cache_entry(&world, "wrld_fallback").unwrap();
+        let entry = build_world_cache_entry(&world, "wrld_fallback").unwrap();
 
         assert_eq!(entry.id, Value::String("wrld_1".to_string()));
         assert_eq!(entry.name, Value::String("Test World".to_string()));

@@ -6038,6 +6038,7 @@
         "clocks_none": "없음",
         "timezone": "시간대",
         "now_playing": "지금 재생 중",
+        "now_playing_hint": "우클릭하여 링크 복사",
         "instance_queue": "대기열",
         "instance_queue_waiting": "대기 중",
         "instance_queue_position": "#{position}",

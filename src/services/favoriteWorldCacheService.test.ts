@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { commands } from '@/platform/tauri/bindings';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 
 import {
@@ -140,19 +141,25 @@ describe('favoriteWorldCacheService', () => {
         expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
     });
 
-    it('does not overwrite DB cache with private world details', async () => {
+    it('bumps the world details revision only when the DB cache was written', async () => {
+        const world = {
+            id: 'wrld_revision',
+            name: 'Revision World',
+            releaseStatus: 'public',
+            thumbnailImageUrl: 'https://example.test/revision.png'
+        };
+        const before = useFavoriteRevisionStore.getState().worldDetailsRevision;
+
+        await expect(cacheWorldDetails(world)).resolves.toBe(true);
+        expect(useFavoriteRevisionStore.getState().worldDetailsRevision).toBe(
+            before + 1
+        );
+
         vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(false);
-
-        await expect(
-            cacheWorldDetails({
-                id: 'wrld_private',
-                name: 'Private World',
-                releaseStatus: 'private',
-                thumbnailImageUrl: 'https://example.test/private.png'
-            })
-        ).resolves.toBe(false);
-
-        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
+        await expect(cacheWorldDetails(world)).resolves.toBe(false);
+        expect(useFavoriteRevisionStore.getState().worldDetailsRevision).toBe(
+            before + 1
+        );
     });
 
     it('does not overwrite DB cache with unknown world details', async () => {

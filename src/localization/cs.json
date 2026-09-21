@@ -6054,6 +6054,7 @@
         "clocks_none": "Žádné",
         "timezone": "Časové pásmo",
         "now_playing": "Nyní hraje",
+        "now_playing_hint": "Pravým tlačítkem zkopírujete odkaz",
         "instance_queue": "Fronta",
         "instance_queue_waiting": "Čekání",
         "instance_queue_position": "#{position}",

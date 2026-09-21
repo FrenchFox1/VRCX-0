@@ -89,8 +89,16 @@ class ConfigRepository {
         key: string,
         defaultValue: ConfigDefaultValue = null
     ): Promise<string> {
-        const value = await this.getRawValue(key);
-        if (value === null) {
+        await this.#ensureReady();
+        return this.getCachedString(key, defaultValue);
+    }
+
+    getCachedString(
+        key: string,
+        defaultValue: ConfigDefaultValue = null
+    ): string {
+        const value = this.#cache.get(this.#resolveKey(key));
+        if (value === undefined || value === 'undefined') {
             if (defaultValue !== null) {
                 return String(defaultValue);
             }

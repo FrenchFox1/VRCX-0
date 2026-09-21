@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::future::Future;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
@@ -9,8 +9,8 @@ use serde_json::Value;
 use vrcx_0_core::ReleaseStatus;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::worlds::{
-    world_cache_get, world_cache_get_many, world_cache_search, world_cache_upsert,
-    world_cache_upsert_many, WorldSummaryOutput,
+    world_cache_get, world_cache_search, world_cache_upsert, world_cache_upsert_many,
+    WorldSummaryOutput,
 };
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{
@@ -156,7 +156,7 @@ impl WorldCache {
     }
 
     pub fn hydrate_summary_from_payload(&self, world_value: &Value) -> Option<WorldSummaryOutput> {
-        let (summary, entry) = self.hydrate_summary_from_payload_with_policy(world_value, false)?;
+        let (summary, entry) = self.hydrate_summary_from_payload_with_entry(world_value)?;
         if let Some(entry) = entry {
             let world_id = summary.id.clone();
             if let Err(error) = world_cache_upsert(self.db.as_ref(), entry) {
@@ -166,10 +166,9 @@ impl WorldCache {
         Some(summary)
     }
 
-    fn hydrate_summary_from_payload_with_policy(
+    fn hydrate_summary_from_payload_with_entry(
         &self,
         world_value: &Value,
-        insert_private: bool,
     ) -> Option<(WorldSummaryOutput, Option<CacheEntityInput>)> {
         let world_id = world_id(world_value);
         if world_id.is_empty() {
@@ -185,9 +184,7 @@ impl WorldCache {
             }),
         );
 
-        let persist = is_persistable_world(world_value, &name)
-            || (insert_private && is_cacheable_private_world(world_value, &name));
-        if !persist {
+        if !is_persistable_world(world_value, &name) {
             return Some((summary, None));
         }
         let entry = CacheEntityInput {
@@ -210,45 +207,11 @@ impl WorldCache {
         &self,
         world_values: impl IntoIterator<Item = &'a Value>,
     ) -> Vec<Option<Value>> {
-        let world_values = world_values.into_iter().collect::<Vec<_>>();
-        let private_ids = world_values
-            .iter()
-            .filter_map(|world_value| {
-                let name = world_name(world_value)?;
-                is_cacheable_private_world(world_value, &name)
-                    .then(|| world_id(world_value))
-                    .filter(|id| !id.is_empty())
-            })
-            .collect::<HashSet<_>>();
-        let private_ids_to_insert = if private_ids.is_empty() {
-            HashSet::new()
-        } else {
-            match world_cache_get_many(
-                self.db.as_ref(),
-                &private_ids.iter().cloned().collect::<Vec<_>>(),
-            ) {
-                Ok(existing) => {
-                    let existing = existing
-                        .into_iter()
-                        .map(|summary| summary.id)
-                        .collect::<HashSet<_>>();
-                    private_ids.difference(&existing).cloned().collect()
-                }
-                Err(error) => {
-                    tracing::warn!("WorldCache private batch lookup failed: {error}");
-                    HashSet::new()
-                }
-            }
-        };
         let mut pending = Vec::new();
         let payloads = world_values
             .into_iter()
             .map(|world_value| {
-                let id = world_id(world_value);
-                let (summary, entry) = self.hydrate_summary_from_payload_with_policy(
-                    world_value,
-                    private_ids_to_insert.contains(&id),
-                )?;
+                let (summary, entry) = self.hydrate_summary_from_payload_with_entry(world_value)?;
                 pending.extend(entry);
                 self.get_cached_card_payload(&summary.id)
             })
@@ -706,13 +669,10 @@ fn summary_response(summary: &WorldSummaryOutput) -> crate::Result<HttpApiExecut
 }
 
 fn is_persistable_world(value: &Value, name: &str) -> bool {
-    matches!(world_release_status(value), ReleaseStatus::Public)
-        && is_persistable_world_fields(value, name)
-}
-
-fn is_cacheable_private_world(value: &Value, name: &str) -> bool {
-    matches!(world_release_status(value), ReleaseStatus::Private)
-        && is_persistable_world_fields(value, name)
+    matches!(
+        world_release_status(value),
+        ReleaseStatus::Public | ReleaseStatus::Private
+    ) && is_persistable_world_fields(value, name)
 }
 
 fn world_release_status(value: &Value) -> ReleaseStatus {

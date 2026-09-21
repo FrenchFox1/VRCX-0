@@ -58,10 +58,8 @@ pub(super) fn cache_write_decision(kind: FavoriteCacheKind, entity: &Value) -> C
         return CacheWriteDecision::Skip;
     }
     match (kind, release_status(entity).as_str()) {
-        (_, "public") => CacheWriteDecision::Upsert,
-        (FavoriteCacheKind::Avatar, _) | (FavoriteCacheKind::World, "private") => {
-            CacheWriteDecision::InsertIfMissing
-        }
+        (_, "public") | (FavoriteCacheKind::World, "private") => CacheWriteDecision::Upsert,
+        (FavoriteCacheKind::Avatar, _) => CacheWriteDecision::InsertIfMissing,
         (FavoriteCacheKind::World, _) => CacheWriteDecision::Skip,
     }
 }
@@ -139,7 +137,7 @@ mod tests {
     use crate::favorites::FavoriteStore;
 
     #[test]
-    fn world_policy_upserts_public_and_preserves_existing_private_details() {
+    fn world_policy_upserts_public_and_private_details() {
         let public = json!({
             "name": "Public",
             "releaseStatus": "public",
@@ -157,7 +155,7 @@ mod tests {
         );
         assert_eq!(
             cache_write_decision(FavoriteCacheKind::World, &private),
-            CacheWriteDecision::InsertIfMissing
+            CacheWriteDecision::Upsert
         );
     }
 
@@ -195,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn private_world_snapshot_does_not_overwrite_existing_public_cache() {
+    fn private_world_snapshot_overwrites_existing_public_cache() {
         let store = TestFavoriteStore::default();
         let public = json!({
             "id": "wrld_test",
@@ -219,7 +217,7 @@ mod tests {
             },
         )
         .unwrap());
-        assert!(!persist_favorite_cache_snapshot(
+        assert!(persist_favorite_cache_snapshot(
             &store,
             FavoriteCacheSnapshotInput {
                 kind: FavoriteCacheKind::World,

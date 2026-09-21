@@ -4,6 +4,7 @@ mod favorite_details_hydrate;
 mod favorite_import;
 mod favorite_transfer;
 mod local_favorites;
+mod local_world_details;
 mod mutation_coordinator;
 mod remote_favorites;
 #[cfg(test)]
@@ -40,6 +41,7 @@ pub use local_favorites::{
     get_local_favorite_snapshot, list_local_favorites, FavoriteMoveResult, FavoriteStore,
     LocalFavoriteGroupWrite, LocalFavoriteSnapshot,
 };
+pub use local_world_details::{refresh_local_world_details, LocalWorldDetailsRefreshOutput};
 pub use mutation_coordinator::{FavoriteMutationCoordinator, FavoriteMutationRuntimeDeps};
 pub use remote_favorites::{
     FavoriteRemote, FavoriteRemoteAddInput, FavoriteRemoteCommand, FavoriteRemoteDeleteInput,

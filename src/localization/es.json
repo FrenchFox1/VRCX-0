@@ -6046,6 +6046,7 @@
         "clocks_none": "Ninguno",
         "timezone": "Zona horaria",
         "now_playing": "Reproduciendo ahora",
+        "now_playing_hint": "Clic derecho para copiar el enlace",
         "instance_queue": "Cola",
         "instance_queue_waiting": "Esperando",
         "instance_queue_position": "#{position}",

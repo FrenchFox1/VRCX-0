@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     boolValues: new Map<string, boolean>(),
     stringValues: new Map<string, string>(),
+    getCachedString: vi.fn(),
     getBool: vi.fn(),
     getString: vi.fn(),
     setBool: vi.fn(),
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/repositories/configRepository', () => ({
     default: {
+        getCachedString: mocks.getCachedString,
         getBool: mocks.getBool,
         getString: mocks.getString,
         setBool: mocks.setBool,
@@ -35,6 +37,12 @@ describe('useFriendsLocationsPreferences', () => {
                 async (key: string, fallback = false) =>
                     mocks.boolValues.get(key) ?? fallback
             );
+        mocks.getCachedString
+            .mockReset()
+            .mockImplementation(
+                (key: string, fallback = '') =>
+                    mocks.stringValues.get(key) ?? String(fallback)
+            );
         mocks.getString
             .mockReset()
             .mockImplementation(
@@ -53,6 +61,7 @@ describe('useFriendsLocationsPreferences', () => {
         mocks.stringValues.set('sidebarSortMethod3', 'Sort by Time');
         const { result } = renderHook(() => useFriendsLocationsPreferences());
 
+        expect(result.current.viewMode).toBe('worlds');
         await waitFor(() => expect(result.current.preferencesReady).toBe(true));
         expect(result.current.density).toBe('dense');
         expect(result.current.viewMode).toBe('worlds');
