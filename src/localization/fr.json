@@ -914,9 +914,9 @@
             "advanced": "Avancé",
             "sorting": "Tri",
             "favorites_section": "Favoris",
-            "group_by_instance": "Grouper par instance",
-            "split_favorite_friends": "Afficher les groupes de favoris",
-            "show_grouped_friends": "Afficher les amis filtrés",
+            "group_by_instance": "Afficher par instance",
+            "split_favorite_friends": "Séparer par groupe",
+            "show_grouped_friends": "Afficher dans les autres sections",
             "same_instance_above_favorites": "Prioriser la même instance",
             "sort_secondary": "Puis par",
             "sort_tertiary": "Puis par",
@@ -1495,9 +1495,7 @@
                 "favorites_failed_to_load": "Échec du chargement des favoris"
             },
             "loading": {
-                "loading_favorites_baseline": "Chargement des favoris",
-                "loading_remote_avatar_details": "Chargement des détails de l'avatar distant",
-                "loading_remote_world_details": "Chargement des détails du monde distant"
+                "loading_favorites_baseline": "Chargement des favoris"
             },
             "share_collection": {
                 "title": "Partager la collection",
@@ -3277,10 +3275,6 @@
                 "world_details_unavailable": "Les détails du monde sont indisponibles.",
                 "world_deleted": "Ce monde a été supprimé.",
                 "avatar_details_unavailable": "Les détails de l'avatar sont indisponibles."
-            },
-            "loading": {
-                "loading_world_details": "Chargement des détails du monde.",
-                "loading_avatar_details": "Chargement des détails de l'avatar."
             },
             "dynamic": {
                 "remove_value_from_value": "Retirer {value} de {value2} ?",
@@ -6094,6 +6088,7 @@
         "clocks_none": "Aucune",
         "timezone": "Fuseau horaire",
         "now_playing": "En cours de lecture",
+        "now_playing_hint": "Clic droit pour copier le lien",
         "instance_queue": "File d'attente",
         "instance_queue_waiting": "En attente",
         "instance_queue_position": "#{position}",
