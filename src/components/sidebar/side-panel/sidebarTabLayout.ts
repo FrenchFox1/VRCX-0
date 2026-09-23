@@ -209,22 +209,6 @@ export function getVisibleSidebarTabs(
     return normalizeSidebarTabLayout(layout).filter((item) => item.visible);
 }
 
-export function getVisibleFavoriteCollectionSourceGroupKeys(
-    layout: SidebarTabLayout
-): string[] {
-    return Array.from(
-        new Set(
-            normalizeSidebarTabLayout(layout)
-                .filter(
-                    (item): item is SidebarFavoriteCollectionTabLayoutItem =>
-                        item.type === 'favoriteCollection' && item.visible
-                )
-                .flatMap((item) => item.sourceGroupKeys)
-                .filter(Boolean)
-        )
-    );
-}
-
 export function moveSidebarTab(
     layout: SidebarTabLayout,
     fromIndex: number,

@@ -914,10 +914,10 @@
             "advanced": "高级",
             "sorting": "排序方式",
             "favorites_section": "收藏",
-            "group_by_instance": "按房间分组",
-            "split_favorite_friends": "按分组显示好友",
-            "show_grouped_friends": "显示同一房间中的好友",
-            "same_instance_above_favorites": "优先显示同一房间中的好友",
+            "group_by_instance": "显示同一房间分组",
+            "split_favorite_friends": "收藏好友按分组显示",
+            "show_grouped_friends": "同房好友也显示在其他列表",
+            "same_instance_above_favorites": "“同一房间”排在“收藏”前",
             "sort_secondary": "次要排序方式",
             "sort_tertiary": "第三排序方式",
             "favorite_groups": "收藏分组",
@@ -1495,9 +1495,7 @@
                 "favorites_failed_to_load": "收藏加载失败"
             },
             "loading": {
-                "loading_favorites_baseline": "正在加载收藏基线数据",
-                "loading_remote_avatar_details": "正在加载远程模型详情",
-                "loading_remote_world_details": "正在加载远程世界详情"
+                "loading_favorites_baseline": "正在加载收藏基线数据"
             },
             "share_collection": {
                 "title": "分享收藏合集",
@@ -3277,10 +3275,6 @@
                 "world_details_unavailable": "世界详情不可用。",
                 "world_deleted": "该世界已被删除。",
                 "avatar_details_unavailable": "模型详情不可用。"
-            },
-            "loading": {
-                "loading_world_details": "正在加载世界详情。",
-                "loading_avatar_details": "正在加载模型详情。"
             },
             "dynamic": {
                 "remove_value_from_value": "要从 {value2} 中移除 {value} 吗？",

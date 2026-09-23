@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use futures_util::SinkExt;
 use hyper_util::client::legacy::connect::proxy::{SocksV5, Tunnel};
 use hyper_util::client::legacy::connect::HttpConnector;
 use serde_json::Value;
@@ -214,6 +215,13 @@ pub fn classify_websocket_frame(frame: Message) -> RealtimeFrame {
             RealtimeFrame::Other
         }
     }
+}
+
+pub async fn send_websocket_ping(stream: &mut RealtimeWebSocketStream) -> Result<(), Error> {
+    stream
+        .send(Message::Ping(Default::default()))
+        .await
+        .map_err(|error| Error::Other(format!("websocket ping: {error}")))
 }
 
 fn parse_url(value: &str, label: &str) -> Result<Url, Error> {

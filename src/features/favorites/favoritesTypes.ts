@@ -44,6 +44,7 @@ export type FavoriteItem = {
     isUnavailable?: boolean;
     isPrivate?: boolean;
     isDeleted?: boolean;
+    isLoadingDetail?: boolean;
     location?: string;
     orderIndex?: number;
     playerCount?: number;

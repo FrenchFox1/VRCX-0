@@ -3856,7 +3856,7 @@ export type FavoriteDetailsHydrateInput = {
     favoriteIds?: string[];
     requestedIds?: string[];
     avatarTags?: string[];
-    refreshKey?: string;
+    groupTags?: string[];
 };
 export type FavoriteDetailsHydrateKind = 'avatar' | 'world';
 export type FavoriteDetailsHydrateOutput = {
@@ -5221,6 +5221,8 @@ export type Message = {
     role: Role;
     content: string;
     createdAt: string;
+    toolCall: ToolCallRecord | null;
+    toolResult: ToolResultRecord | null;
 };
 export type ModerationSyncLocalOutput = {
     userId: string;
@@ -5936,7 +5938,7 @@ export type RemoteModerationRow = {
 };
 export type RequestInviteRequest = { requestSlot?: number | null };
 export type ResolvedFriendLogName = { userId: string; displayName: string };
-export type Role = 'user' | 'assistant';
+export type Role = 'user' | 'assistant' | 'tool_call' | 'tool_result';
 export type RuntimeGameLogEventPayload = {
     runtimePersisted: boolean;
     raw: string[];
@@ -6291,6 +6293,14 @@ export type TelemetryClientEvent =
           summary: string | null;
       }
     | { type: 'assistantTurnError'; code: string; summary: string | null };
+export type ToolCallRecord = { id: string; name: string; arguments: string };
+export type ToolResultRecord = {
+    toolCallId: string;
+    name: string;
+    ok: boolean;
+    summary: string;
+    entities: Entity[];
+};
 export type TranslationOverrides = {
     enabled: boolean | null;
     apiType: TranslationProvider | null;

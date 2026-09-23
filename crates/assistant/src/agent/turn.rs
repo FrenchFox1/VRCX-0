@@ -3,25 +3,30 @@ use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures_util::future::join_all;
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
-use vrcx_0_contracts::llm::{ChatMessage, LlmRequestOptions, ToolDefinition};
+use vrcx_0_contracts::llm::{ChatMessage, LlmRequestOptions, ToolCall, ToolDefinition};
 use vrcx_0_mcp::{InProcessMcpTools, McpError, ToolCallOutcome};
 
 use crate::entities::{extract_entities, surfaced_entities, Entity};
 use crate::events::AssistantEmitter;
 use crate::playbook;
 use crate::ports::{AssistantLlmClient, AssistantLlmError};
-use crate::session::{ActiveTurn, Role, SessionStore, TurnStatus};
+use crate::session::{
+    ActiveTurn, Role, SessionStore, ToolCallRecord, ToolResultRecord, TurnStatus,
+};
 
-use super::context::{build_context, latest_user_message};
+use super::context::{build_context, latest_user_message, ContextMode};
 use super::tool_budget::tool_content;
 use super::tool_summary::{
     apply_tool_summary_fallback, brief_summary_from_value, normalize_tool_arguments,
     parse_arguments, tool_call_signature, tool_fact_summary, truncate,
 };
 
-const MAX_TOOL_ROUNDS: usize = 6;
+// Runaway protection only: a turn that still wants tools after this many
+// rounds is forced to answer from what it has. It is not a steering device.
+const MAX_TOOL_ROUNDS: usize = 16;
 const TOOL_CALL_TIMEOUT: Duration = Duration::from_secs(30);
 const FINAL_ANSWER_PROMPT: &str = "\
 Do not call any more tools. Write the final answer now, using only the tool results \
@@ -88,20 +93,15 @@ You are the VRCX-0 social assistant. Answer questions about the signed-in user's
 observer-centered history plus the live session.
 
 Rules:
-1. Never guess social facts. For any number, ranking, date, or claim: call a tool \
-this turn and answer only from this turn's results.
+1. Never guess social facts. Every number, ranking, date, or claim must come from a \
+tool result in this conversation.
 2. Missing data means \"not observed\". It never means \"did not happen\".
 3. Facts about me hold even in private instances. What OTHERS did in private \
 instances I did not attend is invisible — say the picture is partial.
 4. I am not my own friend. Leave me out of friend lists, counts, and rankings.
 5. Reflect the `caveats` a tool returns. Treat figures as approximate.
 
-Tools:
-- Pick the one tool whose description fits the question. Use several tools only for \
-broad questions.
-- Ranked tools pre-sort and limit rows. Read the top rows and answer. Do not call \
-more tools to enumerate everyone. Mention truncation or limited coverage when it \
-matters.
+Tool arguments:
 - Never repeat a tool call with the same arguments.
 - When the question names a time period, set `timeWindow`. Pass a four-digit calendar \
 year such as 2026 for a whole UTC year. Otherwise prefer a relative string: \"today\", \
@@ -112,13 +112,6 @@ user means all history (\"ever\", \"so far\"), and follow the selected tool's \
 all-history guard.
 - If a tool returns `needsDisambiguation`, ask the user to choose. Never invent a \
 usr_ id.
-
-History:
-- Your earlier replies are not data. Never reuse their numbers, rankings, time \
-windows, or social claims — recompute with tools this turn.
-- Use history only to resolve references (\"he\", \"that world\", \"the first one\"), \
-honor stated preferences, and understand follow-ups. Prefer the ids from the \
-\"Known references\" note.
 
 Style:
 - Answer directly; do not narrate plans or tool calls.
@@ -139,6 +132,16 @@ pub(crate) struct TurnContext {
     pub cancel: CancellationToken,
     pub apply_playbook: bool,
     pub options: LlmRequestOptions,
+}
+
+impl TurnContext {
+    pub(crate) fn context_mode(&self) -> ContextMode {
+        if self.apply_playbook {
+            ContextMode::Narrator
+        } else {
+            ContextMode::Open
+        }
+    }
 }
 
 pub(crate) async fn run_turn(ctx: TurnContext) {
@@ -211,47 +214,33 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         }
 
         working.push(turn.clone().into_message());
-        for call in &turn.tool_calls {
-            used_tools = true;
-            ctx.emitter
-                .tool_call(&call.id, &call.function.name, &call.function.arguments);
-            let arguments = normalize_tool_arguments(
-                &call.function.name,
-                parse_arguments(&call.function.arguments),
-                &user_text,
-                tool_accepts_utc_offset(ctx.tool_defs.as_slice(), &call.function.name)
-                    .then_some(utc_offset_minutes),
-            );
-            let signature = tool_call_signature(&call.function.name, arguments.as_ref());
-            let resolved = if !tool_is_available(tool_defs, &call.function.name) {
-                resolve_tool_outcome(Err(McpError::Custom(format!(
-                    "tool `{}` is not available in this session",
-                    call.function.name
-                ))))
-            } else if dispatched_tools.insert(signature) {
-                let outcome = match await_tool_call(
-                    ctx.tools.call_tool(call.function.name.clone(), arguments),
-                    &ctx.cancel,
-                    TOOL_CALL_TIMEOUT,
+        used_tools = true;
+
+        // Announce and record every call in the model's order first, then run
+        // the dispatchable ones concurrently; results are applied in source
+        // order so the transcript and the persisted rows stay protocol-shaped.
+        let prepared: Vec<PreparedCall<'_>> = turn
+            .tool_calls
+            .iter()
+            .map(|call| {
+                ctx.emitter
+                    .tool_call(&call.id, &call.function.name, &call.function.arguments);
+                record_tool_call(&ctx, call);
+                prepare_call(
+                    call,
+                    tool_defs,
+                    ctx.tool_defs.as_slice(),
+                    &user_text,
+                    utc_offset_minutes,
+                    &mut dispatched_tools,
                 )
-                .await
-                {
-                    AwaitToolCall::Completed(outcome) => outcome,
-                    AwaitToolCall::Cancelled => return finish_cancelled(&ctx),
-                    AwaitToolCall::TimedOut => Err(McpError::Custom(format!(
-                        "tool `{}` timed out after {} seconds",
-                        call.function.name,
-                        TOOL_CALL_TIMEOUT.as_secs()
-                    ))),
-                };
-                resolve_tool_outcome(outcome)
-            } else {
-                tracing::warn!(
-                    tool = %call.function.name,
-                    args = %call.function.arguments,
-                    "assistant: skipped duplicate tool call in one turn"
-                );
-                duplicate_tool_call_result(&call.function.name)
+            })
+            .collect();
+        let outcomes = join_all(prepared.into_iter().map(|call| dispatch_call(&ctx, call))).await;
+
+        for (call, resolved) in outcomes {
+            let Some(resolved) = resolved else {
+                return finish_cancelled(&ctx);
             };
             if !resolved.ok {
                 tracing::warn!(
@@ -274,6 +263,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
             collected.extend(resolved.entities.iter().cloned());
             ctx.emitter
                 .tool_result(&call.id, resolved.ok, &resolved.summary, &resolved.entities);
+            record_tool_result(&ctx, call, &resolved);
             working.push(ChatMessage::tool(call.id.clone(), resolved.content));
         }
     }
@@ -373,6 +363,110 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         }),
     );
     ctx.emitter.done();
+}
+
+struct PreparedCall<'a> {
+    call: &'a ToolCall,
+    arguments: Option<serde_json::Map<String, Value>>,
+    resolved: Option<ResolvedTool>,
+}
+
+fn prepare_call<'a>(
+    call: &'a ToolCall,
+    tool_defs: &[ToolDefinition],
+    all_tool_defs: &[ToolDefinition],
+    user_text: &str,
+    utc_offset_minutes: i64,
+    dispatched_tools: &mut HashSet<String>,
+) -> PreparedCall<'a> {
+    let arguments = normalize_tool_arguments(
+        &call.function.name,
+        parse_arguments(&call.function.arguments),
+        user_text,
+        tool_accepts_utc_offset(all_tool_defs, &call.function.name).then_some(utc_offset_minutes),
+    );
+    let signature = tool_call_signature(&call.function.name, arguments.as_ref());
+    let resolved = if !tool_is_available(tool_defs, &call.function.name) {
+        Some(resolve_tool_outcome(Err(McpError::Custom(format!(
+            "tool `{}` is not available in this session",
+            call.function.name
+        )))))
+    } else if dispatched_tools.insert(signature) {
+        None
+    } else {
+        tracing::warn!(
+            tool = %call.function.name,
+            args = %call.function.arguments,
+            "assistant: skipped duplicate tool call in one turn"
+        );
+        Some(duplicate_tool_call_result(&call.function.name))
+    };
+    PreparedCall {
+        call,
+        arguments,
+        resolved,
+    }
+}
+
+// `None` means the turn was cancelled while the tool ran.
+async fn dispatch_call<'a>(
+    ctx: &TurnContext,
+    call: PreparedCall<'a>,
+) -> (&'a ToolCall, Option<ResolvedTool>) {
+    if let Some(resolved) = call.resolved {
+        return (call.call, Some(resolved));
+    }
+    let name = call.call.function.name.clone();
+    let outcome = match await_tool_call(
+        ctx.tools.call_tool(name.clone(), call.arguments),
+        &ctx.cancel,
+        TOOL_CALL_TIMEOUT,
+    )
+    .await
+    {
+        AwaitToolCall::Completed(outcome) => outcome,
+        AwaitToolCall::Cancelled => return (call.call, None),
+        AwaitToolCall::TimedOut => Err(McpError::Custom(format!(
+            "tool `{name}` timed out after {} seconds",
+            TOOL_CALL_TIMEOUT.as_secs()
+        ))),
+    };
+    (call.call, Some(resolve_tool_outcome(outcome)))
+}
+
+fn record_tool_call(ctx: &TurnContext, call: &ToolCall) {
+    if !ctx.sessions.is_current_turn(&ctx.session_id, &ctx.turn_id) {
+        return;
+    }
+    if let Err(error) = ctx.sessions.push_tool_call(
+        &ctx.session_id,
+        ToolCallRecord {
+            id: call.id.clone(),
+            name: call.function.name.clone(),
+            arguments: call.function.arguments.clone(),
+        },
+    ) {
+        tracing::warn!(%error, "assistant: failed to record tool call");
+    }
+}
+
+fn record_tool_result(ctx: &TurnContext, call: &ToolCall, resolved: &ResolvedTool) {
+    if !ctx.sessions.is_current_turn(&ctx.session_id, &ctx.turn_id) {
+        return;
+    }
+    if let Err(error) = ctx.sessions.push_tool_result(
+        &ctx.session_id,
+        ToolResultRecord {
+            tool_call_id: call.id.clone(),
+            name: call.function.name.clone(),
+            ok: resolved.ok,
+            summary: resolved.summary.clone(),
+            entities: resolved.entities.clone(),
+        },
+        resolved.content.clone(),
+    ) {
+        tracing::warn!(%error, "assistant: failed to record tool result");
+    }
 }
 
 fn tool_accepts_utc_offset(tool_defs: &[ToolDefinition], tool_name: &str) -> bool {

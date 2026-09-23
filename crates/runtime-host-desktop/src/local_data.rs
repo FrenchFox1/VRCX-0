@@ -642,11 +642,14 @@ impl LocalDataRuntime {
         } else {
             auth_scope.endpoint.as_str()
         };
+        let remote = vrcx_0_outbound_adapters::CachedLocalWorldDetailsRemote::new(
+            self.world_cache.as_ref(),
+            self.web.as_ref(),
+        );
         vrcx_0_application::favorites::refresh_local_world_details(
             &store,
             &OwnerId::new(auth_scope.current_user_id.clone()),
-            self.world_cache.as_ref(),
-            self.web.as_ref(),
+            &remote,
             endpoint,
         )
         .await

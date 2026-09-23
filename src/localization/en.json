@@ -914,10 +914,10 @@
             "advanced": "Advanced",
             "sorting": "Sorting",
             "favorites_section": "Favorites",
-            "group_by_instance": "Group by Instance",
-            "split_favorite_friends": "Show Favorite Groups",
-            "show_grouped_friends": "Show Grouped Friends",
-            "same_instance_above_favorites": "Prioritize Same Instance",
+            "group_by_instance": "Same Instance Group",
+            "split_favorite_friends": "Split Favorites by Group",
+            "show_grouped_friends": "Also Show in Other Sections",
+            "same_instance_above_favorites": "Place Same Instance Above Favorites",
             "sort_secondary": "Then by",
             "sort_tertiary": "Then by",
             "favorite_groups": "Favorite Groups",
@@ -1495,9 +1495,7 @@
                 "favorites_failed_to_load": "Favorites failed to load"
             },
             "loading": {
-                "loading_favorites_baseline": "Loading favorites",
-                "loading_remote_avatar_details": "Loading remote avatar details",
-                "loading_remote_world_details": "Loading remote world details"
+                "loading_favorites_baseline": "Loading favorites"
             },
             "share_collection": {
                 "title": "Share collection",
@@ -3277,10 +3275,6 @@
                 "world_details_unavailable": "World details are unavailable.",
                 "world_deleted": "This world has been deleted.",
                 "avatar_details_unavailable": "Avatar details are unavailable."
-            },
-            "loading": {
-                "loading_world_details": "Loading world details.",
-                "loading_avatar_details": "Loading avatar details."
             },
             "dynamic": {
                 "remove_value_from_value": "Remove {value} from {value2}?",

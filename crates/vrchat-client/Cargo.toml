@@ -8,6 +8,7 @@ description = "VRChat API client"
 [dependencies]
 base64 = { workspace = true }
 bytes = { workspace = true }
+futures-util = "0.3"
 hyper-util = { version = "0.1.20", features = ["client-legacy", "tokio"] }
 percent-encoding = { workspace = true }
 reqwest = { workspace = true, features = [

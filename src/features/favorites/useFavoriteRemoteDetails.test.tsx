@@ -91,7 +91,7 @@ describe('useFavoriteRemoteDetails', () => {
             favoriteIds: ['wrld_1', 'wrld_2'],
             requestedIds: ['wrld_1', 'wrld_2'],
             avatarTags: [],
-            refreshKey: expect.any(String)
+            groupTags: []
         });
         expect(result.current.data).toEqual({
             wrld_1: {
@@ -125,7 +125,29 @@ describe('useFavoriteRemoteDetails', () => {
             favoriteIds: ['avtr_1'],
             requestedIds: ['avtr_1'],
             avatarTags: ['one', 'two'],
-            refreshKey: expect.any(String)
+            groupTags: []
+        });
+    });
+
+    it('passes the ordered world group tags for world hydration', async () => {
+        const { result } = renderHook(() =>
+            useFavoriteRemoteDetails({
+                type: 'world',
+                favoriteIds: ['wrld_1'],
+                groupTags: [' worlds2 ', 'worlds2', 'worlds1']
+            })
+        );
+
+        await waitFor(() => {
+            expect(result.current.status).toBe('ready');
+        });
+
+        expect(mocks.appFavoriteDetailsHydrate).toHaveBeenCalledWith({
+            kind: 'world',
+            favoriteIds: ['wrld_1'],
+            requestedIds: ['wrld_1'],
+            avatarTags: [],
+            groupTags: ['worlds2', 'worlds1']
         });
     });
 
@@ -147,11 +169,11 @@ describe('useFavoriteRemoteDetails', () => {
             favoriteIds: ['wrld_1', 'wrld_2', 'wrld_3'],
             requestedIds: ['wrld_2'],
             avatarTags: [],
-            refreshKey: expect.any(String)
+            groupTags: []
         });
     });
 
-    it('does not expose the previous group while the next projection loads', async () => {
+    it('keeps the previous projection visible while the next one loads', async () => {
         let resolveSecondHydrate: (() => void) | undefined;
         mocks.appFavoriteDetailsHydrate
             .mockResolvedValueOnce({
@@ -197,7 +219,7 @@ describe('useFavoriteRemoteDetails', () => {
         rerender({ requestedIds: ['wrld_2'] });
 
         expect(result.current.status).toBe('running');
-        expect(result.current.data).toEqual({});
+        expect(result.current.data.wrld_1?.name).toBe('World One');
         await waitFor(() => {
             expect(resolveSecondHydrate).toBeTypeOf('function');
         });
@@ -206,6 +228,7 @@ describe('useFavoriteRemoteDetails', () => {
             expect(result.current.status).toBe('ready');
         });
         expect(result.current.data.wrld_2?.name).toBe('World Two');
+        expect(result.current.data.wrld_1?.name).toBe('World One');
     });
 
     it('stays ready without calling the backend when disabled or without ids', async () => {

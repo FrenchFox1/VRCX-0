@@ -5,6 +5,7 @@ import {
     buildFavoriteAvatarTags,
     buildFavoriteFriendFactIds,
     buildFavoriteRemoteGroupEntityIds,
+    buildFavoriteWorldGroupTags,
     selectFavoritesCollectionsState
 } from './favoritesCollectionsState';
 
@@ -112,6 +113,66 @@ describe('favorites collections state helpers', () => {
                 remoteFavoritesById
             })
         ).toEqual(['wrld_plus']);
+    });
+
+    it('orders world group tags with the selected group first so it loads before the rest', () => {
+        const remoteFavoritesById = {
+            one: {
+                type: 'world',
+                favoriteId: 'wrld_1',
+                tags: ['worlds1'],
+                $groupKey: 'world:worlds1'
+            },
+            two: {
+                type: 'world',
+                favoriteId: 'wrld_2',
+                tags: ['worlds2'],
+                $groupKey: 'world:worlds2'
+            },
+            twoAgain: {
+                type: 'world',
+                favoriteId: 'wrld_3',
+                tags: ['worlds2'],
+                $groupKey: 'world:worlds2'
+            },
+            plus: {
+                type: 'vrcPlusWorld',
+                favoriteId: 'wrld_plus',
+                tags: ['vrcPlusWorlds1'],
+                $groupKey: 'vrcPlusWorld:vrcPlusWorlds1'
+            },
+            avatar: {
+                type: 'avatar',
+                favoriteId: 'avtr_ignored',
+                tags: ['avatars1'],
+                $groupKey: 'avatar:avatars1'
+            }
+        };
+
+        expect(
+            buildFavoriteWorldGroupTags({
+                kind: 'world',
+                remoteFavoritesById,
+                selectedGroupKey: ' world:worlds2 '
+            })
+        ).toEqual(['worlds2', 'worlds1', 'vrcPlusWorlds1']);
+    });
+
+    it('builds no world group tags for other collection kinds', () => {
+        expect(
+            buildFavoriteWorldGroupTags({
+                kind: 'avatar',
+                remoteFavoritesById: {
+                    one: {
+                        type: 'world',
+                        favoriteId: 'wrld_1',
+                        tags: ['worlds1'],
+                        $groupKey: 'world:worlds1'
+                    }
+                },
+                selectedGroupKey: 'world:worlds1'
+            })
+        ).toEqual([]);
     });
 
     it('selects only the favorite state needed for the active kind', () => {

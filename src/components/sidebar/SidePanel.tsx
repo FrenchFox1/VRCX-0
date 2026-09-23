@@ -229,7 +229,6 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             selectedFavoriteGroupLabel,
             tabItems,
             tabLayout,
-            visibleFavoriteCollectionSourceGroupKeys,
             visibleTabLayout
         } = useSidePanelTabData({ activeTab, prefs, setActiveTab });
 
@@ -406,9 +405,6 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                         >
                             <FriendsSidebar
                                 prefs={prefs}
-                                excludedFavoriteGroupKeys={
-                                    visibleFavoriteCollectionSourceGroupKeys
-                                }
                                 filterQuery={filterQuery}
                             />
                         </TabsContent>

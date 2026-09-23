@@ -1148,6 +1148,7 @@ impl DesktopRuntimeHostState {
             )),
             self.runtime.desktop_assembly().auth_scope().clone(),
             Arc::clone(self.runtime.desktop_assembly().world_cache()),
+            self.runtime.desktop_assembly().tasks().clone(),
         )
     }
 

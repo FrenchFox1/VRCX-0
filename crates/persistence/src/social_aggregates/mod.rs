@@ -12,6 +12,7 @@ mod invites;
 mod recall;
 mod resolve;
 mod types;
+mod visits;
 mod world_friend_visits;
 mod worlds;
 
@@ -41,8 +42,10 @@ pub use types::{
     InviteHistoryInput, InviteHistoryOutput, InviteHistoryRow, RecallEncounterInput,
     RecallEncounterOutput, RecallEncounterRow, ResolveUserInput, ResolveUserOutput,
     ResolvedUserRow, SearchWorldsVisitedInput, SearchWorldsVisitedOutput, SocialGraphEdge,
-    SocialGraphInput, SocialGraphNode, SocialGraphOutput, TimeWindow, VisitedWorldRow,
+    SocialGraphInput, SocialGraphNode, SocialGraphOutput, TimeWindow, VisitRosterRow, VisitRow,
+    VisitStint, VisitTimelineInput, VisitTimelineOutput, VisitedWorldRow,
 };
+pub use visits::get_visit_timeline;
 pub use vrcx_0_contracts::feed::{WorldFriendVisitRow, WorldFriendVisitsOutput};
 pub use world_friend_visits::get_world_friend_visits;
 pub use worlds::{favorite_local, search_worlds_visited};
@@ -69,6 +72,8 @@ mod invites_tests;
 mod recall_tests;
 #[cfg(test)]
 mod test_support;
+#[cfg(test)]
+mod visits_tests;
 #[cfg(test)]
 mod world_friend_visits_tests;
 #[cfg(test)]

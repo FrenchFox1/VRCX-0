@@ -19,6 +19,7 @@ import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
+import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { FavoritesDensityConfig } from '../favoritesDensity';
 import type { FavoriteItem } from '../favoritesTypes';
@@ -94,7 +95,9 @@ export function FavoriteCardView({
                     )}
                     style={{ aspectRatio: String(density.imageAspectRatio) }}
                 >
-                    {item.imageUrl && !item.isUnavailable ? (
+                    {item.isLoadingDetail ? (
+                        <Skeleton className="size-full rounded-none" />
+                    ) : item.imageUrl && !item.isUnavailable ? (
                         <FadeInImage
                             src={
                                 density.value === 'compact'
@@ -154,42 +157,51 @@ export function FavoriteCardView({
                     ) : null}
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col justify-center gap-0.5 px-2.5 py-2">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                        <UserHoverCard {...friendHoverCard}>
-                            <span
-                                className="truncate font-medium"
-                                style={
-                                    item.titleColor
-                                        ? { color: item.titleColor }
-                                        : undefined
-                                }
-                            >
-                                {item.title}
-                            </span>
-                        </UserHoverCard>
-                        {item.isUnavailable ? (
-                            <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
-                        ) : item.isDeleted ? (
-                            <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
-                        ) : null}
-                    </div>
-                    {showUnavailableCopyId ? (
-                        <Button
-                            type="button"
-                            size="xs"
-                            variant="outline"
-                            className="w-fit"
-                            onClick={(event) => {
-                                interactions.stop(event);
-                                interactions.copyWorldId();
-                            }}
-                        >
-                            {t('dialog.world.info.copy_id')}
-                        </Button>
+                    {item.isLoadingDetail ? (
+                        <>
+                            <Skeleton className="my-0.5 h-3.5 w-3/5" />
+                            <Skeleton className="my-0.5 h-3 w-2/5" />
+                        </>
                     ) : (
-                        <div className="text-muted-foreground truncate text-xs">
-                            {item.subtitle}
-                        </div>
+                        <>
+                            <div className="flex min-w-0 items-center gap-1.5">
+                                <UserHoverCard {...friendHoverCard}>
+                                    <span
+                                        className="truncate font-medium"
+                                        style={
+                                            item.titleColor
+                                                ? { color: item.titleColor }
+                                                : undefined
+                                        }
+                                    >
+                                        {item.title}
+                                    </span>
+                                </UserHoverCard>
+                                {item.isUnavailable ? (
+                                    <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
+                                ) : item.isDeleted ? (
+                                    <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
+                                ) : null}
+                            </div>
+                            {showUnavailableCopyId ? (
+                                <Button
+                                    type="button"
+                                    size="xs"
+                                    variant="outline"
+                                    className="w-fit"
+                                    onClick={(event) => {
+                                        interactions.stop(event);
+                                        interactions.copyWorldId();
+                                    }}
+                                >
+                                    {t('dialog.world.info.copy_id')}
+                                </Button>
+                            ) : (
+                                <div className="text-muted-foreground truncate text-xs">
+                                    {item.subtitle}
+                                </div>
+                            )}
+                        </>
                     )}
                     {slots.groupLabel}
                 </div>
@@ -207,7 +219,9 @@ export function FavoriteCardView({
                 {slots.selection}
                 <div className="object-row__media">
                     <span className="flex size-full items-center justify-center overflow-hidden">
-                        {item.imageSmallUrl || item.imageUrl ? (
+                        {item.isLoadingDetail ? (
+                            <Skeleton className="size-full rounded-none" />
+                        ) : item.imageSmallUrl || item.imageUrl ? (
                             <FadeInImage
                                 src={item.imageSmallUrl || item.imageUrl}
                                 alt={item.title || ''}
@@ -227,38 +241,47 @@ export function FavoriteCardView({
                     />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col justify-center px-2.5">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                        <span
-                            className="object-row__title truncate"
-                            style={
-                                item.titleColor
-                                    ? { color: item.titleColor }
-                                    : undefined
-                            }
-                        >
-                            {item.title}
-                        </span>
-                        {item.isUnavailable ? (
-                            <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
-                        ) : item.isDeleted ? (
-                            <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
-                        ) : null}
-                        {item.isPrivate ? (
-                            <LockIcon className="text-muted-foreground size-4 shrink-0" />
-                        ) : null}
-                    </div>
-                    <div className="object-row__meta truncate">
-                        {showPlayerCountBadge ? (
-                            <>
-                                <span className="inline-flex items-baseline gap-1">
-                                    <span className="size-1.5 shrink-0 self-center rounded-full bg-[var(--status-online)]" />
-                                    {item.playerCount}
+                    {item.isLoadingDetail ? (
+                        <>
+                            <Skeleton className="my-0.5 h-3.5 w-2/5" />
+                            <Skeleton className="my-0.5 h-3 w-1/4" />
+                        </>
+                    ) : (
+                        <>
+                            <div className="flex min-w-0 items-center gap-1.5">
+                                <span
+                                    className="object-row__title truncate"
+                                    style={
+                                        item.titleColor
+                                            ? { color: item.titleColor }
+                                            : undefined
+                                    }
+                                >
+                                    {item.title}
                                 </span>
-                                {item.subtitle ? ' · ' : ''}
-                            </>
-                        ) : null}
-                        {item.subtitle}
-                    </div>
+                                {item.isUnavailable ? (
+                                    <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
+                                ) : item.isDeleted ? (
+                                    <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
+                                ) : null}
+                                {item.isPrivate ? (
+                                    <LockIcon className="text-muted-foreground size-4 shrink-0" />
+                                ) : null}
+                            </div>
+                            <div className="object-row__meta truncate">
+                                {showPlayerCountBadge ? (
+                                    <>
+                                        <span className="inline-flex items-baseline gap-1">
+                                            <span className="size-1.5 shrink-0 self-center rounded-full bg-[var(--status-online)]" />
+                                            {item.playerCount}
+                                        </span>
+                                        {item.subtitle ? ' · ' : ''}
+                                    </>
+                                ) : null}
+                                {item.subtitle}
+                            </div>
+                        </>
+                    )}
                     {slots.groupLabel}
                 </div>
                 <div

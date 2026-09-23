@@ -37,8 +37,6 @@ import type { FavoriteGroupView, FavoriteSource } from '../favoritesTypes';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'] as const;
 
-const NEAR_CAPACITY_RATIO = 0.8;
-
 const VISIBILITY_META: Record<
     FavoriteGroupVisibility,
     { labelKey: string; icon: LucideIcon }
@@ -87,49 +85,6 @@ function GroupVisibilityIcon({
                 className="text-muted-foreground size-4"
                 aria-hidden="true"
             />
-        </span>
-    );
-}
-
-function GroupCapacity({
-    count,
-    capacity
-}: {
-    count: number;
-    capacity?: number;
-}) {
-    if (!capacity) {
-        return (
-            <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                {count}
-            </span>
-        );
-    }
-    const ratio = count / capacity;
-    const percent = Math.min(100, Math.max(0, ratio * 100));
-    const isFull = count >= capacity;
-
-    return (
-        <span className="flex shrink-0 items-center gap-1.5">
-            {ratio >= NEAR_CAPACITY_RATIO ? (
-                <span className="bg-muted h-[3px] w-6 overflow-hidden rounded-full">
-                    <span
-                        className={cn(
-                            'block h-full rounded-full transition-[width,background-color] ease-out motion-reduce:transition-[background-color]',
-                            isFull ? 'bg-destructive' : 'bg-primary'
-                        )}
-                        style={{ width: `${percent}%` }}
-                    />
-                </span>
-            ) : null}
-            <span
-                className={cn(
-                    'text-xs tabular-nums',
-                    isFull ? 'text-destructive' : 'text-muted-foreground'
-                )}
-            >
-                {count}/{capacity}
-            </span>
         </span>
     );
 }
@@ -483,10 +438,11 @@ const GroupRailSection = memo(function GroupRailSection({
                                     <span className="min-w-0 flex-1 truncate text-sm font-medium">
                                         {group.label}
                                     </span>
-                                    <GroupCapacity
-                                        count={group.count ?? 0}
-                                        capacity={group.capacity}
-                                    />
+                                    <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                                        {group.capacity
+                                            ? `${group.count ?? 0}/${group.capacity}`
+                                            : (group.count ?? 0)}
+                                    </span>
                                 </Button>
                                 {hasMenu ? (
                                     <div

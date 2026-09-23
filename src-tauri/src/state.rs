@@ -218,6 +218,24 @@ impl AppState {
         self.friend_log_name_resolutions.cancel(request_id)
     }
 
+    pub async fn persist_favorite_cache_snapshot(
+        &self,
+        input: vrcx_0_application::favorites::FavoriteCacheSnapshotInput,
+    ) -> Result<bool, AppError> {
+        let entity = input.entity.clone();
+        let refreshes_world_card = matches!(
+            input.kind,
+            vrcx_0_application::favorites::FavoriteCacheKind::World
+        );
+        let written = self.runtime.persist_favorite_cache_snapshot(input)?;
+        if written && refreshes_world_card {
+            self.favorite_details
+                .refresh_world_card(entity.as_value())
+                .await;
+        }
+        Ok(written)
+    }
+
     pub async fn hydrate_favorite_details(
         &self,
         input: vrcx_0_application::favorites::FavoriteDetailsHydrateInput,

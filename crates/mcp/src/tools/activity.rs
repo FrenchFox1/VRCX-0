@@ -82,7 +82,7 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] List worlds the signed-in user recently visited, newest first, from the local game log (worldId, worldName, location, visitedAt, stayMinutes). Leaf lookup. For \"which worlds did I play most\" use the aggregated summarize_social_period instead of counting these rows yourself."
+        description = "[L1·query] List worlds the signed-in user recently visited, newest first, from the local game log (worldId, worldName, location, visitedAt, leftAt, stayMinutes; leftAt is null for the visit still in progress or when the leave was not recorded). Leaf lookup. Drill into one row with get_visit_timeline (pass its visitedAt as `at`) to see who came and went. For \"which worlds did I play most\" use the aggregated summarize_social_period instead of counting these rows yourself."
     )]
     async fn search_worlds_visited(
         &self,
@@ -94,6 +94,24 @@ impl VrcxMcpServer {
             social_aggregates::SearchWorldsVisitedInput {
                 time_window: input.time_window.into(),
                 limit: input.limit.unwrap_or(25),
+            },
+        ))
+    }
+
+    #[tool(
+        description = "[L1·query] Reconstruct one instance visit from the local game log: the world/instance, your exact joinedAt and leftAt (UTC, millisecond precision), and everyone observed while you were there — per person, ordered by time shared, with each stay's joinedAt/leftAt (a person who leaves and comes back has several stints). Select the visit with `at`: any UTC timestamp inside it, or the visitedAt of a search_worlds_visited row; add `location` only to disambiguate. Use for \"who was in that room with me\", \"when did X join or leave\", or exact timestamps for a recording. Caveats: the visit you are still in has no leftAt (inProgress=true); a crash or truncated log drops leave events, so a missing leftAt never means the person stayed; a missing joinedAt means the person was already inside before you arrived or before VRCX-0 started watching; old rows may lack userId and are keyed by display name; the roster is capped (truncated=true, peopleObserved keeps the real count) and the summary still covers the whole visit. Pairs with search_worlds_visited to find visits in a period."
+    )]
+    async fn get_visit_timeline(
+        &self,
+        Parameters(input): Parameters<VisitTimelineParams>,
+    ) -> Result<CallToolResult, String> {
+        let owner_user_id = require_current_user_id(&self.runtime)?;
+        application_query_result(self.runtime.activity_queries.visit_timeline(
+            social_aggregates::VisitTimelineInput {
+                owner_user_id,
+                at: input.at,
+                location: input.location,
+                limit: input.limit,
             },
         ))
     }
@@ -665,6 +683,17 @@ struct FriendActivityPatternParams {
 struct SearchWorldsVisitedParams {
     #[serde(default)]
     time_window: TimeWindowParams,
+    limit: Option<i64>,
+}
+#[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "camelCase")]
+struct VisitTimelineParams {
+    /// A UTC timestamp inside the visit (RFC3339), or the visitedAt of a
+    /// search_worlds_visited row.
+    at: String,
+    /// Optional instance location to disambiguate when several visits share a second.
+    location: Option<String>,
+    /// Roster cap (default 50, max 200); peopleObserved keeps the real count.
     limit: Option<i64>,
 }
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]

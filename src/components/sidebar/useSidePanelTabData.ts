@@ -7,7 +7,6 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
-    getVisibleFavoriteCollectionSourceGroupKeys,
     getVisibleSidebarTabs,
     normalizeSidebarTabLayout,
     type FavoriteGroupItem
@@ -80,10 +79,6 @@ export function useSidePanelTabData({
     );
     const visibleTabLayout = useMemo(
         () => getVisibleSidebarTabs(tabLayout),
-        [tabLayout]
-    );
-    const visibleFavoriteCollectionSourceGroupKeys = useMemo(
-        () => getVisibleFavoriteCollectionSourceGroupKeys(tabLayout),
         [tabLayout]
     );
     const customTabCountById = useMemo(() => {
@@ -236,7 +231,6 @@ export function useSidePanelTabData({
         selectedFavoriteGroupLabel,
         tabItems,
         tabLayout,
-        visibleFavoriteCollectionSourceGroupKeys,
         visibleTabLayout
     };
 }

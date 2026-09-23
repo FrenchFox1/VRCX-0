@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Mutex, Weak};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 
 use crate::config::PlaybookMode;
@@ -16,10 +16,38 @@ use vrcx_0_core::OwnerId;
 const SESSION_CONTENT_CACHE_CAPACITY: usize = 8;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum Role {
     User,
     Assistant,
+    ToolCall,
+    ToolResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolCallRecord {
+    pub id: String,
+    pub name: String,
+    pub arguments: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolResultRecord {
+    pub tool_call_id: String,
+    pub name: String,
+    pub ok: bool,
+    pub summary: String,
+    pub entities: Vec<Entity>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StoredToolResult {
+    #[serde(flatten)]
+    record: ToolResultRecord,
+    content: String,
 }
 
 #[derive(Debug, Clone, Serialize, Type)]
@@ -30,6 +58,65 @@ pub struct Message {
     pub role: Role,
     pub content: String,
     pub created_at: String,
+    pub tool_call: Option<ToolCallRecord>,
+    pub tool_result: Option<ToolResultRecord>,
+    /// Full tool output as sent to the model. Kept out of the UI payload;
+    /// only the context builder reads it.
+    #[serde(skip)]
+    #[specta(skip)]
+    pub tool_content: Option<String>,
+}
+
+impl Message {
+    fn stored_content(&self) -> String {
+        match self.role {
+            Role::User | Role::Assistant => self.content.clone(),
+            Role::ToolCall => self
+                .tool_call
+                .as_ref()
+                .and_then(|record| serde_json::to_string(record).ok())
+                .unwrap_or_default(),
+            Role::ToolResult => self
+                .tool_result
+                .as_ref()
+                .map(|record| StoredToolResult {
+                    record: record.clone(),
+                    content: self.tool_content.clone().unwrap_or_default(),
+                })
+                .and_then(|stored| serde_json::to_string(&stored).ok())
+                .unwrap_or_default(),
+        }
+    }
+
+    fn from_stored(id: String, seq: u64, role: Role, content: String, created_at: String) -> Self {
+        let mut message = Self {
+            id,
+            seq,
+            role,
+            content: String::new(),
+            created_at,
+            tool_call: None,
+            tool_result: None,
+            tool_content: None,
+        };
+        match role {
+            Role::User | Role::Assistant => message.content = content,
+            Role::ToolCall => message.tool_call = serde_json::from_str(&content).ok(),
+            Role::ToolResult => {
+                if let Ok(stored) = serde_json::from_str::<StoredToolResult>(&content) {
+                    message.tool_result = Some(stored.record);
+                    message.tool_content = Some(stored.content);
+                }
+            }
+        }
+        message
+    }
+}
+
+enum MessageBody {
+    Text(String),
+    ToolCall(ToolCallRecord),
+    ToolResult(ToolResultRecord, String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
@@ -262,12 +349,14 @@ impl SessionStore {
         let history = persistence
             .load_messages(owner_user_id, session_id)?
             .into_iter()
-            .map(|message| Message {
-                id: message.id,
-                seq: message.seq.max(0) as u64,
-                role: parse_role(&message.role),
-                content: message.content,
-                created_at: message.created_at,
+            .map(|message| {
+                Message::from_stored(
+                    message.id,
+                    message.seq.max(0) as u64,
+                    parse_role(&message.role),
+                    message.content,
+                    message.created_at,
+                )
             })
             .collect::<Vec<_>>();
         if let Some(max_seq) = history.iter().map(|message| message.seq).max() {
@@ -360,12 +449,13 @@ impl SessionStore {
         let Some(persistence) = self.persistence.as_ref() else {
             return false;
         };
+        let content = message.stored_content();
         let message_persisted = match persistence.insert_message(AssistantMessageInsert {
             id: &message.id,
             session_id: id,
             seq: message.seq as i64,
             role: role_str(message.role),
-            content: &message.content,
+            content: &content,
             created_at: &message.created_at,
         }) {
             Ok(()) => true,
@@ -562,21 +652,59 @@ impl SessionStore {
         role: Role,
         content: String,
     ) -> AssistantPortResult<bool> {
+        self.push(session_id, role, MessageBody::Text(content))
+    }
+
+    pub fn push_tool_call(
+        &self,
+        session_id: &str,
+        record: ToolCallRecord,
+    ) -> AssistantPortResult<bool> {
+        self.push(session_id, Role::ToolCall, MessageBody::ToolCall(record))
+    }
+
+    pub fn push_tool_result(
+        &self,
+        session_id: &str,
+        record: ToolResultRecord,
+        content: String,
+    ) -> AssistantPortResult<bool> {
+        self.push(
+            session_id,
+            Role::ToolResult,
+            MessageBody::ToolResult(record, content),
+        )
+    }
+
+    fn push(&self, session_id: &str, role: Role, body: MessageBody) -> AssistantPortResult<bool> {
         let load = self.content_load(session_id);
         let _load = load.lock().unwrap();
         let row = self.with_loaded_session(session_id, |state| {
             let session = state.sessions.get_mut(session_id)?;
             let now = now_rfc3339();
-            if matches!(role, Role::User) && session.title.is_empty() {
-                session.title = derive_title(&content);
-            }
-            let message = Message {
+            let mut message = Message {
                 id: format!("msg_{}", random_hex()),
                 seq: self.next_seq(),
                 role,
-                content,
+                content: String::new(),
                 created_at: now.clone(),
+                tool_call: None,
+                tool_result: None,
+                tool_content: None,
             };
+            match body {
+                MessageBody::Text(content) => {
+                    if matches!(role, Role::User) && session.title.is_empty() {
+                        session.title = derive_title(&content);
+                    }
+                    message.content = content;
+                }
+                MessageBody::ToolCall(record) => message.tool_call = Some(record),
+                MessageBody::ToolResult(record, content) => {
+                    message.tool_result = Some(record);
+                    message.tool_content = Some(content);
+                }
+            }
             session.updated_at = now;
             let owner_user_id = session.owner_user_id.clone();
             let title = session.title.clone();
@@ -759,12 +887,16 @@ fn role_str(role: Role) -> &'static str {
     match role {
         Role::User => "user",
         Role::Assistant => "assistant",
+        Role::ToolCall => "tool_call",
+        Role::ToolResult => "tool_result",
     }
 }
 
 fn parse_role(role: &str) -> Role {
     match role {
         "assistant" => Role::Assistant,
+        "tool_call" => Role::ToolCall,
+        "tool_result" => Role::ToolResult,
         _ => Role::User,
     }
 }

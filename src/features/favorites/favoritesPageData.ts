@@ -166,25 +166,23 @@ function defaultFavoriteEntityTitle(kind: FavoriteKind, t: unknown) {
         : translate('view.favorites.empty.avatar_fallback');
 }
 
-function defaultFavoriteDetailSubtitle(
+function unavailableFavoriteDetailSubtitle(
     kind: FavoriteKind,
     isUnavailable: boolean,
     t: unknown,
     isDeleted = false
 ) {
+    if (!isUnavailable) {
+        return '';
+    }
     const translate = resolveTranslator(t);
     if (kind === 'world') {
-        if (isUnavailable) {
-            return isDeleted
-                ? translate('view.favorites.error.world_deleted')
-                : translate('view.favorites.error.world_details_unavailable');
-        }
-        return translate('view.favorites.loading.loading_world_details');
+        return isDeleted
+            ? translate('view.favorites.error.world_deleted')
+            : translate('view.favorites.error.world_details_unavailable');
     }
 
-    return isUnavailable
-        ? translate('view.favorites.error.avatar_details_unavailable')
-        : translate('view.favorites.loading.loading_avatar_details');
+    return translate('view.favorites.error.avatar_details_unavailable');
 }
 
 function resolveFavoriteSubtitle(
@@ -401,7 +399,6 @@ export function buildFavoriteRemoteItemsByGroup({
     remoteFavoritesById,
     remoteEntityDetailsData,
     remoteEntityDetailsStatus,
-    worldDetailFallbacksById = {},
     avatarDetailFallbacksById = {},
     remoteGroupLabelByKey,
     worldAvailabilityById = {},
@@ -417,7 +414,6 @@ export function buildFavoriteRemoteItemsByGroup({
     remoteFavoritesById?: Record<string, FavoriteRecord | undefined>;
     remoteEntityDetailsData?: FavoriteDetailMap;
     remoteEntityDetailsStatus?: string;
-    worldDetailFallbacksById?: FavoriteDetailMap;
     avatarDetailFallbacksById?: FavoriteDetailMap;
     remoteGroupLabelByKey?: Record<string, string | undefined>;
     worldAvailabilityById?: Record<string, string | undefined>;
@@ -476,10 +472,6 @@ export function buildFavoriteRemoteItemsByGroup({
 
         if (kind === 'world') {
             liveDetail = hasDisplayableEntityDetail(detail) ? detail : null;
-            const worldFallback = worldDetailFallbacksById[favoriteId];
-            fallbackDetail = hasDisplayableEntityDetail(worldFallback)
-                ? worldFallback
-                : null;
         } else {
             const isHiddenRemoteAvatar =
                 hasDisplayableEntityDetail(detail) &&
@@ -508,18 +500,20 @@ export function buildFavoriteRemoteItemsByGroup({
                 ? !isDeleted &&
                   (releaseStatusPrivate ||
                       availabilityStatus === 'private' ||
-                      (usedFallback && !availabilityStatus))
+                      availabilityStatus === 'unverified')
                 : releaseStatusPrivate || usedFallback;
+        const isLoadingDetail = !displayDetail && !isUnavailable && !isDeleted;
         const playerCount = favoritePlayerCount(displayDetail);
         const authorName = textValue(displayDetail?.authorName);
-        const subtitle =
-            authorName ||
-            defaultFavoriteDetailSubtitle(
-                kind,
-                isUnavailable,
-                translate,
-                isDeleted
-            );
+        const subtitle = isLoadingDetail
+            ? ''
+            : authorName ||
+              unavailableFavoriteDetailSubtitle(
+                  kind,
+                  isUnavailable,
+                  translate,
+                  isDeleted
+              );
 
         const imagePair = favoriteImagePair(displayDetail);
 
@@ -532,9 +526,10 @@ export function buildFavoriteRemoteItemsByGroup({
                 remoteGroupLabelByKey?.[groupKey] ||
                 translate('view.favorites.empty.favorites_fallback'),
             id: favoriteId,
-            title:
-                textValue(displayDetail?.name) ||
-                defaultFavoriteEntityTitle(kind, translate),
+            title: isLoadingDetail
+                ? ''
+                : textValue(displayDetail?.name) ||
+                  defaultFavoriteEntityTitle(kind, translate),
             subtitle,
             authorName,
             description: textValue(displayDetail?.description),
@@ -543,6 +538,7 @@ export function buildFavoriteRemoteItemsByGroup({
             isPrivate,
             isDeleted,
             isUnavailable,
+            isLoadingDetail,
             tags: stringArray(displayDetail?.tags),
             playerCount,
             orderIndex:
@@ -567,7 +563,8 @@ export function buildFavoriteLocalItemsByGroup({
     localAvatarFavorites,
     localWorldFavorites,
     avatarDetailFallbacksById = {},
-    worldDetailFallbacksById = {},
+    worldDetailsById = {},
+    worldAvailabilityById = {},
     friendsById,
     knownUsersById = {},
     sortValue = 'name',
@@ -579,7 +576,8 @@ export function buildFavoriteLocalItemsByGroup({
     localAvatarFavorites?: FavoriteGroupSourceMap;
     localWorldFavorites?: FavoriteGroupSourceMap;
     avatarDetailFallbacksById?: FavoriteDetailMap;
-    worldDetailFallbacksById?: FavoriteDetailMap;
+    worldDetailsById?: FavoriteDetailMap;
+    worldAvailabilityById?: Record<string, string | undefined>;
     friendsById?: FavoriteProfileMap;
     knownUsersById?: FavoriteProfileMap;
     sortValue?: FavoriteSortValue;
@@ -613,9 +611,7 @@ export function buildFavoriteLocalItemsByGroup({
     const localFavorites =
         kind === 'avatar' ? localAvatarFavorites : localWorldFavorites;
     const localDetailsById =
-        kind === 'avatar'
-            ? avatarDetailFallbacksById
-            : worldDetailFallbacksById;
+        kind === 'avatar' ? avatarDetailFallbacksById : worldDetailsById;
 
     for (const group of localGroups) {
         const ids = localFavorites?.[group.key] ?? [];
@@ -624,6 +620,9 @@ export function buildFavoriteLocalItemsByGroup({
             const detail = localDetailsById?.[normalizedId] || {
                 id: normalizedId
             };
+            const isLoadingDetail =
+                !hasDisplayableEntityDetail(detail) &&
+                !worldAvailabilityById[normalizedId];
             const playerCount = favoritePlayerCount(detail);
             const imagePair = favoriteImagePair(detail);
             return {
@@ -633,9 +632,10 @@ export function buildFavoriteLocalItemsByGroup({
                 groupKey: group.key,
                 groupLabel: group.label,
                 id: normalizedId,
-                title:
-                    textValue(detail.name) ||
-                    defaultFavoriteEntityTitle(kind, translate),
+                title: isLoadingDetail
+                    ? ''
+                    : textValue(detail.name) ||
+                      defaultFavoriteEntityTitle(kind, translate),
                 subtitle: textValue(detail.authorName),
                 authorName: textValue(detail.authorName),
                 description: textValue(detail.description),
@@ -643,6 +643,7 @@ export function buildFavoriteLocalItemsByGroup({
                 ...imagePair,
                 isPrivate: textValue(detail.releaseStatus) === 'private',
                 isUnavailable: false,
+                isLoadingDetail,
                 tags: stringArray(detail.tags),
                 playerCount,
                 orderIndex: index

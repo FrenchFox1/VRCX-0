@@ -33,7 +33,7 @@ import { GroupRailSection } from './FavoritesGroupRail';
 import { FavoritesSelectionBar } from './FavoritesSelectionBar';
 import {
     FavoritesEmptyState,
-    FavoritesLoadingState
+    FavoritesSkeletonGrid
 } from './FavoritesStateParts';
 
 function getFavoriteSearchResultsSubtitle(t: TFunction, count: number) {
@@ -72,6 +72,7 @@ type FavoritesContentPanelProps = {
     shareCoachmarkOpen?: boolean;
     onDismissShareCoachmark?(): void;
     instanceActionGatesByItemKey: FavoritesController['instanceActionGatesByItemKey'];
+    onVisibleWorldIdsChange: FavoritesController['setVisibleWorldIds'];
 };
 
 type ShareCollectionButtonProps = {
@@ -266,17 +267,11 @@ export function FavoritesContentPanel({
     onShareCollectionGroup,
     shareCoachmarkOpen,
     onDismissShareCoachmark,
-    instanceActionGatesByItemKey
+    instanceActionGatesByItemKey,
+    onVisibleWorldIdsChange
 }: FavoritesContentPanelProps) {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const remoteDetails = collections.remoteEntityDetails || {};
-    const remoteDetailsData = remoteDetails.data || {};
-    const isRemoteDetailsLoading =
-        kind !== 'friend' &&
-        remoteDetails.status === 'running' &&
-        !Object.keys(remoteDetailsData).length &&
-        filters.selectedSource === 'remote';
     const densityConfig = useMemo(
         () => getFavoritesDensityConfig(kind, layout.density),
         [kind, layout.density]
@@ -294,6 +289,30 @@ export function FavoritesContentPanel({
         ].join(':'),
         showGroupLabel: viewData.isSearchActive
     });
+    const visibleWorldIdsKey =
+        kind === 'world'
+            ? virtualGrid.visibleRows
+                  .flatMap((row) => row.items)
+                  .filter((item) => item.source === 'local')
+                  .map((item) => item.id)
+                  .join('|')
+            : '';
+    useEffect(() => {
+        onVisibleWorldIdsChange(
+            visibleWorldIdsKey ? visibleWorldIdsKey.split('|') : []
+        );
+    }, [onVisibleWorldIdsChange, visibleWorldIdsKey]);
+    const favoritesSkeletonGrid = (
+        <FavoritesSkeletonGrid
+            cardHeight={virtualGrid.cardHeight}
+            columnCount={virtualGrid.gridColumnCount}
+            densityConfig={densityConfig}
+            gridGap={virtualGrid.gridGap}
+            gridMinWidth={virtualGrid.gridMinWidth}
+            gridPadding={virtualGrid.gridPadding}
+            viewportHeight={virtualGrid.viewportHeight}
+        />
+    );
     const showCopyIdsButton = selection.selectedContentItems.length > 0;
     const title = viewData.isSearchActive
         ? viewData.pageConfig.searchPlaceholder
@@ -410,11 +429,7 @@ export function FavoritesContentPanel({
                 >
                     {collections.favoriteLoadStatus === 'running' &&
                     !viewData.contentItems.length ? (
-                        <FavoritesLoadingState
-                            title={t(
-                                'view.favorite.loading.loading_favorites_baseline'
-                            )}
-                        />
+                        favoritesSkeletonGrid
                     ) : collections.favoriteLoadStatus === 'error' ? (
                         <FavoritesEmptyState
                             title={t(
@@ -425,18 +440,6 @@ export function FavoritesContentPanel({
                                 t(
                                     'view.favorite.label.the_favorites_baseline_did_not_finish_loading'
                                 )
-                            }
-                        />
-                    ) : isRemoteDetailsLoading ? (
-                        <FavoritesLoadingState
-                            title={
-                                kind === 'avatar'
-                                    ? t(
-                                          'view.favorite.loading.loading_remote_avatar_details'
-                                      )
-                                    : t(
-                                          'view.favorite.loading.loading_remote_world_details'
-                                      )
                             }
                         />
                     ) : !viewData.contentItems.length ? (

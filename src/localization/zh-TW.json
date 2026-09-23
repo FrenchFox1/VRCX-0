@@ -914,10 +914,10 @@
             "advanced": "進階",
             "sorting": "排序",
             "favorites_section": "收藏",
-            "group_by_instance": "依房間分組",
-            "split_favorite_friends": "顯示收藏群組",
-            "show_grouped_friends": "顯示已分組好友",
-            "same_instance_above_favorites": "優先處理同一房間",
+            "group_by_instance": "顯示同一房間分組",
+            "split_favorite_friends": "收藏好友依分組顯示",
+            "show_grouped_friends": "同房好友也顯示在其他列表",
+            "same_instance_above_favorites": "「同一房間」排在「收藏」前",
             "sort_secondary": "其次依據",
             "sort_tertiary": "第三依據",
             "favorite_groups": "收藏群組",
@@ -1495,9 +1495,7 @@
                 "favorites_failed_to_load": "收藏載入失敗"
             },
             "loading": {
-                "loading_favorites_baseline": "正在載入收藏項目",
-                "loading_remote_avatar_details": "正在載入遠程角色詳細資訊",
-                "loading_remote_world_details": "正在載入遠程世界詳細資訊"
+                "loading_favorites_baseline": "正在載入收藏項目"
             },
             "share_collection": {
                 "title": "分享集合",
@@ -3277,10 +3275,6 @@
                 "world_details_unavailable": "世界詳細資訊無法使用。",
                 "world_deleted": "此世界已被刪除。",
                 "avatar_details_unavailable": "角色詳細資訊無法使用。"
-            },
-            "loading": {
-                "loading_world_details": "正在載入世界詳細資訊。",
-                "loading_avatar_details": "正在載入角色詳細資訊。"
             },
             "dynamic": {
                 "remove_value_from_value": "從 {value2} 中移除 {value}？",

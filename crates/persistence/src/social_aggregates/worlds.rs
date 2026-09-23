@@ -11,6 +11,7 @@ use super::types::{
     FavoriteAction, FavoriteLocalInput, FavoriteOutput, SearchWorldsVisitedInput,
     SearchWorldsVisitedOutput, VisitedWorldRow,
 };
+use super::visits::shift_timestamp;
 
 pub fn search_worlds_visited(
     db: &DatabaseService,
@@ -32,12 +33,19 @@ pub fn search_worlds_visited(
     let rows = db
         .execute(&sql, &params.build())?
         .into_iter()
-        .map(|row| VisitedWorldRow {
-            world_id: row_string(&row, 0),
-            world_name: row_string(&row, 1),
-            location: row_string(&row, 2),
-            visited_at: row_string(&row, 3),
-            stay_minutes: millis_to_minutes(row_i64(&row, 4).max(0)),
+        .map(|row| {
+            let visited_at = row_string(&row, 3);
+            let stay_millis = row_i64(&row, 4).max(0);
+            VisitedWorldRow {
+                world_id: row_string(&row, 0),
+                world_name: row_string(&row, 1),
+                location: row_string(&row, 2),
+                left_at: (stay_millis > 0)
+                    .then(|| shift_timestamp(&visited_at, stay_millis))
+                    .flatten(),
+                visited_at,
+                stay_minutes: millis_to_minutes(stay_millis),
+            }
         })
         .filter(|row| !row.world_id.is_empty() || !row.location.is_empty())
         .collect::<Vec<_>>();

@@ -17,13 +17,48 @@ use super::{
 #[derive(Default)]
 pub(super) struct TestFavoriteRemote {
     replace_scope_on_clear: Option<RuntimeAuthScope>,
+    favorite_worlds_by_tag: HashMap<String, String>,
+    fetched_tags: Mutex<Vec<String>>,
+    probed_ids: Mutex<Vec<String>>,
 }
 
 impl TestFavoriteRemote {
     pub(super) fn replacing_scope_on_clear(scope: RuntimeAuthScope) -> Self {
         Self {
             replace_scope_on_clear: Some(scope),
+            ..Self::default()
         }
+    }
+
+    pub(super) fn with_favorite_worlds<'a>(
+        rows_by_tag: impl IntoIterator<Item = (&'a str, Vec<serde_json::Value>)>,
+    ) -> Self {
+        Self {
+            favorite_worlds_by_tag: rows_by_tag
+                .into_iter()
+                .map(|(tag, rows)| {
+                    (
+                        tag.to_string(),
+                        serde_json::to_string(&rows).unwrap_or_else(|_| "[]".to_string()),
+                    )
+                })
+                .collect(),
+            ..Self::default()
+        }
+    }
+
+    pub(super) fn fetched_tags(&self) -> Vec<String> {
+        self.fetched_tags
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
+    }
+
+    pub(super) fn probed_ids(&self) -> Vec<String> {
+        self.probed_ids
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
     }
 }
 
@@ -57,12 +92,25 @@ impl FavoriteRemote for TestFavoriteRemote {
         &'a self,
         _endpoint: String,
         _n: i32,
-        _offset: i32,
+        offset: i32,
         _owner_id: String,
         _user_id: String,
-        _tag: String,
+        tag: String,
     ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
-        Box::pin(async { Ok(response("[]")) })
+        Box::pin(async move {
+            if offset > 0 {
+                return Ok(response("[]"));
+            }
+            self.fetched_tags
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .push(tag.clone());
+            Ok(response(
+                self.favorite_worlds_by_tag
+                    .get(&tag)
+                    .map_or("[]", String::as_str),
+            ))
+        })
     }
 
     fn favorite_avatars<'a>(
@@ -80,7 +128,25 @@ impl FavoriteRemote for TestFavoriteRemote {
         _endpoint: String,
         world_id: String,
     ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
-        Box::pin(async move { Ok(response(&format!(r#"{{"id":"{world_id}"}}"#))) })
+        Box::pin(async move {
+            self.probed_ids
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .push(world_id.clone());
+            if world_id.contains("deleted") {
+                return Ok(VrchatApiResponse {
+                    status: 404,
+                    data: r#"{"error":{"message":"not found"}}"#.into(),
+                });
+            }
+            if world_id.contains("unreachable") {
+                return Ok(VrchatApiResponse {
+                    status: 500,
+                    data: r#"{"error":{"message":"boom"}}"#.into(),
+                });
+            }
+            Ok(response(&format!(r#"{{"id":"{world_id}"}}"#)))
+        })
     }
 
     fn avatar<'a>(

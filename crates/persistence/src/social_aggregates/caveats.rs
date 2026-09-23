@@ -37,6 +37,17 @@ pub(crate) fn worlds_visited_caveats() -> Vec<String> {
     ]
 }
 
+pub(crate) fn visit_timeline_caveats() -> Vec<String> {
+    vec![
+        "Visit bounds and the roster come from this profile's local game log; only what VRCX-0 observed while you were in the instance is included.".into(),
+        "The visit you are still in has no leftAt (inProgress=true); an earlier visit without leftAt lost its leave record (crash or truncated log).".into(),
+        "A person without leftAt is not known to have stayed: a crash or truncated log drops leave events.".into(),
+        "A person without joinedAt was already inside before you arrived or before VRCX-0 started watching.".into(),
+        "Old rows may lack userId; those people are keyed by display name and cannot be marked isFriend.".into(),
+        "sharedMinutes counts a stay with no leave event only up to your own leftAt; it is 0 while the visit is in progress.".into(),
+    ]
+}
+
 pub(crate) fn favorite_local_caveats() -> Vec<String> {
     vec!["This writes only VRCX-0 local favorites and does not change the VRChat account.".into()]
 }

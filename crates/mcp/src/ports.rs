@@ -59,6 +59,11 @@ pub trait McpActivityQueryPort: Send + Sync {
         input: social::RecallEncounterInput,
     ) -> vrcx_0_application_core::Result<social::RecallEncounterOutput>;
 
+    fn visit_timeline(
+        &self,
+        input: social::VisitTimelineInput,
+    ) -> vrcx_0_application_core::Result<social::VisitTimelineOutput>;
+
     fn friend_log(
         &self,
         input: social::FriendLogInput,

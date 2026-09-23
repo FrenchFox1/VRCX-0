@@ -190,6 +190,9 @@ jobs:
                   else
                       cargo build --manifest-path src-tauri/Cargo.toml --locked
                   fi
+            - name: Test backend architecture
+              if: runner.os == 'Linux'
+              run: cargo test --manifest-path src-tauri/Cargo.toml --locked --test backend_architecture
 
     rust-coverage:
         name: Rust Coverage

@@ -113,6 +113,44 @@ export function buildFavoriteAvatarTags({
     );
 }
 
+export function buildFavoriteWorldGroupTags({
+    kind,
+    remoteFavoritesById = EMPTY_OBJECT,
+    selectedGroupKey
+}: {
+    kind: FavoriteKind;
+    remoteFavoritesById?: Record<string, FavoriteRecord>;
+    selectedGroupKey: string;
+}): string[] {
+    if (kind !== 'world') {
+        return [];
+    }
+
+    const normalizedGroupKey = normalizeEntityId(selectedGroupKey);
+    const selected: string[] = [];
+    const rest: string[] = [];
+    const seen = new Set<string>();
+    for (const favorite of Object.values(remoteFavoritesById)) {
+        if (favorite.type !== 'world' && favorite.type !== 'vrcPlusWorld') {
+            continue;
+        }
+        const tag =
+            Array.isArray(favorite.tags) && typeof favorite.tags[0] === 'string'
+                ? favorite.tags[0].trim()
+                : '';
+        if (!tag || seen.has(tag)) {
+            continue;
+        }
+        seen.add(tag);
+        if (normalizeEntityId(favorite.$groupKey) === normalizedGroupKey) {
+            selected.push(tag);
+        } else {
+            rest.push(tag);
+        }
+    }
+    return [...selected, ...rest];
+}
+
 export function buildFavoriteRemoteGroupEntityIds({
     groupKey,
     kind,

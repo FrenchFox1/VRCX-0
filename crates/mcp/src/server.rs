@@ -4,7 +4,7 @@ use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::model::{
     Implementation, ListResourcesResult, PaginatedRequestParams, ReadResourceRequestParams,
     ReadResourceResponse, ReadResourceResult, Resource, ResourceContents, ServerCapabilities,
-    ServerInfo,
+    ServerConfig,
 };
 use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
 use rmcp::{tool_handler, ErrorData as RmcpError, ServerHandler};
@@ -59,8 +59,8 @@ pub(crate) struct VrcxMcpServer {
 
 #[tool_handler(router = self.tool_router)]
 impl ServerHandler for VrcxMcpServer {
-    fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(
+    fn get_info(&self) -> ServerConfig {
+        ServerConfig::new(
             ServerCapabilities::builder()
                 .enable_tools()
                 .enable_resources()

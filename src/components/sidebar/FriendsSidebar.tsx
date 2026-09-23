@@ -66,7 +66,6 @@ type FavoriteCollectionTab = {
 
 type FriendsSidebarProps = {
     prefs: SidebarPreferences;
-    excludedFavoriteGroupKeys?: string[];
     favoriteCollectionTab?: FavoriteCollectionTab | null;
     filterQuery?: string;
 };
@@ -125,7 +124,6 @@ function buildInstanceActionGateTarget(
 
 export function FriendsSidebar({
     prefs,
-    excludedFavoriteGroupKeys = [],
     favoriteCollectionTab = null,
     filterQuery = ''
 }: FriendsSidebarProps) {
@@ -318,30 +316,14 @@ export function FriendsSidebar({
         ],
         [favoriteFriendGroups, localFriendFavoriteGroups, localFriendFavorites]
     );
-    const excludedFavoriteGroupKeySet = useMemo(
-        () =>
-            new Set<string>(
-                (excludedFavoriteGroupKeys || [])
-                    .map((key) => normalizeId(key))
-                    .filter(Boolean)
-            ),
-        [excludedFavoriteGroupKeys]
-    );
     const selectedFavoriteGroupKeys = useMemo(() => {
         const configured = Array.isArray(prefs.sidebarFavoriteGroups)
             ? prefs.sidebarFavoriteGroups.filter(Boolean)
             : [];
-        const removeExcluded = (keys: string[]) =>
-            keys.filter((key) => !excludedFavoriteGroupKeySet.has(key));
-        if (!configured.length) {
-            return new Set<string>(removeExcluded(allFavoriteGroupKeys));
-        }
-        return new Set<string>(removeExcluded(configured));
-    }, [
-        allFavoriteGroupKeys,
-        excludedFavoriteGroupKeySet,
-        prefs.sidebarFavoriteGroups
-    ]);
+        return new Set<string>(
+            configured.length ? configured : allFavoriteGroupKeys
+        );
+    }, [allFavoriteGroupKeys, prefs.sidebarFavoriteGroups]);
     const hasFavoriteGroupFilter = useMemo(
         () =>
             Array.isArray(prefs.sidebarFavoriteGroups) &&
@@ -379,11 +361,9 @@ export function FriendsSidebar({
         localFriendFavorites,
         selectedFavoriteGroupKeys
     ]);
-    const excludedFavoriteIds = excludedFavoriteGroupKeySet.size
+    const excludedFavoriteIds = hasFavoriteGroupFilter
         ? selectedFavoriteIds
-        : hasFavoriteGroupFilter
-          ? selectedFavoriteIds
-          : favoriteIds;
+        : favoriteIds;
     const sameInstanceGroups = useMemo(() => {
         if (favoriteCollectionTab) {
             return [];
@@ -424,11 +404,16 @@ export function FriendsSidebar({
     const favoriteCollectionSameInstanceIds = useMemo(
         () =>
             new Set(
-                favoriteCollectionSameInstanceGroups.flatMap((group) =>
-                    group.rows.map((friend) => friend.id)
-                )
+                prefs.isHideFriendsInSameInstance
+                    ? favoriteCollectionSameInstanceGroups.flatMap((group) =>
+                          group.rows.map((friend) => friend.id)
+                      )
+                    : []
             ),
-        [favoriteCollectionSameInstanceGroups]
+        [
+            favoriteCollectionSameInstanceGroups,
+            prefs.isHideFriendsInSameInstance
+        ]
     );
     const favoriteCollectionOnlineRows = useMemo(() => {
         if (!favoriteCollectionIdSet) {

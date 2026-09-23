@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use chrono::Utc;
 use futures_util::{stream, StreamExt};
@@ -8,7 +8,7 @@ use serde_json::Value;
 use tokio::sync::Mutex as AsyncMutex;
 use vrcx_0_application_core::{
     vrchat_api::{normalize_text, VrchatApiResponse},
-    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WorldCache,
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, TaskSupervisor, WorldCache,
 };
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_json::response_error_message;
@@ -17,10 +17,13 @@ use super::cache_policy::{
     cache_entry_from_entity, cache_write_decision, entity_id, release_status, CacheWriteDecision,
     FavoriteCacheKind,
 };
+use super::favorite_world_cards::{FavoriteWorldCard, FavoriteWorldCardCache};
 
 const FAVORITE_DETAILS_PAGE_SIZE: i32 = 300;
+const FAVORITE_WORLD_GROUP_PAGE_SIZE: i32 = 100;
 const FAVORITE_DETAILS_MAX_PAGES: usize = 50;
 const FAVORITE_DETAILS_PROBE_CONCURRENCY: usize = 3;
+const WORLD_AVAILABILITY_UNVERIFIED: &str = "unverified";
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -40,7 +43,7 @@ pub struct FavoriteDetailsHydrateInput {
     #[serde(default)]
     pub avatar_tags: Vec<String>,
     #[serde(default)]
-    pub refresh_key: String,
+    pub group_tags: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -59,25 +62,13 @@ struct FavoriteDetailsHydrateDeps<'a> {
     expected_scope: RuntimeAuthScopeSnapshot,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct FavoriteWorldCacheKey {
-    endpoint: String,
-    generation: u64,
-    refresh_key: String,
-}
-
-#[derive(Clone, Debug)]
-struct FavoriteWorldCacheState {
-    key: FavoriteWorldCacheKey,
-    fetched_at: String,
-}
-
 struct FavoriteDetailsRuntimeInner {
     store: Arc<dyn super::FavoriteStore>,
     remote: Arc<dyn super::FavoriteRemote>,
     auth_scope: RuntimeAuthScope,
     world_cache: Arc<WorldCache>,
-    world_cache_state: Mutex<Option<FavoriteWorldCacheState>>,
+    world_cards: Arc<FavoriteWorldCardCache>,
+    tasks: TaskSupervisor,
     world_sync_gate: AsyncMutex<()>,
 }
 
@@ -92,6 +83,7 @@ impl FavoriteDetailsRuntime {
         remote: Arc<dyn super::FavoriteRemote>,
         auth_scope: RuntimeAuthScope,
         world_cache: Arc<WorldCache>,
+        tasks: TaskSupervisor,
     ) -> Self {
         Self {
             inner: Arc::new(FavoriteDetailsRuntimeInner {
@@ -99,7 +91,8 @@ impl FavoriteDetailsRuntime {
                 remote,
                 auth_scope,
                 world_cache,
-                world_cache_state: Mutex::new(None),
+                world_cards: Arc::new(FavoriteWorldCardCache::new()),
+                tasks,
                 world_sync_gate: AsyncMutex::new(()),
             }),
         }
@@ -144,21 +137,21 @@ impl FavoriteDetailsRuntime {
         input: FavoriteDetailsHydrateInput,
         expected_scope: RuntimeAuthScopeSnapshot,
     ) -> Result<FavoriteDetailsHydrateOutput> {
-        let requested_ids = requested_favorite_ids(&input.favorite_ids, &input.requested_ids);
-        let cache_key = FavoriteWorldCacheKey {
-            endpoint: expected_scope.endpoint.clone(),
-            generation: expected_scope.generation,
-            refresh_key: input.refresh_key.trim().to_string(),
-        };
         ensure_scope_matches(&self.inner.auth_scope.snapshot(), &expected_scope)?;
-        if let Some(output) = self.cached_world_output(&cache_key, &requested_ids) {
-            return Ok(output);
+        self.inner.world_cards.enter_scope(&expected_scope).await;
+        self.inner.world_cards.start_housekeeping(&self.inner.tasks);
+
+        let requested_ids = normalize_ids(&input.requested_ids);
+        let (cards, missing) = self.world_cards_for(&requested_ids).await;
+        if missing.is_empty() {
+            return Ok(project_world_cards(cards, &requested_ids, 0));
         }
 
         let _guard = self.inner.world_sync_gate.lock().await;
         ensure_scope_matches(&self.inner.auth_scope.snapshot(), &expected_scope)?;
-        if let Some(output) = self.cached_world_output(&cache_key, &requested_ids) {
-            return Ok(output);
+        let (cards, missing) = self.world_cards_for(&requested_ids).await;
+        if missing.is_empty() {
+            return Ok(project_world_cards(cards, &requested_ids, 0));
         }
 
         let deps = FavoriteDetailsHydrateDeps {
@@ -167,63 +160,266 @@ impl FavoriteDetailsRuntime {
             auth_scope: &self.inner.auth_scope,
             expected_scope,
         };
-        let entities = fetch_favorite_world_entities(&deps).await?;
-        let mut details_by_id = filter_details_by_id(entities, &input.favorite_ids);
-        let availability_by_id =
-            probe_missing_world_details(&deps, &requested_ids, &mut details_by_id).await?;
-        let (details_by_id, cached_count) = hydrate_world_details(
-            self.inner.world_cache.as_ref(),
-            details_by_id,
-            &requested_ids,
-        );
+        let favorite_ids = normalize_ids(&input.favorite_ids)
+            .into_iter()
+            .collect::<HashSet<_>>();
+        let (remote_missing, local_missing): (Vec<_>, Vec<_>) = missing
+            .into_iter()
+            .partition(|id| favorite_ids.contains(id));
+
+        let mut cached_count = 0;
+        let pending_tags = if remote_missing.is_empty() {
+            normalize_ids(&input.group_tags)
+        } else {
+            let (synced, pending) = self
+                .sync_world_groups(&deps, &input.group_tags, &remote_missing)
+                .await?;
+            cached_count += synced;
+            self.probe_world_cards(&deps, &remote_missing).await?;
+            pending
+        };
+        cached_count += self
+            .resolve_local_world_cards(&deps, &local_missing)
+            .await?;
         ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
-        let fetched_at = Utc::now().to_rfc3339();
-        *self
-            .inner
-            .world_cache_state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner()) = Some(FavoriteWorldCacheState {
-            key: cache_key,
-            fetched_at: fetched_at.clone(),
-        });
-        Ok(project_details(
-            details_by_id,
-            availability_by_id,
-            &requested_ids,
-            cached_count,
-            fetched_at,
-        ))
+
+        self.prefetch_world_groups(pending_tags, &deps.expected_scope);
+        let (cards, _) = self.world_cards_for(&requested_ids).await;
+        Ok(project_world_cards(cards, &requested_ids, cached_count))
     }
 
-    fn cached_world_output(
+    async fn world_cards_for(
         &self,
-        key: &FavoriteWorldCacheKey,
         requested_ids: &[String],
-    ) -> Option<FavoriteDetailsHydrateOutput> {
-        let fetched_at = self
+    ) -> (HashMap<String, Arc<FavoriteWorldCard>>, Vec<String>) {
+        let mut cards = HashMap::new();
+        let mut missing = Vec::new();
+        for id in requested_ids {
+            match self.inner.world_cards.get(id).await {
+                Some(card) => {
+                    cards.insert(id.clone(), card);
+                }
+                None => missing.push(id.clone()),
+            }
+        }
+        (cards, missing)
+    }
+
+    async fn sync_world_groups(
+        &self,
+        deps: &FavoriteDetailsHydrateDeps<'_>,
+        group_tags: &[String],
+        needed_ids: &[String],
+    ) -> Result<(u32, Vec<String>)> {
+        let mut cached_count = 0;
+        let mut tags = normalize_world_group_tags(group_tags).into_iter();
+        for tag in tags.by_ref() {
+            let entities = fetch_favorite_world_entities(deps, &tag).await?;
+            cached_count += self.store_world_entities(entities).await;
+            self.inner.world_cards.mark_tag_synced(&tag);
+            let (_, missing) = self.world_cards_for(needed_ids).await;
+            if missing.is_empty() {
+                break;
+            }
+        }
+        Ok((cached_count, tags.collect()))
+    }
+
+    fn prefetch_world_groups(&self, group_tags: Vec<String>, scope: &RuntimeAuthScopeSnapshot) {
+        let group_tags = self.inner.world_cards.unsynced_tags(group_tags);
+        if group_tags.is_empty() {
+            return;
+        }
+        let runtime = self.clone();
+        let expected_scope = scope.clone();
+        self.inner
+            .tasks
+            .spawn_cancellable(move |stop_token| async move {
+                let _guard = runtime.inner.world_sync_gate.lock().await;
+                let deps = FavoriteDetailsHydrateDeps {
+                    store: runtime.inner.store.as_ref(),
+                    remote: runtime.inner.remote.as_ref(),
+                    auth_scope: &runtime.inner.auth_scope,
+                    expected_scope,
+                };
+                for tag in group_tags {
+                    if stop_token.is_stop_requested() {
+                        return;
+                    }
+                    match fetch_favorite_world_entities(&deps, &tag).await {
+                        Ok(entities) => {
+                            runtime.store_world_entities(entities).await;
+                            runtime.inner.world_cards.mark_tag_synced(&tag);
+                        }
+                        Err(error) => {
+                            tracing::warn!(tag, "favorite world group prefetch failed: {error}");
+                            return;
+                        }
+                    }
+                }
+            });
+    }
+
+    async fn store_world_entities(&self, entities: Vec<Value>) -> u32 {
+        let ids = entities.iter().map(entity_id).collect::<Vec<_>>();
+        let payloads = self.inner.world_cache.hydrate_favorite_payloads(&entities);
+        let mut cached_count = 0;
+        for (id, payload) in ids.into_iter().zip(payloads) {
+            let Some(payload) = payload else {
+                continue;
+            };
+            if id.is_empty() {
+                continue;
+            }
+            cached_count += 1;
+            self.inner
+                .world_cards
+                .insert(id, FavoriteWorldCard::resolved(&payload, None))
+                .await;
+        }
+        cached_count
+    }
+
+    async fn probe_world_cards(
+        &self,
+        deps: &FavoriteDetailsHydrateDeps<'_>,
+        world_ids: &[String],
+    ) -> Result<()> {
+        let (_, missing) = self.world_cards_for(world_ids).await;
+        let mut probes = stream::iter(missing.into_iter().map(|id| async move {
+            let outcome = probe_world(deps, &id).await;
+            (id, outcome)
+        }))
+        .buffer_unordered(FAVORITE_DETAILS_PROBE_CONCURRENCY);
+        while let Some((id, outcome)) = probes.next().await {
+            match outcome? {
+                WorldProbeOutcome::Deleted => {
+                    self.inner
+                        .world_cards
+                        .insert(id, FavoriteWorldCard::deleted())
+                        .await;
+                }
+                WorldProbeOutcome::Available(entity, availability) => {
+                    let payload = self
+                        .inner
+                        .world_cache
+                        .hydrate_favorite_payloads(std::slice::from_ref(&entity))
+                        .pop()
+                        .flatten()
+                        .unwrap_or(entity);
+                    self.inner
+                        .world_cards
+                        .insert(
+                            id,
+                            FavoriteWorldCard::resolved(&payload, Some(availability)),
+                        )
+                        .await;
+                }
+                WorldProbeOutcome::Failed => {
+                    if let Some(payload) = self.local_world_payload(&id) {
+                        self.inner
+                            .world_cards
+                            .insert(
+                                id,
+                                FavoriteWorldCard::resolved(
+                                    &payload,
+                                    Some(WORLD_AVAILABILITY_UNVERIFIED.to_string()),
+                                ),
+                            )
+                            .await;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn resolve_local_world_cards(
+        &self,
+        deps: &FavoriteDetailsHydrateDeps<'_>,
+        world_ids: &[String],
+    ) -> Result<u32> {
+        let mut cached_count = 0;
+        let mut unresolved = Vec::new();
+        for id in world_ids {
+            let Some(payload) = self.local_world_payload(id) else {
+                unresolved.push(id.clone());
+                continue;
+            };
+            cached_count += 1;
+            self.inner
+                .world_cards
+                .insert(id.clone(), FavoriteWorldCard::resolved(&payload, None))
+                .await;
+        }
+        self.probe_world_cards(deps, &unresolved).await?;
+        Ok(cached_count)
+    }
+
+    pub async fn refresh_world_card(&self, entity: &Value) {
+        let world_id = entity_id(entity);
+        if world_id.is_empty() {
+            return;
+        }
+        let payload = self
             .inner
-            .world_cache_state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .as_ref()
-            .filter(|state| state.key == *key)
-            .map(|state| state.fetched_at.clone())?;
-        let details_by_id = requested_ids
-            .iter()
-            .map(|id| {
-                self.inner
-                    .world_cache
-                    .get_cached_card_payload(id)
-                    .map(|detail| (id.clone(), detail))
-            })
-            .collect::<Option<HashMap<_, _>>>()?;
-        Some(project_details(
-            details_by_id,
-            HashMap::new(),
-            requested_ids,
-            0,
-            fetched_at,
-        ))
+            .world_cache
+            .hydrate_favorite_payloads(std::slice::from_ref(entity))
+            .pop()
+            .flatten()
+            .unwrap_or_else(|| entity.clone());
+        self.inner
+            .world_cards
+            .insert(world_id, FavoriteWorldCard::resolved(&payload, None))
+            .await;
+    }
+
+    fn local_world_payload(&self, world_id: &str) -> Option<Value> {
+        if let Some(payload) = self.inner.world_cache.get_cached_card_payload(world_id) {
+            return Some(payload);
+        }
+        let summary = self
+            .inner
+            .world_cache
+            .get_summary(world_id)
+            .ok()
+            .flatten()?;
+        serde_json::to_value(summary).ok()
+    }
+}
+
+fn project_world_cards(
+    cards: HashMap<String, Arc<FavoriteWorldCard>>,
+    requested_ids: &[String],
+    cached_count: u32,
+) -> FavoriteDetailsHydrateOutput {
+    let mut details_by_id = HashMap::new();
+    let mut availability_by_id = HashMap::new();
+    for id in requested_ids {
+        let Some(card) = cards.get(id) else {
+            continue;
+        };
+        if let Some(availability) = card.availability() {
+            availability_by_id.insert(id.clone(), availability.to_string());
+        }
+        if let Some(payload) = card.payload() {
+            details_by_id.insert(id.clone(), RawJson::from(payload));
+        }
+    }
+    FavoriteDetailsHydrateOutput {
+        details_by_id,
+        availability_by_id,
+        cached_count,
+        fetched_at: Utc::now().to_rfc3339(),
+    }
+}
+
+fn normalize_world_group_tags(group_tags: &[String]) -> Vec<String> {
+    let tags = normalize_ids(group_tags);
+    if tags.is_empty() {
+        vec![String::new()]
+    } else {
+        tags
     }
 }
 
@@ -261,46 +457,6 @@ fn normalize_ids(ids: &[String]) -> Vec<String> {
         .collect()
 }
 
-fn requested_favorite_ids(favorite_ids: &[String], requested_ids: &[String]) -> Vec<String> {
-    let favorite_ids = normalize_ids(favorite_ids)
-        .into_iter()
-        .collect::<HashSet<_>>();
-    normalize_ids(requested_ids)
-        .into_iter()
-        .filter(|id| favorite_ids.contains(id))
-        .collect()
-}
-
-async fn probe_missing_world_details(
-    deps: &FavoriteDetailsHydrateDeps<'_>,
-    favorite_ids: &[String],
-    details_by_id: &mut HashMap<String, Value>,
-) -> Result<HashMap<String, String>> {
-    let mut availability_by_id = HashMap::new();
-    let mut probes = stream::iter(
-        missing_world_ids(favorite_ids, details_by_id)
-            .into_iter()
-            .map(|id| async move {
-                let outcome = probe_world(deps, &id).await;
-                (id, outcome)
-            }),
-    )
-    .buffer_unordered(FAVORITE_DETAILS_PROBE_CONCURRENCY);
-    while let Some((id, outcome)) = probes.next().await {
-        match outcome? {
-            WorldProbeOutcome::Deleted => {
-                availability_by_id.insert(id, "deleted".to_string());
-            }
-            WorldProbeOutcome::Available(entity, availability) => {
-                availability_by_id.insert(id.clone(), availability);
-                details_by_id.insert(id, entity);
-            }
-            WorldProbeOutcome::Failed => {}
-        }
-    }
-    Ok(availability_by_id)
-}
-
 async fn probe_world(deps: &FavoriteDetailsHydrateDeps<'_>, id: &str) -> Result<WorldProbeOutcome> {
     match execute_json(
         deps,
@@ -316,41 +472,6 @@ async fn probe_world(deps: &FavoriteDetailsHydrateDeps<'_>, id: &str) -> Result<
             Ok(WorldProbeOutcome::Failed)
         }
     }
-}
-
-fn missing_world_ids(
-    favorite_ids: &[String],
-    details_by_id: &HashMap<String, Value>,
-) -> Vec<String> {
-    let mut seen = HashSet::new();
-    favorite_ids
-        .iter()
-        .map(normalize_text)
-        .filter(|id| !id.is_empty())
-        .filter(|id| seen.insert(id.clone()))
-        .filter(|id| {
-            details_by_id
-                .get(id)
-                .is_none_or(|entity| !has_displayable_detail(entity))
-        })
-        .collect()
-}
-
-fn has_displayable_detail(entity: &Value) -> bool {
-    let display_fields = [
-        "name",
-        "authorName",
-        "thumbnailImageUrl",
-        "imageUrl",
-        "description",
-        "releaseStatus",
-    ];
-    if display_fields.iter().any(
-        |field| matches!(entity.get(*field), Some(Value::String(text)) if !text.trim().is_empty()),
-    ) {
-        return true;
-    }
-    matches!(entity.get("tags"), Some(Value::Array(tags)) if !tags.is_empty())
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -377,6 +498,7 @@ fn classify_world_probe(status: i32, payload: Value) -> WorldProbeOutcome {
 
 async fn fetch_favorite_world_entities(
     deps: &FavoriteDetailsHydrateDeps<'_>,
+    tag: &str,
 ) -> Result<Vec<Value>> {
     let mut entities = Vec::new();
     let mut offset = 0_i32;
@@ -385,21 +507,21 @@ async fn fetch_favorite_world_entities(
             deps,
             deps.remote.favorite_worlds(
                 deps.expected_scope.endpoint.clone(),
-                FAVORITE_DETAILS_PAGE_SIZE,
+                FAVORITE_WORLD_GROUP_PAGE_SIZE,
                 offset,
                 String::new(),
                 String::new(),
-                String::new(),
+                tag.to_string(),
             ),
             "favorite world detail sync",
         )
         .await?;
         let page_len = rows.len();
         entities.extend(rows);
-        if page_len < FAVORITE_DETAILS_PAGE_SIZE as usize {
+        if page_len < FAVORITE_WORLD_GROUP_PAGE_SIZE as usize {
             break;
         }
-        offset += FAVORITE_DETAILS_PAGE_SIZE;
+        offset += FAVORITE_WORLD_GROUP_PAGE_SIZE;
     }
     Ok(entities)
 }
@@ -508,39 +630,6 @@ fn filter_details_by_id(entities: Vec<Value>, favorite_ids: &[String]) -> HashMa
         details_by_id.insert(id, entity);
     }
     details_by_id
-}
-
-fn hydrate_world_details(
-    world_cache: &WorldCache,
-    details_by_id: HashMap<String, Value>,
-    requested_ids: &[String],
-) -> (HashMap<String, Value>, u32) {
-    let requested = normalize_ids(requested_ids)
-        .into_iter()
-        .collect::<HashSet<_>>();
-    let mut projected = HashMap::new();
-    let mut ordered_entities = Vec::with_capacity(details_by_id.len());
-    let mut requested_entities = Vec::new();
-    for (id, entity) in details_by_id {
-        if requested.contains(&id) {
-            requested_entities.push((id, entity));
-        } else {
-            ordered_entities.push((id, entity));
-        }
-    }
-    ordered_entities.extend(requested_entities);
-    let payloads =
-        world_cache.hydrate_favorite_payloads(ordered_entities.iter().map(|(_, entity)| entity));
-    let cached_count = payloads.iter().filter(|payload| payload.is_some()).count() as u32;
-    for ((id, _), detail) in ordered_entities.into_iter().zip(payloads) {
-        if requested.contains(&id) {
-            let Some(detail) = detail else {
-                continue;
-            };
-            projected.insert(id, detail);
-        }
-    }
-    (projected, cached_count)
 }
 
 fn persist_avatar_details(

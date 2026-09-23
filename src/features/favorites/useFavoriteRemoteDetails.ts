@@ -25,6 +25,7 @@ interface UseFavoriteRemoteDetailsOptions {
     favoriteIds?: string[];
     requestedIds?: string[];
     avatarTags?: string[];
+    groupTags?: string[];
     cacheKey?: string;
     enabled?: boolean;
     refreshToken?: number;
@@ -87,17 +88,83 @@ interface RemoteDetailsState {
     lastLoadedAt: string | null;
 }
 
+interface RetainedEntry {
+    detail?: FavoriteRemoteEntityDetail;
+    availability?: string;
+}
+
+interface RetainedDetails {
+    refreshKey: string;
+    entries: Map<string, RetainedEntry>;
+}
+
+const RETAINED_DETAIL_LIMIT = 600;
+
+function buildRetainedDetails(refreshKey: string): RetainedDetails {
+    return {
+        refreshKey,
+        entries: new Map()
+    };
+}
+
+function retainDetails(
+    retained: RetainedDetails,
+    refreshKey: string,
+    requestedIds: readonly string[],
+    data: FavoriteRemoteDetailsById,
+    availabilityById: Record<string, string>
+): RetainedDetails {
+    const next =
+        retained.refreshKey === refreshKey
+            ? retained
+            : buildRetainedDetails(refreshKey);
+    for (const id of requestedIds) {
+        next.entries.delete(id);
+        const detail = data[id];
+        const availability = availabilityById[id];
+        if (detail || availability) {
+            next.entries.set(id, { detail, availability });
+        }
+    }
+    while (next.entries.size > RETAINED_DETAIL_LIMIT) {
+        const oldest = next.entries.keys().next().value;
+        if (oldest === undefined) {
+            break;
+        }
+        next.entries.delete(oldest);
+    }
+    return next;
+}
+
+function projectRetainedDetails(retained: RetainedDetails) {
+    const data: FavoriteRemoteDetailsById = {};
+    const availabilityById: Record<string, string> = {};
+    for (const [id, entry] of retained.entries) {
+        if (entry.detail) {
+            data[id] = entry.detail;
+        }
+        if (entry.availability) {
+            availabilityById[id] = entry.availability;
+        }
+    }
+    return { data, availabilityById };
+}
+
 function buildInitialState(
     requestKey: string = '',
     status: LoadStatus = 'idle',
-    detail: string = ''
+    detail: string = '',
+    retained?: RetainedDetails
 ): RemoteDetailsState {
+    const projected = retained
+        ? projectRetainedDetails(retained)
+        : { data: {}, availabilityById: {} };
     return {
         requestKey,
         status,
         detail,
-        data: {},
-        availabilityById: {},
+        data: projected.data,
+        availabilityById: projected.availabilityById,
         lastLoadedAt: null
     };
 }
@@ -180,6 +247,7 @@ export function useFavoriteRemoteDetails({
     favoriteIds = [],
     requestedIds = favoriteIds,
     avatarTags = [],
+    groupTags = [],
     cacheKey = '',
     enabled = true,
     refreshToken = 0
@@ -188,6 +256,9 @@ export function useFavoriteRemoteDetails({
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
     const remoteDetailsRevision = useFavoriteRevisionStore(
         (state) => state.remoteDetailsRevisionByKind[type]
+    );
+    const worldDetailsRevision = useFavoriteRevisionStore(
+        (state) => state.worldDetailsRevision
     );
     const normalizedIds = useMemo(
         () => normalizeValues(favoriteIds),
@@ -201,36 +272,45 @@ export function useFavoriteRemoteDetails({
         () => normalizeValues(avatarTags),
         [avatarTags]
     );
-    const requestKey = [
+    const normalizedGroupTags = useMemo(
+        () => normalizeValues(groupTags),
+        [groupTags]
+    );
+    const refreshKey = [
         type,
         currentUserId || '',
         endpoint || '',
+        cacheKey,
+        String(refreshToken),
+        String(remoteDetailsRevision),
+        type === 'world' ? String(worldDetailsRevision) : ''
+    ].join('::');
+    const requestKey = [
+        refreshKey,
         normalizedIds.join('|'),
         normalizedRequestedIds.join('|'),
         normalizedTags.join('|'),
-        cacheKey,
-        String(refreshToken),
-        String(remoteDetailsRevision)
+        normalizedGroupTags.join('|')
     ].join('::');
-    const hasIds =
-        normalizedIds.length > 0 && normalizedRequestedIds.length > 0;
-    const refreshKey = [
-        cacheKey,
-        String(refreshToken),
-        String(remoteDetailsRevision)
-    ].join('::');
+    const hasIds = normalizedRequestedIds.length > 0;
     const [state, setState] = useState(() => buildInitialState());
+    const retainedRef = useRef(buildRetainedDetails(refreshKey));
+    if (retainedRef.current.refreshKey !== refreshKey) {
+        retainedRef.current = buildRetainedDetails(refreshKey);
+    }
     const requestParamsRef = useRef({
         ids: normalizedIds,
         requestedIds: normalizedRequestedIds,
         refreshKey,
-        tags: normalizedTags
+        tags: normalizedTags,
+        groupTags: normalizedGroupTags
     });
     requestParamsRef.current = {
         ids: normalizedIds,
         requestedIds: normalizedRequestedIds,
         refreshKey,
-        tags: normalizedTags
+        tags: normalizedTags,
+        groupTags: normalizedGroupTags
     };
 
     useEffect(() => {
@@ -240,35 +320,47 @@ export function useFavoriteRemoteDetails({
         }
 
         let active = true;
+        const requested = requestParamsRef.current.requestedIds;
         setState(
             buildInitialState(
                 requestKey,
                 'running',
-                favoriteRemoteDetailsLoadingDetail(type)
+                favoriteRemoteDetailsLoadingDetail(type),
+                retainedRef.current
             )
         );
         hydrateFavoriteDetails(requestKey, {
             kind: type,
             favoriteIds: requestParamsRef.current.ids,
-            requestedIds: requestParamsRef.current.requestedIds,
+            requestedIds: requested,
             avatarTags: type === 'avatar' ? requestParamsRef.current.tags : [],
-            refreshKey: requestParamsRef.current.refreshKey
+            groupTags:
+                type === 'world' ? requestParamsRef.current.groupTags : []
         })
             .then((output) => {
                 if (!active) {
                     return;
                 }
-                const data = mapDetailsById(output.detailsById);
+                const loaded = mapDetailsById(output.detailsById);
+                const availabilityById = mapAvailabilityById(
+                    output.availabilityById
+                );
+                const retained = retainDetails(
+                    retainedRef.current,
+                    requestParamsRef.current.refreshKey,
+                    requested,
+                    loaded,
+                    availabilityById
+                );
+                retainedRef.current = retained;
                 setState({
-                    requestKey,
-                    status: 'ready',
-                    detail:
+                    ...buildInitialState(
+                        requestKey,
+                        'ready',
                         type === 'avatar'
-                            ? `Loaded remote avatar details for ${Object.keys(data).length} favorites.`
-                            : `Loaded remote world details for ${Object.keys(data).length} favorites.`,
-                    data,
-                    availabilityById: mapAvailabilityById(
-                        output.availabilityById
+                            ? `Loaded remote avatar details for ${Object.keys(loaded).length} favorites.`
+                            : `Loaded remote world details for ${Object.keys(loaded).length} favorites.`,
+                        retained
                     ),
                     lastLoadedAt: output.fetchedAt
                 });
@@ -278,14 +370,14 @@ export function useFavoriteRemoteDetails({
                     return;
                 }
                 setState({
-                    requestKey,
-                    status: 'error',
-                    detail:
+                    ...buildInitialState(
+                        requestKey,
+                        'error',
                         error instanceof Error
                             ? error.message
                             : `Failed to load remote ${type} favorites.`,
-                    data: {},
-                    availabilityById: {},
+                        retainedRef.current
+                    ),
                     lastLoadedAt: new Date().toISOString()
                 });
             });
@@ -301,6 +393,7 @@ export function useFavoriteRemoteDetails({
     return buildInitialState(
         requestKey,
         enabled && hasIds ? 'running' : 'ready',
-        enabled && hasIds ? favoriteRemoteDetailsLoadingDetail(type) : ''
+        enabled && hasIds ? favoriteRemoteDetailsLoadingDetail(type) : '',
+        retainedRef.current
     );
 }

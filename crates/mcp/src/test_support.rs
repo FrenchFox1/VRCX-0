@@ -189,6 +189,13 @@ impl McpActivityQueryPort for TestMcpActivityQueryAdapter {
         social_aggregates::recall_encounter(self.db.as_ref(), input).map_err(Into::into)
     }
 
+    fn visit_timeline(
+        &self,
+        input: social::VisitTimelineInput,
+    ) -> vrcx_0_application_core::Result<social::VisitTimelineOutput> {
+        social_aggregates::get_visit_timeline(self.db.as_ref(), input).map_err(Into::into)
+    }
+
     fn friend_log(
         &self,
         input: social::FriendLogInput,

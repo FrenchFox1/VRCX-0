@@ -58,6 +58,7 @@ mod router_tests {
                 "get_my_activity",
                 "get_online_friends",
                 "get_social_graph",
+                "get_visit_timeline",
                 "recall_encounter",
                 "refresh_mutual_graph",
                 "search_friend_feed",

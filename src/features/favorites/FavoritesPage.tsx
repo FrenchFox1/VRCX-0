@@ -55,6 +55,7 @@ function FavoritesPage({
         setCreatingLocalGroup,
         setExportDialogOpen,
         setNewLocalGroupName,
+        setVisibleWorldIds,
         viewData,
         instanceActionGatesByItemKey
     } = state;
@@ -252,6 +253,7 @@ function FavoritesPage({
                             instanceActionGatesByItemKey={
                                 instanceActionGatesByItemKey
                             }
+                            onVisibleWorldIdsChange={setVisibleWorldIds}
                         />
                     </ResizablePanel>
                 </ResizablePanelGroup>

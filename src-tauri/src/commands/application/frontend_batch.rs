@@ -72,15 +72,13 @@ pub async fn app__favorite_details_hydrate(
     state.hydrate_favorite_details(input).await
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__favorite_cache_snapshot(
+pub async fn app__favorite_cache_snapshot(
     state: State<'_, AppState>,
     input: FavoriteCacheSnapshotInput,
 ) -> Result<bool, AppError> {
-    Ok(state
-        .runtime_host()
-        .persist_favorite_cache_snapshot(input)?)
+    state.persist_favorite_cache_snapshot(input).await
 }
 
 #[tauri::command]

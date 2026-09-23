@@ -51,6 +51,75 @@ fn reopened_session_keeps_history_for_followups() {
 }
 
 #[test]
+fn reopened_session_restores_tool_rows_with_full_content_for_the_model() {
+    let persistence = test_persistence();
+    let session = {
+        let store = SessionStore::with_test_persistence(&persistence);
+        let session = create_test_session(&store);
+        store
+            .push_message(&session.id, Role::User, "who do I play with?".into())
+            .unwrap();
+        store
+            .push_tool_call(
+                &session.id,
+                ToolCallRecord {
+                    id: "call_1".into(),
+                    name: "get_copresence_summary".into(),
+                    arguments: "{\"limit\":5}".into(),
+                },
+            )
+            .unwrap();
+        store
+            .push_tool_result(
+                &session.id,
+                ToolResultRecord {
+                    tool_call_id: "call_1".into(),
+                    name: "get_copresence_summary".into(),
+                    ok: true,
+                    summary: "Alice tops the list.".into(),
+                    entities: vec![Entity {
+                        kind: crate::entities::EntityKind::User,
+                        id: "usr_alice".into(),
+                        display_name: "Alice".into(),
+                    }],
+                },
+                "{\"summary\":\"Alice tops the list.\",\"rows\":[{\"userId\":\"usr_alice\"}]}"
+                    .into(),
+            )
+            .unwrap();
+        session
+    };
+
+    let reopened = SessionStore::with_test_persistence(&persistence);
+    let history = reopened
+        .get(&OwnerId::new(TEST_OWNER), &session.id)
+        .unwrap()
+        .unwrap()
+        .messages;
+    assert_eq!(history.len(), 3);
+    assert_eq!(history[0].role, Role::User);
+    assert_eq!(history[1].role, Role::ToolCall);
+    assert_eq!(
+        history[1].tool_call.as_ref().unwrap().arguments,
+        "{\"limit\":5}"
+    );
+    assert!(history[1].content.is_empty());
+    assert_eq!(history[2].role, Role::ToolResult);
+    let result = history[2].tool_result.as_ref().unwrap();
+    assert_eq!(result.tool_call_id, "call_1");
+    assert_eq!(result.summary, "Alice tops the list.");
+    assert_eq!(result.entities[0].id, "usr_alice");
+    assert_eq!(
+        history[2].tool_content.as_deref(),
+        Some("{\"summary\":\"Alice tops the list.\",\"rows\":[{\"userId\":\"usr_alice\"}]}")
+    );
+    let ui_payload = serde_json::to_value(&history[2]).unwrap();
+    assert!(ui_payload.get("toolContent").is_none());
+    assert_eq!(ui_payload["toolResult"]["summary"], "Alice tops the list.");
+    assert_eq!(ui_payload["role"], "tool_result");
+}
+
+#[test]
 fn message_load_failure_retries_without_caching_partial_history() {
     let persistence = test_persistence();
     let session_id = {

@@ -25,6 +25,7 @@ pub struct VisitedWorldRow {
     pub world_name: String,
     pub location: String,
     pub visited_at: String,
+    pub left_at: Option<String>,
     pub stay_minutes: i64,
 }
 

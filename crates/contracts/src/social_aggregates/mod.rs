@@ -10,6 +10,7 @@ mod graph;
 mod invites;
 mod recall;
 mod resolve;
+mod visits;
 mod worlds;
 
 pub use activity::{
@@ -34,6 +35,7 @@ pub use graph::{
 pub use invites::{InviteDirection, InviteHistoryInput, InviteHistoryOutput, InviteHistoryRow};
 pub use recall::{RecallEncounterInput, RecallEncounterOutput, RecallEncounterRow};
 pub use resolve::{ResolveUserInput, ResolveUserOutput, ResolvedUserRow};
+pub use visits::{VisitRosterRow, VisitRow, VisitStint, VisitTimelineInput, VisitTimelineOutput};
 pub use worlds::{
     FavoriteAction, FavoriteLocalInput, FavoriteOutput, SearchWorldsVisitedInput,
     SearchWorldsVisitedOutput, VisitedWorldRow,

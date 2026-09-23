@@ -255,6 +255,7 @@ export function SidePanelSettingsPopover({
                                     }
                                 />
                             </SettingRow>
+                            <Separator />
                         </>
                     ) : null}
                     <SettingRow

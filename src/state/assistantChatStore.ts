@@ -11,7 +11,7 @@ import type {
     SessionSummary,
     UIMessage
 } from '@/domain/assistant/types';
-import type { Session } from '@/platform/tauri/bindings';
+import type { Message, Session } from '@/platform/tauri/bindings';
 
 interface AssistantChatState {
     open: boolean;
@@ -75,6 +75,91 @@ function markSessionIdle(
 
 function randomId(prefix: string): string {
     return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+// Persisted tool rows belong to the assistant reply that follows them; a run
+// that ended before its reply (cancel/error) still shows its tool cards.
+function foldTranscript(messages: Message[], running: boolean): UIMessage[] {
+    const folded: UIMessage[] = [];
+    let pending: UIMessage | null = null;
+    const settle = (message: UIMessage): UIMessage => ({
+        ...message,
+        toolCalls: message.toolCalls.map((call) =>
+            call.status === 'pending' && !running
+                ? { ...call, status: 'error' }
+                : call
+        )
+    });
+    for (const message of messages) {
+        switch (message.role) {
+            case 'user':
+                if (pending) {
+                    folded.push(settle(pending));
+                    pending = null;
+                }
+                folded.push({
+                    id: message.id,
+                    role: 'user',
+                    text: message.content,
+                    streaming: false,
+                    toolCalls: []
+                });
+                break;
+            case 'assistant':
+                folded.push(
+                    settle({
+                        id: message.id,
+                        role: 'assistant',
+                        text: message.content,
+                        streaming: false,
+                        toolCalls: pending?.toolCalls ?? []
+                    })
+                );
+                pending = null;
+                break;
+            case 'tool_call':
+                if (!message.toolCall) {
+                    break;
+                }
+                pending ??= {
+                    id: message.id,
+                    role: 'assistant',
+                    text: '',
+                    streaming: false,
+                    toolCalls: []
+                };
+                pending.toolCalls.push({
+                    id: message.toolCall.id,
+                    name: message.toolCall.name,
+                    args: message.toolCall.arguments,
+                    status: 'pending',
+                    summary: '',
+                    entities: []
+                });
+                break;
+            case 'tool_result': {
+                const result = message.toolResult;
+                if (!result || !pending) {
+                    break;
+                }
+                pending.toolCalls = pending.toolCalls.map((call) =>
+                    call.id === result.toolCallId
+                        ? {
+                              ...call,
+                              status: result.ok ? 'done' : 'error',
+                              summary: result.summary,
+                              entities: result.entities
+                          }
+                        : call
+                );
+                break;
+            }
+        }
+    }
+    if (pending) {
+        folded.push(settle(pending));
+    }
+    return folded;
 }
 
 function removeSessionEntry<T>(
@@ -248,13 +333,10 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
         set((state) => ({
             messagesBySession: {
                 ...state.messagesBySession,
-                [session.id]: session.messages.map((message): UIMessage => ({
-                    id: message.id,
-                    role: message.role,
-                    text: message.content,
-                    streaming: false,
-                    toolCalls: []
-                }))
+                [session.id]: foldTranscript(
+                    session.messages,
+                    session.activeTurn?.status === 'running'
+                )
             },
             // Restore the persisted right-panel state for this session.
             entityPanelOpenBySession: {

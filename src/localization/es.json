@@ -914,10 +914,10 @@
             "advanced": "Avanzado",
             "sorting": "Ordenación",
             "favorites_section": "Favoritos",
-            "group_by_instance": "Agrupar por instancia",
-            "split_favorite_friends": "Mostrar grupos de favoritos",
-            "show_grouped_friends": "Mostrar amigos agrupados",
-            "same_instance_above_favorites": "Priorizar misma instancia",
+            "group_by_instance": "Mostrar grupos por instancia",
+            "split_favorite_friends": "Separar favoritos por grupo",
+            "show_grouped_friends": "Mostrar también a los amigos de la misma instancia en otras listas",
+            "same_instance_above_favorites": "Mostrar la misma instancia encima de Favoritos",
             "sort_secondary": "Luego por",
             "sort_tertiary": "Luego por",
             "favorite_groups": "Grupos de favoritos",
@@ -1495,9 +1495,7 @@
                 "favorites_failed_to_load": "No se pudieron cargar los favoritos"
             },
             "loading": {
-                "loading_favorites_baseline": "Cargando favoritos",
-                "loading_remote_avatar_details": "Cargando detalles de avatar remoto",
-                "loading_remote_world_details": "Cargando detalles de mundo remoto"
+                "loading_favorites_baseline": "Cargando favoritos"
             },
             "share_collection": {
                 "title": "Compartir colección",
@@ -3277,10 +3275,6 @@
                 "world_details_unavailable": "Los detalles del mundo no están disponibles.",
                 "world_deleted": "This world has been deleted.",
                 "avatar_details_unavailable": "Los detalles del avatar no están disponibles."
-            },
-            "loading": {
-                "loading_world_details": "Cargando los detalles del mundo.",
-                "loading_avatar_details": "Cargando los detalles del avatar."
             },
             "dynamic": {
                 "remove_value_from_value": "¿Eliminar {value} de {value2}?",

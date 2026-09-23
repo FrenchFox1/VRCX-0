@@ -34,7 +34,9 @@ function session(id: string): Session {
                 seq: 1,
                 role: 'user',
                 content: id,
-                createdAt: '2026-08-11T00:00:00Z'
+                createdAt: '2026-08-11T00:00:00Z',
+                toolCall: null,
+                toolResult: null
             }
         ],
         activeTurn: null,

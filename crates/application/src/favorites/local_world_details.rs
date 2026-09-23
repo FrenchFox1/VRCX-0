@@ -2,10 +2,11 @@ use std::collections::HashSet;
 
 use futures_util::{stream, StreamExt};
 use serde::Serialize;
-use vrcx_0_application_core::{FavoriteEntityKind, Result, WebClient, WorldCache};
+use vrcx_0_application_core::{FavoriteEntityKind, Result};
 use vrcx_0_core::OwnerId;
 
 use super::local_favorites::{list_local_favorites, FavoriteStore};
+use super::FavoriteRemoteFuture;
 
 const LOCAL_WORLD_DETAILS_REFRESH_CONCURRENCY: usize = 3;
 
@@ -16,11 +17,15 @@ pub struct LocalWorldDetailsRefreshOutput {
     pub refreshed: u32,
 }
 
+pub trait LocalWorldDetailsRemote: Send + Sync {
+    fn refresh<'a>(&'a self, endpoint: &'a str, world_id: &'a str)
+        -> FavoriteRemoteFuture<'a, i32>;
+}
+
 pub async fn refresh_local_world_details(
     store: &dyn FavoriteStore,
     owner_user_id: &OwnerId,
-    world_cache: &WorldCache,
-    web: &WebClient,
+    remote: &dyn LocalWorldDetailsRemote,
     endpoint: &str,
 ) -> Result<LocalWorldDetailsRefreshOutput> {
     let mut seen = HashSet::new();
@@ -33,8 +38,8 @@ pub async fn refresh_local_world_details(
     let requested = world_ids.len() as u32;
     let refreshed = stream::iter(world_ids)
         .map(|world_id| async move {
-            match world_cache.get(web, endpoint, &world_id, true, false).await {
-                Ok(response) => (200..=299).contains(&response.status),
+            match remote.refresh(endpoint, &world_id).await {
+                Ok(status) => (200..=299).contains(&status),
                 Err(error) => {
                     tracing::warn!(world_id, "local favorite world refresh failed: {error}");
                     false
@@ -53,11 +58,28 @@ pub async fn refresh_local_world_details(
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-    use vrcx_0_application_core::{MemoryWorldCachePort, NoopWebClientPort};
+    use std::sync::Mutex;
 
     use super::*;
     use crate::favorites::test_support::TestFavoriteStore;
+
+    #[derive(Default)]
+    struct TestWorldDetailsRemote {
+        calls: Mutex<Vec<String>>,
+    }
+
+    impl LocalWorldDetailsRemote for TestWorldDetailsRemote {
+        fn refresh<'a>(
+            &'a self,
+            _endpoint: &'a str,
+            world_id: &'a str,
+        ) -> FavoriteRemoteFuture<'a, i32> {
+            Box::pin(async move {
+                self.calls.lock().unwrap().push(world_id.to_string());
+                Ok(if world_id == "wrld_fresh" { 200 } else { 404 })
+            })
+        }
+    }
 
     #[tokio::test]
     async fn refreshes_every_local_world_favorite_and_counts_successful_fetches() {
@@ -77,27 +99,17 @@ mod tests {
                 )
                 .unwrap();
         }
-        let port = MemoryWorldCachePort::default();
-        port.insert(json!({
-            "id": "wrld_fresh",
-            "name": "Fresh World",
-            "imageUrl": "https://example.test/fresh.png",
-            "releaseStatus": "private"
-        }));
-        let world_cache = WorldCache::new(port);
-        let web = WebClient::new(NoopWebClientPort);
+        let remote = TestWorldDetailsRemote::default();
 
-        let output = refresh_local_world_details(
-            &store,
-            &owner,
-            &world_cache,
-            &web,
-            "https://api.vrchat.cloud/api/1",
-        )
-        .await
-        .unwrap();
+        let output =
+            refresh_local_world_details(&store, &owner, &remote, "https://api.vrchat.cloud/api/1")
+                .await
+                .unwrap();
 
         assert_eq!(output.requested, 2);
         assert_eq!(output.refreshed, 1);
+        let mut calls = remote.calls.lock().unwrap().clone();
+        calls.sort();
+        assert_eq!(calls, ["wrld_fresh", "wrld_gone"]);
     }
 }

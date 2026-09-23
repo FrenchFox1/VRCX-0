@@ -127,6 +127,7 @@ export function useFavoritesVirtualGrid({
         gridMinWidth,
         gridPadding,
         totalHeight: positionedRows.totalHeight,
+        viewportHeight: viewportMetrics.viewportHeight,
         viewportRef,
         visibleRows
     };

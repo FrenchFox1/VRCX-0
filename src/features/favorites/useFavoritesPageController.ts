@@ -74,13 +74,15 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
     const loadAllRemoteDetails =
         exportDialogOpen ||
         normalizeFavoriteSearchValue(filters.searchQuery).length >= 3;
+    const [visibleWorldIds, setVisibleWorldIds] = useState<string[]>([]);
     const collections = useFavoritesCollectionsState({
         currentEndpoint: runtime.currentEndpoint,
         currentUserId: runtime.currentUserId,
         kind,
         loadAllRemoteDetails,
         selectedGroupKey: filters.selectedGroupKey,
-        selectedSource: filters.selectedSource
+        selectedSource: filters.selectedSource,
+        visibleWorldIds
     });
     const layout = useFavoritesLayoutPreferences(kind);
     const [creatingLocalGroup, setCreatingLocalGroup] = useState(false);
@@ -205,6 +207,7 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
         setCreatingLocalGroup,
         setExportDialogOpen,
         setNewLocalGroupName,
+        setVisibleWorldIds,
         viewData
     };
 }

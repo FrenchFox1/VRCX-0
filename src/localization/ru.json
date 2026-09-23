@@ -914,10 +914,10 @@
             "advanced": "Дополнительно",
             "sorting": "Сортировка",
             "favorites_section": "Избранное",
-            "group_by_instance": "Группировать по инстансу",
-            "split_favorite_friends": "Показать избранные группы",
-            "show_grouped_friends": "Показывать друзей в том же инстансе",
-            "same_instance_above_favorites": "Показывать тот же инстанс выше избранного",
+            "group_by_instance": "Показывать группы по инстансам",
+            "split_favorite_friends": "Разделять избранных друзей по группам",
+            "show_grouped_friends": "Показывать друзей из одного инстанса и в других списках",
+            "same_instance_above_favorites": "Показывать группу одного инстанса выше избранного",
             "sort_secondary": "Тогда к",
             "sort_tertiary": "Тогда к",
             "favorite_groups": "Избранные группы",
@@ -1501,9 +1501,7 @@
                 "favorites_failed_to_load": "Избранное не загрузились"
             },
             "loading": {
-                "loading_favorites_baseline": "Загрузка избранного",
-                "loading_remote_avatar_details": "Загрузка удаленных деталей аватара",
-                "loading_remote_world_details": "Загрузка данных из далёкого мира"
+                "loading_favorites_baseline": "Загрузка избранного"
             },
             "share_collection": {
                 "title": "Поделиться коллекцией",
@@ -3283,10 +3281,6 @@
                 "world_details_unavailable": "Сведения о мире недоступны.",
                 "world_deleted": "This world has been deleted.",
                 "avatar_details_unavailable": "Сведения об аватаре недоступны."
-            },
-            "loading": {
-                "loading_world_details": "Загрузка сведений о мире.",
-                "loading_avatar_details": "Загрузка деталей аватара."
             },
             "dynamic": {
                 "remove_value_from_value": "Удалить {value} из {value2}?",

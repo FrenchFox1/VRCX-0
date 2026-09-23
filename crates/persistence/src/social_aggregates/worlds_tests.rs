@@ -32,6 +32,10 @@ fn search_worlds_visited_returns_recent_world_candidates() {
     assert_eq!(output.rows[0].world_id, "wrld_parkour");
     assert_eq!(output.rows[0].world_name, "Parkour Night");
     assert_eq!(output.rows[0].stay_minutes, 30);
+    assert_eq!(
+        output.rows[0].left_at.as_deref(),
+        Some("2026-06-01T22:30:00.000Z")
+    );
 }
 
 #[test]

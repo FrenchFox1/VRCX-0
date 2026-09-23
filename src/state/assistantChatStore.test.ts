@@ -133,6 +133,156 @@ describe('assistantChatStore', () => {
         });
     });
 
+    it('folds persisted tool rows into the assistant reply that follows them', () => {
+        const store = useAssistantChatStore.getState();
+        store.hydrateSession({
+            id: 'session-1',
+            title: 'Alice',
+            messages: [
+                {
+                    id: 'm1',
+                    seq: 1,
+                    role: 'user',
+                    content: 'who do I play with?',
+                    createdAt: '2026-09-23T00:00:00Z',
+                    toolCall: null,
+                    toolResult: null
+                },
+                {
+                    id: 'm2',
+                    seq: 2,
+                    role: 'tool_call',
+                    content: '',
+                    createdAt: '2026-09-23T00:00:01Z',
+                    toolCall: {
+                        id: 'call_1',
+                        name: 'get_copresence_summary',
+                        arguments: '{"limit":5}'
+                    },
+                    toolResult: null
+                },
+                {
+                    id: 'm3',
+                    seq: 3,
+                    role: 'tool_result',
+                    content: '',
+                    createdAt: '2026-09-23T00:00:02Z',
+                    toolCall: null,
+                    toolResult: {
+                        toolCallId: 'call_1',
+                        name: 'get_copresence_summary',
+                        ok: true,
+                        summary: 'Alice tops the list.',
+                        entities: [
+                            {
+                                kind: 'user',
+                                id: 'usr_alice',
+                                displayName: 'Alice'
+                            }
+                        ]
+                    }
+                },
+                {
+                    id: 'm4',
+                    seq: 4,
+                    role: 'assistant',
+                    content: 'Alice, mostly.',
+                    createdAt: '2026-09-23T00:00:03Z',
+                    toolCall: null,
+                    toolResult: null
+                },
+                {
+                    id: 'm5',
+                    seq: 5,
+                    role: 'user',
+                    content: 'and last week?',
+                    createdAt: '2026-09-23T00:00:04Z',
+                    toolCall: null,
+                    toolResult: null
+                },
+                {
+                    id: 'm6',
+                    seq: 6,
+                    role: 'tool_call',
+                    content: '',
+                    createdAt: '2026-09-23T00:00:05Z',
+                    toolCall: {
+                        id: 'call_2',
+                        name: 'get_copresence_summary',
+                        arguments: '{"timeWindow":"last week"}'
+                    },
+                    toolResult: null
+                }
+            ],
+            activeTurn: null,
+            endpointId: null,
+            model: null,
+            allowWrites: false,
+            playbookMode: 'auto',
+            entityPanelOpen: false,
+            surfacedEntities: [],
+            createdAt: '2026-09-23T00:00:00Z',
+            updatedAt: '2026-09-23T00:00:05Z'
+        });
+
+        expect(
+            useAssistantChatStore.getState().messagesBySession['session-1']
+        ).toEqual([
+            {
+                id: 'm1',
+                role: 'user',
+                text: 'who do I play with?',
+                streaming: false,
+                toolCalls: []
+            },
+            {
+                id: 'm4',
+                role: 'assistant',
+                text: 'Alice, mostly.',
+                streaming: false,
+                toolCalls: [
+                    {
+                        id: 'call_1',
+                        name: 'get_copresence_summary',
+                        args: '{"limit":5}',
+                        status: 'done',
+                        summary: 'Alice tops the list.',
+                        entities: [
+                            {
+                                kind: 'user',
+                                id: 'usr_alice',
+                                displayName: 'Alice'
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'm5',
+                role: 'user',
+                text: 'and last week?',
+                streaming: false,
+                toolCalls: []
+            },
+            {
+                id: 'm6',
+                role: 'assistant',
+                text: '',
+                streaming: false,
+                toolCalls: [
+                    {
+                        id: 'call_2',
+                        name: 'get_copresence_summary',
+                        args: '{"timeWindow":"last week"}',
+                        status: 'error',
+                        summary: '',
+                        entities: []
+                    }
+                ]
+            }
+        ]);
+    });
+
     it('resets all account-scoped assistant state', () => {
         const authScopeVersion =
             useAssistantChatStore.getState().authScopeVersion;
