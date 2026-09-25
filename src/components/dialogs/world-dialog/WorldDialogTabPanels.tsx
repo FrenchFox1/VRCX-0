@@ -315,6 +315,7 @@ export function WorldDialogTabPanels({
                                                 }
                                                 playerCount={playerCount}
                                                 capacity={capacity}
+                                                showWorldName={false}
                                                 showPlayerSummary={false}
                                                 hint={
                                                     world.name ||
