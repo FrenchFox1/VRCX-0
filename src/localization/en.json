@@ -887,12 +887,18 @@
         "self_menu": "Account menu",
         "filter_friends": "Filter friends",
         "filter_groups": "Filter groups",
+        "filter_instances": "Filter instances",
         "filter_no_results": "No matches",
         "self_more_actions": "More",
         "switch_account": "Switch Account",
         "favorite": "Favorites",
         "same_instance": "Same instance",
         "you_are_here": "You are here",
+        "visited_minutes_ago_one": "Visited 1 min ago",
+        "visited_minutes_ago_other": "Visited {count} min ago",
+        "visited_hours_ago_one": "Visited 1 hr ago",
+        "visited_hours_ago_other": "Visited {count} hr ago",
+        "visited_at": "Last joined {time}",
         "online": "Online",
         "active": "Active",
         "offline": "Offline",
@@ -935,6 +941,7 @@
                 "tab_layout": "Tabs",
                 "layout_hint": "Drag to reorder. Friends and Groups are built in — add favorite collections as your own tabs.",
                 "system_badge": "Built-in",
+                "world_badge": "World",
                 "always_visible": "Always visible",
                 "move_up": "Move up",
                 "move_down": "Move down",
@@ -1154,6 +1161,8 @@
             "view_worlds": "Worlds view",
             "world_instances_one": "{count} instance",
             "world_instances_other": "{count} instances",
+            "instance_population": "Players in instance: {users}",
+            "instance_population_capacity": "Players in instance: {users} / {capacity}",
             "other_online": "Other online friends",
             "favorite": "Favorites",
             "same_instance": "Same instance",
@@ -4106,6 +4115,12 @@
                 "public_count": "Public {count}",
                 "private_count": "Private {count}",
                 "capacity_count": "Capacity {count} ({max})",
+                "pin_to_sidebar": "Pin to Sidebar",
+                "pinned_to_sidebar": "Pinned to the sidebar",
+                "pin_to_sidebar_failed": "Couldn't pin to the sidebar",
+                "unpin_from_sidebar": "Unpin from Sidebar",
+                "unpinned_from_sidebar": "Unpinned from the sidebar",
+                "unpin_from_sidebar_failed": "Couldn't unpin from the sidebar",
                 "instance_creator": "Instance Creator"
             },
             "info": {
@@ -5752,7 +5767,8 @@
                 "schema_migrations": "Applying schema updates",
                 "optimize": "Optimizing the database copy",
                 "write_version": "Recording the database version",
-                "commit": "Switching to the upgraded database"
+                "commit": "Switching to the upgraded database",
+                "repair_data": "Repairing gaps in game log history"
             },
             "upgrade_failed_title": "Database upgrade failed",
             "failure_record": "Failure record",
@@ -6112,12 +6128,6 @@
                 "failed_to_remove_favorite": "Failed to remove favorite",
                 "failed_to_add_local_favorite": "Failed to add local favorite",
                 "failed_to_remove_local_favorite": "Failed to remove local favorite"
-            },
-            "modal": {
-                "remove_vrchat_favorite": "Remove VRChat favorite?"
-            },
-            "dynamic": {
-                "remove_value_from_vrchat_favorites": "Remove {value} from VRChat favorites?"
             }
         },
         "friend_location_card": {
@@ -6222,6 +6232,14 @@
             }
         },
         "groups_sidebar": {
+            "toast": {
+                "failed_to_launch_instance": "Failed to launch instance",
+                "failed_to_send_self_invite": "Failed to send self invite"
+            }
+        },
+        "world_rooms_sidebar": {
+            "empty": "No active instances right now",
+            "failed": "Couldn't load instances",
             "toast": {
                 "failed_to_launch_instance": "Failed to launch instance",
                 "failed_to_send_self_invite": "Failed to send self invite"

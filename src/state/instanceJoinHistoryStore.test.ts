@@ -54,6 +54,31 @@ describe('instanceJoinHistoryStore', () => {
         ).toBe(Date.parse('2026-07-20T10:00:00.000Z'));
     });
 
+    it('tracks the latest live join separately from the earliest', () => {
+        const store = useInstanceJoinHistoryStore.getState();
+        store.recordInstanceJoin(LOCATION, '2026-07-20T12:00:00.000Z');
+        store.recordInstanceJoin(LOCATION, '2026-07-20T13:00:00.000Z');
+        store.recordInstanceJoin(LOCATION, '2026-07-20T11:00:00.000Z');
+
+        const state = useInstanceJoinHistoryStore.getState();
+        expect(state.joinedAtByLocation[KEY]).toBe(
+            Date.parse('2026-07-20T11:00:00.000Z')
+        );
+        expect(state.lastJoinedAtByLocation[KEY]).toBe(
+            Date.parse('2026-07-20T13:00:00.000Z')
+        );
+    });
+
+    it('keeps preloaded history out of the live last-join map', () => {
+        useInstanceJoinHistoryStore
+            .getState()
+            .setInstanceJoinHistory([[LOCATION, '2026-07-20T12:00:00.000Z']]);
+
+        expect(
+            useInstanceJoinHistoryStore.getState().lastJoinedAtByLocation
+        ).toEqual({});
+    });
+
     it('ignores joins that carry no resolvable instance or timestamp', () => {
         const store = useInstanceJoinHistoryStore.getState();
         store.recordInstanceJoin('traveling', '2026-07-20T12:00:00.000Z');
@@ -71,8 +96,8 @@ describe('instanceJoinHistoryStore', () => {
 
         store.resetInstanceJoinHistory();
 
-        expect(
-            useInstanceJoinHistoryStore.getState().joinedAtByLocation
-        ).toEqual({});
+        const state = useInstanceJoinHistoryStore.getState();
+        expect(state.joinedAtByLocation).toEqual({});
+        expect(state.lastJoinedAtByLocation).toEqual({});
     });
 });

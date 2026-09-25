@@ -143,6 +143,34 @@ describe('sessionBootstrapService', () => {
         expect(useSessionStore.getState().isFriendsLoaded).toBe(false);
     });
 
+    it('re-records the current instance join cleared by the sign-in reset', async () => {
+        const { useInstanceJoinHistoryStore } =
+            await import('@/state/instanceJoinHistoryStore');
+        const { useRuntimeStore } = await import('@/state/runtimeStore');
+        const { beginAuthAttempt } = await import('./authAttempt');
+        const { bootstrapAuthenticatedSession } =
+            await import('./sessionBootstrapService');
+        useRuntimeStore.getState().setGameState({
+            currentLocation: 'wrld_test:456~region(jp)',
+            currentLocationStartedAt: '2026-09-25T13:48:10.000Z'
+        });
+
+        await bootstrapAuthenticatedSession(
+            { id: 'usr_self', displayName: 'Self' },
+            beginAuthAttempt()
+        );
+
+        await vi.waitFor(() => {
+            expect(
+                useInstanceJoinHistoryStore.getState().lastJoinedAtByLocation
+            ).toEqual({
+                'wrld_test:456~region(jp)': Date.parse(
+                    '2026-09-25T13:48:10.000Z'
+                )
+            });
+        });
+    });
+
     it('stops post-ready hydration after a newer auth action starts', async () => {
         let finishGroupRefresh: () => void = () => {
             throw new Error('Group refresh was not initialized.');

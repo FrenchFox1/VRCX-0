@@ -62,6 +62,7 @@ fn raw_completions_keep_high_frequency_tick_until_all_submissions_finish() {
     assert!(backend.needs_high_frequency_tick());
     assert!(!backend.handle_overlay_event(
         &surface_id,
+        OverlayHandle(1),
         EventInfo {
             tracked_device_index: tracked_device_index::INVALID,
             age: 0.01,
@@ -73,6 +74,7 @@ fn raw_completions_keep_high_frequency_tick_until_all_submissions_finish() {
 
     assert!(!backend.handle_overlay_event(
         &surface_id,
+        OverlayHandle(1),
         EventInfo {
             tracked_device_index: tracked_device_index::INVALID,
             age: 0.02,
@@ -84,11 +86,59 @@ fn raw_completions_keep_high_frequency_tick_until_all_submissions_finish() {
 }
 
 #[test]
+fn loaded_back_buffer_becomes_front_and_unblocks_the_next_upload() {
+    let started_at = Instant::now();
+    let frame = RgbaFrame::new(OverlaySize::new(1, 1), vec![255, 255, 255, 255]);
+    let surface_id = OverlaySurfaceId::new(MAIN_SURFACE_ID);
+    let mut backend = OpenVrOverlayBackend::new();
+    let mut surface = test_main_surface(frame, started_at);
+    surface.visible = false;
+    surface.back_loading = true;
+    backend.surfaces.insert(surface_id.clone(), surface);
+    let image_loaded = || EventInfo {
+        tracked_device_index: tracked_device_index::INVALID,
+        age: 0.0,
+        event: Event::ImageLoaded,
+    };
+
+    backend.handle_overlay_event(&surface_id, OverlayHandle(1), image_loaded());
+    let surface = &backend.surfaces[&surface_id];
+    assert_eq!(surface.front_handle(), OverlayHandle(1));
+    assert!(surface.back_loading);
+
+    backend.handle_overlay_event(&surface_id, OverlayHandle(2), image_loaded());
+    let surface = backend.surfaces.get_mut(&surface_id).expect("main surface");
+    assert_eq!(surface.front_handle(), OverlayHandle(2));
+    assert_eq!(surface.back_handle(), OverlayHandle(1));
+    assert!(!surface.back_loading);
+
+    surface.visible = true;
+    let (handle, _) = surface
+        .take_pending_frame_if_due(started_at + MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL)
+        .expect("release pending frame into the new back buffer");
+    assert_eq!(handle, OverlayHandle(1));
+}
+
+#[test]
+fn pending_frame_waits_while_back_buffer_is_loading() {
+    let started_at = Instant::now();
+    let frame = RgbaFrame::new(OverlaySize::new(1, 1), vec![255, 255, 255, 255]);
+    let mut surface = test_main_surface(frame, started_at);
+    surface.back_loading = true;
+
+    assert!(surface
+        .take_pending_frame_if_due(started_at + MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL)
+        .is_none());
+    assert!(surface.pending_frame.is_some());
+}
+
+#[test]
 fn overlay_quit_event_requests_runtime_shutdown() {
     let mut backend = OpenVrOverlayBackend::new();
 
     assert!(backend.handle_overlay_event(
         &OverlaySurfaceId::new(MAIN_SURFACE_ID),
+        OverlayHandle(1),
         EventInfo {
             tracked_device_index: tracked_device_index::INVALID,
             age: 0.0,
@@ -104,7 +154,9 @@ fn overlay_quit_event_requests_runtime_shutdown() {
 fn test_main_surface(frame: RgbaFrame, last_uploaded_at: Instant) -> OpenVrSurface {
     let fingerprint = frame_fingerprint(&frame);
     OpenVrSurface {
-        handle: OverlayHandle(1),
+        handles: [OverlayHandle(1), OverlayHandle(2)],
+        front: 0,
+        back_loading: false,
         config: OverlaySurfaceConfig {
             surface_id: OverlaySurfaceId::new(MAIN_SURFACE_ID),
             size: frame.size,

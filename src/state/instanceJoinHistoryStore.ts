@@ -4,6 +4,7 @@ import { instanceLocationKey } from '@/domain/presence/instancePresence';
 
 interface InstanceJoinHistoryStoreState {
     joinedAtByLocation: Record<string, number>;
+    lastJoinedAtByLocation: Record<string, number>;
     setInstanceJoinHistory: (
         entries: Iterable<[string, string | number]>
     ) => void;
@@ -11,10 +12,13 @@ interface InstanceJoinHistoryStoreState {
     resetInstanceJoinHistory: () => void;
 }
 
-const initialState: Pick<InstanceJoinHistoryStoreState, 'joinedAtByLocation'> =
-    {
-        joinedAtByLocation: {}
-    };
+const initialState: Pick<
+    InstanceJoinHistoryStoreState,
+    'joinedAtByLocation' | 'lastJoinedAtByLocation'
+> = {
+    joinedAtByLocation: {},
+    lastJoinedAtByLocation: {}
+};
 
 function epochMs(value: string | number): number {
     const parsed =
@@ -48,14 +52,21 @@ export const useInstanceJoinHistoryStore =
                     return state;
                 }
                 const existing = state.joinedAtByLocation[key];
-                if (existing && existing <= epoch) {
+                const lastJoinedAt = state.lastJoinedAtByLocation[key];
+                const keepsFirst = Boolean(existing && existing <= epoch);
+                const keepsLast = Boolean(
+                    lastJoinedAt && lastJoinedAt >= epoch
+                );
+                if (keepsFirst && keepsLast) {
                     return state;
                 }
                 return {
-                    joinedAtByLocation: {
-                        ...state.joinedAtByLocation,
-                        [key]: epoch
-                    }
+                    joinedAtByLocation: keepsFirst
+                        ? state.joinedAtByLocation
+                        : { ...state.joinedAtByLocation, [key]: epoch },
+                    lastJoinedAtByLocation: keepsLast
+                        ? state.lastJoinedAtByLocation
+                        : { ...state.lastJoinedAtByLocation, [key]: epoch }
                 };
             });
         },

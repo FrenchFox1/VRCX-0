@@ -15,16 +15,21 @@ type QueryOptions = {
 type RuntimeStoreState = {
     auth: {
         currentUserEndpoint: string;
-        currentUserSnapshot: null;
+        currentUserSnapshot: Record<string, unknown> | null;
     };
     gameState: {
         isGameRunning: boolean;
+        currentLocation: string;
+        currentLocationStartedAt: string | null;
     };
 };
 
 const mocks = vi.hoisted(() => ({
     getUserProfile: vi.fn(() => Promise.resolve({})),
     knownCreatorUser: null as Record<string, unknown> | null,
+    currentUserSnapshot: null as Record<string, unknown> | null,
+    currentLocation: '',
+    currentLocationStartedAt: null as string | null,
     queryData: null as Record<string, unknown> | null
 }));
 
@@ -131,10 +136,12 @@ vi.mock('@/state/runtimeStore', () => ({
         selector({
             auth: {
                 currentUserEndpoint: 'https://api.vrchat.cloud',
-                currentUserSnapshot: null
+                currentUserSnapshot: mocks.currentUserSnapshot
             },
             gameState: {
-                isGameRunning: false
+                isGameRunning: false,
+                currentLocation: mocks.currentLocation,
+                currentLocationStartedAt: mocks.currentLocationStartedAt
             }
         })
 }));
@@ -154,8 +161,37 @@ describe('InstanceUserTiles', () => {
         vi.clearAllMocks();
         mocks.knownCreatorUser = null;
         mocks.queryData = null;
+        mocks.currentUserSnapshot = null;
+        mocks.currentLocation = '';
+        mocks.currentLocationStartedAt = null;
         useFriendRosterStore.getState().resetRoster();
         useFriendLocationTimeStore.getState().reset();
+    });
+
+    it('shows the current user avatar and time in their current instance', () => {
+        const location = 'wrld_test:12345~region(jp)';
+        mocks.currentUserSnapshot = {
+            id: 'usr_self',
+            thumbnailImageUrl: 'https://images.example/self.png'
+        };
+        mocks.currentLocation = location;
+        mocks.currentLocationStartedAt = new Date(
+            Date.now() - 5 * 60_000
+        ).toISOString();
+
+        render(
+            <InstanceUserTiles
+                instance={{ users: [{ id: 'usr_self', displayName: 'Self' }] }}
+                instanceLocation={location}
+                showInstanceDuration
+            />
+        );
+
+        const tile = screen.getByTestId('user-detail-tile');
+        expect(tile.getAttribute('data-image-url')).toBe(
+            'https://images.example/self.png'
+        );
+        expect(tile.textContent).toBe('5m');
     });
 
     it('fetches an unresolved non-friend instance creator profile', async () => {

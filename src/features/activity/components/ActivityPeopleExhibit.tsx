@@ -207,7 +207,7 @@ export function ActivityPeopleExhibit({
                                             </span>
                                             <span
                                                 className={cn(
-                                                    'shrink-0 text-xs tabular-nums',
+                                                    'w-16 shrink-0 text-right text-xs tabular-nums',
                                                     order === 'days'
                                                         ? 'text-foreground font-medium'
                                                         : 'text-muted-foreground'

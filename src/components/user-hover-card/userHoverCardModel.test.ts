@@ -120,17 +120,31 @@ describe('buildUserHoverCardModel', () => {
 });
 
 describe('normalizeInstanceCounts', () => {
-    it('reads occupant and capacity counts', () => {
-        expect(normalizeInstanceCounts({ n_users: 18, capacity: 40 })).toEqual({
-            nUsers: 18,
-            capacity: 40
-        });
+    it('prefers userCount over n_users like the instance action bar', () => {
+        expect(
+            normalizeInstanceCounts({
+                userCount: 32,
+                n_users: 33,
+                capacity: 32
+            })
+        ).toEqual({ nUsers: 32, capacity: 32, full: false });
+    });
+
+    it('marks the instance full only when VRChat reports no capacity for you', () => {
+        expect(
+            normalizeInstanceCounts({
+                userCount: 32,
+                capacity: 32,
+                hasCapacityForYou: false
+            })
+        ).toEqual({ nUsers: 32, capacity: 32, full: true });
     });
 
     it('defaults capacity to 0 when only occupants are known', () => {
         expect(normalizeInstanceCounts({ n_users: 5 })).toEqual({
             nUsers: 5,
-            capacity: 0
+            capacity: 0,
+            full: false
         });
     });
 

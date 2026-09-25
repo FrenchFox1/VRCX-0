@@ -23,6 +23,7 @@ pub struct DatabaseUpgradePreflight {
     pub status: DatabaseUpgradePreflightStatus,
     pub from_version: i64,
     pub to_version: i64,
+    pub repair_pending: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stage: Option<DatabaseUpgradeStage>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -58,6 +59,7 @@ pub enum DatabaseUpgradeStage {
     Optimize,
     WriteVersion,
     Commit,
+    RepairData,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]

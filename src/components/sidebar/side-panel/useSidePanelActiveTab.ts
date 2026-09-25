@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 import { requestGroupInstancesRefresh } from '@/services/runtime-event-bridge/auxiliaryEventHandlers';
+import {
+    setSidebarActiveTab,
+    useSidebarTabStore
+} from '@/state/sidebarTabStore';
 
 export function useSidePanelActiveTab() {
-    const [activeTab, setActiveTab] = useState('friends');
+    const activeTab = useSidebarTabStore((state) => state.activeTab);
 
     useEffect(() => {
         if (activeTab === 'groups') {
@@ -13,6 +17,6 @@ export function useSidePanelActiveTab() {
 
     return {
         activeTab,
-        setActiveTab
+        setActiveTab: setSidebarActiveTab
     };
 }

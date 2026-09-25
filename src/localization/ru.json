@@ -887,12 +887,22 @@
         "self_menu": "Меню аккаунта",
         "filter_friends": "Фильтр друзей",
         "filter_groups": "Фильтр групп",
+        "filter_instances": "Фильтр инстансов",
         "filter_no_results": "Совпадений нет",
         "self_more_actions": "Ещё",
         "switch_account": "Сменить аккаунт",
         "favorite": "Избранные",
         "same_instance": "В одинаковых инстансах",
         "you_are_here": "Вы здесь",
+        "visited_minutes_ago_one": "Посещено {count} мин назад",
+        "visited_minutes_ago_few": "Посещено {count} мин назад",
+        "visited_minutes_ago_many": "Посещено {count} мин назад",
+        "visited_minutes_ago_other": "Посещено {count} мин назад",
+        "visited_hours_ago_one": "Посещено {count} ч назад",
+        "visited_hours_ago_few": "Посещено {count} ч назад",
+        "visited_hours_ago_many": "Посещено {count} ч назад",
+        "visited_hours_ago_other": "Посещено {count} ч назад",
+        "visited_at": "Последний вход: {time}",
         "online": "Онлайн",
         "active": "Активный",
         "offline": "Офлайн",
@@ -931,6 +941,7 @@
                 "display_hint": "Как вкладки выглядят на боковой панели.",
                 "layout_hint": "Перетаскивайте, чтобы изменить порядок. «Друзья» и «Группы» встроены — добавляйте группы избранного как собственные вкладки.",
                 "system_badge": "Встроенная",
+                "world_badge": "Мир",
                 "always_visible": "Всегда видима",
                 "move_up": "Вверх",
                 "move_down": "Вниз",
@@ -1158,6 +1169,8 @@
             "world_instances_few": "{count} инстанса",
             "world_instances_many": "{count} инстансов",
             "world_instances_other": "{count} инстанса",
+            "instance_population": "Игроков в инстансе: {users}",
+            "instance_population_capacity": "Игроков в инстансе: {users} / макс. {capacity}",
             "other_online": "Другие друзья в сети",
             "favorite": "Избранное",
             "same_instance": "Тот же пример",
@@ -4115,6 +4128,12 @@
                 "public_count": "Публичных {count}",
                 "private_count": "Приватных {count}",
                 "capacity_count": "Вместимость {count} ({max})",
+                "pin_to_sidebar": "Закрепить на боковой панели",
+                "pinned_to_sidebar": "Закреплено на боковой панели",
+                "pin_to_sidebar_failed": "Не удалось закрепить на боковой панели",
+                "unpin_from_sidebar": "Открепить от боковой панели",
+                "unpinned_from_sidebar": "Откреплено от боковой панели",
+                "unpin_from_sidebar_failed": "Не удалось открепить от боковой панели",
                 "instance_creator": "Создатель инстанса"
             },
             "info": {
@@ -5717,7 +5736,8 @@
                 "schema_migrations": "Применение обновлений структуры",
                 "optimize": "Оптимизация копии базы данных",
                 "write_version": "Запись версии базы данных",
-                "commit": "Переключение на обновлённую базу данных"
+                "commit": "Переключение на обновлённую базу данных",
+                "repair_data": "Восстановление пропусков в истории игрового журнала"
             },
             "upgrade_failed_title": "Ошибка обновления базы данных",
             "failure_record": "Журнал ошибки",
@@ -6073,12 +6093,6 @@
                 "failed_to_remove_favorite": "Не удалось удалить избранное",
                 "failed_to_add_local_favorite": "Не удалось добавить локальное избранное",
                 "failed_to_remove_local_favorite": "Не удалось удалить локальное избранное"
-            },
-            "modal": {
-                "remove_vrchat_favorite": "Удалить из избранного VRChat?"
-            },
-            "dynamic": {
-                "remove_value_from_vrchat_favorites": "Удалить {value} из избранного VRChat?"
             }
         },
         "friend_location_card": {
@@ -6183,6 +6197,14 @@
             }
         },
         "groups_sidebar": {
+            "toast": {
+                "failed_to_launch_instance": "Ошибка запуска",
+                "failed_to_send_self_invite": "Не удалось отправить самоприглашение"
+            }
+        },
+        "world_rooms_sidebar": {
+            "empty": "Сейчас нет активных инстансов",
+            "failed": "Не удалось загрузить инстансы",
             "toast": {
                 "failed_to_launch_instance": "Ошибка запуска",
                 "failed_to_send_self_invite": "Не удалось отправить самоприглашение"

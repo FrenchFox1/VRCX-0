@@ -1,7 +1,7 @@
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     mpsc::{self, Sender},
-    Arc,
+    Arc, Mutex,
 };
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
@@ -47,6 +47,7 @@ pub struct OpenXrOverlayBackend {
 struct Worker {
     commands: Sender<SessionCommand>,
     alive: Arc<AtomicBool>,
+    visible_surfaces: Arc<Mutex<Vec<OverlaySurfaceId>>>,
     join: Option<JoinHandle<()>>,
 }
 
@@ -100,6 +101,7 @@ impl OpenXrOverlayBackend {
             commands,
             alive,
             join,
+            ..
         } = worker;
         let _ = commands.send(SessionCommand::Stop);
         drop(commands);
@@ -152,10 +154,12 @@ impl OverlayBackend for OpenXrOverlayBackend {
         let (init_sender, init_receiver) = mpsc::channel();
         let alive = Arc::new(AtomicBool::new(true));
         let thread_alive = Arc::clone(&alive);
+        let visible_surfaces = Arc::new(Mutex::new(Vec::new()));
+        let thread_visible_surfaces = Arc::clone(&visible_surfaces);
         let join = thread::Builder::new()
             .name("vrcx-xr-overlay".to_string())
             .spawn(move || {
-                session::run(command_receiver, init_sender);
+                session::run(command_receiver, init_sender, &thread_visible_surfaces);
                 thread_alive.store(false, Ordering::Release);
             })
             .map_err(|error| {
@@ -169,6 +173,7 @@ impl OverlayBackend for OpenXrOverlayBackend {
                 self.worker = Some(Worker {
                     commands: command_sender,
                     alive,
+                    visible_surfaces,
                     join: Some(join),
                 });
                 Ok(())
@@ -221,6 +226,19 @@ impl OverlayBackend for OpenXrOverlayBackend {
 
     fn snapshot_devices(&mut self) -> Result<Vec<VrDeviceSnapshot>, String> {
         self.request(|reply| SessionCommand::SnapshotDevices { reply })
+    }
+
+    fn visible_surface_ids(&self) -> Vec<OverlaySurfaceId> {
+        self.worker()
+            .ok()
+            .and_then(|worker| {
+                worker
+                    .visible_surfaces
+                    .lock()
+                    .ok()
+                    .map(|visible| visible.clone())
+            })
+            .unwrap_or_default()
     }
 
     fn stop(&mut self) {

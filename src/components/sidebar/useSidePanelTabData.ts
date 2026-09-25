@@ -1,16 +1,16 @@
-import { useEffect, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildFavoriteCollectionFriendIdSet } from '@/components/sidebar/friends-sidebar/favoriteCollectionSidebarRows';
+import {
+    getVisibleSidebarTabs,
+    type FavoriteGroupItem
+} from '@/shared/utils/sidebarTabLayout';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { useSidebarTabStore } from '@/state/sidebarTabStore';
 
-import {
-    getVisibleSidebarTabs,
-    normalizeSidebarTabLayout,
-    type FavoriteGroupItem
-} from './side-panel/sidebarTabLayout';
 import type {
     SidePanelPreferences,
     SidePanelTabItem
@@ -19,7 +19,7 @@ import type {
 type SidePanelTabDataInput = {
     activeTab: string;
     prefs: SidePanelPreferences;
-    setActiveTab: Dispatch<SetStateAction<string>>;
+    setActiveTab: (activeTab: string) => void;
 };
 
 export function useSidePanelTabData({
@@ -73,10 +73,7 @@ export function useSidePanelTabData({
             ].filter((group) => group.key),
         [favoriteFriendGroups, localFriendFavoriteGroups]
     );
-    const tabLayout = useMemo(
-        () => normalizeSidebarTabLayout(prefs.sidebarTabLayout),
-        [prefs.sidebarTabLayout]
-    );
+    const tabLayout = useSidebarTabStore((state) => state.tabLayout);
     const visibleTabLayout = useMemo(
         () => getVisibleSidebarTabs(tabLayout),
         [tabLayout]
@@ -120,6 +117,16 @@ export function useSidePanelTabData({
                         railCountLabel: countLabel,
                         title,
                         icon: item.icon,
+                        layoutItem: item
+                    };
+                }
+                if (item.type === 'worldRooms') {
+                    return {
+                        value: item.id,
+                        label: item.name,
+                        railCountLabel: '',
+                        title: item.name,
+                        icon: '',
                         layoutItem: item
                     };
                 }

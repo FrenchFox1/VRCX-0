@@ -180,16 +180,16 @@ fn wrist_panel_reserves_up_to_two_title_lines_for_now_playing_above_the_footer()
     };
 
     let without = panel_bottom(&renderer.render(&model).unwrap());
-    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(40)));
+    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(400)));
     let one_line = panel_bottom(&renderer.render(&model).unwrap());
     model.now_playing = Some(now_playing(
         "【MV】YOASOBI「アイドル」/ Idol (Official Music Video) - TVアニメ『【推しの子】』OPテーマ 4K Remaster",
-        Some(40),
+        Some(400),
     ));
     let two_lines = panel_bottom(&renderer.render(&model).unwrap());
     model.now_playing = Some(now_playing(
         &"【MV】YOASOBI「アイドル」/ Idol (Official Music Video) - TVアニメ ".repeat(6),
-        Some(40),
+        Some(400),
     ));
     let truncated = panel_bottom(&renderer.render(&model).unwrap());
     model.now_playing = Some(now_playing("https://stream.example.test/live", None));
@@ -205,24 +205,24 @@ fn wrist_panel_reserves_up_to_two_title_lines_for_now_playing_above_the_footer()
 fn wrist_panel_redraws_only_when_the_now_playing_model_changes() {
     let mut renderer = SlintWristRenderer::new();
     let mut model = sample_wrist_model();
-    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(40)));
+    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(400)));
 
     let first = renderer.render(&model).unwrap();
     let second = renderer.render(&model).unwrap();
     assert_eq!(first, second);
     assert_eq!(renderer.render_count(), 1);
 
-    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(42)));
+    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(405)));
     let advanced = renderer.render(&model).unwrap();
     assert_ne!(first, advanced);
     assert_eq!(renderer.render_count(), 2);
 }
 
-fn now_playing(title: &str, progress_percent: Option<u8>) -> OverlayNowPlaying {
+fn now_playing(title: &str, progress_permille: Option<u16>) -> OverlayNowPlaying {
     OverlayNowPlaying {
         title: title.to_string(),
-        time_text: "3:32".to_string(),
-        progress_percent,
+        time_text: "1:25 / 3:32".to_string(),
+        progress_permille,
     }
 }
 fn overlay_size_presets() -> [OverlaySize; 3] {

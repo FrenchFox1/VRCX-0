@@ -1,4 +1,8 @@
 import {
+    firstFiniteLocationNumber,
+    firstNonNegativeLocationNumber
+} from '@/components/location/locationModel';
+import {
     readFriendRef,
     readFriendStatusSource,
     resolveSidebarStatusDotClassName,
@@ -115,13 +119,23 @@ export function normalizeInstanceCounts(json: unknown) {
     if (!isRecord(json)) {
         return null;
     }
-    const source = json;
-    const nUsers = Number(source.n_users ?? source.userCount);
-    if (!Number.isFinite(nUsers)) {
+    const nUsers = firstNonNegativeLocationNumber(
+        json.userCount,
+        json.occupants,
+        json.n_users
+    );
+    if (nUsers === null) {
         return null;
     }
-    const capacity = Number(source.capacity ?? source.recommendedCapacity);
-    return { nUsers, capacity: Number.isFinite(capacity) ? capacity : 0 };
+    return {
+        nUsers,
+        capacity:
+            firstFiniteLocationNumber(
+                json.capacity,
+                json.recommendedCapacity
+            ) ?? 0,
+        full: json.hasCapacityForYou === false
+    };
 }
 
 export function buildUserHoverCardModel({

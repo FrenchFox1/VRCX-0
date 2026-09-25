@@ -45,6 +45,7 @@ fn wrist_builder_keeps_renderer_model_free_of_application_entry_shape() {
             battery_percent: Some(18),
         }],
         now_playing: None,
+        live_now_playing: false,
         footer: WristRuntimeFooter {
             player_count: 8,
             instance_duration: "12m".to_string(),
@@ -100,6 +101,7 @@ fn wrist_builder_maps_feed_icon_types_to_matching_accents() {
         activity: snapshot,
         devices: Vec::new(),
         now_playing: None,
+        live_now_playing: false,
         footer: WristRuntimeFooter::default(),
         options: WristOverlayRenderOptions::default(),
         locale: "en".to_string(),
@@ -150,6 +152,7 @@ fn wrist_builder_preserves_actor_relation_for_renderer_highlighting() {
         activity: snapshot,
         devices: Vec::new(),
         now_playing: None,
+        live_now_playing: false,
         footer: WristRuntimeFooter::default(),
         options: WristOverlayRenderOptions::default(),
         locale: "en".to_string(),
@@ -182,6 +185,7 @@ fn wrist_builder_keeps_enough_feed_rows_for_expanded_compact_layout() {
         activity: snapshot,
         devices: Vec::new(),
         now_playing: None,
+        live_now_playing: false,
         footer: WristRuntimeFooter::default(),
         options: WristOverlayRenderOptions::default(),
         locale: "en".to_string(),
@@ -192,54 +196,60 @@ fn wrist_builder_keeps_enough_feed_rows_for_expanded_compact_layout() {
     assert_eq!(model.feed_rows.len(), 18);
 }
 
-#[test]
-fn wrist_builder_quantizes_now_playing_progress_and_shows_the_total_length() {
-    let started_at = "2026-06-01T12:00:00.000Z";
-    let started_at_ms = 1_780_315_200_000;
-    let now_playing = |captured_at_ms: i64, position_seconds: i64| {
-        build_wrist_surface_model(now_playing_input(
-            WristRuntimeNowPlaying {
-                title: "  Never Gonna Give You Up  ".to_string(),
-                length_seconds: 212,
-                position_seconds,
-                started_at: started_at.to_string(),
-            },
-            captured_at_ms,
-        ))
-        .now_playing
-        .expect("now playing model")
-    };
+const STARTED_AT: &str = "2026-06-01T12:00:00.000Z";
+const STARTED_AT_MS: i64 = 1_780_315_200_000;
 
+fn song_now_playing(captured_at_ms: i64, position_seconds: i64, live: bool) -> OverlayNowPlaying {
+    build_wrist_surface_model(now_playing_input(
+        WristRuntimeNowPlaying {
+            title: "  Never Gonna Give You Up  ".to_string(),
+            length_seconds: 212,
+            position_seconds,
+            started_at: STARTED_AT.to_string(),
+        },
+        captured_at_ms,
+        live,
+    ))
+    .now_playing
+    .expect("now playing model")
+}
+
+#[test]
+fn wrist_builder_ticks_now_playing_elapsed_every_second_while_visible() {
     assert_eq!(
-        now_playing(started_at_ms, 0),
+        song_now_playing(STARTED_AT_MS, 0, true),
         OverlayNowPlaying {
             title: "Never Gonna Give You Up".to_string(),
-            time_text: "3:32".to_string(),
-            progress_percent: Some(0),
+            time_text: "0:00 / 3:32".to_string(),
+            progress_permille: Some(0),
         }
     );
     assert_eq!(
-        now_playing(started_at_ms + 83_000, 0).progress_percent,
-        Some(38)
+        song_now_playing(STARTED_AT_MS + 83_000, 0, true),
+        OverlayNowPlaying {
+            title: "Never Gonna Give You Up".to_string(),
+            time_text: "1:23 / 3:32".to_string(),
+            progress_permille: Some(391),
+        }
     );
     assert_eq!(
-        now_playing(started_at_ms + 84_000, 0).progress_percent,
-        Some(38)
+        song_now_playing(STARTED_AT_MS + 84_000, 0, true).progress_permille,
+        Some(396)
     );
     assert_eq!(
-        now_playing(started_at_ms + 85_000, 0).progress_percent,
-        Some(40)
+        song_now_playing(STARTED_AT_MS + 5_000, 80, true).time_text,
+        "1:25 / 3:32"
     );
     assert_eq!(
-        now_playing(started_at_ms + 5_000, 80).progress_percent,
-        Some(40)
+        song_now_playing(STARTED_AT_MS + 900_000, 0, true),
+        OverlayNowPlaying {
+            title: "Never Gonna Give You Up".to_string(),
+            time_text: "3:32 / 3:32".to_string(),
+            progress_permille: Some(1000),
+        }
     );
     assert_eq!(
-        now_playing(started_at_ms + 900_000, 0).progress_percent,
-        Some(100)
-    );
-    assert_eq!(
-        now_playing(started_at_ms - 10_000, 0).progress_percent,
+        song_now_playing(STARTED_AT_MS - 10_000, 0, true).progress_permille,
         Some(0)
     );
     assert_eq!(
@@ -248,37 +258,63 @@ fn wrist_builder_quantizes_now_playing_progress_and_shows_the_total_length() {
                 title: "Long mix".to_string(),
                 length_seconds: 3_725,
                 position_seconds: 0,
-                started_at: started_at.to_string(),
+                started_at: STARTED_AT.to_string(),
             },
-            started_at_ms,
+            STARTED_AT_MS + 65_000,
+            true,
         ))
         .now_playing
         .expect("now playing model")
         .time_text,
-        "1:02:05"
+        "1:05 / 1:02:05"
     );
 }
 
 #[test]
-fn wrist_builder_shows_elapsed_minutes_without_a_bar_when_the_length_is_unknown() {
-    let started_at_ms = 1_780_315_200_000;
-    let model = build_wrist_surface_model(now_playing_input(
-        WristRuntimeNowPlaying {
-            title: "https://stream.example.test/live".to_string(),
-            length_seconds: 0,
-            position_seconds: 0,
-            started_at: "2026-06-01T12:00:00.000Z".to_string(),
-        },
-        started_at_ms + 12 * 60_000 + 30_000,
-    ));
+fn wrist_builder_holds_now_playing_to_the_minute_while_hidden() {
+    let first = song_now_playing(STARTED_AT_MS + 60_000, 0, false);
+    assert_eq!(
+        first,
+        OverlayNowPlaying {
+            title: "Never Gonna Give You Up".to_string(),
+            time_text: "1:00 / 3:32".to_string(),
+            progress_permille: Some(283),
+        }
+    );
+    assert_eq!(song_now_playing(STARTED_AT_MS + 119_000, 0, false), first);
+    assert_eq!(
+        song_now_playing(STARTED_AT_MS + 120_000, 0, false).time_text,
+        "2:00 / 3:32"
+    );
+}
+
+#[test]
+fn wrist_builder_shows_elapsed_time_without_a_bar_when_the_length_is_unknown() {
+    let stream = |live: bool| {
+        build_wrist_surface_model(now_playing_input(
+            WristRuntimeNowPlaying {
+                title: "https://stream.example.test/live".to_string(),
+                length_seconds: 0,
+                position_seconds: 0,
+                started_at: STARTED_AT.to_string(),
+            },
+            STARTED_AT_MS + 12 * 60_000 + 30_000,
+            live,
+        ))
+        .now_playing
+    };
 
     assert_eq!(
-        model.now_playing,
+        stream(true),
         Some(OverlayNowPlaying {
             title: "https://stream.example.test/live".to_string(),
-            time_text: "12m".to_string(),
-            progress_percent: None,
+            time_text: "12:30".to_string(),
+            progress_permille: None,
         })
+    );
+    assert_eq!(
+        stream(false).map(|now_playing| now_playing.time_text),
+        Some("12:00".to_string())
     );
 }
 
@@ -289,9 +325,10 @@ fn wrist_builder_drops_now_playing_without_a_title() {
             title: "   ".to_string(),
             length_seconds: 212,
             position_seconds: 0,
-            started_at: "2026-06-01T12:00:00.000Z".to_string(),
+            started_at: STARTED_AT.to_string(),
         },
-        1_780_315_200_000,
+        STARTED_AT_MS,
+        true,
     ));
 
     assert_eq!(model.now_playing, None);
@@ -300,11 +337,13 @@ fn wrist_builder_drops_now_playing_without_a_title() {
 fn now_playing_input(
     now_playing: WristRuntimeNowPlaying,
     captured_at_ms: i64,
+    live_now_playing: bool,
 ) -> WristOverlayFrameInput {
     WristOverlayFrameInput {
         activity: OverlayActivitySnapshot::default(),
         devices: Vec::new(),
         now_playing: Some(now_playing),
+        live_now_playing,
         footer: WristRuntimeFooter::default(),
         options: WristOverlayRenderOptions::default(),
         locale: "en".to_string(),

@@ -156,11 +156,12 @@ fn upgrades_every_supported_old_version_span_and_is_idempotent() {
             read_upstream_schema_version(&db).unwrap(),
             UPSTREAM_CLEANUP_SCHEMA_VERSION
         );
-        assert_eq!(
-            vrcx_0_persistence::config::get_string(&db, COPRESENCE_DURATION_REPAIR_KEY, "")
-                .unwrap(),
-            "1"
-        );
+        for (key, _) in ONE_TIME_DATA_REPAIRS {
+            assert_eq!(
+                vrcx_0_persistence::config::get_string(&db, key, "").unwrap(),
+                "1"
+            );
+        }
 
         let repeated = run_database_upgrade(&db);
         assert_eq!(repeated.status, DatabaseUpgradeRunStatus::Current);
@@ -348,6 +349,29 @@ fn refuses_to_modify_a_newer_schema() {
         VRCX0_SCHEMA_VERSION + 1
     );
     assert!(db.get_failed_upgrade().unwrap().is_none());
+}
+
+#[test]
+fn preflight_reports_pending_one_time_repairs_until_they_complete() {
+    let dir = TestDir::new("database-upgrade-repair-pending");
+    let db = dir.database();
+    set_version(&db, VRCX0_SCHEMA_VERSION);
+    set_migration_version(&db, target_migration_version());
+    database_maintenance_run(&db, DatabaseMaintenanceTask::InitGlobalTables).unwrap();
+
+    let before = database_upgrade_preflight(&db).unwrap();
+    assert_eq!(before.status, DatabaseUpgradePreflightStatus::Current);
+    assert!(before.repair_pending);
+
+    let mut stages = Vec::new();
+    let result = run_database_upgrade_with_progress(&db, |progress| stages.push(progress.stage));
+    assert_eq!(result.status, DatabaseUpgradeRunStatus::Current);
+    assert!(stages.contains(&DatabaseUpgradeStage::RepairData));
+
+    assert!(!database_upgrade_preflight(&db).unwrap().repair_pending);
+    let mut rerun_stages = Vec::new();
+    run_database_upgrade_with_progress(&db, |progress| rerun_stages.push(progress.stage));
+    assert!(!rerun_stages.contains(&DatabaseUpgradeStage::RepairData));
 }
 
 #[test]

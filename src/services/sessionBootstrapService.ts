@@ -41,7 +41,16 @@ async function loadInstanceJoinHistory(
     }
 
     ensureCurrentAuthAttempt(attempt);
-    useInstanceJoinHistoryStore.getState().setInstanceJoinHistory(history);
+    const joinHistory = useInstanceJoinHistoryStore.getState();
+    joinHistory.setInstanceJoinHistory(history);
+    const { currentLocation, currentLocationStartedAt } =
+        useRuntimeStore.getState().gameState;
+    if (currentLocationStartedAt) {
+        joinHistory.recordInstanceJoin(
+            currentLocation,
+            currentLocationStartedAt
+        );
+    }
 }
 
 async function hydratePostReadySession(

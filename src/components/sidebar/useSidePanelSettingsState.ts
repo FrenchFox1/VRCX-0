@@ -2,8 +2,8 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
 import configRepository from '@/repositories/configRepository';
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
+import type { FavoriteGroupItem } from '@/shared/utils/sidebarTabLayout';
 
-import type { FavoriteGroupItem } from './side-panel/sidebarTabLayout';
 import type {
     SidePanelArrayPreferenceKey,
     SidePanelBooleanPreferenceKey,

@@ -820,18 +820,29 @@ export function useFriendsLocationsPageDerivedState({
             viewMode
         ]
     );
-    const worldGroups = useMemo<FriendsLocationsWorldGroup[]>(
-        () =>
-            viewMode === 'worlds'
-                ? buildFriendWorldGroups(
-                      currentUserRecord
-                          ? [currentUserRecord, ...worldViewFriends]
-                          : worldViewFriends,
-                      currentInviteLocation
-                  )
-                : [],
-        [currentInviteLocation, currentUserRecord, viewMode, worldViewFriends]
-    );
+    const worldGroups = useMemo<FriendsLocationsWorldGroup[]>(() => {
+        if (viewMode !== 'worlds') {
+            return [];
+        }
+        const groups = buildFriendWorldGroups(
+            worldViewFriends,
+            currentInviteLocation
+        );
+        if (!currentUserRecord) {
+            return groups;
+        }
+        return groups.map((group) => ({
+            ...group,
+            instances: group.instances.map((instance) =>
+                instance.isCurrent
+                    ? {
+                          ...instance,
+                          friends: [currentUserRecord, ...instance.friends]
+                      }
+                    : instance
+            )
+        }));
+    }, [currentInviteLocation, currentUserRecord, viewMode, worldViewFriends]);
     const privateWorldFriends = useMemo<FriendRecord[]>(
         () =>
             partitionFriendsByPrivateLocation(worldViewFriends).privateLocation,

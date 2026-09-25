@@ -282,7 +282,7 @@ export function SidePanelSelfHeader() {
                                                         'focus-visible:ring-ring -mx-1 h-4 min-w-0 cursor-text truncate rounded-md px-1 text-left text-xs leading-4 outline-none focus-visible:ring-2',
                                                         statusDescription
                                                             ? 'text-content-secondary'
-                                                            : 'text-content-tertiary'
+                                                            : 'text-content-disabled hover:text-content-tertiary'
                                                     )}
                                                     onClick={() => {
                                                         setDescriptionDraft(
@@ -310,7 +310,7 @@ export function SidePanelSelfHeader() {
                                 )}
                                 {showLocationSubline ? (
                                     <div
-                                        className="text-content-tertiary flex h-4 min-w-0 items-center text-xs leading-4"
+                                        className="text-content-secondary flex h-4 min-w-0 items-center text-xs leading-4"
                                         onContextMenu={(event) =>
                                             event.stopPropagation()
                                         }
@@ -321,6 +321,7 @@ export function SidePanelSelfHeader() {
                                             hint={metadataHint}
                                             metadata={locationMetadata}
                                             link
+                                            showGroupLink
                                             showInstanceIdInLocation={
                                                 showInstanceIdInLocation
                                             }

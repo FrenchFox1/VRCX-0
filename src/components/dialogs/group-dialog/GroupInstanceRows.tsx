@@ -2,6 +2,7 @@ import { UsersRoundIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
+import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
 import { LocationWorld } from '@/components/LocationWorld';
 import type { GroupDialogInstanceRow } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
@@ -248,7 +249,7 @@ export function GroupInstanceRows({
                         className="bg-muted/10 hover:bg-muted/25 rounded-md border px-2.5 py-2 text-sm transition-colors"
                     >
                         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="min-w-0 flex-1 overflow-hidden pr-1">
+                            <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden pr-1">
                                 <LocationWorld
                                     className="max-w-full min-w-0 text-sm"
                                     locationObject={normalizedInstance}
@@ -274,6 +275,10 @@ export function GroupInstanceRows({
                                     showGroupName={false}
                                     showPlayerSummary={false}
                                     hint={worldName}
+                                />
+                                <InstanceVisitedBadge
+                                    location={location}
+                                    className="shrink-0"
                                 />
                             </div>
                             <InstanceActionBar

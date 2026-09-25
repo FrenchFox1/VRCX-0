@@ -23,11 +23,58 @@ Windows · macOS · Linux
 
 </div>
 
-VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers, with a Rust backend (Tauri + React) and significantly improved performance: years of accumulated history stay smooth, and both memory usage and install size are far below the original.
+A desktop companion for VRChat: see where your friends are, keep a history of the people you've met and the worlds you've visited, manage your favorites, and more.
 
-On first launch it automatically imports your existing VRCX data and settings. The original data is never modified — you can switch back at any time.
+VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt in Rust, it's faster and lighter, and years of history stay smooth.
 
-VRCX is a mature, stable release; VRCX-0 is where new features are being built.
+## Highlights
+
+- **Years of history stay smooth** — data that makes VRCX sluggish runs
+  smoothly in VRCX-0, even on low-end PCs and home servers
+- **About 50%–70% less memory than VRCX**
+- **Background mode needs just tens of MB of memory**, with all core features
+  still running
+- **Smaller than a single avatar bundle** — just over 10 MB to download, just
+  over 30 MB installed; less than a tenth the size of VRCX
+- **Seamless migration** — imports your VRCX database and settings
+  automatically; VRCX's own database is never modified, so you can switch back
+  at any time
+
+### Only in VRCX-0
+
+- **Social AI** — insights into your VRChat social life: who you play with
+  most, who you're drifting away from, when friends are most likely online;
+  just connect the AI service you already use
+- **Sidebar Mode** — keep an eye on friends from a narrow sidebar; docks to the
+  screen edge and auto-hides on Windows and macOS
+- **Keyboard shortcuts** — common actions without the mouse; global hotkey on
+  Windows
+- **Lock** — lock the interface with a code to protect your privacy
+- **Sharing** — share links for world collections, worlds, avatars, and
+  instances
+
+### For advanced users
+
+- **MCP server** — let external AI tools use your local social data directly
+- **Integration API** — real-time in-game data for third-party apps
+- **Headless mode** — run without a UI; see `crates/headless`
+
+### Compared with VRCX
+
+| Feature               | VRCX                                                                   | VRCX-0 (+ = added)                                                            |
+| --------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Social automation** | Switch status when alone or with others; auto-reply to invite requests | + Schedules, multiple context rules with priorities, previous status restored |
+| **Notifications**     | Desktop, TTS, XSOverlay, OVR Toolkit, wrist overlay                    | + Discord webhooks, Do Not Disturb; per-event filtering on every channel      |
+| **VR overlay**        | Browser-rendered (100 MB+); OpenVR                                     | + Native rendering (tens of MB); OpenXR (**tested with WiVRn**)               |
+| Screenshots           | View and search metadata                                               | + Grid view, batch management, ZIP export                                     |
+| Avatar details        | Performance rank and file size                                         | + Full performance stats against each platform's limits                       |
+| Backup                | VRChat registry settings                                               | + Scheduled database backups, one-click restore                               |
+| Friend locations      | Group friends by instance                                              | + Worlds view                                                                 |
+| Group management      | Set visibility one group at a time                                     | + Batch leave and batch visibility; group roles in the player list            |
+| Themes                | Built-in themes, custom CSS file                                       | + Community themes, background image, in-app CSS editor, accent color         |
+| Game log              | All accounts mixed together                                            | Stored per account                                                            |
+
+Everything else VRCX does, VRCX-0 does too.
 
 ## Install
 
@@ -40,70 +87,20 @@ Grab the file for your platform from the [latest release](https://github.com/Map
 | macOS (Intel)         | `VRCX-0_<version>_macos_x86_64.dmg`         |
 | Linux                 | `.AppImage`, `.deb`, or `.rpm`              |
 
-You only need to do this once — VRCX-0 updates itself from then on.
+On macOS, if the first launch is blocked, open **System Settings → Privacy &
+Security** and click **Open Anyway**.
 
-On Linux, **Settings → System → Hardware acceleration (experimental)** is off
-by default and applies after a restart. After enabling, confirm that the interface
-works within 30 seconds of startup; otherwise acceleration is turned off and
-VRCX-0 restarts. If the application crashes or is forcibly closed before
-confirmation, the next launch also starts with acceleration off. Setting
-`WEBKIT_DISABLE_DMABUF_RENDERER` yourself hides the option and leaves the
-rendering mode entirely to your environment.
+### Linux
 
-## Highlights
+Hardware acceleration for the app interface is off by default. Turn it on under
+**Settings → System → Hardware acceleration (experimental)**; if the interface
+doesn't display properly, VRCX-0 turns it back off automatically. Setting
+`WEBKIT_DISABLE_DMABUF_RENDERER` yourself hides this option.
 
-- **Years of history won't slow it down** — data that makes VRCX visibly
-  sluggish stays smooth in VRCX-0; it runs fine even on a potato PC or a home
-  server
-- **About 50%–70% less memory than VRCX** in normal use
-- **Background mode** brings memory down to just tens of MB while all core
-  features keep running
-- **Smaller than a single avatar bundle** — just over 10 MB to download, just
-  over 30 MB on disk; over 10× smaller than VRCX
-- **Zero-friction migration** — your VRCX database and settings import
-  automatically; the original data is never modified
+## Feedback
 
-### Only in VRCX-0
-
-- **Social AI** — make sense of your VRChat life: ask who you play with most,
-  who you're drifting away from, or the best time to catch friends online.
-  Connect your own AI service to get started
-- **Sidebar Mode** — keep an eye on your friends from a narrow sidebar while
-  you do something else, instead of switching back to a full window; on Windows
-  and macOS it can dock to a screen edge and auto-hide
-- **Keyboard shortcuts and global hotkey** — switch pages, open Settings, and
-  move between tabs without touching the mouse; on Windows, a global hotkey
-  shows or hides VRCX-0 from inside any application
-- **Shareable world collections** — turn your favorite worlds into a shareable
-  page others can browse, open, or import; also supports share links for
-  individual worlds and avatars
-- **MCP server** — let external AI tools access your local social data directly,
-  far more flexible than Social AI; recommended for advanced users
-- **Integration API** — real-time room data for third-party apps while
-  in-game, expanding over time
-- **Headless mode** — for advanced setups; see `crates/headless`
-
-### Compared with VRCX
-
-| Feature               | VRCX                                                                                                                              | VRCX-0 (+ = added)                                                                                                                                                                                   |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Social automation** | Switch status and status message when alone or with company (optionally limited to instance types); auto-reply to invite requests | + Schedule rules (time of day, weekdays), multiple context rules (friends present, player count, instance type, favorite worlds, **with priorities**), **previous status restored when a rule ends** |
-| **Notifications**     | Desktop, TTS, XSOverlay, OVR Toolkit, wrist overlay (channels support different events; only the overlay filters by event)        | + **Discord-compatible webhooks**, Do Not Disturb; every channel supports the same events, each filtered independently                                                                               |
-| **VR overlay**        | Wrist and HMD, browser-rendered (100 MB+ of memory); OpenVR                                                                       | + OpenXR (**tested with WiVRn**); native rendering (tens of MB)                                                                                                                                      |
-| Screenshots           | View and search metadata                                                                                                          | + Grid view, multi-select, batch delete, ZIP export                                                                                                                                                  |
-| Avatar details        | Performance rank and file size                                                                                                    | + Triangles, texture memory, materials, bones, PhysBones, particles, colliders (against each platform's limits)                                                                                      |
-| Backup                | VRChat registry settings                                                                                                          | + Scheduled database backups, multiple versions, one-click restore                                                                                                                                   |
-| Group management      | Reorder in your profile; set visibility one group at a time                                                                       | + My Groups page (batch leave, batch visibility)                                                                                                                                                     |
-| Themes                | Built-in themes, custom CSS (from a file on disk)                                                                                 | + Community theme catalog, background image, in-app CSS editor, accent color                                                                                                                         |
-| Game log              | All accounts mixed together                                                                                                       | Stored per account                                                                                                                                                                                   |
-
-Everything else VRCX does, VRCX-0 does too.
-
-## License
-
-VRCX-0 is licensed under the GNU General Public License v3.0 (GPLv3).
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_large)
+- Questions and chat: [Discord](https://discord.gg/fehKP3SVPN)
+- Bug reports and feature requests: [GitHub Issues](https://github.com/Map1en/VRCX-0/issues)
 
 ## Building from source
 
@@ -130,3 +127,12 @@ Build for release (skip code signing and installer):
 ```bash
 npm run tauri:build -- --no-sign --no-bundle
 ```
+
+## License
+
+VRCX-0 is licensed under the GNU General Public License v3.0 (GPLv3).
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FMap1en%2FVRCX-0?ref=badge_large)
+
+VRCX-0 is not endorsed by VRChat Inc. VRChat and all associated properties are
+trademarks or registered trademarks of VRChat Inc.

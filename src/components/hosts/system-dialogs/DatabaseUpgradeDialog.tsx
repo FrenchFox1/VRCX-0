@@ -48,7 +48,8 @@ const DATABASE_UPGRADE_STAGE_KEYS: Record<DatabaseUpgradeStage, string> = {
     schemaMigrations: 'message.database.upgrade_stage.schema_migrations',
     optimize: 'message.database.upgrade_stage.optimize',
     writeVersion: 'message.database.upgrade_stage.write_version',
-    commit: 'message.database.upgrade_stage.commit'
+    commit: 'message.database.upgrade_stage.commit',
+    repairData: 'message.database.upgrade_stage.repair_data'
 };
 
 function getDatabaseUpgradeTitleKey(phase: string): string {

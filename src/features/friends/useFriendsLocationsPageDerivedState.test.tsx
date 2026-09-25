@@ -525,6 +525,28 @@ describe('useFriendsLocationsPageDerivedState worlds view', () => {
         expect(result.current.worldGroups).toEqual([]);
     });
 
+    it('leaves out the current user when no friend shares their instance', () => {
+        const input = pageInput([worldFriend('usr_a', 'wrld_other:2')]);
+        input.viewMode = 'worlds';
+        input.currentUserSnapshot = {
+            id: 'usr_self',
+            displayName: 'Me',
+            location: 'wrld_local:1'
+        };
+        const { result } = renderHook(() =>
+            useFriendsLocationsPageDerivedState(input)
+        );
+
+        expect(
+            result.current.worldGroups.map((group) => group.worldId)
+        ).toEqual(['wrld_other']);
+        expect(
+            result.current.worldGroups[0]?.instances[0]?.friends.map(
+                (friend) => friend.id
+            )
+        ).toEqual(['usr_a']);
+    });
+
     it('keeps the current user inside their own instance', () => {
         const input = pageInput([worldFriend('usr_a', 'wrld_local:1')]);
         input.viewMode = 'worlds';

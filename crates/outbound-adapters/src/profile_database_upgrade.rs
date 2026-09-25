@@ -73,6 +73,17 @@ impl DatabaseUpgradeStore for LocalDatabaseUpgradeStore {
 
 const UPSTREAM_CLEANUP_SCHEMA_VERSION: i64 = 16;
 const COPRESENCE_DURATION_REPAIR_KEY: &str = "copresenceDurationRepairV1Done";
+const EMPTY_LEAVE_LOCATION_REPAIR_KEY: &str = "emptyLeaveLocationRepairV1Done";
+const ONE_TIME_DATA_REPAIRS: &[(&str, DatabaseMaintenanceTask)] = &[
+    (
+        EMPTY_LEAVE_LOCATION_REPAIR_KEY,
+        DatabaseMaintenanceTask::RepairEmptyLeaveLocations,
+    ),
+    (
+        COPRESENCE_DURATION_REPAIR_KEY,
+        DatabaseMaintenanceTask::RepairZeroCopresenceDurations,
+    ),
+];
 const LEGACY_DATA_CLEANUP_TASKS: &[DatabaseMaintenanceTask] = &[
     DatabaseMaintenanceTask::CleanLegendFromFriendLog,
     DatabaseMaintenanceTask::FixGameLogTraveling,
@@ -136,6 +147,7 @@ pub fn database_upgrade_preflight(db: &DatabaseService) -> Result<DatabaseUpgrad
             status: DatabaseUpgradePreflightStatus::Blocked,
             from_version: failed_upgrade.from_version,
             to_version: failed_upgrade.to_version,
+            repair_pending: false,
             stage: None,
             result: None,
             failed_upgrade: Some(failed_upgrade),
@@ -174,6 +186,7 @@ pub fn database_upgrade_preflight(db: &DatabaseService) -> Result<DatabaseUpgrad
         status,
         from_version,
         to_version,
+        repair_pending: !pending_data_repairs(db)?.is_empty(),
         stage: None,
         result: None,
         failed_upgrade: None,
@@ -206,7 +219,7 @@ pub(super) fn run_database_upgrade_with_progress(
                 result.status,
                 DatabaseUpgradeRunStatus::Current | DatabaseUpgradeRunStatus::Upgraded
             ) {
-                result.repair_warning = run_copresence_duration_repair_once(db).err();
+                result.repair_warning = run_data_repairs_once(db, &mut on_progress);
             }
             result
         }
@@ -637,17 +650,41 @@ pub(super) fn log_database_upgrade_failure(
     );
 }
 
-fn run_copresence_duration_repair_once(db: &DatabaseService) -> Result<(), String> {
-    let done = vrcx_0_persistence::config::get_string(db, COPRESENCE_DURATION_REPAIR_KEY, "")
-        .map_err(|error| error.to_string())?;
-    if done == "1" {
-        return Ok(());
+fn pending_data_repairs(
+    db: &DatabaseService,
+) -> Result<Vec<(&'static str, DatabaseMaintenanceTask)>, vrcx_0_persistence::Error> {
+    let mut pending = Vec::new();
+    for &(key, task) in ONE_TIME_DATA_REPAIRS {
+        if vrcx_0_persistence::config::get_string(db, key, "")? != "1" {
+            pending.push((key, task));
+        }
     }
+    Ok(pending)
+}
 
-    run_task(db, DatabaseMaintenanceTask::RepairZeroCopresenceDurations)
-        .map_err(|error| error.to_string())?;
-    vrcx_0_persistence::config::set_string(db, COPRESENCE_DURATION_REPAIR_KEY, "1")
-        .map_err(|error| error.to_string())
+fn run_data_repairs_once(
+    db: &DatabaseService,
+    on_progress: &mut impl FnMut(DatabaseUpgradeProgress),
+) -> Option<String> {
+    let pending = match pending_data_repairs(db) {
+        Ok(pending) => pending,
+        Err(error) => return Some(error.to_string()),
+    };
+    if pending.is_empty() {
+        return None;
+    }
+    on_progress(DatabaseUpgradeProgress::indeterminate(
+        DatabaseUpgradeStage::RepairData,
+    ));
+    pending
+        .into_iter()
+        .filter_map(|(key, task)| {
+            database_maintenance_run(db, task)
+                .and_then(|()| vrcx_0_persistence::config::set_string(db, key, "1"))
+                .err()
+                .map(|error| error.to_string())
+        })
+        .reduce(|first, next| format!("{first}; {next}"))
 }
 
 #[cfg(test)]

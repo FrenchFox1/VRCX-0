@@ -315,7 +315,14 @@ export function useFavoriteRemoteDetails({
 
     useEffect(() => {
         if (!enabled || !hasIds) {
-            setState(buildInitialState(requestKey, 'ready'));
+            setState(
+                buildInitialState(
+                    requestKey,
+                    hasIds ? 'idle' : 'ready',
+                    '',
+                    retainedRef.current
+                )
+            );
             return;
         }
 
@@ -390,10 +397,13 @@ export function useFavoriteRemoteDetails({
     if (state.requestKey === requestKey) {
         return state;
     }
+    const pendingStatus = !hasIds ? 'ready' : enabled ? 'running' : 'idle';
     return buildInitialState(
         requestKey,
-        enabled && hasIds ? 'running' : 'ready',
-        enabled && hasIds ? favoriteRemoteDetailsLoadingDetail(type) : '',
+        pendingStatus,
+        pendingStatus === 'running'
+            ? favoriteRemoteDetailsLoadingDetail(type)
+            : '',
         retainedRef.current
     );
 }

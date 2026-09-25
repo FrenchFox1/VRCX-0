@@ -89,6 +89,7 @@ pub struct WristOverlayFrameInput {
     pub activity: OverlayActivitySnapshot,
     pub devices: Vec<VrDeviceSnapshot>,
     pub now_playing: Option<WristRuntimeNowPlaying>,
+    pub live_now_playing: bool,
     pub footer: WristRuntimeFooter,
     pub options: WristOverlayRenderOptions,
     pub locale: String,
@@ -117,11 +118,12 @@ pub struct WristRuntimeNowPlaying {
     pub started_at: String,
 }
 
-const NOW_PLAYING_PROGRESS_STEP_PERCENT: u8 = 2;
+const HIDDEN_NOW_PLAYING_STEP_SECONDS: i64 = 60;
 
 fn now_playing_model(
     input: &WristRuntimeNowPlaying,
     captured_at_ms: i64,
+    live: bool,
 ) -> Option<OverlayNowPlaying> {
     let title = input.title.trim();
     if title.is_empty() {
@@ -134,20 +136,28 @@ fn now_playing_model(
         + started_at_ms.map_or(0, |started_at_ms| {
             (captured_at_ms - started_at_ms).max(0) / 1000
         });
-    let (time_text, progress_percent) = if input.length_seconds > 0 {
-        let ratio = elapsed_seconds.min(input.length_seconds) as f64 / input.length_seconds as f64;
-        let percent = (ratio * 100.0).floor() as u8;
+    let elapsed_seconds = if live {
+        elapsed_seconds
+    } else {
+        elapsed_seconds - elapsed_seconds % HIDDEN_NOW_PLAYING_STEP_SECONDS
+    };
+    let (time_text, progress_permille) = if input.length_seconds > 0 {
+        let elapsed_seconds = elapsed_seconds.min(input.length_seconds);
         (
-            clock_duration(input.length_seconds),
-            Some(percent - percent % NOW_PLAYING_PROGRESS_STEP_PERCENT),
+            format!(
+                "{} / {}",
+                clock_duration(elapsed_seconds),
+                clock_duration(input.length_seconds)
+            ),
+            Some((elapsed_seconds * 1000 / input.length_seconds) as u16),
         )
     } else {
-        (compact_duration(elapsed_seconds * 1000), None)
+        (clock_duration(elapsed_seconds), None)
     };
     Some(OverlayNowPlaying {
         title: title.to_string(),
         time_text,
-        progress_percent,
+        progress_permille,
     })
 }
 
@@ -208,10 +218,9 @@ pub fn build_wrist_surface_model(input: WristOverlayFrameInput) -> WristSurfaceM
             Vec::new()
         },
         feed_rows,
-        now_playing: input
-            .now_playing
-            .as_ref()
-            .and_then(|now_playing| now_playing_model(now_playing, input.captured_at_ms)),
+        now_playing: input.now_playing.as_ref().and_then(|now_playing| {
+            now_playing_model(now_playing, input.captured_at_ms, input.live_now_playing)
+        }),
         footer: OverlayFooter {
             left: localizer.text(&OverlayActivityText::message(
                 OverlayMessage::overlay_footer_players(input.footer.player_count),

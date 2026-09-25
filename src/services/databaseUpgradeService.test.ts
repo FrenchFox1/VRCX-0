@@ -118,7 +118,8 @@ function preflight(
     return {
         status,
         fromVersion,
-        toVersion
+        toVersion,
+        repairPending: false
     };
 }
 
@@ -228,6 +229,35 @@ describe('databaseUpgradeService', () => {
             fromVersion: 18,
             toVersion: 18
         });
+        expect(useSessionStore.getState().databaseReady).toBe(true);
+    });
+
+    it('shows progress when a current database still has a one-time repair to run', async () => {
+        mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce({
+            ...preflight('current'),
+            repairPending: true
+        });
+        let finishRepair: ((value: unknown) => void) | undefined;
+        mocks.appDatabaseUpgradeRun.mockReturnValueOnce(
+            new Promise((resolve) => {
+                finishRepair = resolve;
+            })
+        );
+
+        const upgrade = initializeDatabaseUpgradeFlow();
+        await vi.waitFor(() => {
+            expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
+                open: true,
+                phase: 'running'
+            });
+        });
+        finishRepair?.({
+            status: 'current',
+            fromVersion: 18,
+            toVersion: 18
+        });
+
+        await expect(upgrade).resolves.toBe(true);
         expect(useSessionStore.getState().databaseReady).toBe(true);
     });
 

@@ -108,6 +108,9 @@ pub trait VrOverlayServiceControl {
     fn active_backend(&self) -> Option<&'static str> {
         None
     }
+    fn is_surface_visible(&self, _surface_id: &OverlaySurfaceId) -> bool {
+        false
+    }
     fn should_stop_when_ineligible(&self) -> bool {
         self.is_running()
     }
@@ -560,6 +563,12 @@ impl VrOverlayServiceControl for HostVrOverlayService {
         } else {
             None
         }
+    }
+
+    fn is_surface_visible(&self, surface_id: &OverlaySurfaceId) -> bool {
+        self.actor
+            .as_ref()
+            .is_some_and(|actor| actor.is_surface_visible(surface_id))
     }
 
     fn stop(&mut self) {

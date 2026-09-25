@@ -830,12 +830,16 @@
         "self_menu": "계정 메뉴",
         "filter_friends": "친구 필터",
         "filter_groups": "그룹 필터",
+        "filter_instances": "인스턴스 필터",
         "filter_no_results": "일치하는 항목 없음",
         "self_more_actions": "더 보기",
         "switch_account": "계정 전환",
         "favorite": "친한 친구",
         "same_instance": "동일한 인스턴스",
         "you_are_here": "현재 위치",
+        "visited_minutes_ago_other": "{count}분 전 방문",
+        "visited_hours_ago_other": "{count}시간 전 방문",
+        "visited_at": "마지막 입장: {time}",
         "online": "온라인",
         "active": "활성",
         "offline": "오프라인",
@@ -878,6 +882,7 @@
                 "tab_layout": "탭",
                 "layout_hint": "드래그해서 순서를 바꿀 수 있어요. 친구와 그룹은 기본 탭이며, 즐겨찾기 그룹을 나만의 탭으로 추가할 수 있어요.",
                 "system_badge": "기본",
+                "world_badge": "월드",
                 "always_visible": "항상 표시",
                 "move_up": "위로 이동",
                 "move_down": "아래로 이동",
@@ -1091,12 +1096,14 @@
         },
         "friends_locations": {
             "online": "온라인",
-            "world_friends_one": "{count}명",
-            "world_friends_other": "{count}명",
+            "world_friends_one": "친구 {count}명",
+            "world_friends_other": "친구 {count}명",
             "view_people": "친구 보기",
             "view_worlds": "월드 보기",
             "world_instances_one": "인스턴스 {count}개",
             "world_instances_other": "인스턴스 {count}개",
+            "instance_population": "인스턴스 인원: {users}",
+            "instance_population_capacity": "인스턴스 인원: {users} / 최대 {capacity}",
             "other_online": "그 외 온라인 친구",
             "favorite": "즐겨찾기",
             "same_instance": "동일한 인스턴스",
@@ -4049,6 +4056,12 @@
                 "public_count": "공개 {count}",
                 "private_count": "비공개 {count}",
                 "capacity_count": "인원 제한 {count} ({max})",
+                "pin_to_sidebar": "사이드바에 고정",
+                "pinned_to_sidebar": "사이드바에 고정했습니다.",
+                "pin_to_sidebar_failed": "사이드바에 고정하지 못했습니다.",
+                "unpin_from_sidebar": "사이드바 고정 해제",
+                "unpinned_from_sidebar": "사이드바 고정을 해제했습니다.",
+                "unpin_from_sidebar_failed": "사이드바 고정을 해제하지 못했습니다.",
                 "instance_creator": "인스턴스 생성자"
             },
             "info": {
@@ -5696,7 +5709,8 @@
                 "schema_migrations": "데이터베이스 구조 업데이트를 적용하는 중",
                 "optimize": "데이터베이스 복사본을 최적화하는 중",
                 "write_version": "데이터베이스 버전을 기록하는 중",
-                "commit": "업그레이드된 데이터베이스로 전환하는 중"
+                "commit": "업그레이드된 데이터베이스로 전환하는 중",
+                "repair_data": "게임 로그 기록의 누락된 항목을 복구하는 중"
             },
             "upgrade_failed_title": "데이터베이스 업그레이드 실패",
             "failure_record": "실패 기록",
@@ -6056,12 +6070,6 @@
                 "failed_to_remove_favorite": "즐겨찾기를 삭제하지 못했습니다.",
                 "failed_to_add_local_favorite": "로컬 즐겨찾기를 추가하지 못했습니다.",
                 "failed_to_remove_local_favorite": "로컬 즐겨찾기를 삭제하지 못했습니다."
-            },
-            "modal": {
-                "remove_vrchat_favorite": "VRChat 즐겨찾기를 삭제하시겠습니까?"
-            },
-            "dynamic": {
-                "remove_value_from_vrchat_favorites": "VRChat 즐겨찾기에서 {value}을(를) 제거하시겠습니까?"
             }
         },
         "friend_location_card": {
@@ -6166,6 +6174,14 @@
             }
         },
         "groups_sidebar": {
+            "toast": {
+                "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다.",
+                "failed_to_send_self_invite": "본인 초대를 보내지 못했습니다."
+            }
+        },
+        "world_rooms_sidebar": {
+            "empty": "현재 활성 인스턴스가 없습니다.",
+            "failed": "인스턴스를 불러오지 못했습니다.",
             "toast": {
                 "failed_to_launch_instance": "인스턴스를 시작하지 못했습니다.",
                 "failed_to_send_self_invite": "본인 초대를 보내지 못했습니다."

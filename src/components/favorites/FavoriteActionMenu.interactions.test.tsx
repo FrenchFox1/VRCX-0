@@ -14,9 +14,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FavoriteKind } from '@/domain/favorites/types';
 
 const mocks = vi.hoisted(() => ({
+    addFavorite: vi.fn(),
     addLocalFavorite: vi.fn(),
     confirm: vi.fn(),
     createLocalFavoriteGroup: vi.fn(),
+    deleteFavorite: vi.fn(),
+    favoriteState: {} as Record<string, unknown>,
     prompt: vi.fn()
 }));
 
@@ -43,8 +46,8 @@ vi.mock('@/repositories/favoritePersistenceRepository', () => ({
 
 vi.mock('@/repositories/vrchatFavoriteRepository', () => ({
     default: {
-        addFavorite: vi.fn(),
-        deleteFavorite: vi.fn()
+        addFavorite: mocks.addFavorite,
+        deleteFavorite: mocks.deleteFavorite
     }
 }));
 
@@ -66,7 +69,8 @@ vi.mock('@/state/favoriteStore', () => ({
             localAvatarFavorites: {},
             localFriendFavoriteGroups: [],
             localFriendFavorites: {},
-            remoteFavoritesByObjectId: {}
+            remoteFavoritesByObjectId: {},
+            ...mocks.favoriteState
         })
 }));
 
@@ -109,9 +113,29 @@ vi.mock('@/ui/shadcn/dropdown-menu', () => {
         <button {...props}>{children}</button>
     );
 
+    const CheckboxItem = ({
+        children,
+        checked,
+        disabled,
+        onCheckedChange
+    }: PropsWithChildren<{
+        checked?: boolean;
+        disabled?: boolean;
+        onCheckedChange?: (checked: boolean) => void;
+    }>) => (
+        <button
+            role="menuitemcheckbox"
+            aria-checked={Boolean(checked)}
+            disabled={disabled}
+            onClick={() => onCheckedChange?.(!checked)}
+        >
+            {children}
+        </button>
+    );
+
     return {
         DropdownMenu: Container,
-        DropdownMenuCheckboxItem: Item,
+        DropdownMenuCheckboxItem: CheckboxItem,
         DropdownMenuContent: Container,
         DropdownMenuGroup: Group,
         DropdownMenuItem: Item,
@@ -198,3 +222,121 @@ describe('FavoriteActionMenu local group creation', () => {
 vi.mock('@/services/toastService', () => ({
     toast: { add: vi.fn(), close: vi.fn() }
 }));
+
+describe('FavoriteActionMenu VRChat favorite groups', () => {
+    const groups = [
+        {
+            key: 'friend:group_0',
+            name: 'group_0',
+            type: 'friend',
+            displayName: 'Best Friends',
+            count: 1,
+            capacity: 150
+        },
+        {
+            key: 'friend:group_1',
+            name: 'group_1',
+            type: 'friend',
+            displayName: 'Karaoke',
+            count: 0,
+            capacity: 150
+        }
+    ];
+
+    function openMenu(favoritedIn: string | null) {
+        mocks.favoriteState = {
+            favoriteFriendGroups: groups,
+            remoteFavoritesByObjectId: favoritedIn
+                ? {
+                      usr_friend: {
+                          type: 'friend',
+                          tags: [favoritedIn],
+                          $groupKey: `friend:${favoritedIn}`
+                      }
+                  }
+                : {}
+        };
+        render(
+            <FavoriteActionMenu
+                kind="friend"
+                entityId="usr_friend"
+                entity={{ id: 'usr_friend', displayName: 'Alice' }}
+            />
+        );
+    }
+
+    function groupItem(name: string) {
+        return screen.getByRole('menuitemcheckbox', {
+            name: new RegExp(`^${name} `)
+        });
+    }
+
+    beforeEach(() => {
+        mocks.addFavorite.mockReset().mockResolvedValue({});
+        mocks.deleteFavorite.mockReset().mockResolvedValue({});
+        mocks.confirm.mockReset();
+    });
+
+    afterEach(() => {
+        cleanup();
+        mocks.favoriteState = {};
+    });
+
+    it('checks the group the entity is favorited in', () => {
+        openMenu('group_0');
+
+        expect(groupItem('Best Friends').getAttribute('aria-checked')).toBe(
+            'true'
+        );
+        expect(groupItem('Karaoke').getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('unfavorites without asking when the checked group is clicked', async () => {
+        openMenu('group_0');
+
+        fireEvent.click(groupItem('Best Friends'));
+
+        await waitFor(() =>
+            expect(mocks.deleteFavorite).toHaveBeenCalledWith({
+                objectId: 'usr_friend'
+            })
+        );
+        expect(mocks.confirm).not.toHaveBeenCalled();
+        expect(mocks.addFavorite).not.toHaveBeenCalled();
+    });
+
+    it('moves the favorite to another group in one action', async () => {
+        openMenu('group_0');
+
+        fireEvent.click(groupItem('Karaoke'));
+
+        await waitFor(() =>
+            expect(mocks.addFavorite).toHaveBeenCalledWith({
+                type: 'friend',
+                favoriteId: 'usr_friend',
+                tags: 'group_1'
+            })
+        );
+        expect(mocks.deleteFavorite).toHaveBeenCalledWith({
+            objectId: 'usr_friend'
+        });
+        expect(mocks.deleteFavorite.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.addFavorite.mock.invocationCallOrder[0]
+        );
+    });
+
+    it('adds the favorite to the clicked group when it is not favorited yet', async () => {
+        openMenu(null);
+
+        fireEvent.click(groupItem('Karaoke'));
+
+        await waitFor(() =>
+            expect(mocks.addFavorite).toHaveBeenCalledWith({
+                type: 'friend',
+                favoriteId: 'usr_friend',
+                tags: 'group_1'
+            })
+        );
+        expect(mocks.deleteFavorite).not.toHaveBeenCalled();
+    });
+});

@@ -887,12 +887,22 @@
         "self_menu": "Nabídka účtu",
         "filter_friends": "Filtrovat přátele",
         "filter_groups": "Filtrovat skupiny",
+        "filter_instances": "Filtrovat instance",
         "filter_no_results": "Žádné shody",
         "self_more_actions": "Více",
         "switch_account": "Přepnout účet",
         "favorite": "Oblíbení",
         "same_instance": "Stejná instance",
         "you_are_here": "Jste zde",
+        "visited_minutes_ago_one": "Navštíveno před {count} min",
+        "visited_minutes_ago_few": "Navštíveno před {count} min",
+        "visited_minutes_ago_many": "Navštíveno před {count} min",
+        "visited_minutes_ago_other": "Navštíveno před {count} min",
+        "visited_hours_ago_one": "Navštíveno před {count} h",
+        "visited_hours_ago_few": "Navštíveno před {count} h",
+        "visited_hours_ago_many": "Navštíveno před {count} h",
+        "visited_hours_ago_other": "Navštíveno před {count} h",
+        "visited_at": "Poslední vstup: {time}",
         "online": "Online",
         "active": "Aktivní",
         "offline": "Offline",
@@ -931,6 +941,7 @@
                 "display_hint": "Jak karty vypadají v postranním panelu.",
                 "layout_hint": "Přetažením změníte pořadí. Přátelé a Skupiny jsou vestavěné – přidejte oblíbené skupiny jako vlastní karty.",
                 "system_badge": "Vestavěné",
+                "world_badge": "Svět",
                 "always_visible": "Vždy viditelné",
                 "move_up": "Nahoru",
                 "move_down": "Dolů",
@@ -1158,6 +1169,8 @@
             "world_instances_few": "{count} instance",
             "world_instances_many": "{count} instance",
             "world_instances_other": "{count} instancí",
+            "instance_population": "Hráčů v instanci: {users}",
+            "instance_population_capacity": "Hráčů v instanci: {users} / max. {capacity}",
             "other_online": "Ostatní přátelé online",
             "favorite": "Oblíbení",
             "same_instance": "Stejná instance",
@@ -4120,6 +4133,12 @@
                 "public_count": "Veřejné {count}",
                 "private_count": "Soukromé {count}",
                 "capacity_count": "Kapacita {count} ({max})",
+                "pin_to_sidebar": "Připnout na postranní panel",
+                "pinned_to_sidebar": "Připnuto na postranní panel",
+                "pin_to_sidebar_failed": "Připnutí na postranní panel se nezdařilo",
+                "unpin_from_sidebar": "Odepnout z postranního panelu",
+                "unpinned_from_sidebar": "Odepnuto z postranního panelu",
+                "unpin_from_sidebar_failed": "Odepnutí z postranního panelu se nezdařilo",
                 "instance_creator": "Tvůrce instance"
             },
             "info": {
@@ -5722,7 +5741,8 @@
                 "schema_migrations": "Použití aktualizací struktury",
                 "optimize": "Optimalizace kopie databáze",
                 "write_version": "Ukládání verze databáze",
-                "commit": "Přepínání na aktualizovanou databázi"
+                "commit": "Přepínání na aktualizovanou databázi",
+                "repair_data": "Oprava chybějících záznamů v historii herního protokolu"
             },
             "upgrade_failed_title": "Aktualizace databáze se nezdařila",
             "failure_record": "Záznam chyby",
@@ -6078,12 +6098,6 @@
                 "failed_to_remove_favorite": "Nepodařilo se odebrat oblíbenou položku",
                 "failed_to_add_local_favorite": "Nepodařilo se přidat místní oblíbenou položku",
                 "failed_to_remove_local_favorite": "Nepodařilo se odebrat místní oblíbenou položku"
-            },
-            "modal": {
-                "remove_vrchat_favorite": "Odebrat oblíbenou položku VRChat?"
-            },
-            "dynamic": {
-                "remove_value_from_vrchat_favorites": "Odebrat {value} z oblíbených VRChat?"
             }
         },
         "friend_location_card": {
@@ -6188,6 +6202,14 @@
             }
         },
         "groups_sidebar": {
+            "toast": {
+                "failed_to_launch_instance": "Nepodařilo se spustit instanci",
+                "failed_to_send_self_invite": "Nepodařilo se odeslat pozvánku sobě"
+            }
+        },
+        "world_rooms_sidebar": {
+            "empty": "Momentálně nejsou žádné aktivní instance",
+            "failed": "Instance se nepodařilo načíst",
             "toast": {
                 "failed_to_launch_instance": "Nepodařilo se spustit instanci",
                 "failed_to_send_self_invite": "Nepodařilo se odeslat pozvánku sobě"

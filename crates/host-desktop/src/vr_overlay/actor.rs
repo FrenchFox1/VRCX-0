@@ -49,6 +49,9 @@ pub trait OverlayBackend: Send + 'static {
     fn set_alpha(&mut self, _surface_id: &OverlaySurfaceId, _alpha: f32) -> Result<(), String> {
         Ok(())
     }
+    fn visible_surface_ids(&self) -> Vec<OverlaySurfaceId> {
+        Vec::new()
+    }
     fn snapshot_devices(&mut self) -> Result<Vec<VrDeviceSnapshot>, String>;
     fn tick(&mut self) -> TickOutcome {
         TickOutcome::Continue
@@ -61,6 +64,7 @@ pub struct OverlayActorHandle {
     sender: mpsc::Sender<OverlayActorMessage>,
     status: Arc<Mutex<OverlayServiceStatus>>,
     runtime_quit_at: Arc<Mutex<Option<Instant>>>,
+    visible_surfaces: Arc<Mutex<Vec<OverlaySurfaceId>>>,
 }
 
 enum OverlayActorMessage {
@@ -105,16 +109,27 @@ impl OverlayActorHandle {
         let (sender, receiver) = mpsc::channel::<OverlayActorMessage>();
         let status = Arc::new(Mutex::new(OverlayServiceStatus::default()));
         let runtime_quit_at = Arc::new(Mutex::new(None));
+        let visible_surfaces = Arc::new(Mutex::new(Vec::new()));
         let actor_status = Arc::clone(&status);
         let actor_runtime_quit_at = Arc::clone(&runtime_quit_at);
+        let actor_visible_surfaces = Arc::clone(&visible_surfaces);
         thread::Builder::new()
             .name("vrcx-vr-overlay".to_string())
-            .spawn(move || run_actor(backend, receiver, actor_status, actor_runtime_quit_at))
+            .spawn(move || {
+                run_actor(
+                    backend,
+                    receiver,
+                    actor_status,
+                    actor_runtime_quit_at,
+                    actor_visible_surfaces,
+                )
+            })
             .expect("spawn VR overlay actor thread");
         Self {
             sender,
             status,
             runtime_quit_at,
+            visible_surfaces,
         }
     }
 
@@ -179,6 +194,12 @@ impl OverlayActorHandle {
             .map(|slot| *slot)
             .unwrap_or(None)
     }
+
+    pub fn is_surface_visible(&self, surface_id: &OverlaySurfaceId) -> bool {
+        self.visible_surfaces
+            .lock()
+            .is_ok_and(|visible| visible.contains(surface_id))
+    }
 }
 
 fn receive_with_timeout<T>(
@@ -229,12 +250,14 @@ fn run_actor<B>(
     receiver: mpsc::Receiver<OverlayActorMessage>,
     status: Arc<Mutex<OverlayServiceStatus>>,
     runtime_quit_at: Arc<Mutex<Option<Instant>>>,
+    visible_surfaces: Arc<Mutex<Vec<OverlaySurfaceId>>>,
 ) where
     B: OverlayBackend,
 {
     let mut skip_backend_stop = false;
     let mut last_tick_at = Instant::now();
     loop {
+        publish_visible_surfaces(&backend, &visible_surfaces);
         let tick_interval = overlay_tick_interval(backend.needs_high_frequency_tick());
         match receiver.recv_timeout(tick_interval) {
             Ok(message) => {
@@ -285,6 +308,16 @@ fn run_actor<B>(
     if !skip_backend_stop {
         backend.stop();
         update_status(&status, OverlayServicePhase::Stopped, None);
+    }
+}
+
+fn publish_visible_surfaces<B>(backend: &B, visible_surfaces: &Mutex<Vec<OverlaySurfaceId>>)
+where
+    B: OverlayBackend,
+{
+    let next = backend.visible_surface_ids();
+    if let Ok(mut visible) = visible_surfaces.lock() {
+        *visible = next;
     }
 }
 

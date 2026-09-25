@@ -147,6 +147,8 @@ const RESPONSE_TEXT_KEYS: Record<string, string> = {
     'acknowledge and dismiss this notification':
         'view.notification.responses.acknowledge_and_dismiss',
     "unsubscribe from this group's announcements":
+        'view.notification.responses.unsubscribe_announcements',
+    "unsubscribe from this group's event announcements":
         'view.notification.responses.unsubscribe_announcements'
 };
 

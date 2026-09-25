@@ -183,7 +183,8 @@ function setRunningState(
     const shouldShowProgress =
         forceOpen ||
         preflight?.status === 'upgradeRequired' ||
-        preflight?.status === 'running';
+        preflight?.status === 'running' ||
+        preflight?.repairPending === true;
     setUpgradeState({
         phase: 'running',
         fromVersion,
@@ -236,7 +237,7 @@ async function completeDatabaseUpgrade(
 
     if (result.repairWarning) {
         console.warn(
-            'Co-presence duration repair will be retried on the next startup:',
+            'Database data repair will be retried on the next startup:',
             result.repairWarning
         );
     }
@@ -329,7 +330,8 @@ export async function retryDatabaseUpgrade(): Promise<boolean> {
     const preflight: DatabaseUpgradePreflight = {
         status: 'upgradeRequired',
         fromVersion,
-        toVersion
+        toVersion,
+        repairPending: false
     };
     setRunningState(preflight, true);
     const stopProgressPolling = startDatabaseUpgradeProgressPolling();
@@ -568,6 +570,7 @@ export async function skipLegacyDatabaseMigration(): Promise<boolean> {
     return runBackendDatabaseUpgrade({
         status: 'upgradeRequired',
         fromVersion,
-        toVersion
+        toVersion,
+        repairPending: false
     });
 }

@@ -887,12 +887,16 @@
         "self_menu": "账号菜单",
         "filter_friends": "筛选好友",
         "filter_groups": "筛选群组",
+        "filter_instances": "筛选房间",
         "filter_no_results": "没有匹配项",
         "self_more_actions": "更多",
         "switch_account": "切换账号",
         "favorite": "已分组的好友",
         "same_instance": "同一房间",
         "you_are_here": "您在这里",
+        "visited_minutes_ago_other": "{count}分钟前来过",
+        "visited_hours_ago_other": "{count}小时前来过",
+        "visited_at": "上次进入：{time}",
         "online": "在线",
         "active": "活跃中（仅登录网页端）",
         "offline": "离线",
@@ -931,6 +935,7 @@
                 "display_hint": "标签在侧栏中的显示方式。",
                 "layout_hint": "拖动可重新排序。好友和群组为内置标签——把收藏分组添加成你自己的标签。",
                 "system_badge": "内置",
+                "world_badge": "世界",
                 "always_visible": "始终显示",
                 "move_up": "上移",
                 "move_down": "下移",
@@ -1148,12 +1153,14 @@
         },
         "friends_locations": {
             "online": "在线",
-            "world_friends_one": "{count} 人",
-            "world_friends_other": "{count} 人",
+            "world_friends_one": "{count} 位好友",
+            "world_friends_other": "{count} 位好友",
             "view_people": "好友视图",
             "view_worlds": "世界视图",
             "world_instances_one": "{count} 个房间",
             "world_instances_other": "{count} 个房间",
+            "instance_population": "房间内人数：{users}",
+            "instance_population_capacity": "房间内人数：{users} / 上限 {capacity}",
             "other_online": "其他在线好友",
             "favorite": "具有分组的好友",
             "same_instance": "同一房间",
@@ -4107,6 +4114,12 @@
                 "public_count": "公开房间有{count}人在线",
                 "private_count": "私人房间有{count}人在线",
                 "capacity_count": "推荐人数: {count}人（上限:{max}人）",
+                "pin_to_sidebar": "固定到侧栏",
+                "pinned_to_sidebar": "已固定到侧栏",
+                "pin_to_sidebar_failed": "固定到侧栏失败",
+                "unpin_from_sidebar": "取消固定",
+                "unpinned_from_sidebar": "已从侧栏取消固定",
+                "unpin_from_sidebar_failed": "从侧栏取消固定失败",
                 "instance_creator": "房间建立者"
             },
             "info": {
@@ -5753,7 +5766,8 @@
                 "schema_migrations": "正在应用数据库结构更新",
                 "optimize": "正在优化数据库副本",
                 "write_version": "正在记录数据库版本",
-                "commit": "正在切换到升级后的数据库"
+                "commit": "正在切换到升级后的数据库",
+                "repair_data": "正在修复游戏日志中缺失的记录"
             },
             "upgrade_failed_title": "数据库升级失败",
             "failure_record": "失败记录",
@@ -6113,12 +6127,6 @@
                 "failed_to_remove_favorite": "移除在线收藏失败",
                 "failed_to_add_local_favorite": "添加本地收藏失败",
                 "failed_to_remove_local_favorite": "移除本地收藏失败"
-            },
-            "modal": {
-                "remove_vrchat_favorite": "移除在线收藏？"
-            },
-            "dynamic": {
-                "remove_value_from_vrchat_favorites": "要从在线收藏中移除 {value} 吗？"
             }
         },
         "friend_location_card": {
@@ -6223,6 +6231,14 @@
             }
         },
         "groups_sidebar": {
+            "toast": {
+                "failed_to_launch_instance": "启动房间失败",
+                "failed_to_send_self_invite": "发送自我邀请失败"
+            }
+        },
+        "world_rooms_sidebar": {
+            "empty": "当前没有活跃的房间",
+            "failed": "房间加载失败",
             "toast": {
                 "failed_to_launch_instance": "启动房间失败",
                 "failed_to_send_self_invite": "发送自我邀请失败"

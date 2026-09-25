@@ -26,9 +26,18 @@ export interface SidebarFavoriteCollectionTabLayoutItem {
     sourceGroupKeys: string[];
 }
 
+export interface SidebarWorldRoomsTabLayoutItem {
+    id: string;
+    type: 'worldRooms';
+    worldId: string;
+    name: string;
+    visible: boolean;
+}
+
 export type SidebarTabLayoutItem =
     | SidebarSystemTabLayoutItem
-    | SidebarFavoriteCollectionTabLayoutItem;
+    | SidebarFavoriteCollectionTabLayoutItem
+    | SidebarWorldRoomsTabLayoutItem;
 
 export type SidebarTabLayout = SidebarTabLayoutItem[];
 
@@ -129,12 +138,39 @@ function normalizeFavoriteCollectionTab(
     };
 }
 
+function normalizeWorldRoomsTab(
+    item: Record<string, unknown>,
+    seenIds: Set<string>,
+    seenWorldIds: Set<string>
+): SidebarWorldRoomsTabLayoutItem | null {
+    const id = normalizeText(item.id);
+    const worldId = normalizeText(item.worldId);
+    if (
+        !id ||
+        !worldId.startsWith('wrld_') ||
+        seenIds.has(id) ||
+        seenWorldIds.has(worldId)
+    ) {
+        return null;
+    }
+    seenIds.add(id);
+    seenWorldIds.add(worldId);
+    return {
+        id,
+        type: 'worldRooms',
+        worldId,
+        name: normalizeText(item.name) || worldId,
+        visible: item.visible !== false
+    };
+}
+
 export function normalizeSidebarTabLayout(value: unknown): SidebarTabLayout {
     const parsed = parseLayoutValue(value);
     const sourceItems = Array.isArray(parsed) ? parsed : [];
     const nextLayout: SidebarTabLayout = [];
     const seenSystemTabs = new Set<SidebarSystemTabId>();
     const seenCustomIds = new Set<string>();
+    const seenWorldIds = new Set<string>();
 
     for (const rawItem of sourceItems) {
         if (!isRecord(rawItem)) {
@@ -161,6 +197,18 @@ export function normalizeSidebarTabLayout(value: unknown): SidebarTabLayout {
             );
             if (customTab) {
                 nextLayout.push(customTab);
+            }
+            continue;
+        }
+
+        if (item.type === 'worldRooms') {
+            const worldTab = normalizeWorldRoomsTab(
+                item,
+                seenCustomIds,
+                seenWorldIds
+            );
+            if (worldTab) {
+                nextLayout.push(worldTab);
             }
         }
     }
@@ -203,6 +251,43 @@ export function createFavoriteCollectionTab(
     };
 }
 
+export function upsertWorldRoomsTab(
+    existingLayout: SidebarTabLayout,
+    world: { worldId: string; name: string }
+): { layout: SidebarTabLayout; tabId: string } {
+    const layout = normalizeSidebarTabLayout(existingLayout);
+    const existing = layout.find(
+        (item): item is SidebarWorldRoomsTabLayoutItem =>
+            item.type === 'worldRooms' && item.worldId === world.worldId
+    );
+    if (existing) {
+        return {
+            layout: layout.map((item) =>
+                item.id === existing.id ? { ...item, visible: true } : item
+            ),
+            tabId: existing.id
+        };
+    }
+    const existingIds = new Set(layout.map((item) => item.id));
+    let id = `world-rooms-${world.worldId}`;
+    for (let index = 2; existingIds.has(id); index += 1) {
+        id = `world-rooms-${world.worldId}-${index}`;
+    }
+    return {
+        layout: normalizeSidebarTabLayout([
+            ...layout,
+            {
+                id,
+                type: 'worldRooms',
+                worldId: world.worldId,
+                name: world.name.trim() || world.worldId,
+                visible: true
+            }
+        ]),
+        tabId: id
+    };
+}
+
 export function getVisibleSidebarTabs(
     layout: SidebarTabLayout
 ): SidebarTabLayout {
@@ -229,7 +314,9 @@ export function moveSidebarTab(
     return nextLayout;
 }
 
-export function sidebarTabFallbackIcon(item: SidebarTabLayoutItem): string {
+export function sidebarTabFallbackIcon(
+    item: SidebarSystemTabLayoutItem | SidebarFavoriteCollectionTabLayoutItem
+): string {
     if (item.type === 'favoriteCollection') {
         return 'lucide:UserStar';
     }

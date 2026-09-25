@@ -36,11 +36,23 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { getNavIconComponent } from '@/components/layout/navIconRegistry';
+import { WorldRoomsCover } from '@/components/sidebar/world-rooms/WorldRoomsCover';
 import { cn } from '@/lib/utils';
 import {
     NAV_ICON_OPTIONS,
     normalizeNavIconKey
 } from '@/shared/constants/navIcons';
+import {
+    DEFAULT_SIDEBAR_TAB_LAYOUT,
+    type FavoriteGroupItem,
+    type SidebarFavoriteCollectionTabLayoutItem,
+    type SidebarTabLayout,
+    type SidebarTabLayoutItem,
+    createFavoriteCollectionTab,
+    moveSidebarTab,
+    normalizeSidebarTabLayout,
+    sidebarTabFallbackIcon
+} from '@/shared/utils/sidebarTabLayout';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -76,18 +88,6 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import {
-    DEFAULT_SIDEBAR_TAB_LAYOUT,
-    type FavoriteGroupItem,
-    type SidebarFavoriteCollectionTabLayoutItem,
-    type SidebarTabLayout,
-    type SidebarTabLayoutItem,
-    createFavoriteCollectionTab,
-    moveSidebarTab,
-    normalizeSidebarTabLayout,
-    sidebarTabFallbackIcon
-} from './sidebarTabLayout';
-
 type SortableTabRowRenderProps = {
     dragHandleProps: ComponentProps<typeof Button> & {
         ref: (element: HTMLElement | null) => void;
@@ -112,7 +112,7 @@ function isFriendsTab(item: SidebarTabLayoutItem) {
 }
 
 function getTabLabel(item: SidebarTabLayoutItem, t: (key: string) => string) {
-    if (item.type === 'favoriteCollection') {
+    if (item.type !== 'system') {
         return item.name;
     }
     return item.systemTab === 'groups'
@@ -291,14 +291,12 @@ export function SidePanelCustomTabsDialog({
     onOpenChange,
     layout,
     favoriteGroupItems,
-    autoCreateCollection = false,
     onSave
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     layout: SidebarTabLayout;
     favoriteGroupItems: FavoriteGroupItem[];
-    autoCreateCollection?: boolean;
     onSave: (layout: SidebarTabLayout) => void;
 }) {
     const { t } = useTranslation();
@@ -328,21 +326,8 @@ export function SidePanelCustomTabsDialog({
         if (!open) {
             return;
         }
-        const baseLayout = normalizeSidebarTabLayout(layout);
-        setDraftLayout(
-            autoCreateCollection
-                ? normalizeSidebarTabLayout([
-                      ...baseLayout,
-                      createFavoriteCollectionTab(
-                          baseLayout,
-                          t(
-                              'side_panel.settings.custom_tabs.favorite_collection_default'
-                          )
-                      )
-                  ])
-                : baseLayout
-        );
-    }, [autoCreateCollection, layout, open, t]);
+        setDraftLayout(normalizeSidebarTabLayout(layout));
+    }, [layout, open]);
 
     function updateItem(
         id: string,
@@ -422,12 +407,11 @@ export function SidePanelCustomTabsDialog({
         );
     }
 
-    function removeFavoriteCollection(id: string) {
+    function removeCustomTab(id: string) {
         setDraftLayout((current) =>
             normalizeSidebarTabLayout(
                 current.filter(
-                    (item) =>
-                        item.id !== id || item.type !== 'favoriteCollection'
+                    (item) => item.id !== id || item.type === 'system'
                 )
             )
         );
@@ -480,17 +464,17 @@ export function SidePanelCustomTabsDialog({
                                 <div className="flex flex-col gap-2">
                                     {draftLayout.map((item, index) => {
                                         const label = getTabLabel(item, t);
-                                        const isCustom =
-                                            item.type === 'favoriteCollection';
+                                        const isCustom = item.type !== 'system';
                                         const isFriends = isFriendsTab(item);
-                                        const selectedCount = isCustom
-                                            ? item.sourceGroupKeys.filter(
-                                                  (key) =>
-                                                      availableGroupKeys.has(
-                                                          key
-                                                      )
-                                              ).length
-                                            : 0;
+                                        const selectedCount =
+                                            item.type === 'favoriteCollection'
+                                                ? item.sourceGroupKeys.filter(
+                                                      (key) =>
+                                                          availableGroupKeys.has(
+                                                              key
+                                                          )
+                                                  ).length
+                                                : 0;
                                         return (
                                             <SortableTabRow
                                                 key={item.id}
@@ -529,43 +513,29 @@ export function SidePanelCustomTabsDialog({
                                                             >
                                                                 <GripVerticalIcon data-icon="inline-start" />
                                                             </Button>
-                                                            <NavIconSelect
-                                                                value={
-                                                                    item.icon
-                                                                }
-                                                                fallbackIcon={sidebarTabFallbackIcon(
-                                                                    item
-                                                                )}
-                                                                ariaLabel={tabActionLabel(
-                                                                    t,
-                                                                    'icon_for_value',
-                                                                    label
-                                                                )}
-                                                                onValueChange={(
-                                                                    icon
-                                                                ) =>
-                                                                    updateItem(
-                                                                        item.id,
-                                                                        (
-                                                                            current
-                                                                        ) => ({
-                                                                            ...current,
-                                                                            icon
-                                                                        })
-                                                                    )
-                                                                }
-                                                            />
-                                                            {isCustom ? (
-                                                                <Input
-                                                                    value={
-                                                                        item.name
+                                                            {item.type ===
+                                                            'worldRooms' ? (
+                                                                <WorldRoomsCover
+                                                                    worldId={
+                                                                        item.worldId
                                                                     }
-                                                                    className="h-8 min-w-0 flex-1"
-                                                                    aria-label={t(
-                                                                        'side_panel.settings.custom_tabs.tab_name'
+                                                                    className="size-7 rounded-md"
+                                                                />
+                                                            ) : (
+                                                                <NavIconSelect
+                                                                    value={
+                                                                        item.icon
+                                                                    }
+                                                                    fallbackIcon={sidebarTabFallbackIcon(
+                                                                        item
                                                                     )}
-                                                                    onChange={(
-                                                                        event
+                                                                    ariaLabel={tabActionLabel(
+                                                                        t,
+                                                                        'icon_for_value',
+                                                                        label
+                                                                    )}
+                                                                    onValueChange={(
+                                                                        icon
                                                                     ) =>
                                                                         updateItem(
                                                                             item.id,
@@ -573,17 +543,58 @@ export function SidePanelCustomTabsDialog({
                                                                                 current
                                                                             ) =>
                                                                                 current.type ===
-                                                                                'favoriteCollection'
-                                                                                    ? {
+                                                                                'worldRooms'
+                                                                                    ? current
+                                                                                    : {
                                                                                           ...current,
-                                                                                          name: event
-                                                                                              .target
-                                                                                              .value
+                                                                                          icon
                                                                                       }
-                                                                                    : current
                                                                         )
                                                                     }
                                                                 />
+                                                            )}
+                                                            {isCustom ? (
+                                                                <>
+                                                                    <Input
+                                                                        value={
+                                                                            item.name
+                                                                        }
+                                                                        className="h-8 min-w-0 flex-1"
+                                                                        aria-label={t(
+                                                                            'side_panel.settings.custom_tabs.tab_name'
+                                                                        )}
+                                                                        onChange={(
+                                                                            event
+                                                                        ) =>
+                                                                            updateItem(
+                                                                                item.id,
+                                                                                (
+                                                                                    current
+                                                                                ) =>
+                                                                                    current.type !==
+                                                                                    'system'
+                                                                                        ? {
+                                                                                              ...current,
+                                                                                              name: event
+                                                                                                  .target
+                                                                                                  .value
+                                                                                          }
+                                                                                        : current
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                    {item.type ===
+                                                                    'worldRooms' ? (
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="shrink-0"
+                                                                        >
+                                                                            {t(
+                                                                                'side_panel.settings.custom_tabs.world_badge'
+                                                                            )}
+                                                                        </Badge>
+                                                                    ) : null}
+                                                                </>
                                                             ) : (
                                                                 <div className="flex min-w-0 flex-1 items-center gap-2">
                                                                     <span className="min-w-0 truncate text-sm font-medium">
@@ -704,7 +715,7 @@ export function SidePanelCustomTabsDialog({
                                                                             <DropdownMenuItem
                                                                                 variant="destructive"
                                                                                 onClick={() =>
-                                                                                    removeFavoriteCollection(
+                                                                                    removeCustomTab(
                                                                                         item.id
                                                                                     )
                                                                                 }
@@ -719,7 +730,8 @@ export function SidePanelCustomTabsDialog({
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                         </div>
-                                                        {isCustom ? (
+                                                        {item.type ===
+                                                        'favoriteCollection' ? (
                                                             <Collapsible
                                                                 defaultOpen={
                                                                     selectedCount ===

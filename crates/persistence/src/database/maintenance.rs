@@ -19,9 +19,11 @@ use super::DatabaseService;
 
 mod avatar_cleanup;
 mod copresence_repair;
+mod leave_location_repair;
 
 pub use avatar_cleanup::avatar_auto_cleanup_run;
 use copresence_repair::repair_zero_copresence_durations;
+use leave_location_repair::repair_empty_leave_locations;
 
 pub fn vacuum_after_secret_migration(db: &DatabaseService) -> Result<(), Error> {
     db.checkpoint_and_vacuum()
@@ -110,6 +112,7 @@ pub enum DatabaseMaintenanceTask {
     FixCancelFriendRequestTypo,
     FixBrokenGameLogDisplayNames,
     RepairZeroCopresenceDurations,
+    RepairEmptyLeaveLocations,
     ImportUpstreamPrintFavorites,
 }
 
@@ -145,6 +148,7 @@ impl DatabaseMaintenanceTask {
             task if task == "repairZeroCopresenceDurations" => {
                 Ok(Self::RepairZeroCopresenceDurations)
             }
+            task if task == "repairEmptyLeaveLocations" => Ok(Self::RepairEmptyLeaveLocations),
             task if task == "importUpstreamPrintFavorites" => {
                 Ok(Self::ImportUpstreamPrintFavorites)
             }
@@ -175,6 +179,7 @@ impl DatabaseMaintenanceTask {
             Self::FixCancelFriendRequestTypo => "fixCancelFriendRequestTypo",
             Self::FixBrokenGameLogDisplayNames => "fixBrokenGameLogDisplayNames",
             Self::RepairZeroCopresenceDurations => "repairZeroCopresenceDurations",
+            Self::RepairEmptyLeaveLocations => "repairEmptyLeaveLocations",
             Self::ImportUpstreamPrintFavorites => "importUpstreamPrintFavorites",
         }
     }
@@ -413,6 +418,9 @@ fn run_database_maintenance_task(
         }
         DatabaseMaintenanceTask::RepairZeroCopresenceDurations => {
             repair_zero_copresence_durations(db)?;
+        }
+        DatabaseMaintenanceTask::RepairEmptyLeaveLocations => {
+            repair_empty_leave_locations(db)?;
         }
         DatabaseMaintenanceTask::ImportUpstreamPrintFavorites => {
             import_upstream_print_favorites(db)?;

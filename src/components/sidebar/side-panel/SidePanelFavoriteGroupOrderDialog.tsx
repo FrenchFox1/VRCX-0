@@ -1,6 +1,7 @@
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import type { FavoriteGroupItem } from '@/shared/utils/sidebarTabLayout';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -9,8 +10,6 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-
-import type { FavoriteGroupItem } from './sidebarTabLayout';
 
 type SidePanelFavoriteGroupOrderDialogProps = {
     open: boolean;

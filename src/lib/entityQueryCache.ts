@@ -215,6 +215,8 @@ export const queryKeys = Object.freeze({
         }: { eventId?: string; groupId?: string } = {},
         endpoint: string = ''
     ) => withEndpoint(['calendar', groupId, eventId], endpoint),
+    worldRooms: (worldId: string, endpoint: string = '') =>
+        withEndpoint(['world', worldId, 'rooms'], endpoint),
     avatarGallery: (avatarId: string, endpoint: string = '') =>
         withEndpoint(['avatar', avatarId, 'gallery'], endpoint),
     userInventoryItem: (

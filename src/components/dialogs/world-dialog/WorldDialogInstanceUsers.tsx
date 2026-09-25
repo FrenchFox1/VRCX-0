@@ -3,7 +3,10 @@ import { CrownIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { FriendLocationTimer } from '@/components/friends/FriendInstanceTimer';
+import {
+    FriendInstanceTimer,
+    FriendLocationTimer
+} from '@/components/friends/FriendInstanceTimer';
 import {
     resolveSidebarStatusDotClassName,
     type SidebarFriendRecord
@@ -17,6 +20,7 @@ import {
     normalizeInstanceUsers,
     type InstanceRosterRow
 } from '@/domain/instances/instanceRoster';
+import { instanceLocationKey } from '@/domain/presence/instancePresence';
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import { useKnownUserFact } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -87,6 +91,12 @@ export function InstanceUserTiles({
     );
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning === true
+    );
+    const currentLocation = useRuntimeStore(
+        (state) => state.gameState.currentLocation
+    );
+    const currentLocationStartedAt = useRuntimeStore(
+        (state) => state.gameState.currentLocationStartedAt
     );
     const source = record(instance);
     const creatorUser = record(source.creatorUser);
@@ -204,10 +214,12 @@ export function InstanceUserTiles({
                     user.targetUserId,
                     user.target_user_id
                 );
-                const image = userImage(user);
                 const isCurrentUser = Boolean(
                     userId && userId === currentUserSnapshot?.id
                 );
+                const image =
+                    userImage(user) ||
+                    (isCurrentUser ? userImage(currentUserSnapshot) : '');
                 const statusUser: SidebarFriendRecord = {
                     id: user.id,
                     userId: user.userId,
@@ -260,7 +272,18 @@ export function InstanceUserTiles({
                       resolveFriendPresenceLocation(user);
                 const isInstanceCreator = userId === creatorUserId;
                 let subline: ReactNode;
-                if (showInstanceDuration || isTraveling) {
+                if (
+                    showInstanceDuration &&
+                    isCurrentUser &&
+                    currentLocationStartedAt &&
+                    instanceLocationKey(timerLocation) &&
+                    instanceLocationKey(timerLocation) ===
+                        instanceLocationKey(currentLocation)
+                ) {
+                    subline = (
+                        <FriendInstanceTimer epoch={currentLocationStartedAt} />
+                    );
+                } else if (showInstanceDuration || isTraveling) {
                     subline = (
                         <FriendLocationTimer
                             userId={userId}

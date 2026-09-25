@@ -79,19 +79,19 @@ fn now_playing_for_scenario(scenario: &str) -> Option<OverlayNowPlaying> {
         "video" => Some(OverlayNowPlaying {
             title: "【MV】YOASOBI「アイドル」/ Idol (Official Music Video) - TVアニメ『【推しの子】』OPテーマ 4K Remaster 2024 Edition (Full Version with Lyrics)"
                 .to_string(),
-            time_text: "3:52".to_string(),
-            progress_percent: Some(72),
+            time_text: "2:47 / 3:52".to_string(),
+            progress_permille: Some(720),
         }),
         "dense" => Some(OverlayNowPlaying {
             title: "Never Gonna Give You Up".to_string(),
-            time_text: "3:32".to_string(),
-            progress_percent: Some(40),
+            time_text: "1:25 / 3:32".to_string(),
+            progress_permille: Some(400),
         }),
         "i18n" => Some(OverlayNowPlaying {
             title: "https://stream.example.test/live/abc123/very/long/path/that/never/ends/and/keeps/going"
                 .to_string(),
-            time_text: "12m".to_string(),
-            progress_percent: None,
+            time_text: "12:30".to_string(),
+            progress_permille: None,
         }),
         _ => None,
     }

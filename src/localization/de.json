@@ -887,12 +887,18 @@
         "self_menu": "Kontomenü",
         "filter_friends": "Freunde filtern",
         "filter_groups": "Gruppen filtern",
+        "filter_instances": "Instanzen filtern",
         "filter_no_results": "Keine Treffer",
         "self_more_actions": "Mehr",
         "switch_account": "Konto wechseln",
         "favorite": "Favoriten",
         "same_instance": "Gleiche Instanz",
         "you_are_here": "Du bist hier",
+        "visited_minutes_ago_one": "Vor 1 Min. besucht",
+        "visited_minutes_ago_other": "Vor {count} Min. besucht",
+        "visited_hours_ago_one": "Vor 1 Std. besucht",
+        "visited_hours_ago_other": "Vor {count} Std. besucht",
+        "visited_at": "Zuletzt betreten: {time}",
         "online": "Online",
         "active": "Aktiv",
         "offline": "Offline",
@@ -931,6 +937,7 @@
                 "display_hint": "Wie Tabs in der Seitenleiste aussehen.",
                 "layout_hint": "Zum Umsortieren ziehen. Freunde und Gruppen sind integriert – füge Favoritengruppen als eigene Tabs hinzu.",
                 "system_badge": "Integriert",
+                "world_badge": "Welt",
                 "always_visible": "Immer sichtbar",
                 "move_up": "Nach oben",
                 "move_down": "Nach unten",
@@ -1154,6 +1161,8 @@
             "view_worlds": "Weltenansicht",
             "world_instances_one": "{count} Instanz",
             "world_instances_other": "{count} Instanzen",
+            "instance_population": "Spieler in der Instanz: {users}",
+            "instance_population_capacity": "Spieler in der Instanz: {users} / max. {capacity}",
             "other_online": "Weitere Online-Freunde",
             "favorite": "Favoriten",
             "same_instance": "Gleiche Instanz",
@@ -4106,6 +4115,12 @@
                 "public_count": "Öffentlich {count}",
                 "private_count": "Privat {count}",
                 "capacity_count": "Kapazität {count} ({max})",
+                "pin_to_sidebar": "An Seitenleiste anheften",
+                "pinned_to_sidebar": "An die Seitenleiste angeheftet",
+                "pin_to_sidebar_failed": "Anheften an die Seitenleiste fehlgeschlagen",
+                "unpin_from_sidebar": "Von Seitenleiste lösen",
+                "unpinned_from_sidebar": "Von der Seitenleiste gelöst",
+                "unpin_from_sidebar_failed": "Lösen von der Seitenleiste fehlgeschlagen",
                 "instance_creator": "Instanz-Ersteller"
             },
             "info": {
@@ -5708,7 +5723,8 @@
                 "schema_migrations": "Strukturaktualisierungen werden angewendet",
                 "optimize": "Datenbankkopie wird optimiert",
                 "write_version": "Datenbankversion wird gespeichert",
-                "commit": "Zur aktualisierten Datenbank wird gewechselt"
+                "commit": "Zur aktualisierten Datenbank wird gewechselt",
+                "repair_data": "Lücken im Spielprotokoll-Verlauf werden repariert"
             },
             "upgrade_failed_title": "Datenbank-Upgrade fehlgeschlagen",
             "failure_record": "Fehlerprotokoll",
@@ -6064,12 +6080,6 @@
                 "failed_to_remove_favorite": "Favorit konnte nicht entfernt werden",
                 "failed_to_add_local_favorite": "Lokaler Favorit konnte nicht hinzugefügt werden",
                 "failed_to_remove_local_favorite": "Lokaler Favorit konnte nicht entfernt werden"
-            },
-            "modal": {
-                "remove_vrchat_favorite": "VRChat-Favorit entfernen?"
-            },
-            "dynamic": {
-                "remove_value_from_vrchat_favorites": "{value} aus VRChat-Favoriten entfernen?"
             }
         },
         "friend_location_card": {
@@ -6174,6 +6184,14 @@
             }
         },
         "groups_sidebar": {
+            "toast": {
+                "failed_to_launch_instance": "Instanz konnte nicht gestartet werden",
+                "failed_to_send_self_invite": "Selbsteinladung konnte nicht gesendet werden"
+            }
+        },
+        "world_rooms_sidebar": {
+            "empty": "Derzeit keine aktiven Instanzen",
+            "failed": "Instanzen konnten nicht geladen werden",
             "toast": {
                 "failed_to_launch_instance": "Instanz konnte nicht gestartet werden",
                 "failed_to_send_self_invite": "Selbsteinladung konnte nicht gesendet werden"

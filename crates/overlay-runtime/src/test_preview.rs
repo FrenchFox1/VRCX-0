@@ -44,6 +44,7 @@ pub(crate) fn test_wrist_frame_input(
         },
         devices,
         now_playing: None,
+        live_now_playing: false,
         footer: WristRuntimeFooter {
             player_count: 0,
             instance_duration: String::new(),

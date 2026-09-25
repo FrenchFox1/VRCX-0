@@ -152,6 +152,10 @@ where
         self.service.active_backend()
     }
 
+    pub fn is_surface_visible(&self, surface_id: &OverlaySurfaceId) -> bool {
+        self.service.is_surface_visible(surface_id)
+    }
+
     pub fn into_inner(self) -> S {
         self.service
     }

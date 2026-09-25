@@ -887,12 +887,16 @@
         "self_menu": "帳號選單",
         "filter_friends": "篩選好友",
         "filter_groups": "篩選群組",
+        "filter_instances": "篩選房間",
         "filter_no_results": "沒有符合的項目",
         "self_more_actions": "更多",
         "switch_account": "切換帳號",
         "favorite": "收藏",
         "same_instance": "在同個房間",
         "you_are_here": "您在這裡",
+        "visited_minutes_ago_other": "{count}分鐘前來過",
+        "visited_hours_ago_other": "{count}小時前來過",
+        "visited_at": "上次進入：{time}",
         "online": "在線",
         "active": "活躍",
         "offline": "離線",
@@ -931,6 +935,7 @@
                 "display_hint": "標籤在側欄中的顯示方式。",
                 "layout_hint": "拖曳可重新排序。好友和群組為內建標籤——把收藏分組加成你自己的標籤。",
                 "system_badge": "內建",
+                "world_badge": "世界",
                 "always_visible": "一律顯示",
                 "move_up": "上移",
                 "move_down": "下移",
@@ -1148,12 +1153,14 @@
         },
         "friends_locations": {
             "online": "上線",
-            "world_friends_one": "{count} 人",
-            "world_friends_other": "{count} 人",
+            "world_friends_one": "{count} 位好友",
+            "world_friends_other": "{count} 位好友",
             "view_people": "好友檢視",
             "view_worlds": "世界檢視",
             "world_instances_one": "{count} 個房間",
             "world_instances_other": "{count} 個房間",
+            "instance_population": "房間內人數：{users}",
+            "instance_population_capacity": "房間內人數：{users} / 上限 {capacity}",
             "other_online": "其他線上好友",
             "favorite": "收藏",
             "same_instance": "在同個房間",
@@ -4107,6 +4114,12 @@
                 "public_count": "公開 {count}",
                 "private_count": "私人 {count}",
                 "capacity_count": "用戶上限 {count} ({max})",
+                "pin_to_sidebar": "固定到側欄",
+                "pinned_to_sidebar": "已固定到側欄",
+                "pin_to_sidebar_failed": "固定到側欄失敗",
+                "unpin_from_sidebar": "取消固定",
+                "unpinned_from_sidebar": "已從側欄取消固定",
+                "unpin_from_sidebar_failed": "從側欄取消固定失敗",
                 "instance_creator": "房間建立者"
             },
             "info": {
@@ -5744,7 +5757,8 @@
                 "schema_migrations": "正在套用資料庫結構更新",
                 "optimize": "正在最佳化資料庫副本",
                 "write_version": "正在記錄資料庫版本",
-                "commit": "正在切換至升級後的資料庫"
+                "commit": "正在切換至升級後的資料庫",
+                "repair_data": "正在修復遊戲日誌中缺失的紀錄"
             },
             "upgrade_failed_title": "資料庫升級失敗",
             "failure_record": "失敗記錄",
@@ -6104,12 +6118,6 @@
                 "failed_to_remove_favorite": "移除收藏失敗",
                 "failed_to_add_local_favorite": "新增本機收藏失敗",
                 "failed_to_remove_local_favorite": "移除本機收藏失敗"
-            },
-            "modal": {
-                "remove_vrchat_favorite": "移除 VRChat 收藏？"
-            },
-            "dynamic": {
-                "remove_value_from_vrchat_favorites": "要從 VRChat 收藏中移除 {value} 嗎？"
             }
         },
         "friend_location_card": {
@@ -6214,6 +6222,14 @@
             }
         },
         "groups_sidebar": {
+            "toast": {
+                "failed_to_launch_instance": "啟動房間失敗",
+                "failed_to_send_self_invite": "傳送自我邀請失敗"
+            }
+        },
+        "world_rooms_sidebar": {
+            "empty": "目前沒有活躍的房間",
+            "failed": "房間載入失敗",
             "toast": {
                 "failed_to_launch_instance": "啟動房間失敗",
                 "failed_to_send_self_invite": "傳送自我邀請失敗"

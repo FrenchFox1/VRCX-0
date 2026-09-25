@@ -15,7 +15,17 @@ import { refreshFriendAndFavoriteSnapshots } from '@/services/backgroundMaintena
 import { toast } from '@/services/toastService';
 import { restoreNormalWindowModeForIntent } from '@/services/windowModeService';
 import { SECOND_MS } from '@/shared/constants/time';
+import {
+    sidebarTabFallbackIcon,
+    type SidebarFavoriteCollectionTabLayoutItem,
+    type SidebarTabLayout,
+    type SidebarWorldRoomsTabLayoutItem
+} from '@/shared/utils/sidebarTabLayout';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import {
+    hydrateSidebarTabLayout,
+    saveSidebarTabLayout
+} from '@/state/sidebarTabStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -36,14 +46,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { FriendsSidebar } from './FriendsSidebar';
 import { GroupsSidebar } from './GroupsSidebar';
-import {
-    DEFAULT_SIDEBAR_TAB_LAYOUT,
-    normalizeSidebarTabLayout,
-    serializeSidebarTabLayout,
-    sidebarTabFallbackIcon,
-    type SidebarFavoriteCollectionTabLayoutItem,
-    type SidebarTabLayout
-} from './side-panel/sidebarTabLayout';
 import { SidePanelCustomTabsDialog } from './side-panel/SidePanelCustomTabsDialog';
 import { SidePanelFavoriteGroupOrderDialog } from './side-panel/SidePanelFavoriteGroupOrderDialog';
 import { SidePanelSelfHeader } from './side-panel/SidePanelSelfHeader';
@@ -55,6 +57,8 @@ import type {
 import { useSidePanelActiveTab } from './side-panel/useSidePanelActiveTab';
 import { useSidePanelSettingsState } from './useSidePanelSettingsState';
 import { useSidePanelTabData } from './useSidePanelTabData';
+import { WorldRoomsSidebar } from './world-rooms/WorldRoomsSidebar';
+import { WorldRoomsTabRail } from './world-rooms/WorldRoomsTabRail';
 
 const defaultPrefs: SidePanelPreferences = {
     sidebarGroupByInstance: true,
@@ -65,8 +69,7 @@ const defaultPrefs: SidePanelPreferences = {
     sidebarSortMethod2: 'Sort Alphabetically',
     sidebarSortMethod3: '',
     sidebarFavoriteGroups: [],
-    sidebarFavoriteGroupOrder: [],
-    sidebarTabLayout: DEFAULT_SIDEBAR_TAB_LAYOUT
+    sidebarFavoriteGroupOrder: []
 };
 
 const FRIEND_REFRESH_COOLDOWN_MS = 30 * SECOND_MS;
@@ -126,21 +129,15 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
         const [friendRefreshCooldownUntil, setFriendRefreshCooldownUntil] =
             useState(0);
         const [customTabsDialogOpen, setCustomTabsDialogOpen] = useState(false);
-        const [customTabsAutoAdd, setCustomTabsAutoAdd] = useState(false);
-        const [filterQuery, setFilterQuery] = useState('');
-        const filterPlaceholder =
-            activeTab === 'groups'
-                ? t('side_panel.filter_groups')
-                : t('side_panel.filter_friends');
+        const [filter, setFilter] = useState({ tab: activeTab, query: '' });
+        const filterQuery = filter.tab === activeTab ? filter.query : '';
 
-        function selectTab(nextTab: string) {
-            setFilterQuery('');
-            setActiveTab(nextTab);
+        function setFilterQuery(query: string) {
+            setFilter({ tab: activeTab, query });
         }
 
-        function openCustomTabsDialog(autoAdd = false) {
+        function openCustomTabsDialog() {
             restoreNormalWindowModeForIntent();
-            setCustomTabsAutoAdd(autoAdd);
             setCustomTabsDialogOpen(true);
         }
 
@@ -161,8 +158,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 ),
                 configRepository.getString('sidebarSortMethod3', ''),
                 configRepository.getString('sidebarFavoriteGroups', '[]'),
-                configRepository.getString('sidebarFavoriteGroupOrder', '[]'),
-                configRepository.getString('sidebarTabLayout', '[]')
+                configRepository.getString('sidebarFavoriteGroupOrder', '[]')
             ])
                 .then(
                     ([
@@ -174,8 +170,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                         sidebarSortMethod2,
                         sidebarSortMethod3,
                         sidebarFavoriteGroups,
-                        sidebarFavoriteGroupOrder,
-                        sidebarTabLayout
+                        sidebarFavoriteGroupOrder
                     ]) => {
                         if (!active) {
                             return;
@@ -207,13 +202,12 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             ),
                             sidebarFavoriteGroupOrder: parseConfigArray(
                                 sidebarFavoriteGroupOrder
-                            ),
-                            sidebarTabLayout:
-                                normalizeSidebarTabLayout(sidebarTabLayout)
+                            )
                         });
                     }
                 )
                 .catch(() => {});
+            hydrateSidebarTabLayout().catch(() => {});
             return () => {
                 active = false;
             };
@@ -231,6 +225,16 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
             tabLayout,
             visibleTabLayout
         } = useSidePanelTabData({ activeTab, prefs, setActiveTab });
+        const worldRoomsTabs = visibleTabLayout.filter(
+            (item): item is SidebarWorldRoomsTabLayoutItem =>
+                item.type === 'worldRooms'
+        );
+        const filterPlaceholder =
+            activeTab === 'groups'
+                ? t('side_panel.filter_groups')
+                : worldRoomsTabs.some((item) => item.id === activeTab)
+                  ? t('side_panel.filter_instances')
+                  : t('side_panel.filter_friends');
 
         const {
             favoriteGroupOrderDialogOpen,
@@ -309,15 +313,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
         }
 
         function saveCustomTabs(nextLayout: SidebarTabLayout) {
-            const normalizedLayout = normalizeSidebarTabLayout(nextLayout);
-            setPrefs((current) => ({
-                ...current,
-                sidebarTabLayout: normalizedLayout
-            }));
-            configRepository.setString(
-                'sidebarTabLayout',
-                serializeSidebarTabLayout(normalizedLayout)
-            );
+            void saveSidebarTabLayout(nextLayout);
         }
 
         function setTabVisibilityFromMenu(tabId: string, visible: boolean) {
@@ -331,7 +327,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 if (item.type === 'system' && item.systemTab === 'groups') {
                     return { ...item, visible: Boolean(visible) };
                 }
-                if (item.type === 'favoriteCollection') {
+                if (item.type !== 'system') {
                     return { ...item, visible: Boolean(visible) };
                 }
                 return item;
@@ -356,7 +352,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 <Tabs
                     orientation="vertical"
                     value={activeTab}
-                    onValueChange={selectTab}
+                    onValueChange={setActiveTab}
                     className="flex min-h-0 min-w-0 flex-1 gap-0 overflow-hidden"
                 >
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-2 pl-2">
@@ -436,6 +432,18 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                     />
                                 </TabsContent>
                             ))}
+                        {worldRoomsTabs.map((item) => (
+                            <TabsContent
+                                key={item.id}
+                                value={item.id}
+                                className="min-h-0 flex-1 overflow-hidden data-hidden:hidden"
+                            >
+                                <WorldRoomsSidebar
+                                    tab={item}
+                                    filterQuery={filterQuery}
+                                />
+                            </TabsContent>
+                        ))}
                     </div>
                     <div className="vrcx-0-side-panel-rail flex w-9 shrink-0 flex-col items-center gap-0.5 py-1.5">
                         <TabsList
@@ -443,13 +451,17 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             className="w-full flex-col gap-0.5 p-0 [&>[data-slot=tab-indicator]]:hidden"
                         >
                             {tabItems.map((item) => {
-                                const Icon = getNavIconComponent(
-                                    item.icon,
-                                    sidebarTabFallbackIcon(item.layoutItem)
-                                );
+                                const Icon =
+                                    item.layoutItem.type === 'worldRooms'
+                                        ? null
+                                        : getNavIconComponent(
+                                              item.icon,
+                                              sidebarTabFallbackIcon(
+                                                  item.layoutItem
+                                              )
+                                          );
                                 const canHideTab =
-                                    item.layoutItem.type ===
-                                        'favoriteCollection' ||
+                                    item.layoutItem.type !== 'system' ||
                                     item.layoutItem.systemTab === 'groups';
                                 const hideLabel =
                                     item.layoutItem.type === 'system' &&
@@ -483,14 +495,24 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                                     />
                                                 }
                                             >
-                                                <Icon
-                                                    className="size-4.5"
-                                                    data-icon="icon"
-                                                />
+                                                {Icon ? (
+                                                    <Icon
+                                                        className="size-4.5"
+                                                        data-icon="icon"
+                                                    />
+                                                ) : null}
                                                 <span className="sr-only">
                                                     {item.label}
                                                 </span>
-                                                {item.railCountLabel ? (
+                                                {item.layoutItem.type ===
+                                                'worldRooms' ? (
+                                                    <WorldRoomsTabRail
+                                                        worldId={
+                                                            item.layoutItem
+                                                                .worldId
+                                                        }
+                                                    />
+                                                ) : item.railCountLabel ? (
                                                     <span className="text-[10px] leading-none tabular-nums">
                                                         {item.railCountLabel}
                                                     </span>
@@ -544,12 +566,12 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             size="icon"
                             className="shrink-0"
                             title={t(
-                                'side_panel.settings.custom_tabs.add_favorite_tab'
+                                'side_panel.settings.custom_tabs.configure'
                             )}
                             aria-label={t(
-                                'side_panel.settings.custom_tabs.add_favorite_tab'
+                                'side_panel.settings.custom_tabs.configure'
                             )}
-                            onClick={() => openCustomTabsDialog(true)}
+                            onClick={openCustomTabsDialog}
                         >
                             <PlusIcon data-icon="icon" />
                         </Button>
@@ -601,15 +623,9 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 />
                 <SidePanelCustomTabsDialog
                     open={customTabsDialogOpen}
-                    onOpenChange={(open) => {
-                        setCustomTabsDialogOpen(open);
-                        if (!open) {
-                            setCustomTabsAutoAdd(false);
-                        }
-                    }}
+                    onOpenChange={setCustomTabsDialogOpen}
                     layout={tabLayout}
                     favoriteGroupItems={favoriteGroupItems}
-                    autoCreateCollection={customTabsAutoAdd}
                     onSave={saveCustomTabs}
                 />
             </aside>

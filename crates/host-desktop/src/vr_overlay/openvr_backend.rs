@@ -28,7 +28,7 @@ use super::{
 };
 use openvr_devices::{snapshot_openvr_devices, string_property, BatteryReadingState};
 
-const WRIST_VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_secs(2);
+const WRIST_VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_secs(1);
 const MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_millis(16);
 const SURFACE_FADE_DURATION: Duration = Duration::from_millis(240);
 const OPENVR_CONTEXT_IN_USE_MESSAGE: &str =
@@ -102,7 +102,9 @@ impl Drop for OpenVrContextLease {
 }
 
 struct OpenVrSurface {
-    handle: OverlayHandle,
+    handles: [OverlayHandle; 2],
+    front: usize,
+    back_loading: bool,
     config: OverlaySurfaceConfig,
     transform_device: Option<TrackedDeviceIndex>,
     policy: WristVisibilityPolicy,
@@ -123,8 +125,16 @@ struct PendingFrame {
 }
 
 impl OpenVrSurface {
+    fn front_handle(&self) -> OverlayHandle {
+        self.handles[self.front]
+    }
+
+    fn back_handle(&self) -> OverlayHandle {
+        self.handles[1 - self.front]
+    }
+
     fn take_pending_frame_if_due(&mut self, now: Instant) -> Option<(OverlayHandle, PendingFrame)> {
-        if !self.visible {
+        if !self.visible || self.back_loading {
             return None;
         }
         if self.last_visible_frame_upload_at.is_some_and(|last| {
@@ -134,7 +144,7 @@ impl OpenVrSurface {
         }
         let pending_frame = self.pending_frame.take()?;
         self.last_visible_frame_upload_at = Some(now);
-        Some((self.handle, pending_frame))
+        Some((self.back_handle(), pending_frame))
     }
 }
 
@@ -148,7 +158,7 @@ struct SurfaceFade {
 #[derive(Clone)]
 struct SurfaceUpdateCandidate {
     surface_id: OverlaySurfaceId,
-    handle: OverlayHandle,
+    handles: [OverlayHandle; 2],
     config: OverlaySurfaceConfig,
     transform_device: Option<TrackedDeviceIndex>,
     policy: WristVisibilityPolicy,
@@ -233,17 +243,22 @@ impl OverlayBackend for OpenVrOverlayBackend {
             .overlay
             .as_mut()
             .ok_or_else(|| "OpenVR overlay is not started".to_string())?;
-        let handle = overlay
-            .create_overlay(
-                &format!("vrcx.{}\0", config.surface_id.as_str()),
-                &format!("VRCX {} Overlay\0", config.surface_id.as_str()),
-            )
-            .map_err(|error| format!("create overlay failed: {error:?}"))?;
-        set_overlay_premultiplied_alpha(handle)?;
+        let mut handles = [OverlayHandle(0); 2];
+        for (slot, handle) in handles.iter_mut().enumerate() {
+            *handle = overlay
+                .create_overlay(
+                    &format!("vrcx.{}.{slot}\0", config.surface_id.as_str()),
+                    &format!("VRCX {} Overlay\0", config.surface_id.as_str()),
+                )
+                .map_err(|error| format!("create overlay failed: {error:?}"))?;
+            set_overlay_premultiplied_alpha(*handle)?;
+        }
         self.surfaces.insert(
             surface_id,
             OpenVrSurface {
-                handle,
+                handles,
+                front: 0,
+                back_loading: false,
                 config: config.clone(),
                 transform_device: None,
                 policy: WristVisibilityPolicy::default(),
@@ -284,18 +299,7 @@ impl OverlayBackend for OpenVrOverlayBackend {
         let Some((handle, pending_frame)) = pending else {
             return Ok(());
         };
-
-        if let Err(error) = self.upload_frame(handle, &pending_frame.frame) {
-            if let Some(surface) = self.surfaces.get_mut(surface_id) {
-                surface.pending_frame = Some(pending_frame);
-                surface.last_visible_frame_upload_at = None;
-            }
-            return Err(error);
-        }
-        if let Some(surface) = self.surfaces.get_mut(surface_id) {
-            surface.last_uploaded_frame_fingerprint = Some(pending_frame.fingerprint);
-        }
-        Ok(())
+        self.upload_to_back(surface_id, handle, pending_frame)
     }
 
     fn show(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
@@ -359,6 +363,14 @@ impl OverlayBackend for OpenVrOverlayBackend {
             system,
             &mut self.hmd_battery_readings,
         ))
+    }
+
+    fn visible_surface_ids(&self) -> Vec<OverlaySurfaceId> {
+        self.surfaces
+            .iter()
+            .filter(|(_, surface)| surface.visible)
+            .map(|(surface_id, _)| surface_id.clone())
+            .collect()
     }
 
     fn tick(&mut self) -> TickOutcome {
@@ -426,7 +438,9 @@ impl OpenVrOverlayBackend {
         let surfaces = self
             .surfaces
             .iter()
-            .map(|(surface_id, surface)| (surface_id.clone(), surface.handle))
+            .flat_map(|(surface_id, surface)| {
+                surface.handles.map(|handle| (surface_id.clone(), handle))
+            })
             .collect::<Vec<_>>();
         for (surface_id, handle) in surfaces {
             loop {
@@ -442,7 +456,7 @@ impl OpenVrOverlayBackend {
                     break;
                 }
                 let event = EventInfo::from(unsafe { event.assume_init() });
-                if self.handle_overlay_event(&surface_id, event) {
+                if self.handle_overlay_event(&surface_id, handle, event) {
                     if let Some(system) = &self.system {
                         system.acknowledge_quit_exiting();
                     }
@@ -453,14 +467,37 @@ impl OpenVrOverlayBackend {
         false
     }
 
-    fn handle_overlay_event(&mut self, surface_id: &OverlaySurfaceId, event: EventInfo) -> bool {
+    fn handle_overlay_event(
+        &mut self,
+        surface_id: &OverlaySurfaceId,
+        handle: OverlayHandle,
+        event: EventInfo,
+    ) -> bool {
+        let loading_back = self
+            .surfaces
+            .get(surface_id)
+            .is_some_and(|surface| surface.back_loading && surface.back_handle() == handle);
         match event.event {
             Event::ImageLoaded => {
                 self.outstanding_raw_frames = self.outstanding_raw_frames.saturating_sub(1);
+                if loading_back {
+                    if let Err(error) = self.swap_loaded_back(surface_id) {
+                        tracing::warn!(
+                            error = %error,
+                            surface_id = surface_id.as_str(),
+                            "failed to swap VR overlay buffers"
+                        );
+                    }
+                }
                 false
             }
             Event::ImageFailed => {
                 self.outstanding_raw_frames = self.outstanding_raw_frames.saturating_sub(1);
+                if loading_back {
+                    if let Some(surface) = self.surfaces.get_mut(surface_id) {
+                        surface.back_loading = false;
+                    }
+                }
                 tracing::warn!(
                     surface_id = surface_id.as_str(),
                     event_age_seconds = event.age,
@@ -499,7 +536,7 @@ impl OpenVrOverlayBackend {
             .filter(|(_, surface)| surface.active && surface_uses_wrist_policy(&surface.config))
             .map(|(surface_id, surface)| SurfaceUpdateCandidate {
                 surface_id: surface_id.clone(),
-                handle: surface.handle,
+                handles: surface.handles,
                 config: surface.config.clone(),
                 transform_device: surface.transform_device,
                 policy: surface.policy,
@@ -519,13 +556,15 @@ impl OpenVrOverlayBackend {
 
             if let Ok(device) = resolve_device(system, &candidate.config.placement) {
                 if transform_device != Some(device) {
-                    overlay
-                        .set_transform_tracked_device_relative(
-                            candidate.handle,
-                            device,
-                            &surface_transform(&candidate.config.placement),
-                        )
-                        .map_err(|error| format!("set overlay transform failed: {error:?}"))?;
+                    for handle in candidate.handles {
+                        overlay
+                            .set_transform_tracked_device_relative(
+                                handle,
+                                device,
+                                &surface_transform(&candidate.config.placement),
+                            )
+                            .map_err(|error| format!("set overlay transform failed: {error:?}"))?;
+                    }
                     tracing::debug!(
                         surface_id = candidate.surface_id.as_str(),
                         device_index = device.0,
@@ -563,18 +602,20 @@ impl OpenVrOverlayBackend {
             .system
             .as_ref()
             .ok_or_else(|| "OpenVR system interface is not started".to_string())?;
-        let handle = self.surface_handle(&config.surface_id)?;
+        let handles = self.surface_handles(&config.surface_id)?;
         let overlay = self
             .overlay
             .as_mut()
             .ok_or_else(|| "OpenVR overlay is not started".to_string())?;
 
-        overlay
-            .set_width(handle, config.physical_width_meters)
-            .map_err(|error| format!("set overlay width failed: {error:?}"))?;
-        overlay
-            .set_texel_aspect(handle, 1.0)
-            .map_err(|error| format!("set overlay texel aspect failed: {error:?}"))?;
+        for handle in handles {
+            overlay
+                .set_width(handle, config.physical_width_meters)
+                .map_err(|error| format!("set overlay width failed: {error:?}"))?;
+            overlay
+                .set_texel_aspect(handle, 1.0)
+                .map_err(|error| format!("set overlay texel aspect failed: {error:?}"))?;
+        }
 
         let transform_device = match resolve_device(system, &config.placement) {
             Ok(device) => {
@@ -584,13 +625,15 @@ impl OpenVrOverlayBackend {
                     placement = ?config.placement,
                     "resolved VR overlay tracked device"
                 );
-                overlay
-                    .set_transform_tracked_device_relative(
-                        handle,
-                        device,
-                        &surface_transform(&config.placement),
-                    )
-                    .map_err(|error| format!("set overlay transform failed: {error:?}"))?;
+                for handle in handles {
+                    overlay
+                        .set_transform_tracked_device_relative(
+                            handle,
+                            device,
+                            &surface_transform(&config.placement),
+                        )
+                        .map_err(|error| format!("set overlay transform failed: {error:?}"))?;
+                }
                 Some(device)
             }
             Err(error @ TrackedDeviceResolutionError::Unavailable { .. }) => {
@@ -614,7 +657,7 @@ impl OpenVrOverlayBackend {
         surface_id: &OverlaySurfaceId,
         visible: bool,
     ) -> Result<(), String> {
-        let (handle, current_visible, pending_before_show) = {
+        let (handle, back_handle, current_visible, pending_before_show) = {
             let surface = self.surfaces.get_mut(surface_id).ok_or_else(|| {
                 format!(
                     "overlay surface '{}' is not registered",
@@ -622,9 +665,10 @@ impl OpenVrOverlayBackend {
                 )
             })?;
             (
-                surface.handle,
+                surface.front_handle(),
+                surface.back_handle(),
                 surface.visible,
-                if visible && !surface.visible {
+                if visible && !surface.visible && !surface.back_loading {
                     surface.pending_frame.take()
                 } else {
                     None
@@ -635,15 +679,7 @@ impl OpenVrOverlayBackend {
             return Ok(());
         }
         if let Some(pending_frame) = pending_before_show {
-            if let Err(error) = self.upload_frame(handle, &pending_frame.frame) {
-                if let Some(surface) = self.surfaces.get_mut(surface_id) {
-                    surface.pending_frame = Some(pending_frame);
-                }
-                return Err(error);
-            }
-            if let Some(surface) = self.surfaces.get_mut(surface_id) {
-                surface.last_uploaded_frame_fingerprint = Some(pending_frame.fingerprint);
-            }
+            self.upload_to_back(surface_id, back_handle, pending_frame)?;
         }
         let overlay = self
             .overlay
@@ -745,14 +781,16 @@ impl OpenVrOverlayBackend {
     }
 
     fn apply_alpha(&mut self, surface_id: &OverlaySurfaceId, alpha: f32) -> Result<(), String> {
-        let handle = self.surface_handle(surface_id)?;
+        let handles = self.surface_handles(surface_id)?;
         let overlay = self
             .overlay
             .as_mut()
             .ok_or_else(|| "OpenVR overlay is not started".to_string())?;
-        overlay
-            .set_opacity(handle, alpha)
-            .map_err(|error| format!("set overlay alpha failed: {error:?}"))?;
+        for handle in handles {
+            overlay
+                .set_opacity(handle, alpha)
+                .map_err(|error| format!("set overlay alpha failed: {error:?}"))?;
+        }
         if let Some(surface) = self.surfaces.get_mut(surface_id) {
             surface.current_alpha = alpha;
         }
@@ -788,24 +826,63 @@ impl OpenVrOverlayBackend {
             let Some((handle, pending_frame)) = pending else {
                 continue;
             };
-            if let Err(error) = self.upload_frame(handle, &pending_frame.frame) {
-                if let Some(surface) = self.surfaces.get_mut(&surface_id) {
-                    surface.pending_frame = Some(pending_frame);
-                    surface.last_visible_frame_upload_at = None;
-                }
-                return Err(error);
-            }
-            if let Some(surface) = self.surfaces.get_mut(&surface_id) {
-                surface.last_uploaded_frame_fingerprint = Some(pending_frame.fingerprint);
-            }
+            self.upload_to_back(&surface_id, handle, pending_frame)?;
         }
         Ok(())
     }
 
-    fn surface_handle(&self, surface_id: &OverlaySurfaceId) -> Result<OverlayHandle, String> {
+    fn upload_to_back(
+        &mut self,
+        surface_id: &OverlaySurfaceId,
+        handle: OverlayHandle,
+        pending_frame: PendingFrame,
+    ) -> Result<(), String> {
+        let uploaded = self.upload_frame(handle, &pending_frame.frame);
+        if let Some(surface) = self.surfaces.get_mut(surface_id) {
+            match uploaded {
+                Ok(()) => {
+                    surface.back_loading = true;
+                    surface.last_uploaded_frame_fingerprint = Some(pending_frame.fingerprint);
+                }
+                Err(_) => {
+                    surface.pending_frame = Some(pending_frame);
+                    surface.last_visible_frame_upload_at = None;
+                }
+            }
+        }
+        uploaded
+    }
+
+    fn swap_loaded_back(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
+        let Some(surface) = self.surfaces.get_mut(surface_id) else {
+            return Ok(());
+        };
+        surface.back_loading = false;
+        let (back, front, visible) = (
+            surface.back_handle(),
+            surface.front_handle(),
+            surface.visible,
+        );
+        surface.front = 1 - surface.front;
+        if !visible {
+            return Ok(());
+        }
+        let overlay = self
+            .overlay
+            .as_mut()
+            .ok_or_else(|| "OpenVR overlay is not started".to_string())?;
+        overlay
+            .set_visibility(back, true)
+            .map_err(|error| format!("set overlay visibility failed: {error:?}"))?;
+        overlay
+            .set_visibility(front, false)
+            .map_err(|error| format!("set overlay visibility failed: {error:?}"))
+    }
+
+    fn surface_handles(&self, surface_id: &OverlaySurfaceId) -> Result<[OverlayHandle; 2], String> {
         self.surfaces
             .get(surface_id)
-            .map(|surface| surface.handle)
+            .map(|surface| surface.handles)
             .ok_or_else(|| {
                 format!(
                     "overlay surface '{}' is not registered",

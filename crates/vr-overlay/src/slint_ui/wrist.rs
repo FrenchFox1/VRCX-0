@@ -77,11 +77,12 @@ impl SlintSurfaceHost for SlintWristHost {
         self.component.set_now_playing_time(SharedString::from(
             now_playing.map_or("", |value| value.time_text.as_str()),
         ));
-        let progress = now_playing.and_then(|value| value.progress_percent);
+        let progress = now_playing.and_then(|value| value.progress_permille);
         self.component
             .set_now_playing_has_progress(progress.is_some());
-        self.component
-            .set_now_playing_progress(progress.map_or(0.0, |percent| f32::from(percent) / 100.0));
+        self.component.set_now_playing_progress(
+            progress.map_or(0.0, |permille| f32::from(permille) / 1000.0),
+        );
         self.component
             .set_footer_left(SharedString::from(model.footer.left.as_str()));
         self.component

@@ -7,6 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
+import type { FavoriteGroupItem } from '@/shared/utils/sidebarTabLayout';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Field, FieldLabel } from '@/ui/shadcn/field';
@@ -24,7 +25,6 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { SidebarAutoHideSetting } from './SidebarAutoHideSetting';
-import type { FavoriteGroupItem } from './sidebarTabLayout';
 import { SidePanelSettingRow as SettingRow } from './SidePanelSettingRow';
 import type {
     SidePanelBooleanPreferenceKey,

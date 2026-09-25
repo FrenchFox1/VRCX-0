@@ -4,5 +4,5 @@ use serde::{Deserialize, Serialize};
 pub struct OverlayNowPlaying {
     pub title: String,
     pub time_text: String,
-    pub progress_percent: Option<u8>,
+    pub progress_permille: Option<u16>,
 }

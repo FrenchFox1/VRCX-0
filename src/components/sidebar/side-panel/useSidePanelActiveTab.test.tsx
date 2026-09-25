@@ -11,11 +11,14 @@ vi.mock('@/services/runtime-event-bridge/auxiliaryEventHandlers', () => ({
     requestGroupInstancesRefresh: mocks.requestGroupInstancesRefresh
 }));
 
+import { setSidebarActiveTab } from '@/state/sidebarTabStore';
+
 import { useSidePanelActiveTab } from './useSidePanelActiveTab';
 
 describe('useSidePanelActiveTab', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        setSidebarActiveTab('friends');
         mocks.requestGroupInstancesRefresh.mockResolvedValue(undefined);
     });
 

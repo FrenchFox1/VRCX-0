@@ -1,11 +1,8 @@
 import type { FavoriteLoadStatus } from '@/domain/favorites/types';
 import type { FriendSortMethod } from '@/shared/utils/friend';
+import type { SidebarTabLayoutItem } from '@/shared/utils/sidebarTabLayout';
 
 import type { SidebarPreferences } from '../friends-sidebar/friendsSidebarModel';
-import type {
-    SidebarTabLayout,
-    SidebarTabLayoutItem
-} from './sidebarTabLayout';
 
 export type SidePanelSortMethod = FriendSortMethod | '';
 
@@ -23,7 +20,6 @@ export type SidePanelPreferences = Required<
     sidebarSortMethod1: SidePanelSortMethod;
     sidebarSortMethod2: SidePanelSortMethod;
     sidebarSortMethod3: SidePanelSortMethod;
-    sidebarTabLayout: SidebarTabLayout;
 };
 
 export type SidePanelBooleanPreferenceKey =

@@ -3651,6 +3651,7 @@ export type DatabaseUpgradePreflight = {
     status: DatabaseUpgradePreflightStatus;
     fromVersion: number;
     toVersion: number;
+    repairPending: boolean;
     stage?: DatabaseUpgradeStage | null;
     result?: DatabaseUpgradeRunResult | null;
     failedUpgrade?: DatabaseUpgradeStatus | null;
@@ -3696,7 +3697,8 @@ export type DatabaseUpgradeStage =
     | 'schemaMigrations'
     | 'optimize'
     | 'writeVersion'
-    | 'commit';
+    | 'commit'
+    | 'repairData';
 export type DatabaseUpgradeStatus = {
     fromVersion: number;
     toVersion: number;

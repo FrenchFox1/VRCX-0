@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
+import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import { LocationWorld } from '@/components/LocationWorld';
 import { ScreenshotThumbnailCard } from '@/components/media/ScreenshotThumbnailCard';
@@ -43,6 +44,7 @@ import {
     platformDisplayName,
     resolveLaunchLocation
 } from './WorldDialogViewParts';
+import { WorldSidebarPinButton } from './WorldSidebarPinButton';
 
 const WORLD_DATE_FALLBACKS = {
     empty: '',
@@ -245,6 +247,10 @@ export function WorldDialogTabPanels({
                             max: world.capacity || '—'
                         })}
                     </Badge>
+                    <WorldSidebarPinButton
+                        worldId={world.id}
+                        name={world.name}
+                    />
                 </div>
                 <div className="flex flex-col gap-2">
                     {displayInstanceRows.length ? (
@@ -322,7 +328,12 @@ export function WorldDialogTabPanels({
                                             />
                                             {instance.isCurrentInstance ? (
                                                 <CurrentInstanceBadge className="shrink-0" />
-                                            ) : null}
+                                            ) : (
+                                                <InstanceVisitedBadge
+                                                    location={location}
+                                                    className="shrink-0"
+                                                />
+                                            )}
                                         </div>
                                         <InstanceActionBar
                                             className="min-w-0 flex-wrap justify-start sm:justify-end"

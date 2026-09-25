@@ -231,6 +231,40 @@ describe('useFavoriteRemoteDetails', () => {
         expect(result.current.data.wrld_1?.name).toBe('World One');
     });
 
+    it('keeps loaded details and does not claim ready while temporarily disabled', async () => {
+        mocks.appFavoriteDetailsHydrate.mockResolvedValueOnce({
+            detailsById: {
+                wrld_1: { id: 'wrld_1', name: 'World One' }
+            },
+            availabilityById: {},
+            cachedCount: 1,
+            fetchedAt: '2026-08-11T00:00:00.000Z'
+        });
+        const { rerender, result } = renderHook(
+            ({ enabled }: { enabled: boolean }) =>
+                useFavoriteRemoteDetails({
+                    type: 'world',
+                    favoriteIds: ['wrld_1', 'wrld_2'],
+                    enabled
+                }),
+            { initialProps: { enabled: true } }
+        );
+
+        await waitFor(() => {
+            expect(result.current.status).toBe('ready');
+        });
+
+        rerender({ enabled: false });
+
+        expect(result.current.status).toBe('idle');
+        expect(result.current.data.wrld_1?.name).toBe('World One');
+        await waitFor(() => {
+            expect(result.current.status).toBe('idle');
+        });
+        expect(result.current.data.wrld_1?.name).toBe('World One');
+        expect(mocks.appFavoriteDetailsHydrate).toHaveBeenCalledTimes(1);
+    });
+
     it('stays ready without calling the backend when disabled or without ids', async () => {
         const { result } = renderHook(() =>
             useFavoriteRemoteDetails({

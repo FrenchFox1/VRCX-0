@@ -51,23 +51,6 @@ function normalizeEntityId(value: unknown) {
         : String(value ?? '').trim();
 }
 
-export function resolveFavoriteEntityLabel(
-    entity: unknown,
-    entityId: string
-): string {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (!isRecord(entity)) {
-        return normalizedEntityId;
-    }
-
-    return (
-        normalizeEntityId(entity.displayName) ||
-        normalizeEntityId(entity.name) ||
-        normalizeEntityId(entity.username) ||
-        normalizedEntityId
-    );
-}
-
 function resolveGroups(kind: FavoriteKind, state: FavoriteStore) {
     if (kind === 'friend') {
         return state.favoriteFriendGroups;
@@ -109,10 +92,6 @@ function formatGroupLabel(group: FavoriteStoreGroup) {
     return `${String(group.displayName || group.name || group.key)}${suffix}`;
 }
 
-function groupDisplayLabel(group: FavoriteStoreGroup | undefined) {
-    return String(group?.displayName || group?.name || group?.key || '');
-}
-
 export function resolveFavoriteAddType(
     group: FavoriteStoreGroup,
     fallbackKind: FavoriteKind
@@ -135,27 +114,34 @@ function isVrchatFavoriteType(
     );
 }
 
-export function resolveRemoteFavoriteGroupLabel(
+function remoteFavoriteGroupKey(
+    remoteFavorite: FavoriteRecord | null | undefined
+) {
+    return normalizeEntityId(remoteFavorite?.$groupKey);
+}
+
+function remoteFavoriteTag(remoteFavorite: FavoriteRecord | null | undefined) {
+    return Array.isArray(remoteFavorite?.tags)
+        ? normalizeEntityId(remoteFavorite.tags[0])
+        : '';
+}
+
+function resolveRemoteFavoriteGroup(
     remoteFavorite: FavoriteRecord | null | undefined,
     groups: readonly FavoriteStoreGroup[] | null | undefined
 ) {
-    const groupKey = normalizeEntityId(remoteFavorite?.$groupKey);
     const type = normalizeEntityId(remoteFavorite?.type);
-    const tag = Array.isArray(remoteFavorite?.tags)
-        ? normalizeEntityId(remoteFavorite.tags[0])
-        : '';
+    const tag = remoteFavoriteTag(remoteFavorite);
     const candidates = new Set(
         [
-            groupKey,
+            remoteFavoriteGroupKey(remoteFavorite),
             tag.includes(':') ? tag : '',
             type && tag ? `${type}:${tag}` : ''
         ].filter(Boolean)
     );
-    const group = (Array.isArray(groups) ? groups : EMPTY_GROUPS).find((item) =>
+    return (Array.isArray(groups) ? groups : EMPTY_GROUPS).find((item) =>
         candidates.has(normalizeEntityId(item?.key))
     );
-
-    return groupDisplayLabel(group) || groupKey || tag || 'Current group';
 }
 
 function hasLocalFavorite(
@@ -188,8 +174,6 @@ export function FavoriteActionMenu({
     const { t } = useTranslation();
 
     const normalizedEntityId = entityId.trim();
-    const entityLabel = resolveFavoriteEntityLabel(entity, normalizedEntityId);
-    const confirm = useModalStore((state) => state.confirm);
     const prompt = useModalStore((state) => state.prompt);
     const groups = useFavoriteStore((state) => resolveGroups(kind, state));
     const localWorldFavorites = useLocalWorldFavorites(
@@ -229,14 +213,14 @@ export function FavoriteActionMenu({
     const remoteFavorite = useFavoriteStore(
         (state) => state.remoteFavoritesByObjectId[normalizedEntityId] || null
     );
-    const remoteFavoriteGroupLabel = useMemo(
-        () => resolveRemoteFavoriteGroupLabel(remoteFavorite, groups),
+    const remoteFavoriteGroup = useMemo(
+        () => resolveRemoteFavoriteGroup(remoteFavorite, groups),
         [groups, remoteFavorite]
     );
     const [actionStatus, setActionStatus] = useState('idle');
     const actionStatusRef = useRef('idle');
 
-    async function addFavorite(group: FavoriteStoreGroup) {
+    async function setRemoteFavoriteGroup(group: FavoriteStoreGroup | null) {
         if (!normalizedEntityId || actionStatusRef.current !== 'idle') {
             return;
         }
@@ -244,19 +228,28 @@ export function FavoriteActionMenu({
         actionStatusRef.current = 'favorite';
         setActionStatus('favorite');
         try {
-            await vrchatFavoriteRepository.addFavorite({
-                type: resolveFavoriteAddType(group, kind),
-                favoriteId: normalizedEntityId,
-                tags: group.name
-            });
-            if (kind === 'world' && isRecord(entity)) {
-                persistWorldDetails(entity, normalizedEntityId);
-            } else if (kind === 'avatar' && isRecord(entity)) {
-                persistAvatarDetails(entity, normalizedEntityId);
+            if (remoteFavorite) {
+                await vrchatFavoriteRepository.deleteFavorite({
+                    objectId: normalizedEntityId
+                });
+            }
+            if (group) {
+                await vrchatFavoriteRepository.addFavorite({
+                    type: resolveFavoriteAddType(group, kind),
+                    favoriteId: normalizedEntityId,
+                    tags: group.name
+                });
+                if (kind === 'world' && isRecord(entity)) {
+                    persistWorldDetails(entity, normalizedEntityId);
+                } else if (kind === 'avatar' && isRecord(entity)) {
+                    persistAvatarDetails(entity, normalizedEntityId);
+                }
             }
             toast.add({
                 type: 'success',
-                title: t('view.favorite.label.favorite_added')
+                title: group
+                    ? t('view.favorite.label.favorite_added')
+                    : t('view.favorite.success.favorite_removed')
             });
         } catch (error) {
             toast.add({
@@ -264,59 +257,13 @@ export function FavoriteActionMenu({
                 title:
                     error instanceof Error
                         ? error.message
-                        : t(
-                              'component.favorite_action_menu.toast.failed_to_add_favorite'
-                          )
-            });
-        } finally {
-            actionStatusRef.current = 'idle';
-            setActionStatus('idle');
-        }
-    }
-
-    async function deleteFavorite() {
-        if (!normalizedEntityId || actionStatusRef.current !== 'idle') {
-            return;
-        }
-
-        actionStatusRef.current = 'favorite';
-        setActionStatus('favorite');
-        const result = await confirm({
-            title: t(
-                'component.favorite_action_menu.modal.remove_vrchat_favorite'
-            ),
-            description: t(
-                'component.favorite_action_menu.dynamic.remove_value_from_vrchat_favorites',
-                { value: entityLabel }
-            ),
-            destructive: true,
-            confirmText: t('common.actions.remove'),
-            cancelText: t('common.actions.cancel')
-        });
-
-        if (!result.ok) {
-            actionStatusRef.current = 'idle';
-            setActionStatus('idle');
-            return;
-        }
-
-        try {
-            await vrchatFavoriteRepository.deleteFavorite({
-                objectId: normalizedEntityId
-            });
-            toast.add({
-                type: 'success',
-                title: t('view.favorite.success.favorite_removed')
-            });
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title:
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.favorite_action_menu.toast.failed_to_remove_favorite'
-                          )
+                        : group
+                          ? t(
+                                'component.favorite_action_menu.toast.failed_to_add_favorite'
+                            )
+                          : t(
+                                'component.favorite_action_menu.toast.failed_to_remove_favorite'
+                            )
             });
         } finally {
             actionStatusRef.current = 'idle';
@@ -514,54 +461,49 @@ export function FavoriteActionMenu({
                     <DropdownMenuLabel>
                         {t('view.favorite.label.vrchat_favorites')}
                     </DropdownMenuLabel>
-                    {remoteFavorite ? (
-                        <DropdownMenuItem disabled>
-                            {remoteFavoriteGroupLabel}
-                        </DropdownMenuItem>
-                    ) : groups.length ? (
+                    {remoteFavorite && !remoteFavoriteGroup ? (
+                        <DropdownMenuCheckboxItem
+                            checked
+                            onClick={(event) => event.preventDefault()}
+                            onCheckedChange={() =>
+                                void setRemoteFavoriteGroup(null)
+                            }
+                        >
+                            {remoteFavoriteGroupKey(remoteFavorite) ||
+                                remoteFavoriteTag(remoteFavorite) ||
+                                'Current group'}
+                        </DropdownMenuCheckboxItem>
+                    ) : null}
+                    {groups.length ? (
                         groups.map((group) => {
+                            const isCurrent = group === remoteFavoriteGroup;
                             const isFull =
                                 Number(group.capacity) > 0 &&
                                 (Number(group.count) || 0) >=
                                     Number(group.capacity);
 
                             return (
-                                <DropdownMenuItem
+                                <DropdownMenuCheckboxItem
                                     key={String(group.key ?? '')}
-                                    disabled={isFull}
-                                    closeOnClick={false}
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        addFavorite(group);
-                                    }}
+                                    checked={isCurrent}
+                                    disabled={isFull && !isCurrent}
+                                    onClick={(event) => event.preventDefault()}
+                                    onCheckedChange={() =>
+                                        void setRemoteFavoriteGroup(
+                                            isCurrent ? null : group
+                                        )
+                                    }
                                 >
                                     {formatGroupLabel(group)}
-                                </DropdownMenuItem>
+                                </DropdownMenuCheckboxItem>
                             );
                         })
-                    ) : (
+                    ) : remoteFavorite ? null : (
                         <DropdownMenuItem disabled>
                             {t('view.favorite.empty.no_favorite_groups_loaded')}
                         </DropdownMenuItem>
                     )}
                 </DropdownMenuGroup>
-                {remoteFavorite ? (
-                    <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem
-                                variant="destructive"
-                                closeOnClick={false}
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    deleteFavorite();
-                                }}
-                            >
-                                {t('view.favorite.action.remove_favorite')}
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </>
-                ) : null}
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                     <DropdownMenuLabel>{localFavoritesLabel}</DropdownMenuLabel>

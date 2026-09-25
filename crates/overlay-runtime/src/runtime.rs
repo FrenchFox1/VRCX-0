@@ -184,6 +184,7 @@ struct WristSurfaceRuntimeConfig {
 struct VrOverlayFrameInput {
     config: VrOverlayRuntimeConfig,
     devices: Vec<VrDeviceSnapshot>,
+    wrist_visible: bool,
     test_mode: bool,
 }
 
@@ -782,6 +783,9 @@ impl VrOverlayRuntime {
             .lock()
             .map(|devices| devices.clone())
             .unwrap_or_default();
+        let wrist_visible = wrist_surface_ids(config.hand)
+            .iter()
+            .any(|surface_id| manager.is_surface_visible(surface_id));
         let frame = match self
             .frame_producer
             .lock()
@@ -791,6 +795,7 @@ impl VrOverlayRuntime {
                 producer.next_frame(VrOverlayFrameInput {
                     config,
                     devices,
+                    wrist_visible,
                     test_mode: self.is_test_mode(),
                 })
             }) {
@@ -915,7 +920,12 @@ impl VrOverlayFrameProducer for RuntimeWristFrameProducer {
                 now_ms(),
             )
         } else {
-            build_wrist_frame_input(self.services.as_ref(), input.config, input.devices)
+            build_wrist_frame_input(
+                self.services.as_ref(),
+                input.config,
+                input.devices,
+                input.wrist_visible,
+            )
         };
         let model = build_wrist_surface_model(frame_input);
         render_slint_wrist_frame(&model)
@@ -1064,6 +1074,7 @@ pub(super) fn build_wrist_frame_input(
     services: &dyn VrOverlayRuntimeServices,
     config: VrOverlayRuntimeConfig,
     devices: Vec<VrDeviceSnapshot>,
+    live_now_playing: bool,
 ) -> WristOverlayFrameInput {
     let game_log = services.game_log_snapshot();
     let now_playing = services.now_playing();
@@ -1081,6 +1092,7 @@ pub(super) fn build_wrist_frame_input(
             position_seconds: now_playing.position,
             started_at: now_playing.started_at.clone().unwrap_or_default(),
         }),
+        live_now_playing,
         footer: WristRuntimeFooter {
             player_count: game_log.players.len() as u32,
             instance_duration: instance_duration_text(
