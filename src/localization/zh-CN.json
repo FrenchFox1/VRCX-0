@@ -1409,6 +1409,8 @@
                 "search": "搜索",
                 "search_mode_name": "名称",
                 "search_mode_tag": "标签",
+                "search_mode": "搜索方式",
+                "search_tags": "搜索标签",
                 "vrchat_favorites": "VRChat 收藏",
                 "local_favorites": "本地收藏夹",
                 "new_group": "创建新的收藏夹"

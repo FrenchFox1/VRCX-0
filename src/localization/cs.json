@@ -1419,6 +1419,8 @@
                 "search": "Vyhledávání",
                 "search_mode_name": "Název",
                 "search_mode_tag": "Štítek",
+                "search_mode": "Hledat podle",
+                "search_tags": "Hledat štítky",
                 "vrchat_favorites": "VRChat Oblíbené",
                 "local_favorites": "Lokální Oblíbené",
                 "new_group": "Nová skupina"

@@ -1411,6 +1411,8 @@
                 "search": "Pesquisar",
                 "search_mode_name": "Nome",
                 "search_mode_tag": "Tag",
+                "search_mode": "Buscar por",
+                "search_tags": "Buscar tags",
                 "vrchat_favorites": "Favoritos do VRChat",
                 "local_favorites": "Favoritos Locais",
                 "new_group": "Novo Grupo"
