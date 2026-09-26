@@ -1409,6 +1409,8 @@
                 "search": "搜尋",
                 "search_mode_name": "名稱",
                 "search_mode_tag": "標籤",
+                "search_mode": "搜尋方式",
+                "search_tags": "搜尋標籤",
                 "vrchat_favorites": "VRChat 收藏",
                 "local_favorites": "本機收藏",
                 "new_group": "新群組"

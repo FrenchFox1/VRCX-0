@@ -1419,6 +1419,8 @@
                 "search": "Поиск",
                 "search_mode_name": "Имя",
                 "search_mode_tag": "Метка",
+                "search_mode": "Искать по",
+                "search_tags": "Поиск по меткам",
                 "vrchat_favorites": "Избранное VRChat",
                 "local_favorites": "Локальное избранное",
                 "new_group": "Новая группа"

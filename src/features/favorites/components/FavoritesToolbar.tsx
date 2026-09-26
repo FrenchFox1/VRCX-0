@@ -2,6 +2,7 @@ import {
     ArrowUpDownIcon,
     DownloadIcon,
     ExternalLinkIcon,
+    ListFilterIcon,
     UploadIcon
 } from 'lucide-react';
 import { Fragment } from 'react';
@@ -13,15 +14,19 @@ import {
     ToolbarOverflowMenu,
     ToolbarRefreshButton,
     ToolbarSearch,
-    ToolbarSegmented,
+    toolbarSearchScopeTrigger,
     ToolbarViewMenu,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
 import type { FavoriteKind } from '@/domain/favorites/types';
 import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuSeparator
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import {
@@ -37,6 +42,7 @@ import {
     ToggleGroupItem,
     ToggleGroupSeparator
 } from '@/ui/shadcn/toggle-group';
+import { Tooltip } from '@/ui/shadcn/tooltip';
 
 import {
     FAVORITES_DENSITY_OPTIONS,
@@ -88,6 +94,10 @@ function FavoritesToolbar({
         { value: 'name', label: t('view.search.avatar.sort_name') },
         { value: 'date', label: t('view.favorite.label.sort_by_date') }
     ];
+    const searchModes: Array<{ value: FavoriteSearchMode; label: string }> = [
+        { value: 'name', label: t('view.favorite.worlds.search_mode_name') },
+        { value: 'tag', label: t('view.favorite.worlds.search_mode_tag') }
+    ];
     if (kind === 'world') {
         sortItems.push({
             value: 'players',
@@ -131,32 +141,55 @@ function FavoritesToolbar({
                             </SelectGroup>
                         </SelectContent>
                     </Select>
-                    {kind === 'world' ? (
-                        <ToolbarSegmented
-                            value={searchMode}
-                            onValueChange={onSearchModeChange}
-                            options={[
-                                {
-                                    value: 'name',
-                                    label: t(
-                                        'view.favorite.worlds.search_mode_name'
-                                    )
-                                },
-                                {
-                                    value: 'tag',
-                                    label: t(
-                                        'view.favorite.worlds.search_mode_tag'
-                                    )
-                                }
-                            ]}
-                        />
-                    ) : null}
                 </ToolbarViews>
 
                 <ToolbarSearch
                     value={searchQuery}
                     onValueChange={onSearchChange}
-                    placeholder={searchPlaceholder}
+                    placeholder={
+                        kind === 'world' && searchMode === 'tag'
+                            ? t('view.favorite.worlds.search_tags')
+                            : searchPlaceholder
+                    }
+                    trailing={
+                        kind === 'world' ? (
+                            <DropdownMenu>
+                                <Tooltip>
+                                    <DropdownMenuTrigger
+                                        render={toolbarSearchScopeTrigger({
+                                            active: searchMode === 'tag',
+                                            icon: ListFilterIcon,
+                                            label: t(
+                                                'view.favorite.worlds.search_mode'
+                                            )
+                                        })}
+                                    />
+                                </Tooltip>
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-40"
+                                >
+                                    <DropdownMenuGroup>
+                                        {searchModes.map((mode) => (
+                                            <DropdownMenuCheckboxItem
+                                                key={mode.value}
+                                                checked={
+                                                    mode.value === searchMode
+                                                }
+                                                onCheckedChange={() =>
+                                                    onSearchModeChange(
+                                                        mode.value
+                                                    )
+                                                }
+                                            >
+                                                {mode.label}
+                                            </DropdownMenuCheckboxItem>
+                                        ))}
+                                    </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : undefined
+                    }
                 />
 
                 <ToolbarActions>

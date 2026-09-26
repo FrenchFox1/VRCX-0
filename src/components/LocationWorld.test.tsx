@@ -125,6 +125,7 @@ type LocationWorldTestProps = {
     currentUserId?: string;
     worldDialogShortName?: string;
     interactive?: boolean;
+    showWorldName?: boolean;
 };
 
 function renderLocationWorld(props: LocationWorldTestProps = {}) {
@@ -187,6 +188,16 @@ describe('LocationWorld', () => {
 
         expect(html).toContain('World Beta · Public #98765');
         expect(html).not.toContain('<button');
+    });
+
+    it('omits the world name when the list already names the world', () => {
+        const html = renderLocationWorld({
+            locationObject: 'wrld_beta:98765~region(eu)',
+            showWorldName: false
+        });
+
+        expect(html).toContain('Public #98765');
+        expect(html).not.toContain('World Beta');
     });
 
     it('renders sentinel status labels without instance details', () => {

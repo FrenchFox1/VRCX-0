@@ -1405,6 +1405,8 @@
                 "search": "検索",
                 "search_mode_name": "名前",
                 "search_mode_tag": "タグ",
+                "search_mode": "検索対象",
+                "search_tags": "タグで検索",
                 "vrchat_favorites": "VRChat のお気に入り",
                 "local_favorites": "ローカルのお気に入り",
                 "new_group": "新規グループ"

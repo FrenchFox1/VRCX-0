@@ -564,7 +564,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="shrink-0"
+                            className="text-muted-foreground shrink-0"
                             title={t(
                                 'side_panel.settings.custom_tabs.configure'
                             )}

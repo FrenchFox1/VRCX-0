@@ -40,6 +40,7 @@ export type InstanceLocationSummaryProps = {
     disableTooltip?: boolean;
     instanceClickAction?: 'launch' | 'world';
     showGroupName?: boolean;
+    showWorldName?: boolean;
     showPlayerSummary?: boolean;
     className?: string;
 };
@@ -60,6 +61,7 @@ export function InstanceLocationSummary({
     disableTooltip = false,
     instanceClickAction = 'launch',
     showGroupName = true,
+    showWorldName = true,
     showPlayerSummary = true,
     className = ''
 }: InstanceLocationSummaryProps) {
@@ -122,7 +124,10 @@ export function InstanceLocationSummary({
             ? `${hasPlayerCount ? resolvedPlayerCount : '—'}${hasCapacity ? `/${resolvedCapacity}` : ''}`
             : '';
     const locationLabel =
-        [worldName, accessTypeName || locObj.accessTypeName || '']
+        [
+            showWorldName ? worldName : '',
+            accessTypeName || locObj.accessTypeName || ''
+        ]
             .filter(Boolean)
             .join(' · ') || '—';
 
