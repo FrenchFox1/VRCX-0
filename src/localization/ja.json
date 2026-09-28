@@ -1153,8 +1153,6 @@
         },
         "friends_locations": {
             "online": "オンライン",
-            "world_friends_one": "フレンド {count} 人",
-            "world_friends_other": "フレンド {count} 人",
             "view_people": "フレンド表示",
             "view_worlds": "ワールド表示",
             "world_instances_one": "{count} インスタンス",

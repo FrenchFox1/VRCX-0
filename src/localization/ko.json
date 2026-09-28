@@ -1096,8 +1096,6 @@
         },
         "friends_locations": {
             "online": "온라인",
-            "world_friends_one": "친구 {count}명",
-            "world_friends_other": "친구 {count}명",
             "view_people": "친구 보기",
             "view_worlds": "월드 보기",
             "world_instances_one": "인스턴스 {count}개",

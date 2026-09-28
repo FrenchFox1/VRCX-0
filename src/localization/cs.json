@@ -1159,10 +1159,6 @@
         },
         "friends_locations": {
             "online": "Online",
-            "world_friends_one": "{count} přítel",
-            "world_friends_few": "{count} přátelé",
-            "world_friends_many": "{count} přátel",
-            "world_friends_other": "{count} přátel",
             "view_people": "Zobrazení přátel",
             "view_worlds": "Zobrazení světů",
             "world_instances_one": "{count} instance",

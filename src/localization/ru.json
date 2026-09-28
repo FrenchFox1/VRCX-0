@@ -1159,10 +1159,6 @@
         },
         "friends_locations": {
             "online": "Онлайн",
-            "world_friends_one": "{count} друг",
-            "world_friends_few": "{count} друга",
-            "world_friends_many": "{count} друзей",
-            "world_friends_other": "{count} друга",
             "view_people": "Вид: друзья",
             "view_worlds": "Вид: миры",
             "world_instances_one": "{count} инстанс",

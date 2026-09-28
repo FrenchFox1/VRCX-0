@@ -1153,8 +1153,6 @@
         },
         "friends_locations": {
             "online": "上線",
-            "world_friends_one": "{count} 位好友",
-            "world_friends_other": "{count} 位好友",
             "view_people": "好友檢視",
             "view_worlds": "世界檢視",
             "world_instances_one": "{count} 個房間",

@@ -1155,8 +1155,6 @@
         },
         "friends_locations": {
             "online": "Online",
-            "world_friends_one": "{count} amigo",
-            "world_friends_other": "{count} amigos",
             "view_people": "Visualização por amigos",
             "view_worlds": "Visualização por mundos",
             "world_instances_one": "{count} instância",
