@@ -166,7 +166,10 @@
         "note_local": "Note locale",
         "note_synced": "Note VRChat",
         "last_online": "En ligne il y a {duration}",
-        "in_private_world": "Dans un monde privé"
+        "in_private_world": "Dans un monde privé",
+        "mutual_friends": "{count} amis en commun",
+        "no_mutual_friends": "Aucun ami en commun",
+        "name_separator": ", "
     },
     "deep_link": {
         "import_collection": {
@@ -3181,6 +3184,18 @@
             },
             "toast": {
                 "failed_to_look_up_this_player": "Échec de la recherche de cet utilisateur"
+            },
+            "mutual_friends": {
+                "query": "Vérifier les amis en commun",
+                "graph_fetch_running": "Le graphe des amis en commun est en cours de récupération. Veuillez vérifier à nouveau une fois l'opération terminée.",
+                "summary": "{count} utilisateurs partagent des amis avec vous",
+                "circles_prefix": "principalement provenant des communautés de",
+                "circles_suffix": "",
+                "cell_tooltip": "{names} · {count} amis en commun",
+                "cell_tooltip_circle": "{names} · {count} amis en commun · principalement provenant de la communauté de {circle}",
+                "requery": "Vérifier à nouveau",
+                "show": "Afficher les résultats",
+                "hide": "Masquer"
             }
         },
         "auth": {
@@ -3600,7 +3615,7 @@
             "group_count": "{count} groupe(s)",
             "edit_mode": "Modifier",
             "exit_edit_mode": "Terminé",
-            "section_own": "Mes groupes",
+            "section_own": "Groupes possédés",
             "section_joined": "Groupes rejoints",
             "order_hint": "Glissez les groupes pour définir l'ordre dans lequel VRChat les affiche.",
             "order_game_running": "VRChat est en cours d'éxecution. l'ordre peut être modifié une fois le jeu fermé.",
@@ -3863,6 +3878,9 @@
                     "alphabetical": "Alphabétique",
                     "last_active": "Dernière activité",
                     "friend_order": "Ordre d'ajout"
+                },
+                "view": {
+                    "list": "Liste"
                 }
             },
             "activity": {
@@ -4538,7 +4556,12 @@
                 "moderation_tools": "Outils de modération",
                 "leave": "Quitter le groupe",
                 "block": "Bloquer le groupe",
-                "unblock": "Débloquer le groupe"
+                "unblock": "Débloquer le groupe",
+                "edit_profile": "Modifier les détails du groupe",
+                "edit_profile_media": "Modifier la bannière et l'icône",
+                "use_banner": "Utiliser comme bannière",
+                "use_group_icon": "Utiliser comme icône de groupe",
+                "delete": "Supprimer le groupe"
             },
             "overview": {
                 "header": "Aperçu",
@@ -4648,7 +4671,9 @@
                 "name_a_z": "Nom A-Z",
                 "name_z_a": "Nom Z-A",
                 "role": "Rôle",
-                "all_roles": "Tous les rôles"
+                "all_roles": "Tous les rôles",
+                "banner": "Bannière",
+                "group_icon": "Icône du groupe"
             },
             "success": {
                 "group_join_request_cancelled": "Demande d'adhésion au groupe annulée",
@@ -4678,7 +4703,11 @@
                 "group_post_created": "Publication du groupe créée",
                 "failed_to_save_group_post": "Échec de l'enregistrement de la publication du groupe",
                 "failed_to_send_group_invite": "Échec de l'envoi de l'invitation au groupe",
-                "failed_to_delete_group_post": "Échec de la suppression de la publication du groupe"
+                "failed_to_delete_group_post": "Échec de la suppression de la publication du groupe",
+                "group_profile_updated": "Groupe mis à jour",
+                "failed_to_update_group_profile": "Échec de la mise à jour du groupe",
+                "group_deleted": "Groupe supprimé",
+                "failed_to_delete_group": "Échec de la suppression du groupe"
             },
             "modal": {
                 "leave_group": "Quitter le groupe ?",
@@ -4687,7 +4716,9 @@
                 "delete_group_post": "Supprimer la publication du groupe ?",
                 "block_group": "Bloquer le groupe ?",
                 "unblock_group": "Débloquer le groupe ?",
-                "invite_to_group": "Inviter dans le groupe"
+                "invite_to_group": "Inviter dans le groupe",
+                "delete_group": "Supprimer le groupe ?",
+                "delete": "Supprimer"
             },
             "dynamic": {
                 "leave_value": "Quitter {value} ?",
@@ -4695,7 +4726,19 @@
                 "value_completed": "{value} terminé",
                 "search_value": "Rechercher {value}",
                 "no_value": "Aucun {value}",
-                "value_copied": "{value} copié"
+                "value_copied": "{value} copié",
+                "delete_value": "Supprimer {value} ? Tout le monde perdra l'accès au groupe."
+            },
+            "edit": {
+                "short_code": "Code court",
+                "short_code_hint": "3–6 lettres majuscules ou chiffres. Modifier celui-ci modifie également le lien du groupe.",
+                "add_link": "Ajouter un lien",
+                "remove_link": "Supprimer un lien",
+                "join_state_open": "Tout le monde",
+                "join_state_request": "Demande d'adhésion",
+                "join_state_invite": "Invitation uniquement",
+                "join_state_closed": "Fermé",
+                "allow_join_prompt": "Demander aux personnes dans les instances du groupe de rejoindre"
             }
         },
         "favorite": {
@@ -5970,7 +6013,8 @@
             "bioLink": "Liens",
             "note": "Note",
             "user": "Utilisateur",
-            "location": "Emplacement"
+            "location": "Emplacement",
+            "mutualFriends": "Amis en commun"
         },
         "friendLog": {
             "date": "Date",
@@ -6492,5 +6536,9 @@
         "restore": "Restaurer et redémarrer",
         "keep": "L'affichage est normal, conserver",
         "failed": "Impossible de modifier le paramètre de rendu. Veuillez réessayer."
+    },
+    "mutual_graph_hint": {
+        "build": "Aucun graphe d'amis communs n'est actuellement disponible. Créez-le.",
+        "room_scan_running": "Vérification des amis en commun pour cette instance. Veuillez réessayer une fois l'opération terminée."
     }
 }
