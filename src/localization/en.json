@@ -4230,7 +4230,7 @@
                 "enable_focus_view": "Enable focus view",
                 "enable_debugging": "Enable debugging",
                 "enable_third_person_view": "Enable third-person view",
-                "allow_props_to_modify_player_movement": "Allow props to modify player movement",
+                "allow_props_to_modify_player_movement": "Allow props to modify user movement",
                 "add_domain": "Add domain"
             },
             "loading": {
