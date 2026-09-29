@@ -26,6 +26,7 @@ const OPENROUTER_REASONING_EFFORTS: &[&str] =
 #[derive(Clone)]
 pub struct LlmClient {
     http: Client,
+    request_timeout: Duration,
     base_url: String,
     api_key: String,
     model: String,
@@ -146,7 +147,25 @@ impl LlmClient {
         model: impl Into<String>,
         proxy_url: Option<&str>,
     ) -> Result<Self, LlmError> {
-        let mut builder = Client::builder().timeout(Duration::from_secs(180));
+        Self::with_timeout(
+            base_url,
+            api_key,
+            model,
+            proxy_url,
+            Duration::from_secs(180),
+        )
+    }
+
+    fn with_timeout(
+        base_url: impl Into<String>,
+        api_key: impl Into<String>,
+        model: impl Into<String>,
+        proxy_url: Option<&str>,
+        timeout: Duration,
+    ) -> Result<Self, LlmError> {
+        let mut builder = Client::builder()
+            .connect_timeout(timeout)
+            .read_timeout(timeout);
         if let Some(proxy_url) = proxy_url {
             builder = builder.proxy(Proxy::all(with_remote_dns(proxy_url).as_ref())?);
         }
@@ -154,6 +173,7 @@ impl LlmClient {
         let base_url = base_url.into();
         Ok(Self {
             http,
+            request_timeout: timeout,
             base_url: normalize_base_url(&base_url),
             api_key: api_key.into(),
             model: model.into(),
@@ -163,7 +183,11 @@ impl LlmClient {
     /// List the models the configured endpoint advertises (`GET /models`).
     pub async fn list_models(&self) -> Result<LlmEndpointDetectModelsResult, LlmError> {
         let url = format!("{}/models", self.base_url);
-        let response = self.authorized(self.http.get(&url)).send().await?;
+        let response = self
+            .authorized(self.http.get(&url))
+            .timeout(self.request_timeout)
+            .send()
+            .await?;
         let status = response.status();
         if !status.is_success() {
             let message = response.text().await.unwrap_or_default();
@@ -210,6 +234,7 @@ impl LlmClient {
                     .post(format!("{}/chat/completions", self.base_url)),
             )
             .json(&body)
+            .timeout(self.request_timeout)
             .send()
             .await?;
 

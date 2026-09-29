@@ -166,7 +166,10 @@
         "note_local": "本地备注",
         "note_synced": "线上备注",
         "last_online": "最后在线 {duration} 前",
-        "in_private_world": "目前位于私人房间"
+        "in_private_world": "目前位于私人房间",
+        "mutual_friends": "{count} 位共同好友",
+        "no_mutual_friends": "没有共同好友",
+        "name_separator": "、"
     },
     "deep_link": {
         "import_collection": {
@@ -3179,6 +3182,18 @@
             },
             "toast": {
                 "failed_to_look_up_this_player": "查找玩家失败"
+            },
+            "mutual_friends": {
+                "query": "查询共同好友",
+                "graph_fetch_running": "好友关系图正在拉取，完成后再查询",
+                "summary": "{count} 人与你有共同好友",
+                "circles_prefix": "主要来自",
+                "circles_suffix": "的圈子",
+                "cell_tooltip": "{names} 等 {count} 位共同好友",
+                "cell_tooltip_circle": "{names} 等 {count} 位共同好友 · 主要来自{circle}的圈子",
+                "requery": "再次查询",
+                "show": "显示结果",
+                "hide": "隐藏"
             }
         },
         "auth": {
@@ -3598,6 +3613,8 @@
             "group_count": "{count} 个群组",
             "edit_mode": "编辑",
             "exit_edit_mode": "完成",
+            "section_own": "我创建的群组",
+            "section_joined": "我加入的群组",
             "order_hint": "拖拽群组，调整 VRChat 中显示群组的顺序。",
             "order_game_running": "VRChat 正在运行，顺序改动可能在游戏退出时被覆盖。",
             "order_unavailable": "无法调整群组顺序：{reason}",
@@ -3860,6 +3877,9 @@
                     "alphabetical": "字母顺序",
                     "last_active": "最后活跃",
                     "friend_order": "添加顺序"
+                },
+                "view": {
+                    "list": "列表"
                 }
             },
             "activity": {
@@ -4535,7 +4555,12 @@
                 "moderation_tools": "成员管理",
                 "leave": "离开群组",
                 "block": "屏蔽该群组",
-                "unblock": "取消屏蔽该群组"
+                "unblock": "取消屏蔽该群组",
+                "edit_profile": "编辑群组资料",
+                "edit_profile_media": "编辑横幅和图标",
+                "use_banner": "用作横幅",
+                "use_group_icon": "用作群组图标",
+                "delete": "删除群组"
             },
             "overview": {
                 "header": "概览",
@@ -4645,7 +4670,9 @@
                 "name_a_z": "名称 A-Z",
                 "name_z_a": "名称 Z-A",
                 "role": "身份组",
-                "all_roles": "所有身份组"
+                "all_roles": "所有身份组",
+                "banner": "横幅",
+                "group_icon": "群组图标"
             },
             "success": {
                 "group_join_request_cancelled": "已取消群组加入申请",
@@ -4675,7 +4702,11 @@
                 "group_post_created": "已创建群组帖子",
                 "failed_to_save_group_post": "保存群组帖子失败",
                 "failed_to_send_group_invite": "发送群组邀请失败",
-                "failed_to_delete_group_post": "删除群组帖子失败"
+                "failed_to_delete_group_post": "删除群组帖子失败",
+                "group_profile_updated": "群组已更新",
+                "failed_to_update_group_profile": "更新群组失败",
+                "group_deleted": "群组已删除",
+                "failed_to_delete_group": "删除群组失败"
             },
             "modal": {
                 "leave_group": "退出群组？",
@@ -4684,7 +4715,9 @@
                 "delete_group_post": "删除群组帖子？",
                 "block_group": "屏蔽群组？",
                 "unblock_group": "取消屏蔽群组？",
-                "invite_to_group": "邀请加入群组"
+                "invite_to_group": "邀请加入群组",
+                "delete_group": "删除群组？",
+                "delete": "删除"
             },
             "dynamic": {
                 "leave_value": "要退出 {value} 吗？",
@@ -4692,7 +4725,19 @@
                 "value_completed": "{value} 已完成",
                 "search_value": "搜索 {value}",
                 "no_value": "没有{value}",
-                "value_copied": "已复制{value}"
+                "value_copied": "已复制{value}",
+                "delete_value": "要删除 {value} 吗？删除后所有人都将无法再访问这个群组。"
+            },
+            "edit": {
+                "short_code": "短代码",
+                "short_code_hint": "3–6 位大写字母或数字。修改后群组链接也会随之改变。",
+                "add_link": "添加链接",
+                "remove_link": "移除链接",
+                "join_state_open": "任何人",
+                "join_state_request": "需申请",
+                "join_state_invite": "仅限邀请",
+                "join_state_closed": "关闭",
+                "allow_join_prompt": "在群组实例中提示玩家加入群组"
             }
         },
         "favorite": {
@@ -5967,7 +6012,8 @@
             "bioLink": "社交链接",
             "note": "备注",
             "user": "玩家",
-            "location": "位置"
+            "location": "位置",
+            "mutualFriends": "共同好友"
         },
         "friendLog": {
             "date": "时间",
@@ -6489,5 +6535,9 @@
         "restore": "恢复兼容模式并重启",
         "keep": "显示正常，保留",
         "failed": "无法更改渲染设置，请重试。"
+    },
+    "mutual_graph_hint": {
+        "build": "尚未生成好友关系图，去生成",
+        "room_scan_running": "正在查询本房间的共同好友，请稍后再试"
     }
 }

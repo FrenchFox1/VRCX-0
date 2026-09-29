@@ -166,7 +166,10 @@
         "note_local": "ローカルノート",
         "note_synced": "VRChatノート",
         "last_online": "最終オンライン {duration}前",
-        "in_private_world": "プライベートワールド"
+        "in_private_world": "プライベートワールド",
+        "mutual_friends": "共通のフレンド {count}人",
+        "no_mutual_friends": "共通のフレンドはいません",
+        "name_separator": "、"
     },
     "deep_link": {
         "import_collection": {
@@ -3175,6 +3178,18 @@
             },
             "toast": {
                 "failed_to_look_up_this_player": "このプレイヤーの検索に失敗しました"
+            },
+            "mutual_friends": {
+                "query": "共通のフレンドを確認",
+                "graph_fetch_running": "共通のフレンドのグラフを取得中です。完了後に確認してください",
+                "summary": "{count}人と共通のフレンドがいます",
+                "circles_prefix": "主に",
+                "circles_suffix": "のコミュニティ",
+                "cell_tooltip": "{names} など共通のフレンド {count}人",
+                "cell_tooltip_circle": "{names} など共通のフレンド {count}人 · 主に{circle}のコミュニティ",
+                "requery": "もう一度確認",
+                "show": "結果を表示",
+                "hide": "非表示"
             }
         },
         "auth": {
@@ -3594,6 +3609,8 @@
             "group_count": "グループ {count} 件",
             "edit_mode": "編集",
             "exit_edit_mode": "完了",
+            "section_own": "自分のグループ",
+            "section_joined": "参加したグループ",
             "order_hint": "グループをドラッグして、VRChat 内での表示順を変更します。",
             "order_game_running": "VRChatが起動中です。並び順の変更はゲーム終了時に上書きされることがあります。",
             "order_unavailable": "並び順を変更できません：{reason}",
@@ -3854,6 +3871,9 @@
                     "alphabetical": "アルファベット順",
                     "last_active": "最終活動時間順",
                     "friend_order": "フレンド追加順"
+                },
+                "view": {
+                    "list": "リスト"
                 }
             },
             "activity": {
@@ -4520,7 +4540,12 @@
                 "moderation_tools": "管理用ツール",
                 "leave": "グループから抜ける",
                 "block": "グループをブロック",
-                "unblock": "グループのブロックを解除"
+                "unblock": "グループのブロックを解除",
+                "edit_profile": "グループ情報を編集",
+                "edit_profile_media": "バナーとアイコンを編集",
+                "use_banner": "バナーに使用",
+                "use_group_icon": "グループアイコンに使用",
+                "delete": "グループを削除"
             },
             "overview": {
                 "header": "概要",
@@ -4630,7 +4655,9 @@
                 "name_a_z": "名前 A-Z",
                 "name_z_a": "名前 Z-A",
                 "role": "ロール",
-                "all_roles": "すべてのロール"
+                "all_roles": "すべてのロール",
+                "banner": "バナー",
+                "group_icon": "グループアイコン"
             },
             "success": {
                 "group_join_request_cancelled": "グループ参加リクエストをキャンセルしました",
@@ -4660,7 +4687,11 @@
                 "group_post_created": "グループ投稿を作成しました",
                 "failed_to_save_group_post": "グループ投稿を保存できませんでした",
                 "failed_to_send_group_invite": "グループ招待を送信できませんでした",
-                "failed_to_delete_group_post": "グループ投稿を削除できませんでした"
+                "failed_to_delete_group_post": "グループ投稿を削除できませんでした",
+                "group_profile_updated": "グループを更新しました",
+                "failed_to_update_group_profile": "グループを更新できませんでした",
+                "group_deleted": "グループを削除しました",
+                "failed_to_delete_group": "グループを削除できませんでした"
             },
             "modal": {
                 "leave_group": "グループを退出しますか？",
@@ -4669,7 +4700,9 @@
                 "delete_group_post": "グループ投稿を削除しますか？",
                 "block_group": "グループをブロックしますか？",
                 "unblock_group": "グループのブロックを解除しますか？",
-                "invite_to_group": "グループに招待"
+                "invite_to_group": "グループに招待",
+                "delete_group": "グループを削除しますか？",
+                "delete": "削除"
             },
             "dynamic": {
                 "leave_value": "{value} を退出しますか？",
@@ -4677,7 +4710,19 @@
                 "value_completed": "{value} が完了しました",
                 "search_value": "{value} を検索",
                 "no_value": "{value}はありません",
-                "value_copied": "{value}をコピーしました"
+                "value_copied": "{value}をコピーしました",
+                "delete_value": "{value} を削除しますか？削除すると誰もこのグループを利用できなくなります。"
+            },
+            "edit": {
+                "short_code": "ショートコード",
+                "short_code_hint": "英大文字または数字で3〜6文字。変更するとグループのリンクも変わります。",
+                "add_link": "リンクを追加",
+                "remove_link": "リンクを削除",
+                "join_state_open": "誰でも",
+                "join_state_request": "申請制",
+                "join_state_invite": "招待のみ",
+                "join_state_closed": "締め切り",
+                "allow_join_prompt": "グループインスタンスにいる人へ参加を促す"
             }
         },
         "favorite": {
@@ -5950,7 +5995,8 @@
             "bioLink": "自己紹介リンク",
             "note": "ノート",
             "user": "ユーザー",
-            "location": "場所"
+            "location": "場所",
+            "mutualFriends": "共通のフレンド"
         },
         "friendLog": {
             "date": "日付",
@@ -6472,5 +6518,9 @@
         "restore": "互換モードに戻して再起動",
         "keep": "正常に表示されているので保存",
         "failed": "描画設定を変更できませんでした。もう一度お試しください。"
+    },
+    "mutual_graph_hint": {
+        "build": "共通のフレンドのグラフが未作成です · 作成する",
+        "room_scan_running": "このインスタンスの共通のフレンドを確認中です。完了後にもう一度お試しください"
     }
 }

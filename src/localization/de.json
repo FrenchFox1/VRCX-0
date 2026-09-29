@@ -166,7 +166,10 @@
         "note_local": "Lokale Notiz",
         "note_synced": "VRChat-Notiz",
         "last_online": "Zuletzt online vor {duration}",
-        "in_private_world": "In einer privaten Welt"
+        "in_private_world": "In einer privaten Welt",
+        "mutual_friends": "{count} gemeinsame Freunde",
+        "no_mutual_friends": "Keine gemeinsamen Freunde",
+        "name_separator": ", "
     },
     "deep_link": {
         "import_collection": {
@@ -3181,6 +3184,18 @@
             },
             "toast": {
                 "failed_to_look_up_this_player": "Dieser Spieler konnte nicht gesucht werden"
+            },
+            "mutual_friends": {
+                "query": "Gemeinsame Freunde abfragen",
+                "graph_fetch_running": "Der Gemeinsame-Freunde-Graph wird gerade abgerufen. Danach erneut abfragen.",
+                "summary": "{count} Spieler haben gemeinsame Freunde mit dir",
+                "circles_prefix": "vor allem aus den Communitys von",
+                "circles_suffix": "",
+                "cell_tooltip": "{names} · {count} gemeinsame Freunde",
+                "cell_tooltip_circle": "{names} · {count} gemeinsame Freunde · vor allem aus der Community von {circle}",
+                "requery": "Erneut abfragen",
+                "show": "Ergebnisse anzeigen",
+                "hide": "Ausblenden"
             }
         },
         "auth": {
@@ -3600,6 +3615,8 @@
             "group_count": "{count} Gruppe(n)",
             "edit_mode": "Bearbeiten",
             "exit_edit_mode": "Fertig",
+            "section_own": "Eigene Gruppen",
+            "section_joined": "Beigetretene Gruppen",
             "order_hint": "Ziehe die Gruppen, um ihre Anzeigereihenfolge in VRChat festzulegen.",
             "order_game_running": "VRChat läuft. Änderungen an der Reihenfolge können beim Beenden des Spiels überschrieben werden.",
             "order_unavailable": "Gruppenreihenfolge nicht verfügbar: {reason}",
@@ -3861,6 +3878,9 @@
                     "alphabetical": "Alphabetisch",
                     "last_active": "Zuletzt aktiv",
                     "friend_order": "Freundesreihenfolge"
+                },
+                "view": {
+                    "list": "Liste"
                 }
             },
             "activity": {
@@ -4492,7 +4512,12 @@
                 "moderation_tools": "Moderationswerkzeuge",
                 "leave": "Gruppe verlassen",
                 "block": "Gruppe blockieren",
-                "unblock": "Gruppe entsperren"
+                "unblock": "Gruppe entsperren",
+                "edit_profile": "Gruppendetails bearbeiten",
+                "edit_profile_media": "Banner und Symbol bearbeiten",
+                "use_banner": "Als Banner verwenden",
+                "use_group_icon": "Als Gruppensymbol verwenden",
+                "delete": "Gruppe löschen"
             },
             "overview": {
                 "header": "Übersicht",
@@ -4602,7 +4627,9 @@
                 "name_a_z": "Name A-Z",
                 "name_z_a": "Name Z-A",
                 "role": "Rolle",
-                "all_roles": "Alle Rollen"
+                "all_roles": "Alle Rollen",
+                "banner": "Banner",
+                "group_icon": "Gruppensymbol"
             },
             "success": {
                 "group_join_request_cancelled": "Beitrittsanfrage abgebrochen",
@@ -4632,7 +4659,11 @@
                 "group_post_created": "Gruppenbeitrag erstellt",
                 "failed_to_save_group_post": "Gruppenbeitrag konnte nicht gespeichert werden",
                 "failed_to_send_group_invite": "Gruppeneinladung konnte nicht gesendet werden",
-                "failed_to_delete_group_post": "Gruppenbeitrag konnte nicht gelöscht werden"
+                "failed_to_delete_group_post": "Gruppenbeitrag konnte nicht gelöscht werden",
+                "group_profile_updated": "Gruppe aktualisiert",
+                "failed_to_update_group_profile": "Gruppe konnte nicht aktualisiert werden",
+                "group_deleted": "Gruppe gelöscht",
+                "failed_to_delete_group": "Gruppe konnte nicht gelöscht werden"
             },
             "modal": {
                 "leave_group": "Gruppe verlassen?",
@@ -4641,7 +4672,9 @@
                 "delete_group_post": "Gruppenbeitrag löschen?",
                 "block_group": "Gruppe blockieren?",
                 "unblock_group": "Gruppe entsperren?",
-                "invite_to_group": "In Gruppe einladen"
+                "invite_to_group": "In Gruppe einladen",
+                "delete_group": "Gruppe löschen?",
+                "delete": "Löschen"
             },
             "dynamic": {
                 "leave_value": "{value} verlassen?",
@@ -4649,7 +4682,19 @@
                 "value_completed": "{value} abgeschlossen",
                 "search_value": "{value} suchen",
                 "no_value": "Kein(e) {value}",
-                "value_copied": "{value} kopiert"
+                "value_copied": "{value} kopiert",
+                "delete_value": "{value} löschen? Danach hat niemand mehr Zugriff auf die Gruppe."
+            },
+            "edit": {
+                "short_code": "Kurzcode",
+                "short_code_hint": "3–6 Großbuchstaben oder Ziffern. Eine Änderung ändert auch den Gruppenlink.",
+                "add_link": "Link hinzufügen",
+                "remove_link": "Link entfernen",
+                "join_state_open": "Alle",
+                "join_state_request": "Auf Anfrage",
+                "join_state_invite": "Nur mit Einladung",
+                "join_state_closed": "Geschlossen",
+                "allow_join_prompt": "Personen in Gruppeninstanzen zum Beitritt auffordern"
             }
         },
         "favorite": {
@@ -5920,7 +5965,8 @@
             "bioLink": "Bio-Links",
             "note": "Notiz",
             "user": "Nutzer",
-            "location": "Standort"
+            "location": "Standort",
+            "mutualFriends": "Gemeinsame Freunde"
         },
         "friendLog": {
             "date": "Datum",
@@ -6442,5 +6488,9 @@
         "restore": "Wiederherstellen und neu starten",
         "keep": "Darstellung korrekt, beibehalten",
         "failed": "Die Darstellungseinstellung konnte nicht geändert werden. Versuche es erneut."
+    },
+    "mutual_graph_hint": {
+        "build": "Noch kein Gemeinsame-Freunde-Graph · Jetzt erstellen",
+        "room_scan_running": "Gemeinsame Freunde für diese Instanz werden abgefragt. Bitte danach erneut versuchen."
     }
 }

@@ -23,11 +23,11 @@ pub use controller::McpServerController;
 pub use error::McpError;
 pub use in_process::{spawn_in_process_tools, InProcessMcpTools, ToolCallOutcome, ToolDescriptor};
 pub use ports::{
-    McpActivityQueries, McpActivityQueryPort, McpActivitySession, McpConfig, McpConfigPort,
-    McpFavoritesQueries, McpFavoritesQueryPort, McpFeedQueries, McpFeedQueryPort, McpFriendCurrent,
-    McpFriendLocalData, McpFriendLocalDataPort, McpFriendMemo, McpInterruptCheck,
-    McpLocalModeration, McpMemoSave, McpMutualGraph, McpMutualGraphMeta, McpMutualGraphPort,
-    McpSocialHistoryQueries, McpSocialHistoryQueryPort,
+    McpActivityQueries, McpActivityQueryPort, McpConfig, McpConfigPort, McpFavoritesQueries,
+    McpFavoritesQueryPort, McpFeedQueries, McpFeedQueryPort, McpFriendCurrent, McpFriendLocalData,
+    McpFriendLocalDataPort, McpFriendMemo, McpInterruptCheck, McpLocalModeration, McpMemoSave,
+    McpMutualGraph, McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan, McpSocialHistoryQueries,
+    McpSocialHistoryQueryPort,
 };
 pub use runtime::{McpCaller, McpRuntime, McpRuntimeDeps};
 pub use types::{ClientConfigSnippets, McpServerState, McpServerStatus};

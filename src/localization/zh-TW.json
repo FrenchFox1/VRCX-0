@@ -166,7 +166,10 @@
         "note_local": "本機備註",
         "note_synced": "VRChat 備註",
         "last_online": "最後上線： {duration} 前",
-        "in_private_world": "在私人世界中"
+        "in_private_world": "在私人世界中",
+        "mutual_friends": "{count} 位共同好友",
+        "no_mutual_friends": "沒有共同好友",
+        "name_separator": "、"
     },
     "deep_link": {
         "import_collection": {
@@ -3179,6 +3182,18 @@
             },
             "toast": {
                 "failed_to_look_up_this_player": "尋找這個用戶失敗"
+            },
+            "mutual_friends": {
+                "query": "查詢共同好友",
+                "graph_fetch_running": "共同好友關係圖正在取得中，完成後再查詢",
+                "summary": "{count} 人與你有共同好友",
+                "circles_prefix": "主要來自",
+                "circles_suffix": "的社群",
+                "cell_tooltip": "{names} 等 {count} 位共同好友",
+                "cell_tooltip_circle": "{names} 等 {count} 位共同好友 · 主要來自{circle}的社群",
+                "requery": "再次查詢",
+                "show": "顯示結果",
+                "hide": "隱藏"
             }
         },
         "auth": {
@@ -3598,6 +3613,8 @@
             "group_count": "{count} 個群組",
             "edit_mode": "編輯",
             "exit_edit_mode": "完成",
+            "section_own": "我建立的群組",
+            "section_joined": "我加入的群組",
             "order_hint": "拖曳群組，調整 VRChat 中顯示群組的順序。",
             "order_game_running": "VRChat 正在執行，順序變更可能會在遊戲結束時被覆蓋。",
             "order_unavailable": "無法調整群組順序：{reason}",
@@ -3860,6 +3877,9 @@
                     "alphabetical": "按字母排序",
                     "last_active": "最後上線",
                     "friend_order": "好友列表順序"
+                },
+                "view": {
+                    "list": "列表"
                 }
             },
             "activity": {
@@ -4526,7 +4546,12 @@
                 "moderation_tools": "管理工具",
                 "leave": "離開群組",
                 "block": "封鎖群組",
-                "unblock": "解除封鎖群組"
+                "unblock": "解除封鎖群組",
+                "edit_profile": "編輯群組資料",
+                "edit_profile_media": "編輯橫幅和圖示",
+                "use_banner": "用作橫幅",
+                "use_group_icon": "用作群組圖示",
+                "delete": "刪除群組"
             },
             "overview": {
                 "header": "概覽",
@@ -4636,7 +4661,9 @@
                 "name_a_z": "名稱 A-Z",
                 "name_z_a": "名稱 Z-A",
                 "role": "角色",
-                "all_roles": "所有角色"
+                "all_roles": "所有角色",
+                "banner": "橫幅",
+                "group_icon": "群組圖示"
             },
             "success": {
                 "group_join_request_cancelled": "已取消加入群組請求",
@@ -4666,7 +4693,11 @@
                 "group_post_created": "群組帖子已建立",
                 "failed_to_save_group_post": "儲存群組帖子失敗",
                 "failed_to_send_group_invite": "傳送群組邀請失敗",
-                "failed_to_delete_group_post": "刪除群組帖子失敗"
+                "failed_to_delete_group_post": "刪除群組帖子失敗",
+                "group_profile_updated": "群組已更新",
+                "failed_to_update_group_profile": "更新群組失敗",
+                "group_deleted": "群組已刪除",
+                "failed_to_delete_group": "刪除群組失敗"
             },
             "modal": {
                 "leave_group": "退出群組？",
@@ -4675,7 +4706,9 @@
                 "delete_group_post": "刪除群組帖子？",
                 "block_group": "封鎖群組？",
                 "unblock_group": "取消封鎖群組？",
-                "invite_to_group": "邀請加入群組"
+                "invite_to_group": "邀請加入群組",
+                "delete_group": "刪除群組？",
+                "delete": "刪除"
             },
             "dynamic": {
                 "leave_value": "退出 {value}？",
@@ -4683,7 +4716,19 @@
                 "value_completed": "{value} 已完成",
                 "search_value": "搜尋 {value}",
                 "no_value": "沒有{value}",
-                "value_copied": "已複製{value}"
+                "value_copied": "已複製{value}",
+                "delete_value": "要刪除 {value} 嗎？刪除後所有人都無法再存取這個群組。"
+            },
+            "edit": {
+                "short_code": "短代碼",
+                "short_code_hint": "3–6 個大寫字母或數字。修改後群組連結也會跟著改變。",
+                "add_link": "新增連結",
+                "remove_link": "移除連結",
+                "join_state_open": "任何人",
+                "join_state_request": "需申請",
+                "join_state_invite": "僅限邀請",
+                "join_state_closed": "關閉",
+                "allow_join_prompt": "在群組實例中提示玩家加入群組"
             }
         },
         "favorite": {
@@ -5958,7 +6003,8 @@
             "bioLink": "社交連結",
             "note": "備註",
             "user": "用戶",
-            "location": "位置"
+            "location": "位置",
+            "mutualFriends": "共同好友"
         },
         "friendLog": {
             "date": "時間",
@@ -6480,5 +6526,9 @@
         "restore": "恢復相容模式並重新啟動",
         "keep": "顯示正常，保留",
         "failed": "無法變更繪製設定，請重試。"
+    },
+    "mutual_graph_hint": {
+        "build": "尚未建立共同好友關係圖，前往建立",
+        "room_scan_running": "正在查詢此房間的共同好友，請稍後再試"
     }
 }

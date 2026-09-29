@@ -5,9 +5,9 @@ use tauri::{AppHandle, State};
 #[cfg(any(windows, target_os = "linux"))]
 use tauri_plugin_deep_link::DeepLinkExt;
 
-use crate::deep_link::DeepLinkAction;
 use crate::error::AppError;
 use crate::state::AppState;
+use vrcx_0_runtime_host_desktop::deep_link::DeepLinkAction;
 
 const APP_DEEP_LINK_SCHEME: &str = "vrcx-0";
 

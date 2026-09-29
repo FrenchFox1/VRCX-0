@@ -608,9 +608,6 @@ const generatedCommands = {
             testMode
         });
     },
-    async appVrOverlayConfigReload(): Promise<VrOverlayRuntimeSnapshot> {
-        return await TAURI_INVOKE('app__vr_overlay_config_reload');
-    },
     async appRegistryBackupList(): Promise<RegistryBackupSnapshot[]> {
         return await TAURI_INVOKE('app__registry_backup_list');
     },
@@ -763,26 +760,6 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__database_maintenance_table_sizes_get', {
             userId
         });
-    },
-    async appDatabaseMaintenanceMaxFriendLogNumberGet(
-        userId: string
-    ): Promise<number> {
-        return await TAURI_INVOKE(
-            'app__database_maintenance_max_friend_log_number_get',
-            { userId }
-        );
-    },
-    async appDatabaseMaintenanceBrokenLeaveEntriesGet(): Promise<JsonValue[]> {
-        return await TAURI_INVOKE(
-            'app__database_maintenance_broken_leave_entries_get'
-        );
-    },
-    async appDatabaseMaintenanceBrokenGameLogDisplayNamesGet(): Promise<
-        BrokenGameLogDisplayNameOutput[]
-    > {
-        return await TAURI_INVOKE(
-            'app__database_maintenance_broken_game_log_display_names_get'
-        );
     },
     async appAvatarGet(input: AvatarGetInput): Promise<RawJson | null> {
         return await TAURI_INVOKE('app__avatar_get', { input });
@@ -1646,6 +1623,16 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__vrchat_group_members_search', {
             input
         });
+    },
+    async appVrchatGroupUpdate(
+        input: VrchatGroupUpdateInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_update', { input });
+    },
+    async appVrchatGroupDelete(
+        input: VrchatGroupIdInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_delete', { input });
     },
     async appVrchatGroupPostCreate(
         input: VrchatGroupPostCreateInput
@@ -3405,10 +3392,6 @@ export type BatchMutationResult = {
     items: BatchMutationItemResult[];
     lastError: string | null;
 };
-export type BrokenGameLogDisplayNameOutput = {
-    id: JsonValue;
-    displayName: JsonValue;
-};
 export type BrowseHistoryCursor = {
     lastViewedAt: string;
     entityKind: BrowseHistoryEntityKind;
@@ -4765,6 +4748,19 @@ export type GroupPostMutation = {
     imageId: string | null;
 };
 export type GroupPostVisibility = 'group' | 'public';
+export type GroupProfileJoinState = 'closed' | 'invite' | 'open' | 'request';
+export type GroupProfileUpdate = {
+    name: string;
+    shortCode: string;
+    description: string;
+    joinState: GroupProfileJoinState;
+    languages: string[];
+    rules: string;
+    links: string[];
+    iconId: string | null;
+    bannerId: string | null;
+    allowGroupJoinPrompt: boolean;
+};
 export type GroupQuickModerationAction = 'kick' | 'ban';
 export type GroupQuickModerationActionInput = {
     currentUserId?: string;
@@ -5925,7 +5921,6 @@ export type RegistryBackupSnapshot = {
     key: string;
     name: string;
     date: string;
-    data: RawJson;
 };
 export type ReleaseStatusFilter = 'all' | 'hidden' | 'private' | 'public';
 export type RemoteModerationRow = {
@@ -6576,6 +6571,10 @@ export type VrchatGroupProfileInput = {
 export type VrchatGroupRepresentationInput = {
     groupId?: string;
     isRepresenting?: boolean;
+};
+export type VrchatGroupUpdateInput = {
+    groupId?: string;
+    params: GroupProfileUpdate;
 };
 export type VrchatGroupUserGroupsInput = { userId?: string };
 export type VrchatGroupUserInput = { groupId?: string; userId?: string };

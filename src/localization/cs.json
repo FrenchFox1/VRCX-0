@@ -166,7 +166,10 @@
         "note_local": "Lokální poznámka",
         "note_synced": "VRChat poznámka",
         "last_online": "Naposledy online před {duration}",
-        "in_private_world": "V soukromém světě"
+        "in_private_world": "V soukromém světě",
+        "mutual_friends": "Společní přátelé: {count}",
+        "no_mutual_friends": "Žádní společní přátelé",
+        "name_separator": ", "
     },
     "deep_link": {
         "import_collection": {
@@ -3191,6 +3194,18 @@
             },
             "toast": {
                 "failed_to_look_up_this_player": "Nepodařilo se vyhledat tohoto hráče"
+            },
+            "mutual_friends": {
+                "query": "Zjistit společné přátele",
+                "graph_fetch_running": "Právě se načítá graf společných přátel. Zjistěte to po dokončení.",
+                "summary": "Hráči se společnými přáteli: {count}",
+                "circles_prefix": "hlavně z komunit",
+                "circles_suffix": "",
+                "cell_tooltip": "{names} · společní přátelé: {count}",
+                "cell_tooltip_circle": "{names} · společní přátelé: {count} · hlavně z komunity {circle}",
+                "requery": "Zjistit znovu",
+                "show": "Zobrazit výsledky",
+                "hide": "Skrýt"
             }
         },
         "auth": {
@@ -3614,6 +3629,8 @@
             "group_count": "Skupin: {count}",
             "edit_mode": "Upravit",
             "exit_edit_mode": "Hotovo",
+            "section_own": "Vlastní skupiny",
+            "section_joined": "Skupiny, ve kterých jste členem",
             "order_hint": "Přetažením skupin nastavíte pořadí, v jakém se zobrazují ve VRChatu.",
             "order_game_running": "VRChat běží. Změny pořadí mohou být při ukončení hry přepsány.",
             "order_unavailable": "Pořadí skupin není k dispozici: {reason}",
@@ -3875,6 +3892,9 @@
                     "alphabetical": "Abecedně",
                     "last_active": "Naposledy aktivní",
                     "friend_order": "Pořadí přátel"
+                },
+                "view": {
+                    "list": "Seznam"
                 }
             },
             "activity": {
@@ -4508,7 +4528,12 @@
                 "moderation_tools": "Nástroje moderace",
                 "leave": "Opustit skupinu",
                 "block": "Zablokovat skupinu",
-                "unblock": "Odblokovat skupinu"
+                "unblock": "Odblokovat skupinu",
+                "edit_profile": "Upravit údaje skupiny",
+                "edit_profile_media": "Upravit banner a ikonu",
+                "use_banner": "Použít jako banner",
+                "use_group_icon": "Použít jako ikonu skupiny",
+                "delete": "Smazat skupinu"
             },
             "overview": {
                 "header": "Přehled",
@@ -4618,7 +4643,9 @@
                 "name_a_z": "Název A-Z",
                 "name_z_a": "Název Z-A",
                 "role": "Role",
-                "all_roles": "Všechny role"
+                "all_roles": "Všechny role",
+                "banner": "Banner",
+                "group_icon": "Ikona skupiny"
             },
             "success": {
                 "group_join_request_cancelled": "Žádost o vstup do skupiny zrušena",
@@ -4648,7 +4675,11 @@
                 "group_post_created": "Příspěvek skupiny vytvořen",
                 "failed_to_save_group_post": "Nepodařilo se uložit příspěvek skupiny",
                 "failed_to_send_group_invite": "Nepodařilo se odeslat pozvánku do skupiny",
-                "failed_to_delete_group_post": "Nepodařilo se smazat příspěvek skupiny"
+                "failed_to_delete_group_post": "Nepodařilo se smazat příspěvek skupiny",
+                "group_profile_updated": "Skupina aktualizována",
+                "failed_to_update_group_profile": "Skupinu se nepodařilo aktualizovat",
+                "group_deleted": "Skupina smazána",
+                "failed_to_delete_group": "Skupinu se nepodařilo smazat"
             },
             "modal": {
                 "leave_group": "Opustit skupinu?",
@@ -4657,7 +4688,9 @@
                 "delete_group_post": "Smazat příspěvek skupiny?",
                 "block_group": "Zablokovat skupinu?",
                 "unblock_group": "Odblokovat skupinu?",
-                "invite_to_group": "Pozvat do skupiny"
+                "invite_to_group": "Pozvat do skupiny",
+                "delete_group": "Smazat skupinu?",
+                "delete": "Smazat"
             },
             "dynamic": {
                 "leave_value": "Opustit {value}?",
@@ -4665,7 +4698,19 @@
                 "value_completed": "{value} dokončeno",
                 "search_value": "Hledat {value}",
                 "no_value": "Žádné {value}",
-                "value_copied": "{value} zkopírováno"
+                "value_copied": "{value} zkopírováno",
+                "delete_value": "Smazat {value}? Ke skupině pak už nebude mít nikdo přístup."
+            },
+            "edit": {
+                "short_code": "Krátký kód",
+                "short_code_hint": "3–6 velkých písmen nebo číslic. Jeho změnou se změní i odkaz na skupinu.",
+                "add_link": "Přidat odkaz",
+                "remove_link": "Odebrat odkaz",
+                "join_state_open": "Kdokoli",
+                "join_state_request": "Na žádost",
+                "join_state_invite": "Jen na pozvánku",
+                "join_state_closed": "Uzavřeno",
+                "allow_join_prompt": "Nabízet připojení lidem v instancích skupiny"
             }
         },
         "favorite": {
@@ -5936,7 +5981,8 @@
             "bioLink": "Odkazy v bio",
             "note": "Poznámka",
             "user": "Uživatel",
-            "location": "Lokace"
+            "location": "Lokace",
+            "mutualFriends": "Společní přátelé"
         },
         "friendLog": {
             "date": "Datum",
@@ -6458,5 +6504,9 @@
         "restore": "Obnovit a restartovat",
         "keep": "Zobrazení je správné, ponechat",
         "failed": "Nepodařilo se změnit nastavení vykreslování. Zkus to znovu."
+    },
+    "mutual_graph_hint": {
+        "build": "Graf společných přátel zatím neexistuje · Vytvořit",
+        "room_scan_running": "Probíhá zjišťování společných přátel v této instanci. Zkuste to po dokončení znovu."
     }
 }

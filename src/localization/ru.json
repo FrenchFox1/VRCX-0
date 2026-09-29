@@ -166,7 +166,10 @@
         "note_local": "Местная записка",
         "note_synced": "VRChat Примечание",
         "last_online": "Был(а) в сети {duration} назад",
-        "in_private_world": "В частном мире"
+        "in_private_world": "В частном мире",
+        "mutual_friends": "Общих друзей: {count}",
+        "no_mutual_friends": "Нет общих друзей",
+        "name_separator": ", "
     },
     "deep_link": {
         "import_collection": {
@@ -3189,6 +3192,18 @@
             },
             "toast": {
                 "failed_to_look_up_this_player": "Не удалось найти этого игрока."
+            },
+            "mutual_friends": {
+                "query": "Проверить общих друзей",
+                "graph_fetch_running": "Сейчас загружается граф общих друзей. Проверьте после завершения.",
+                "summary": "Игроков с общими друзьями: {count}",
+                "circles_prefix": "в основном из сообществ",
+                "circles_suffix": "",
+                "cell_tooltip": "{names} · общих друзей: {count}",
+                "cell_tooltip_circle": "{names} · общих друзей: {count} · в основном из сообщества {circle}",
+                "requery": "Проверить снова",
+                "show": "Показать результаты",
+                "hide": "Скрыть"
             }
         },
         "auth": {
@@ -3608,6 +3623,8 @@
             "group_count": "Групп: {count}",
             "edit_mode": "Изменить",
             "exit_edit_mode": "Готово",
+            "section_own": "Мои группы",
+            "section_joined": "Группы, в которых я состою",
             "order_hint": "Перетаскивайте группы, чтобы изменить порядок их отображения в VRChat.",
             "order_game_running": "VRChat запущен. Изменения порядка могут быть перезаписаны при выходе из игры.",
             "order_unavailable": "Порядок групп недоступен: {reason}",
@@ -3870,6 +3887,9 @@
                     "alphabetical": "Алфавитная",
                     "last_active": "Последний актив",
                     "friend_order": "Заказ друзей"
+                },
+                "view": {
+                    "list": "Список"
                 }
             },
             "activity": {
@@ -4503,7 +4523,12 @@
                 "moderation_tools": "Инструменты модерации",
                 "leave": "Покинуть группу",
                 "block": "Заблокировать группу",
-                "unblock": "Разблокировать группу"
+                "unblock": "Разблокировать группу",
+                "edit_profile": "Изменить данные группы",
+                "edit_profile_media": "Изменить баннер и иконку",
+                "use_banner": "Сделать баннером",
+                "use_group_icon": "Сделать иконкой группы",
+                "delete": "Удалить группу"
             },
             "overview": {
                 "header": "Общий обзор",
@@ -4613,7 +4638,9 @@
                 "name_a_z": "Имя A-Z",
                 "name_z_a": "Имя Z-A",
                 "role": "Роль",
-                "all_roles": "Все роли"
+                "all_roles": "Все роли",
+                "banner": "Баннер",
+                "group_icon": "Иконка группы"
             },
             "success": {
                 "group_join_request_cancelled": "Запрос на вступление в группу отменён",
@@ -4643,7 +4670,11 @@
                 "group_post_created": "Публикация группы создана",
                 "failed_to_save_group_post": "Не удалось сохранить публикацию группы",
                 "failed_to_send_group_invite": "Не удалось направить приглашение группы",
-                "failed_to_delete_group_post": "Не удалось удалить публикацию группы"
+                "failed_to_delete_group_post": "Не удалось удалить публикацию группы",
+                "group_profile_updated": "Группа обновлена",
+                "failed_to_update_group_profile": "Не удалось обновить группу",
+                "group_deleted": "Группа удалена",
+                "failed_to_delete_group": "Не удалось удалить группу"
             },
             "modal": {
                 "leave_group": "Оставить группу?",
@@ -4652,7 +4683,9 @@
                 "delete_group_post": "Удалить групповую почту?",
                 "block_group": "Блок-группа?",
                 "unblock_group": "Разблокированная группа?",
-                "invite_to_group": "Приглашение к группе"
+                "invite_to_group": "Приглашение к группе",
+                "delete_group": "Удалить группу?",
+                "delete": "Удалить"
             },
             "dynamic": {
                 "leave_value": "Покинуть {value}?",
@@ -4660,7 +4693,19 @@
                 "value_completed": "{value} завершено",
                 "search_value": "Поиск {value}",
                 "no_value": "Нет {value}",
-                "value_copied": "{value} скопировано"
+                "value_copied": "{value} скопировано",
+                "delete_value": "Удалить {value}? После этого доступ к группе пропадёт у всех."
+            },
+            "edit": {
+                "short_code": "Короткий код",
+                "short_code_hint": "3–6 заглавных латинских букв или цифр. При изменении меняется и ссылка на группу.",
+                "add_link": "Добавить ссылку",
+                "remove_link": "Удалить ссылку",
+                "join_state_open": "Все",
+                "join_state_request": "По заявке",
+                "join_state_invite": "Только по приглашению",
+                "join_state_closed": "Закрыто",
+                "allow_join_prompt": "Предлагать вступить тем, кто находится в инстансах группы"
             }
         },
         "favorite": {
@@ -5931,7 +5976,8 @@
             "bioLink": "Био Ссылки",
             "note": "Заметка",
             "user": "Пользователь",
-            "location": "Место проведения"
+            "location": "Место проведения",
+            "mutualFriends": "Общие друзья"
         },
         "friendLog": {
             "date": "Дата",
@@ -6453,5 +6499,9 @@
         "restore": "Восстановить и перезапустить",
         "keep": "Всё отображается правильно, сохранить",
         "failed": "Не удалось изменить настройку отображения. Повторите попытку."
+    },
+    "mutual_graph_hint": {
+        "build": "Граф общих друзей ещё не построен · Построить",
+        "room_scan_running": "Идёт проверка общих друзей в этом инстансе. Повторите после завершения."
     }
 }

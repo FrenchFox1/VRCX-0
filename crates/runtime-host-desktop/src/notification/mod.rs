@@ -7,6 +7,8 @@ mod overlay_transport;
 #[cfg(any(windows, target_os = "linux"))]
 mod ovrt;
 mod preferences;
+#[cfg(test)]
+mod test_support;
 mod tts;
 #[cfg(any(windows, target_os = "linux"))]
 mod xs_overlay;

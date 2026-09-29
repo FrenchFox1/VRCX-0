@@ -166,7 +166,10 @@
         "note_local": "로컬 메모",
         "note_synced": "VRChat 노트",
         "last_online": "마지막 접속 {duration} 전",
-        "in_private_world": "비공개 월드"
+        "in_private_world": "비공개 월드",
+        "mutual_friends": "공통 친구 {count}명",
+        "no_mutual_friends": "공통 친구 없음",
+        "name_separator": ", "
     },
     "deep_link": {
         "import_collection": {
@@ -3122,6 +3125,18 @@
             },
             "toast": {
                 "failed_to_look_up_this_player": "이 플레이어를 검색하지 못했습니다."
+            },
+            "mutual_friends": {
+                "query": "공통 친구 조회",
+                "graph_fetch_running": "공통 친구 그래프를 가져오는 중입니다. 완료된 후 조회하세요",
+                "summary": "{count}명과 공통 친구가 있습니다",
+                "circles_prefix": "주로",
+                "circles_suffix": "커뮤니티",
+                "cell_tooltip": "{names} 등 공통 친구 {count}명",
+                "cell_tooltip_circle": "{names} 등 공통 친구 {count}명 · 주로 {circle} 커뮤니티",
+                "requery": "다시 조회",
+                "show": "결과 보기",
+                "hide": "숨기기"
             }
         },
         "auth": {
@@ -3541,6 +3556,8 @@
             "group_count": "그룹 {count}개",
             "edit_mode": "편집",
             "exit_edit_mode": "완료",
+            "section_own": "내 그룹",
+            "section_joined": "가입한 그룹",
             "order_hint": "그룹을 드래그하여 VRChat에 표시되는 순서를 변경하세요.",
             "order_game_running": "VRChat이 실행 중입니다. 순서 변경이 게임 종료 시 덮어써질 수 있습니다.",
             "order_unavailable": "그룹 순서를 변경할 수 없습니다: {reason}",
@@ -3802,6 +3819,9 @@
                     "alphabetical": "알파벳순",
                     "last_active": "마지막 활성",
                     "friend_order": "친구 추가 순서"
+                },
+                "view": {
+                    "list": "목록"
                 }
             },
             "activity": {
@@ -4477,7 +4497,12 @@
                 "moderation_tools": "조정 도구",
                 "leave": "그룹 탈퇴",
                 "block": "그룹 차단",
-                "unblock": "그룹 차단 해제"
+                "unblock": "그룹 차단 해제",
+                "edit_profile": "그룹 정보 편집",
+                "edit_profile_media": "배너 및 아이콘 편집",
+                "use_banner": "배너로 사용",
+                "use_group_icon": "그룹 아이콘으로 사용",
+                "delete": "그룹 삭제"
             },
             "overview": {
                 "header": "개요",
@@ -4583,7 +4608,9 @@
                 "name_a_z": "이름 A~Z",
                 "name_z_a": "이름 Z-A",
                 "role": "역할",
-                "all_roles": "모든 역할"
+                "all_roles": "모든 역할",
+                "banner": "배너",
+                "group_icon": "그룹 아이콘"
             },
             "success": {
                 "group_join_request_cancelled": "그룹 가입 요청이 취소되었습니다.",
@@ -4613,7 +4640,11 @@
                 "group_post_created": "그룹 게시물이 생성되었습니다.",
                 "failed_to_save_group_post": "그룹 게시물을 저장하지 못했습니다.",
                 "failed_to_send_group_invite": "그룹 초대를 보내지 못했습니다.",
-                "failed_to_delete_group_post": "그룹 게시물을 삭제하지 못했습니다."
+                "failed_to_delete_group_post": "그룹 게시물을 삭제하지 못했습니다.",
+                "group_profile_updated": "그룹을 업데이트했습니다",
+                "failed_to_update_group_profile": "그룹을 업데이트하지 못했습니다",
+                "group_deleted": "그룹을 삭제했습니다",
+                "failed_to_delete_group": "그룹을 삭제하지 못했습니다"
             },
             "modal": {
                 "leave_group": "그룹을 탈퇴하시겠습니까?",
@@ -4622,7 +4653,9 @@
                 "delete_group_post": "그룹 게시물을 삭제하시겠습니까?",
                 "block_group": "그룹을 차단하시겠습니까?",
                 "unblock_group": "그룹을 차단 해제하시겠습니까?",
-                "invite_to_group": "그룹에 초대"
+                "invite_to_group": "그룹에 초대",
+                "delete_group": "그룹을 삭제할까요?",
+                "delete": "삭제"
             },
             "dynamic": {
                 "leave_value": "{value}을(를) 떠나시겠습니까?",
@@ -4630,12 +4663,24 @@
                 "value_completed": "{value} 완료됨",
                 "search_value": "{value} 검색",
                 "no_value": "{value} 없음",
-                "value_copied": "{value} 복사됨"
+                "value_copied": "{value} 복사됨",
+                "delete_value": "{value}을(를) 삭제할까요? 삭제하면 아무도 이 그룹에 접근할 수 없습니다."
             },
             "role_name": {
                 "group_owner": "그룹 소유자",
                 "everyone": "전체 인원",
                 "member": "멤버"
+            },
+            "edit": {
+                "short_code": "짧은 코드",
+                "short_code_hint": "대문자 또는 숫자 3~6자. 바꾸면 그룹 링크도 함께 바뀝니다.",
+                "add_link": "링크 추가",
+                "remove_link": "링크 삭제",
+                "join_state_open": "누구나",
+                "join_state_request": "가입 신청",
+                "join_state_invite": "초대 전용",
+                "join_state_closed": "닫힘",
+                "allow_join_prompt": "그룹 인스턴스에 있는 사람에게 가입 안내 표시"
             }
         },
         "favorite": {
@@ -5910,7 +5955,8 @@
             "bioLink": "링크",
             "note": "참고",
             "user": "유저",
-            "location": "위치"
+            "location": "위치",
+            "mutualFriends": "공통 친구"
         },
         "friendLog": {
             "date": "날짜",
@@ -6489,5 +6535,9 @@
         "restore": "호환 모드로 복원하고 다시 시작",
         "keep": "정상적으로 표시됨, 유지",
         "failed": "렌더링 설정을 변경하지 못했습니다. 다시 시도하세요."
+    },
+    "mutual_graph_hint": {
+        "build": "공통 친구 그래프가 아직 없습니다 · 만들기",
+        "room_scan_running": "이 인스턴스의 공통 친구를 조회하는 중입니다. 완료된 후 다시 시도하세요"
     }
 }
