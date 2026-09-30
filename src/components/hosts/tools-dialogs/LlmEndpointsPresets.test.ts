@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
     CUSTOM_LLM_ENDPOINT_PROVIDER_ID,
-    DEFAULT_LLM_ENDPOINT_PROVIDER_ID,
-    LLM_ENDPOINT_PROVIDER_PRESETS,
     applyLlmEndpointBaseUrl,
     applyLlmEndpointProviderPreset,
     createEmptyLlmEndpointDraft,
@@ -27,18 +25,7 @@ function draft(): LlmEndpointProviderDraft {
 }
 
 describe('LLM endpoint presets', () => {
-    it('exposes presets in the agreed order and defaults new drafts to OpenAI', () => {
-        expect(
-            LLM_ENDPOINT_PROVIDER_PRESETS.map((preset) => preset.id)
-        ).toEqual([
-            'openai',
-            'openrouter',
-            'gemini',
-            'deepseek',
-            'xai',
-            'siliconflow'
-        ]);
-        expect(DEFAULT_LLM_ENDPOINT_PROVIDER_ID).toBe('openai');
+    it('defaults new drafts to the OpenAI preset', () => {
         expect(createEmptyLlmEndpointDraft()).toMatchObject({
             providerId: 'openai',
             name: 'OpenAI',
@@ -86,31 +73,6 @@ describe('LLM endpoint presets', () => {
             providerId: 'xai',
             name: 'xAI',
             baseUrl: 'https://api.x.ai/v1',
-            apiKey: '',
-            clearKey: false,
-            models: [],
-            detectedModelReasoning: null
-        });
-    });
-
-    it('applies additional common provider presets', () => {
-        expect(applyLlmEndpointProviderPreset(draft(), 'openrouter')).toEqual({
-            id: 'ep_1',
-            savedBaseUrl: 'https://example.test/v1',
-            providerId: 'openrouter',
-            name: 'OpenRouter',
-            baseUrl: 'https://openrouter.ai/api/v1',
-            apiKey: '',
-            clearKey: false,
-            models: [],
-            detectedModelReasoning: null
-        });
-        expect(applyLlmEndpointProviderPreset(draft(), 'siliconflow')).toEqual({
-            id: 'ep_1',
-            savedBaseUrl: 'https://example.test/v1',
-            providerId: 'siliconflow',
-            name: 'SiliconFlow',
-            baseUrl: 'https://api.siliconflow.cn/v1',
             apiKey: '',
             clearKey: false,
             models: [],

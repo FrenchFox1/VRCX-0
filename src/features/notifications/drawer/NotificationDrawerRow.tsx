@@ -165,7 +165,7 @@ export function NotificationDrawerRow({
                 delay={400}
                 closeDelay={100}
                 render={
-                    <div className="group hover:bg-accent/50 border-border/50 relative flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0">
+                    <div className="group border-border/50 relative flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-(--state-hover-surface)">
                         <div className="flex shrink-0 items-start gap-1.5">
                             <span className="mt-1.5 flex w-2 shrink-0 justify-center">
                                 {showUnreadDot ? (

@@ -123,7 +123,7 @@ export function LocationDisplay({
                             className={cn(
                                 'x-location inline-flex max-w-full min-w-0 flex-nowrap items-center truncate overflow-hidden text-left',
                                 isLocationLink
-                                    ? 'hover:text-primary cursor-pointer text-inherit underline-offset-4'
+                                    ? 'hover:text-foreground cursor-pointer text-inherit underline-offset-4 hover:underline'
                                     : 'cursor-default'
                             )}
                             onClick={onOpenLocation}
@@ -157,7 +157,7 @@ export function LocationDisplay({
                                     <span
                                         role="button"
                                         tabIndex={0}
-                                        className="hover:text-primary ml-0.5 cursor-pointer"
+                                        className="ml-0.5 cursor-pointer underline-offset-4 hover:underline"
                                         onClick={onOpenGroup}
                                         onKeyDown={(event) => {
                                             event.stopPropagation();

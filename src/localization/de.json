@@ -1217,10 +1217,7 @@
                 "start": "Start",
                 "end": "Ende",
                 "game_log_is_disabled": "Das Schreiben des GameLogs ist deaktiviert",
-                "showing": "Zeige",
-                "of": "von",
-                "game_log_row": "Spielprotokoll-Eintrag",
-                "game_log_rows": "Spielprotokoll-Einträge"
+                "showing_summary": "<b>{shown}</b> von <b>{count}</b> angezeigt"
             },
             "success": {
                 "game_log_row_deleted": "Spielprotokoll-Eintrag gelöscht",
@@ -1316,10 +1313,8 @@
                 "grid_density_dense": "Dicht",
                 "click_to_wear": "Klicken zum Anziehen",
                 "impostor_queued_for_creation": "Impostor zur Erstellung eingereiht",
-                "showing": "Zeige",
-                "of": "von",
+                "showing_summary": "<b>{shown}</b> von <b>{count}</b> angezeigt",
                 "avatar": "Avatar",
-                "avatars": "Avatare",
                 "broaden_the_filters_or_search_query_to_see_more_avatars": "Erweitere die Filter oder die Suchanfrage, um mehr Avatare zu sehen",
                 "make_public": "Öffentlich machen",
                 "make_private": "Privat machen",
@@ -1591,10 +1586,7 @@
                 "friend_history_failed_to_load": "Freundschaftsverlauf konnte nicht geladen werden"
             },
             "label": {
-                "showing": "Zeige",
-                "of": "von",
-                "log_row": "Protokollzeile",
-                "log_rows": "Protokollzeilen",
+                "showing_summary": "<b>{shown}</b> von <b>{count}</b> angezeigt",
                 "broaden_the_type_filters_or_search_query_to_see_more_history": "Erweitere die Typfilter oder die Suchanfrage, um mehr Verlauf zu sehen"
             },
             "empty": {
@@ -1758,10 +1750,8 @@
             "label": {
                 "friend_details_are_already_loaded": "Freundesdetails sind bereits geladen",
                 "shared_connections_are_opted_out_for_the_current_account": "Dieses Konto hat gemeinsame Verbindungen deaktiviert",
-                "showing": "Zeige",
-                "of": "von",
+                "showing_summary": "<b>{shown}</b> von <b>{count}</b> angezeigt",
                 "friend": "Freund",
-                "friends": "Freunde",
                 "try_turning_off_favorites_only_or_broadening_the_search_query": "Deaktiviere \"Nur Favoriten\" oder erweitere die Suchanfrage",
                 "favorites_are_still_hydrating": "Favoriten werden noch geladen",
                 "try_a_different_segment_or_broaden_the_search_query": "Versuche einen anderen Abschnitt oder erweitere die Suchanfrage",
@@ -2296,7 +2286,7 @@
                 "submit": "Senden",
                 "submitting": "Wird gesendet…",
                 "thanks": "Danke für dein Feedback!",
-                "cooldown": "In {{seconds}} s kannst du erneut senden",
+                "cooldown": "In {seconds} s kannst du erneut senden",
                 "reply_note": "Wenn du eine Antwort möchtest, gib deine E-Mail-Adresse im Feedback an.",
                 "more_help": "Du kannst uns auch hier kontaktieren oder Logs anhängen:",
                 "error_generic": "Feedback konnte nicht gesendet werden. Bitte versuche es später erneut."
@@ -3747,6 +3737,7 @@
             },
             "group_invite": {
                 "select_group": "Gruppe auswählen...",
+                "description": "Wähle die Gruppe aus, in die du {value} einladen möchtest.",
                 "loading": "Gruppen, für die du Einladungen senden kannst, werden geladen...",
                 "no_groups": "Du hast keine Gruppen, für die du Einladungen senden kannst",
                 "load_failed": "Gruppen konnten nicht geladen werden",
@@ -4234,8 +4225,7 @@
                 "add_domain": "Domain hinzufügen"
             },
             "loading": {
-                "loading_world_profile": "Weltprofil wird geladen",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Weltdetails werden geladen"
+                "loading_world_profile": "Weltprofil wird geladen"
             },
             "error": {
                 "world_profile_unavailable": "Weltprofil nicht verfügbar",
@@ -4581,7 +4571,9 @@
                 "loaded_of_total": "{loaded} von {total} geladen",
                 "search_results": "{count} Treffer",
                 "export_loaded": "Geladene exportieren ({count})",
-                "export_all": "Alle exportieren ({count})"
+                "export_all": "Alle exportieren ({count})",
+                "failed_to_load": "Mitglieder konnten nicht geladen werden",
+                "failed_to_search": "Mitgliedersuche fehlgeschlagen"
             },
             "gallery": {
                 "header": "Fotos"
@@ -5414,7 +5406,8 @@
             "send": "Senden",
             "recent": "Zuletzt verwendet",
             "inventory_emojis": "Inventar",
-            "no_inventory_emojis": "Noch keine Boop-Emojis im Inventar"
+            "no_inventory_emojis": "Noch keine Boop-Emojis im Inventar",
+            "failed_to_load_emojis": "Emojis konnten nicht geladen werden"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 ist auf dem neuesten Stand",
@@ -5477,7 +5470,6 @@
         },
         "favorite_import": {
             "action": {
-                "import": "importieren",
                 "clear_table": "Tabelle leeren",
                 "clear_errors": "Fehler löschen",
                 "exclude": "Ausschließen"
@@ -5493,7 +5485,6 @@
                 "name": "Name",
                 "detail": "Details",
                 "actions": "Aktionen",
-                "rows_yet": "Zeilen bisher",
                 "import_to": "Importieren nach",
                 "local": "Lokal",
                 "select_group": "Gruppe auswählen"
@@ -5509,7 +5500,14 @@
                 "detected_count": "{count} erkannt"
             },
             "empty": {
-                "no_parsed": "Keine verarbeitet"
+                "avatar": "Noch keine Avatare zum Importieren",
+                "world": "Noch keine Welten zum Importieren",
+                "friend": "Noch keine Freunde zum Importieren"
+            },
+            "title": {
+                "avatar": "Avatare importieren",
+                "world": "Welten importieren",
+                "friend": "Freunde importieren"
             }
         },
         "tools": {

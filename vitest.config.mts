@@ -27,6 +27,7 @@ export default defineConfig({
     },
     test: {
         environment: 'node',
+        setupFiles: ['src/test/setup.ts'],
         exclude: [...configDefaults.exclude, '.claude/**'],
         coverage: {
             include: ['src/**/*.{ts,tsx}'],
@@ -37,6 +38,7 @@ export default defineConfig({
                 'src/features/feed/feedLiveMergeTestUtils.ts',
                 'src/localization/**',
                 'src/platform/tauri/bindings.ts',
+                'src/test/**',
                 ...coverageExcludedPureConstants
             ],
             provider: 'v8',

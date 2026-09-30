@@ -37,11 +37,6 @@ export type UserActivityPanelProps = {
     active?: boolean;
 };
 
-export {
-    getDisplayDayLabels,
-    getRangeDays
-} from './user-dialog/userActivityPanelModel';
-
 export function UserActivityPanel({
     profile,
     active = false
@@ -182,10 +177,7 @@ export function UserActivityPanel({
     const emptyColor = isDarkMode ? 'hsl(220, 15%, 12%)' : 'hsl(210, 30%, 95%)';
 
     return (
-        <div
-            className="flex min-w-0 flex-col overflow-x-hidden"
-            style={{ minHeight: 200 }}
-        >
+        <div className="flex min-w-0 flex-col" style={{ minHeight: 200 }}>
             <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                     <Tooltip>

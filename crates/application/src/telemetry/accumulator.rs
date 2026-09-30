@@ -587,7 +587,7 @@ mod tests {
     }
 
     #[test]
-    fn collector_snapshots_only_include_changes_after_acknowledgement() {
+    fn collector_snapshots_become_dirty_again_after_acknowledgement() {
         let mut acc = TelemetryAccumulator::default();
         acc.record(TelemetryClientEvent::PageVisit {
             route: "game_log".into(),

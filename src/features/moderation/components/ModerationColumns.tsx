@@ -139,7 +139,7 @@ export function useModerationColumns({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary block h-auto w-full min-w-0 truncate p-0 pr-2.5 text-left text-sm font-medium hover:bg-transparent"
+                        className="block h-auto w-full min-w-0 truncate p-0 pr-2.5 text-left text-sm font-medium underline-offset-4 hover:bg-transparent hover:underline"
                         disabled={!row.original.sourceUserId}
                         onClick={() =>
                             onOpenUser({
@@ -176,7 +176,7 @@ export function useModerationColumns({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary block h-auto w-full min-w-0 p-0 pr-2.5 text-left text-sm font-medium break-words whitespace-normal hover:bg-transparent"
+                        className="block h-auto w-full min-w-0 p-0 pr-2.5 text-left text-sm font-medium break-words whitespace-normal underline-offset-4 hover:bg-transparent hover:underline"
                         disabled={!row.original.targetUserId}
                         onClick={() =>
                             onOpenUser({

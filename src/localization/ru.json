@@ -1223,10 +1223,7 @@
                 "start": "Запуск",
                 "end": "Конец",
                 "game_log_is_disabled": "Запись GameLog отключена",
-                "showing": "Показать",
-                "of": "В тыс.",
-                "game_log_row": "запись игрового журнала",
-                "game_log_rows": "записи игрового журнала"
+                "showing_summary": "Показано <b>{shown}</b> из <b>{count}</b>"
             },
             "success": {
                 "game_log_row_deleted": "Запись игрового журнала удалена",
@@ -1322,10 +1319,8 @@
                 "grid_density_dense": "Плотность",
                 "click_to_wear": "Нажмите, чтобы надеть",
                 "impostor_queued_for_creation": "Импостор поставлен в очередь на создание",
-                "showing": "Показать",
-                "of": "В тыс.",
+                "showing_summary": "Показано <b>{shown}</b> из <b>{count}</b>",
                 "avatar": "Аватар",
-                "avatars": "Аватары",
                 "broaden_the_filters_or_search_query_to_see_more_avatars": "Расширить фильтры или поисковый запрос, чтобы увидеть больше аватаров",
                 "make_public": "Обнародовать",
                 "make_private": "Сделать приватным",
@@ -1599,10 +1594,7 @@
                 "friend_history_failed_to_load": "История друзей не загружена"
             },
             "label": {
-                "showing": "Показать",
-                "of": "В тыс.",
-                "log_row": "log строки",
-                "log_rows": "log ряды",
+                "showing_summary": "Показано <b>{shown}</b> из <b>{count}</b>",
                 "broaden_the_type_filters_or_search_query_to_see_more_history": "Расширить тип фильтров или поисковый запрос, чтобы увидеть больше истории"
             },
             "empty": {
@@ -1766,10 +1758,8 @@
             "label": {
                 "friend_details_are_already_loaded": "Детали друзей уже загружены.",
                 "shared_connections_are_opted_out_for_the_current_account": "Совместные связи исключаются из текущего аккаунта",
-                "showing": "Показать",
-                "of": "В тыс.",
+                "showing_summary": "Показано <b>{shown}</b> из <b>{count}</b>",
                 "friend": "Друг",
-                "friends": "друзья",
                 "try_turning_off_favorites_only_or_broadening_the_search_query": "Попробуйте выключить избранные или расширить поиск",
                 "favorites_are_still_hydrating": "Избранное всё ещё загружается",
                 "try_a_different_segment_or_broaden_the_search_query": "Попробовать другой сегмент или расширить запрос поиска",
@@ -2304,7 +2294,7 @@
                 "submit": "Отправить",
                 "submitting": "Отправка…",
                 "thanks": "Спасибо за ваш отзыв!",
-                "cooldown": "Отправить снова можно через {{seconds}} с",
+                "cooldown": "Отправить снова можно через {seconds} с",
                 "reply_note": "Если вам нужен ответ, укажите в отзыве адрес электронной почты.",
                 "more_help": "Также можно связаться с нами или приложить логи здесь:",
                 "error_generic": "Не удалось отправить отзыв. Попробуйте позже."
@@ -4245,8 +4235,7 @@
                 "add_domain": "Добавить домен"
             },
             "loading": {
-                "loading_world_profile": "Загрузка мирового профиля",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Загрузка сведений о мире"
+                "loading_world_profile": "Загрузка мирового профиля"
             },
             "error": {
                 "world_profile_unavailable": "Мировой профиль отсутствует",
@@ -4592,7 +4581,9 @@
                 "loaded_of_total": "Загружено {loaded} из {total}",
                 "search_results": "Результатов: {count}",
                 "export_loaded": "Экспорт загруженных ({count})",
-                "export_all": "Экспорт всех ({count})"
+                "export_all": "Экспорт всех ({count})",
+                "failed_to_load": "Не удалось загрузить участников",
+                "failed_to_search": "Не удалось найти участников"
             },
             "gallery": {
                 "header": "Фото"
@@ -5425,7 +5416,8 @@
             "send": "Отправить",
             "recent": "Недавние",
             "inventory_emojis": "Инвентарь",
-            "no_inventory_emojis": "В инвентаре пока нет эмодзи для бупа"
+            "no_inventory_emojis": "В инвентаре пока нет эмодзи для бупа",
+            "failed_to_load_emojis": "Не удалось загрузить эмодзи"
         },
         "vrcx_updater": {
             "latest_version": "У вас установлена актуальная версия VRCX-0.",
@@ -5488,7 +5480,6 @@
         },
         "favorite_import": {
             "action": {
-                "import": "импорт",
                 "clear_table": "Очистить стол",
                 "clear_errors": "Очистить ошибки",
                 "exclude": "Исключить"
@@ -5504,7 +5495,6 @@
                 "name": "Имя",
                 "detail": "Подробная информация",
                 "actions": "Меры",
-                "rows_yet": "ряды",
                 "import_to": "Импортировать в",
                 "local": "Локально",
                 "select_group": "Выберите группу"
@@ -5520,7 +5510,14 @@
                 "detected_count": "Найдено: {count}"
             },
             "empty": {
-                "no_parsed": "Без обрезания"
+                "avatar": "Пока нет аватаров для импорта",
+                "world": "Пока нет миров для импорта",
+                "friend": "Пока нет друзей для импорта"
+            },
+            "title": {
+                "avatar": "Импорт аватаров",
+                "world": "Импорт миров",
+                "friend": "Импорт друзей"
             }
         },
         "tools": {

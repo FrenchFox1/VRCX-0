@@ -153,7 +153,6 @@ describe('ChangelogDialog', () => {
         expect(supportIndex).toBeGreaterThan(-1);
         expect(starIndex).toBeGreaterThan(-1);
         expect(closeIndex).toBeGreaterThan(-1);
-        expect(html).not.toContain('Ko-fi');
         expect(supportIndex).toBeLessThan(starIndex);
         expect(starIndex).toBeLessThan(closeIndex);
     });

@@ -2,7 +2,7 @@ use serde_json::{json, Value};
 
 use vrcx_0_application::telemetry::{build_error_detail, sanitize_error_summary};
 use vrcx_0_contracts::telemetry::{
-    TelemetryConfigSnapshot, TelemetryContext, TelemetryRuntimeMode,
+    TelemetryConfigSnapshot, TelemetryContext, TelemetryRuntimeMode, TelemetryVrcxOrigin,
 };
 
 const SYNTHETIC_PROVIDER_ORG_ID: &str = "org_TESTPROVIDER123456789";
@@ -28,6 +28,7 @@ fn config_snapshot_matches_worker_contract_fields() {
         gamelog_rows_bucket: "100k_1m".into(),
         friend_log_rows_bucket: "lt10k".into(),
         friend_count_bucket: "100_500".into(),
+        vrcx_origin: TelemetryVrcxOrigin::VrcxDetected,
     };
 
     let value = serde_json::to_value(&snapshot).unwrap();
@@ -51,12 +52,14 @@ fn config_snapshot_matches_worker_contract_fields() {
         "hmdNotificationsEnabled",
         "ovrtWristNotifications",
         "themeMode",
+        "vrcxOrigin",
         "webhookEnabled",
         "wristOverlayEnabled",
     ];
     let mut sorted = keys.clone();
     sorted.sort_unstable();
     assert_eq!(sorted, expected);
+    assert_eq!(value.get("vrcxOrigin"), Some(&json!("vrcx_detected")));
 }
 
 #[test]

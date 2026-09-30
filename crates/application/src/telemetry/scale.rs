@@ -11,8 +11,12 @@ pub struct TelemetryDatabaseScale {
 }
 
 pub(super) fn db_size_bucket(db_bytes: u64) -> String {
-    let bucket = if db_bytes < 512 * MIB {
-        "lt512m"
+    let bucket = if db_bytes < 64 * MIB {
+        "lt64m"
+    } else if db_bytes < 256 * MIB {
+        "64m_256m"
+    } else if db_bytes < 512 * MIB {
+        "256m_512m"
     } else if db_bytes < GIB {
         "512m_1g"
     } else if db_bytes < 2 * GIB {
@@ -75,8 +79,11 @@ mod tests {
 
     #[test]
     fn db_size_buckets_cover_the_documented_user_tiers() {
-        assert_eq!(db_size_bucket(0), "lt512m");
-        assert_eq!(db_size_bucket(287 * MIB), "lt512m");
+        assert_eq!(db_size_bucket(0), "lt64m");
+        assert_eq!(db_size_bucket(64 * MIB - 1), "lt64m");
+        assert_eq!(db_size_bucket(64 * MIB), "64m_256m");
+        assert_eq!(db_size_bucket(256 * MIB), "256m_512m");
+        assert_eq!(db_size_bucket(287 * MIB), "256m_512m");
         assert_eq!(db_size_bucket(512 * MIB), "512m_1g");
         assert_eq!(db_size_bucket(GIB), "1g_2g");
         assert_eq!(db_size_bucket(3 * GIB), "2g_4g");
@@ -92,6 +99,8 @@ mod tests {
             row_bucket(None),
             row_bucket(Some(0)),
             row_bucket(Some(i64::MAX)),
+            db_size_bucket(100 * MIB),
+            db_size_bucket(300 * MIB),
             db_size_bucket(700 * MIB),
             row_bucket(Some(50_000)),
             row_bucket(Some(500_000)),

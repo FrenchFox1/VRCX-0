@@ -4,7 +4,6 @@ import type {
     SharedCollectionImportStatus
 } from '@/platform/tauri/bindings';
 import { tauriClient } from '@/platform/tauri/client';
-import shareCollectionRepository from '@/repositories/shareCollectionRepository';
 import { toast } from '@/services/toastService';
 import { isCollectionShortcode } from '@/shared/constants/collectionShare';
 import { isAvatarId, isWorldId } from '@/shared/constants/vrchatIds';
@@ -205,10 +204,7 @@ function waitForSharedCollectionImport(
 async function importSharedCollectionFlow(collectionId: string): Promise<void> {
     let preview;
     try {
-        preview =
-            await shareCollectionRepository.previewSharedCollection(
-                collectionId
-            );
+        preview = await commands.appShareCollectionPreview(collectionId);
     } catch (error) {
         toast.add({
             type: 'error',

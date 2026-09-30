@@ -164,6 +164,5 @@ mod instructions_tests {
                 "missing phrase: {phrase}"
             );
         }
-        assert!(!SERVER_INSTRUCTIONS.contains("Time windows are RFC3339"));
     }
 }

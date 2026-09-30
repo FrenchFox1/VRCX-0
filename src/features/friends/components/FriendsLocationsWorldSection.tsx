@@ -65,7 +65,7 @@ function FriendChip({
             <button
                 type="button"
                 className={cn(
-                    'hover:bg-muted focus-visible:ring-ring/50 flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none focus-visible:ring-3',
+                    'focus-visible:ring-ring/50 flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
                     twoLine ? 'h-10' : 'h-8'
                 )}
                 onClick={onOpen}
@@ -129,7 +129,7 @@ export function FriendsLocationsFriendChips({
     );
 
     return (
-        <div className="-ml-1 grid min-w-0 grid-cols-[repeat(auto-fill,minmax(0,200px))] gap-1.5">
+        <div className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(0,200px))] gap-1.5">
             {friends.map((friend) => (
                 <FriendChip
                     key={friend.id}
@@ -244,7 +244,7 @@ function InstanceRow({
                         <span
                             role="button"
                             tabIndex={0}
-                            className="hover:text-primary min-w-0 cursor-pointer truncate"
+                            className="min-w-0 cursor-pointer truncate underline-offset-4 hover:underline"
                             onClick={() => onOpenGroup(instance.groupId)}
                             onKeyDown={(event) => {
                                 if (
@@ -314,7 +314,7 @@ export function FriendsLocationsWorldSection({
                 <div className="flex h-6 min-w-0 items-baseline gap-2.5">
                     <button
                         type="button"
-                        className="hover:text-foreground/80 focus-visible:text-foreground/80 min-w-0 cursor-pointer truncate text-left text-sm font-semibold outline-none"
+                        className="min-w-0 cursor-pointer truncate text-left text-sm font-semibold underline-offset-4 outline-none hover:underline focus-visible:underline"
                         onClick={() => onOpenWorld(group, name)}
                     >
                         {name}

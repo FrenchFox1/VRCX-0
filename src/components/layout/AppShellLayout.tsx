@@ -25,16 +25,7 @@ function clampSidePanelWidth(value: string | number | null) {
 }
 
 function loadSidePanelWidth() {
-    if (typeof window === 'undefined') {
-        return 320;
-    }
-    try {
-        return clampSidePanelWidth(
-            window.localStorage.getItem(sidePanelStorageKey)
-        );
-    } catch {
-        return 320;
-    }
+    return clampSidePanelWidth(localStorage.getItem(sidePanelStorageKey));
 }
 
 export function AppShellLayout() {
@@ -55,14 +46,7 @@ export function AppShellLayout() {
     }, [sidePanelWidth]);
 
     useEffect(() => {
-        try {
-            window.localStorage.setItem(
-                sidePanelStorageKey,
-                String(sidePanelWidth)
-            );
-        } catch {
-            // no-op
-        }
+        localStorage.setItem(sidePanelStorageKey, String(sidePanelWidth));
     }, [sidePanelWidth]);
 
     useEffect(() => {

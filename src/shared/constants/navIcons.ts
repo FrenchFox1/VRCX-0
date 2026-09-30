@@ -55,6 +55,7 @@ const navIconEntries: Array<readonly [NavIconKey, string]> = [
     ['lucide:SlidersHorizontal', 'Sliders'],
     ['lucide:SquareTerminal', 'Terminal'],
     ['lucide:Bot', 'Bot'],
+    ['lucide:Plug', 'Plug'],
     ['lucide:CalendarDays', 'Calendar'],
     ['lucide:FileText', 'File Text'],
     ['lucide:Download', 'Download'],

@@ -1217,10 +1217,7 @@
                 "start": "Início",
                 "end": "Fim",
                 "game_log_is_disabled": "A gravação do GameLog está desativada",
-                "showing": "Mostrando",
-                "of": "de",
-                "game_log_row": "entrada do registro do jogo",
-                "game_log_rows": "entradas do registro do jogo"
+                "showing_summary": "Mostrando <b>{shown}</b> de <b>{count}</b>"
             },
             "success": {
                 "game_log_row_deleted": "Entrada do registro do jogo excluída",
@@ -1316,10 +1313,8 @@
                 "grid_density_dense": "Densa",
                 "click_to_wear": "Clique para usar",
                 "impostor_queued_for_creation": "Impostor na fila para criação",
-                "showing": "Mostrando",
-                "of": "de",
+                "showing_summary": "Mostrando <b>{shown}</b> de <b>{count}</b>",
                 "avatar": "Avatar",
-                "avatars": "Avatares",
                 "broaden_the_filters_or_search_query_to_see_more_avatars": "Amplie os filtros ou a busca para ver mais Avatares",
                 "make_public": "Tornar público",
                 "make_private": "Tornar privado",
@@ -1591,10 +1586,7 @@
                 "friend_history_failed_to_load": "Falha ao carregar o histórico de amigos"
             },
             "label": {
-                "showing": "Exibindo",
-                "of": "de",
-                "log_row": "registro",
-                "log_rows": "registros",
+                "showing_summary": "Mostrando <b>{shown}</b> de <b>{count}</b>",
                 "broaden_the_type_filters_or_search_query_to_see_more_history": "Amplie os filtros de tipo ou a busca para ver mais histórico"
             },
             "empty": {
@@ -1758,10 +1750,8 @@
             "label": {
                 "friend_details_are_already_loaded": "Os detalhes do amigo já estão carregados",
                 "shared_connections_are_opted_out_for_the_current_account": "As conexões compartilhadas estão desativadas para a conta atual",
-                "showing": "Exibindo",
-                "of": "de",
+                "showing_summary": "Mostrando <b>{shown}</b> de <b>{count}</b>",
                 "friend": "amigo",
-                "friends": "amigos",
                 "try_turning_off_favorites_only_or_broadening_the_search_query": "Tente desativar a opção apenas favoritos ou ampliar a busca",
                 "favorites_are_still_hydrating": "Os favoritos ainda estão carregando",
                 "try_a_different_segment_or_broaden_the_search_query": "Tente outro segmento ou amplie a busca",
@@ -2296,7 +2286,7 @@
                 "submit": "Enviar",
                 "submitting": "A enviar…",
                 "thanks": "Obrigado pelo seu feedback!",
-                "cooldown": "Pode enviar novamente dentro de {{seconds}} s",
+                "cooldown": "Pode enviar novamente dentro de {seconds} s",
                 "reply_note": "Se precisares de uma resposta, inclui o teu e-mail no feedback.",
                 "more_help": "Também podes contactar-nos ou anexar registos aqui:",
                 "error_generic": "Não foi possível enviar o feedback. Tente novamente mais tarde."
@@ -4235,8 +4225,7 @@
                 "add_domain": "Adicionar domínio"
             },
             "loading": {
-                "loading_world_profile": "Carregando perfil do mundo",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Carregando detalhes do mundo"
+                "loading_world_profile": "Carregando perfil do mundo"
             },
             "error": {
                 "world_profile_unavailable": "Perfil do mundo indisponível",
@@ -4582,7 +4571,9 @@
                 "loaded_of_total": "{loaded} de {total} carregados",
                 "search_results": "{count} resultados",
                 "export_loaded": "Exportar carregados ({count})",
-                "export_all": "Exportar todos ({count})"
+                "export_all": "Exportar todos ({count})",
+                "failed_to_load": "Falha ao carregar os membros",
+                "failed_to_search": "Falha ao pesquisar membros"
             },
             "gallery": {
                 "header": "Fotos"
@@ -5415,7 +5406,8 @@
             "send": "Enviar",
             "recent": "Recentes",
             "inventory_emojis": "Inventário",
-            "no_inventory_emojis": "Ainda não há emojis de boop no seu inventário"
+            "no_inventory_emojis": "Ainda não há emojis de boop no seu inventário",
+            "failed_to_load_emojis": "Falha ao carregar os emojis"
         },
         "vrcx_updater": {
             "latest_version": "O VRCX-0 está atualizado.",
@@ -5478,7 +5470,6 @@
         },
         "favorite_import": {
             "action": {
-                "import": "importar",
                 "clear_table": "Limpar tabela",
                 "clear_errors": "Limpar erros",
                 "exclude": "Excluir"
@@ -5494,7 +5485,6 @@
                 "name": "Nome",
                 "detail": "Detalhe",
                 "actions": "Ações",
-                "rows_yet": "linhas ainda",
                 "import_to": "Importar para",
                 "local": "Local",
                 "select_group": "Selecione um grupo"
@@ -5510,7 +5500,14 @@
                 "detected_count": "{count} detectados"
             },
             "empty": {
-                "no_parsed": "Nada processado"
+                "avatar": "Ainda não há avatares para importar",
+                "world": "Ainda não há mundos para importar",
+                "friend": "Ainda não há amigos para importar"
+            },
+            "title": {
+                "avatar": "Importar avatares",
+                "world": "Importar mundos",
+                "friend": "Importar amigos"
             }
         },
         "tools": {

@@ -8,10 +8,13 @@ use std::time::{Duration, Instant};
 
 use chrono::{Datelike, Local, Timelike};
 use uuid::Uuid;
-use vrcx_0_application_core::{BackendRuntime, BackendRuntimeMode, TaskStopToken, TaskSupervisor};
+use vrcx_0_application_core::{
+    BackendRuntime, BackendRuntimeMode, RuntimeAuthScope, TaskStopToken, TaskSupervisor,
+};
 use vrcx_0_contracts::telemetry::{
     AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, PageHealthPayload,
-    TelemetryConfigSnapshot, TelemetryContext, TelemetryRuntimeMode, ToolUsagePayload,
+    TelemetryConfigSnapshot, TelemetryContext, TelemetryRuntimeMode, TelemetryVrcxOrigin,
+    ToolUsagePayload,
 };
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};
@@ -21,6 +24,10 @@ use super::scale::{db_size_bucket, friend_count_bucket, row_bucket, TelemetryDat
 const TELEMETRY_INSTALL_ID_CONFIG_KEY: &str = "telemetryInstallId";
 const TELEMETRY_BASIC_INFO_REPORTED_VERSION_CONFIG_KEY: &str = "telemetryBasicInfoReportedVersion";
 const TELEMETRY_CONFIG_REPORTED_VERSION_CONFIG_KEY: &str = "telemetryConfigReportedVersion";
+const TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY: &str =
+    "telemetryAccountConfigReportedVersion";
+const LEGACY_VRCX_MARKER_CONFIG_KEYS: [&str; 2] = ["VRCX_lastVRCXVersion", "VRCX_id"];
+const ACCOUNT_SNAPSHOT_FRIEND_GRACE: Duration = Duration::from_secs(5 * 60);
 const TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY: &str = "telemetryClientErrorCursor";
 const ANONYMOUS_USAGE_TELEMETRY_CONFIG_KEY: &str = "anonymousUsageTelemetry";
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30 * 60);
@@ -81,6 +88,7 @@ pub trait TelemetryEnvironment: Send + Sync {
     fn timezone(&self) -> Option<String>;
     fn system_theme_category(&self) -> String;
     fn database_scale(&self) -> TelemetryDatabaseScale;
+    fn legacy_vrcx_detected(&self) -> bool;
 }
 
 #[derive(Clone)]
@@ -93,6 +101,7 @@ pub struct TelemetryRuntimeDeps {
     pub transport: Arc<dyn TelemetryTransport>,
     pub tasks: TaskSupervisor,
     pub backend_runtime: BackendRuntime,
+    pub auth_scope: RuntimeAuthScope,
     pub app_version: String,
 }
 
@@ -101,6 +110,7 @@ struct TelemetryRuntimeInner {
     transport: Arc<dyn TelemetryTransport>,
     tasks: TaskSupervisor,
     backend_runtime: BackendRuntime,
+    auth_scope: RuntimeAuthScope,
     app_version: String,
     state: Mutex<TelemetryState>,
     flush_lock: tokio::sync::Mutex<()>,
@@ -116,6 +126,9 @@ struct TelemetryState {
     session_start_attempted_at: Option<Instant>,
     config_snapshot_sent: bool,
     config_snapshot_attempted_at: Option<Instant>,
+    account_config_snapshot_sent: bool,
+    account_config_snapshot_attempted_at: Option<Instant>,
+    signed_in_at: Option<Instant>,
     last_heartbeat_at: Option<Instant>,
     pending_error_cursor: Option<String>,
     acc: TelemetryAccumulator,
@@ -136,6 +149,7 @@ impl TelemetryRuntime {
                 transport: deps.transport,
                 tasks: deps.tasks,
                 backend_runtime: deps.backend_runtime,
+                auth_scope: deps.auth_scope,
                 app_version: normalize_app_version(&deps.app_version),
                 state: Mutex::new(TelemetryState::default()),
                 flush_lock: tokio::sync::Mutex::new(()),
@@ -247,6 +261,7 @@ impl TelemetryRuntime {
         };
         self.ensure_session_start(&session).await;
         self.send_config_snapshot_once(&session).await;
+        self.send_account_config_snapshot_once(&session).await;
         self.send_heartbeat_if_due(&session).await;
     }
 
@@ -366,21 +381,85 @@ impl TelemetryRuntime {
             self.mark_config_snapshot_sent();
             return;
         }
+        let scale = self.inner.environment.database_scale();
         let payload = ConfigSnapshotPayload {
             context: self.context(session, None),
-            config: self.config_snapshot(),
+            config: self.config_snapshot(scale),
         };
         if self
             .post_debug("/api/v1/telemetry/config", &payload, "config snapshot")
             .await
         {
             self.mark_config_snapshot_sent();
-            if let Err(error) = self.inner.environment.set_string(
-                TELEMETRY_CONFIG_REPORTED_VERSION_CONFIG_KEY,
-                &self.inner.app_version,
-            ) {
-                tracing::debug!("failed to mark telemetry config version: {error}");
+            self.persist_reported_version(TELEMETRY_CONFIG_REPORTED_VERSION_CONFIG_KEY);
+            if scale.friend_count.is_some_and(|count| count > 0) {
+                self.mark_account_config_snapshot_sent();
+                self.persist_reported_version(TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY);
             }
+        }
+    }
+
+    async fn send_account_config_snapshot_once(&self, session: &TelemetrySession) {
+        if self.account_config_snapshot_sent() {
+            return;
+        }
+        let signed_in = self.inner.auth_scope.snapshot().active;
+        let now = Instant::now();
+        let signed_in_at = {
+            let Ok(mut state) = self.inner.state.lock() else {
+                return;
+            };
+            if !signed_in {
+                state.signed_in_at = None;
+                return;
+            }
+            let signed_in_at = *state.signed_in_at.get_or_insert(now);
+            if !attempt_due(state.account_config_snapshot_attempted_at, now) {
+                return;
+            }
+            state.account_config_snapshot_attempted_at = Some(now);
+            signed_in_at
+        };
+        if !self.usage_enabled() {
+            return;
+        }
+        let reported = self
+            .inner
+            .environment
+            .get_string(TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY, "")
+            .unwrap_or_default();
+        if reported.trim() == self.inner.app_version {
+            self.mark_account_config_snapshot_sent();
+            return;
+        }
+        let scale = self.inner.environment.database_scale();
+        if !account_snapshot_ready(scale.friend_count, now.duration_since(signed_in_at)) {
+            return;
+        }
+        let payload = ConfigSnapshotPayload {
+            context: self.context(session, None),
+            config: self.config_snapshot(scale),
+        };
+        if self
+            .post_debug(
+                "/api/v1/telemetry/config",
+                &payload,
+                "account config snapshot",
+            )
+            .await
+        {
+            self.mark_account_config_snapshot_sent();
+            self.persist_reported_version(TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY);
+        }
+    }
+
+    fn persist_reported_version(&self, key: &str) {
+        if let Err(error) = self
+            .inner
+            .environment
+            .set_string(key, &self.inner.app_version)
+        {
+            tracing::debug!("failed to mark telemetry {key}: {error}");
         }
     }
 
@@ -555,8 +634,7 @@ impl TelemetryRuntime {
         }
     }
 
-    fn config_snapshot(&self) -> TelemetryConfigSnapshot {
-        let scale = self.inner.environment.database_scale();
+    fn config_snapshot(&self, scale: TelemetryDatabaseScale) -> TelemetryConfigSnapshot {
         TelemetryConfigSnapshot {
             background_mode_enabled: self.config_bool("backgroundModeEnabled", false),
             wrist_overlay_enabled: self.config_bool("wristOverlayEnabled", false),
@@ -578,6 +656,20 @@ impl TelemetryRuntime {
             gamelog_rows_bucket: row_bucket(scale.gamelog_rows),
             friend_log_rows_bucket: row_bucket(scale.friend_log_rows),
             friend_count_bucket: friend_count_bucket(scale.friend_count),
+            vrcx_origin: self.vrcx_origin(),
+        }
+    }
+
+    fn vrcx_origin(&self) -> TelemetryVrcxOrigin {
+        let migrated = LEGACY_VRCX_MARKER_CONFIG_KEYS
+            .iter()
+            .any(|key| !self.config_string(key, "").trim().is_empty());
+        if migrated {
+            TelemetryVrcxOrigin::Migrated
+        } else if self.inner.environment.legacy_vrcx_detected() {
+            TelemetryVrcxOrigin::VrcxDetected
+        } else {
+            TelemetryVrcxOrigin::Fresh
         }
     }
 
@@ -745,6 +837,24 @@ impl TelemetryRuntime {
             state.config_snapshot_sent = true;
         }
     }
+
+    fn account_config_snapshot_sent(&self) -> bool {
+        self.inner
+            .state
+            .lock()
+            .map(|state| state.account_config_snapshot_sent)
+            .unwrap_or(false)
+    }
+
+    fn mark_account_config_snapshot_sent(&self) {
+        if let Ok(mut state) = self.inner.state.lock() {
+            state.account_config_snapshot_sent = true;
+        }
+    }
+}
+
+fn account_snapshot_ready(friend_count: Option<i64>, signed_in_for: Duration) -> bool {
+    friend_count.is_some_and(|count| count > 0) || signed_in_for >= ACCOUNT_SNAPSHOT_FRIEND_GRACE
 }
 
 fn runtime_mode(mode: BackendRuntimeMode) -> TelemetryRuntimeMode {

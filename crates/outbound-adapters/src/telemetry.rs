@@ -111,6 +111,12 @@ impl TelemetryEnvironment for LocalTelemetryEnvironment {
             }
         }
     }
+
+    fn legacy_vrcx_detected(&self) -> bool {
+        vrcx_0_persistence::legacy_vrcx::discover_supported_legacy_source()
+            .status
+            .detected
+    }
 }
 
 pub struct HttpTelemetryTransport {

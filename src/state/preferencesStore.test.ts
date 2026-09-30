@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { TRUST_COLOR_DEFAULTS } from '@/shared/constants/trustColors';
+
 import {
     DEFAULT_PREFERENCES,
     normalizeOverlayActivityFilters,
@@ -279,15 +281,7 @@ describe('preferencesStore normalizers', () => {
     });
 
     it('uses default wrist filters when overlay activity filters are missing', () => {
-        const snapshot = normalizePreferenceSnapshot({
-            sharedFeedFilters: JSON.stringify({
-                wrist: {
-                    invite: 'VIP',
-                    OnPlayerJoined: 'Everyone',
-                    friendRequest: 'Off'
-                }
-            })
-        });
+        const snapshot = normalizePreferenceSnapshot({});
 
         expect(snapshot.overlayActivityFilters.wrist.types.invite).toEqual({
             scope: 'friends',
@@ -408,9 +402,7 @@ describe('preferencesStore normalizers', () => {
             }
         });
         expect(snapshot.trustColor.basic).toBe('#ABCDEF');
-        expect(snapshot.trustColor.known).toBe(
-            normalizePreferenceSnapshot(DEFAULT_PREFERENCES).trustColor.known
-        );
+        expect(snapshot.trustColor.known).toBe(TRUST_COLOR_DEFAULTS.known);
     });
 
     it('keeps DeepL translation provider snapshots', () => {

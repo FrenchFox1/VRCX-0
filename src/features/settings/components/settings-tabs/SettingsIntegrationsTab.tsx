@@ -173,7 +173,7 @@ export function SettingsIntegrationsTab() {
                         <Button
                             type="button"
                             variant="link"
-                            className="text-muted-foreground hover:text-primary h-auto justify-start p-0 text-left text-xs font-normal hover:bg-transparent"
+                            className="text-muted-foreground hover:text-foreground h-auto justify-start p-0 text-left text-xs font-normal underline-offset-4 hover:bg-transparent hover:underline"
                             onClick={openVrchatConfig}
                         >
                             {t(

@@ -1223,10 +1223,7 @@
                 "start": "Začátek",
                 "end": "Konec",
                 "game_log_is_disabled": "Zápis do GameLogu je vypnutý",
-                "showing": "Zobrazeno",
-                "of": "z",
-                "game_log_row": "položka záznamu hry",
-                "game_log_rows": "položky záznamu hry"
+                "showing_summary": "Zobrazeno <b>{shown}</b> z <b>{count}</b>"
             },
             "success": {
                 "game_log_row_deleted": "Položka záznamu hry byla odstraněna",
@@ -1322,10 +1319,8 @@
                 "grid_density_dense": "Hustá",
                 "click_to_wear": "Kliknutím obléknete",
                 "impostor_queued_for_creation": "Impostor zařazen do fronty k vytvoření",
-                "showing": "Zobrazeno",
-                "of": "z",
+                "showing_summary": "Zobrazeno <b>{shown}</b> z <b>{count}</b>",
                 "avatar": "avatar",
-                "avatars": "avatarů",
                 "broaden_the_filters_or_search_query_to_see_more_avatars": "Rozšiřte filtry nebo vyhledávací dotaz, chcete-li zobrazit další avatary",
                 "make_public": "Zveřejnit",
                 "make_private": "Zneviditelnit",
@@ -1601,10 +1596,7 @@
                 "friend_history_failed_to_load": "Historii přátel se nepodařilo načíst"
             },
             "label": {
-                "showing": "Zobrazeno",
-                "of": "z",
-                "log_row": "záznam",
-                "log_rows": "záznamů",
+                "showing_summary": "Zobrazeno <b>{shown}</b> z <b>{count}</b>",
                 "broaden_the_type_filters_or_search_query_to_see_more_history": "Pro zobrazení další historie rozšiřte filtry typu nebo hledaný výraz"
             },
             "empty": {
@@ -1768,10 +1760,8 @@
             "label": {
                 "friend_details_are_already_loaded": "Podrobnosti o příteli jsou již načteny",
                 "shared_connections_are_opted_out_for_the_current_account": "Tento účet má sdílená spojení vypnutá",
-                "showing": "Zobrazeno",
-                "of": "z",
+                "showing_summary": "Zobrazeno <b>{shown}</b> z <b>{count}</b>",
                 "friend": "přítel",
-                "friends": "přátel",
                 "try_turning_off_favorites_only_or_broadening_the_search_query": "Zkuste vypnout zobrazení pouze oblíbených nebo rozšířit hledaný výraz",
                 "favorites_are_still_hydrating": "Oblíbené se stále načítají",
                 "try_a_different_segment_or_broaden_the_search_query": "Zkuste jiný segment nebo rozšiřte hledaný výraz",
@@ -2306,7 +2296,7 @@
                 "submit": "Odeslat",
                 "submitting": "Odesílání…",
                 "thanks": "Děkujeme za zpětnou vazbu!",
-                "cooldown": "Znovu odeslat můžete za {{seconds}} s",
+                "cooldown": "Znovu odeslat můžete za {seconds} s",
                 "reply_note": "Chcete odpověď? Uveďte ve zprávě svou e-mailovou adresu.",
                 "more_help": "Kontaktovat nás nebo přiložit logy můžete také zde:",
                 "error_generic": "Zpětnou vazbu se nepodařilo odeslat. Zkuste to prosím později."
@@ -3761,6 +3751,7 @@
             },
             "group_invite": {
                 "select_group": "Vyberte skupinu...",
+                "description": "Vyberte skupinu, do které chcete pozvat {value}.",
                 "loading": "Načítání skupin, do kterých můžete posílat pozvánky...",
                 "no_groups": "Nemáte žádnou skupinu, do které můžete posílat pozvánky",
                 "load_failed": "Skupiny se nepodařilo načíst",
@@ -4250,8 +4241,7 @@
                 "add_domain": "Přidat doménu"
             },
             "loading": {
-                "loading_world_profile": "Načítání profilu světa",
-                "fetching_the_current_vrchat_world_snapshot_for_this_dialog": "Načítání podrobností světa"
+                "loading_world_profile": "Načítání profilu světa"
             },
             "error": {
                 "world_profile_unavailable": "Profil světa není dostupný",
@@ -4597,7 +4587,9 @@
                 "loaded_of_total": "Načteno {loaded} z {total}",
                 "search_results": "{count} výsledků",
                 "export_loaded": "Exportovat načtené ({count})",
-                "export_all": "Exportovat vše ({count})"
+                "export_all": "Exportovat vše ({count})",
+                "failed_to_load": "Nepodařilo se načíst členy",
+                "failed_to_search": "Nepodařilo se vyhledat členy"
             },
             "gallery": {
                 "header": "Fotografie"
@@ -5430,7 +5422,8 @@
             "send": "Odeslat",
             "recent": "Nedávno použité",
             "inventory_emojis": "Inventář",
-            "no_inventory_emojis": "V inventáři zatím nejsou žádná emoji pro boop"
+            "no_inventory_emojis": "V inventáři zatím nejsou žádná emoji pro boop",
+            "failed_to_load_emojis": "Nepodařilo se načíst emoji"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 is up to date.",
@@ -5493,7 +5486,6 @@
         },
         "favorite_import": {
             "action": {
-                "import": "importovat",
                 "clear_table": "Vymazat tabulku",
                 "clear_errors": "Vymazat chyby",
                 "exclude": "Vyloučit"
@@ -5509,7 +5501,6 @@
                 "name": "Název",
                 "detail": "Podrobnosti",
                 "actions": "Akce",
-                "rows_yet": "řádků zatím",
                 "import_to": "Importovat do",
                 "local": "Místní",
                 "select_group": "Vyberte skupinu"
@@ -5525,7 +5516,14 @@
                 "detected_count": "Nalezeno: {count}"
             },
             "empty": {
-                "no_parsed": "Nezpracováno"
+                "avatar": "Zatím nejsou žádné avatary k importu",
+                "world": "Zatím nejsou žádné světy k importu",
+                "friend": "Zatím nejsou žádní přátelé k importu"
+            },
+            "title": {
+                "avatar": "Importovat avatary",
+                "world": "Importovat světy",
+                "friend": "Importovat přátele"
             }
         },
         "tools": {

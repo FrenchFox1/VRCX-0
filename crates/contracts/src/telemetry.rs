@@ -25,6 +25,14 @@ pub struct TelemetryContext {
     pub session_ended: Option<bool>,
 }
 
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TelemetryVrcxOrigin {
+    Migrated,
+    VrcxDetected,
+    Fresh,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryConfigSnapshot {
@@ -42,6 +50,7 @@ pub struct TelemetryConfigSnapshot {
     pub gamelog_rows_bucket: String,
     pub friend_log_rows_bucket: String,
     pub friend_count_bucket: String,
+    pub vrcx_origin: TelemetryVrcxOrigin,
 }
 
 #[derive(Clone, Debug, Serialize)]

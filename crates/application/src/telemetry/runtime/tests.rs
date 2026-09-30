@@ -9,6 +9,7 @@ struct FakeEnvironment {
     errors: Mutex<Vec<TelemetryClientErrorInput>>,
     unavailable: AtomicBool,
     scale: Mutex<TelemetryDatabaseScale>,
+    legacy_vrcx_detected: AtomicBool,
 }
 
 impl FakeEnvironment {
@@ -98,6 +99,10 @@ impl TelemetryEnvironment for FakeEnvironment {
     fn system_theme_category(&self) -> String {
         "dark".into()
     }
+
+    fn legacy_vrcx_detected(&self) -> bool {
+        self.legacy_vrcx_detected.load(Ordering::Acquire)
+    }
 }
 
 struct FakeTransport {
@@ -146,13 +151,140 @@ fn runtime_with_version(
     transport: Arc<FakeTransport>,
     app_version: &str,
 ) -> TelemetryRuntime {
+    runtime_with_auth_scope(environment, transport, app_version, RuntimeAuthScope::new())
+}
+
+fn runtime_with_auth_scope(
+    environment: Arc<FakeEnvironment>,
+    transport: Arc<FakeTransport>,
+    app_version: &str,
+    auth_scope: RuntimeAuthScope,
+) -> TelemetryRuntime {
     TelemetryRuntime::new(TelemetryRuntimeDeps {
         environment,
         transport,
         tasks: TaskSupervisor::new(),
         backend_runtime: BackendRuntime::new(vrcx_0_application_core::RuntimeHostProfile::Desktop),
+        auth_scope,
         app_version: app_version.into(),
     })
+}
+
+fn config_payloads(transport: &FakeTransport) -> Vec<serde_json::Value> {
+    transport
+        .payloads
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|(path, _)| path == "/api/v1/telemetry/config")
+        .map(|(_, payload)| payload["config"].clone())
+        .collect()
+}
+
+fn set_friend_count(environment: &FakeEnvironment, friend_count: Option<i64>) {
+    environment.scale.lock().unwrap().friend_count = friend_count;
+}
+
+fn clear_account_snapshot_backoff(runtime: &TelemetryRuntime) {
+    runtime
+        .inner
+        .state
+        .lock()
+        .unwrap()
+        .account_config_snapshot_attempted_at = None;
+}
+
+#[tokio::test]
+async fn fresh_install_resends_config_once_friends_are_stored_after_sign_in() {
+    let environment = Arc::new(FakeEnvironment::default());
+    let transport = Arc::new(FakeTransport::new(None));
+    let auth_scope = RuntimeAuthScope::new();
+    let runtime = runtime_with_auth_scope(
+        environment.clone(),
+        transport.clone(),
+        "2.31.0",
+        auth_scope.clone(),
+    );
+
+    runtime.tick().await;
+    runtime.tick().await;
+    assert_eq!(config_payloads(&transport).len(), 1);
+    assert_eq!(
+        config_payloads(&transport)[0]["friendCountBucket"],
+        "unknown"
+    );
+
+    auth_scope.set("usr_new", "");
+    set_friend_count(&environment, Some(0));
+    runtime.tick().await;
+    assert_eq!(config_payloads(&transport).len(), 1);
+
+    set_friend_count(&environment, Some(3));
+    clear_account_snapshot_backoff(&runtime);
+    runtime.tick().await;
+    let payloads = config_payloads(&transport);
+    assert_eq!(payloads.len(), 2);
+    assert_eq!(payloads[1]["friendCountBucket"], "lt100");
+    assert_eq!(
+        environment
+            .get_string(TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY, "")
+            .unwrap(),
+        "2.31.0"
+    );
+
+    clear_account_snapshot_backoff(&runtime);
+    runtime.tick().await;
+    assert_eq!(config_payloads(&transport).len(), 2);
+}
+
+#[tokio::test]
+async fn startup_config_with_stored_friends_skips_the_sign_in_resend() {
+    let environment = Arc::new(FakeEnvironment::default());
+    set_friend_count(&environment, Some(250));
+    let transport = Arc::new(FakeTransport::new(None));
+    let auth_scope = RuntimeAuthScope::new();
+    let runtime = runtime_with_auth_scope(
+        environment.clone(),
+        transport.clone(),
+        "2.31.0",
+        auth_scope.clone(),
+    );
+
+    runtime.tick().await;
+    auth_scope.set("usr_existing", "");
+    runtime.tick().await;
+
+    let payloads = config_payloads(&transport);
+    assert_eq!(payloads.len(), 1);
+    assert_eq!(payloads[0]["friendCountBucket"], "100_500");
+}
+
+#[test]
+fn account_snapshot_waits_for_friends_until_the_grace_period() {
+    assert!(!account_snapshot_ready(None, Duration::ZERO));
+    assert!(!account_snapshot_ready(Some(0), Duration::from_secs(60)));
+    assert!(account_snapshot_ready(Some(1), Duration::ZERO));
+    assert!(account_snapshot_ready(None, ACCOUNT_SNAPSHOT_FRIEND_GRACE));
+}
+
+#[tokio::test]
+async fn vrcx_origin_prefers_migrated_markers_over_detected_legacy_data() {
+    let environment = Arc::new(FakeEnvironment::default());
+    let telemetry = runtime(environment.clone(), Arc::new(FakeTransport::new(None)));
+    assert_eq!(telemetry.vrcx_origin(), TelemetryVrcxOrigin::Fresh);
+
+    environment
+        .legacy_vrcx_detected
+        .store(true, Ordering::Release);
+    assert_eq!(telemetry.vrcx_origin(), TelemetryVrcxOrigin::VrcxDetected);
+
+    environment.set("VRCX_lastVRCXVersion", "2025.12.01");
+    assert_eq!(telemetry.vrcx_origin(), TelemetryVrcxOrigin::Migrated);
+
+    let environment = Arc::new(FakeEnvironment::default());
+    environment.set("VRCX_id", "legacy-install");
+    let telemetry = runtime(environment, Arc::new(FakeTransport::new(None)));
+    assert_eq!(telemetry.vrcx_origin(), TelemetryVrcxOrigin::Migrated);
 }
 
 fn instant_past_epoch_safe(headroom: Duration) -> Instant {
@@ -164,22 +296,6 @@ fn local_weekday_uses_sunday_zero() {
     assert_eq!(local_weekday_number(Weekday::Sun), 0);
     assert_eq!(local_weekday_number(Weekday::Mon), 1);
     assert_eq!(local_weekday_number(Weekday::Sat), 6);
-}
-
-#[test]
-fn runtime_mode_maps_all_backend_modes() {
-    assert_eq!(
-        runtime_mode(BackendRuntimeMode::Foreground),
-        TelemetryRuntimeMode::Foreground
-    );
-    assert_eq!(
-        runtime_mode(BackendRuntimeMode::Background),
-        TelemetryRuntimeMode::Background
-    );
-    assert_eq!(
-        runtime_mode(BackendRuntimeMode::Headless),
-        TelemetryRuntimeMode::Headless
-    );
 }
 
 #[test]

@@ -1,3 +1,4 @@
+import { commands } from '@/platform/tauri/bindings';
 import { publishPreferenceChanged } from '@/shared/events/preferenceEvents';
 import { isAvatarSearchQueryLongEnough } from '@/shared/utils/avatarSearchQuery';
 import { isRecord } from '@/shared/utils/record';
@@ -6,7 +7,6 @@ import avatarProfileRepository from './avatarProfileRepository';
 import type { AvatarProfileRecord } from './avatarProfileRepository';
 import { safeJsonParse } from './baseRepository';
 import configRepository from './configRepository';
-import externalApiRepository from './externalApiRepository';
 
 export type AvatarSearchProviderConfig = {
     enabled: boolean;
@@ -289,7 +289,7 @@ async function search({
         getVrcxId()
     ]);
 
-    const response = await externalApiRepository.searchAvatarProvider({
+    const response = await commands.appExternalApiAvatarSearchGet({
         url,
         vrcxId
     });

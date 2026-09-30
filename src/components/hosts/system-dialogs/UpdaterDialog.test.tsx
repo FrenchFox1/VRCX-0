@@ -2,7 +2,6 @@
 
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -180,21 +179,33 @@ describe('UpdaterDialog', () => {
         mocks.toNormalizedReleaseFromSnapshot.mockReturnValue(null);
     });
 
-    it('uses the GitHub update action for preview checks even on installable platforms', () => {
+    it('uses the release page action for preview checks even when a Tauri update is installable', async () => {
         mocks.getPreviewStableReleaseUpdateMode.mockReturnValue({
             enabled: true,
             check: mocks.previewStableReleaseCheck
         });
+        mocks.toNormalizedReleaseFromSnapshot.mockReturnValue({
+            canonicalVersion: '2.7.0',
+            displayVersion: '2.7.0',
+            updaterType: 'tauri'
+        });
+        mocks.appAppUpdateCheckRun.mockResolvedValue({
+            hasAvailableUpdate: true,
+            error: null,
+            release: {}
+        });
 
-        const html = renderToStaticMarkup(
-            React.createElement(UpdaterDialog, {
-                open: true,
-                onOpenChange: vi.fn()
-            })
-        );
+        render(<UpdaterDialog open onOpenChange={vi.fn()} />);
 
-        expect(html).toContain('nav_menu.update');
-        expect(html).not.toContain('dialog.system.action.install_and_restart');
+        const updateButton = screen.getByRole<HTMLButtonElement>('button', {
+            name: 'nav_menu.update'
+        });
+        await waitFor(() => {
+            expect(updateButton.disabled).toBe(false);
+        });
+        expect(
+            screen.queryByText('dialog.system.action.install_and_restart')
+        ).toBeNull();
     });
 
     it('uses the install action for a stable Tauri update', async () => {

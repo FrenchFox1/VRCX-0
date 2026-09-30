@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next';
 
-import { PrivacyLockSetting } from '@/features/privacy-lock/PrivacyLockSetting';
 import type { HostPlatform } from '@/platform/tauri/bindings';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { LinuxRenderingSetting } from '../LinuxRenderingSetting';
+import { PrivacyLockSetting } from '../PrivacyLockSetting';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
