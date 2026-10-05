@@ -2669,7 +2669,14 @@
                     "sidebar_avatar_frame": "Zobrazit rámeček avatara",
                     "sidebar_avatar_frame_description": "Zobrazí dekorativní rámeček kolem avatarů v postranním panelu přátel.",
                     "sidebar_nameplate": "Zobrazit jmenovku",
-                    "sidebar_nameplate_description": "Zobrazí jmenovku vpravo v řádcích postranního panelu přátel."
+                    "sidebar_nameplate_description": "Zobrazí jmenovku vpravo v řádcích postranního panelu přátel.",
+                    "hover_card": "Náhledová karta",
+                    "hover_card_avatar_frame": "Zobrazit rámeček avatara",
+                    "hover_card_avatar_frame_description": "Zobrazí dekorativní rámeček kolem avatara v náhledových kartách.",
+                    "hover_card_profile_effect": "Zobrazit efekt profilu",
+                    "hover_card_profile_effect_description": "Zobrazí efekt profilu přes náhledové karty.",
+                    "hover_card_nameplate": "Zobrazit jmenovku",
+                    "hover_card_nameplate_description": "Zobrazí jmenovku za jménem v náhledových kartách."
                 },
                 "user_dialog": {
                     "header": "Dialog uživatele",

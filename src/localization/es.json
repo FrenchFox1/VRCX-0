@@ -2663,7 +2663,14 @@
                     "sidebar_avatar_frame": "Mostrar marco del avatar",
                     "sidebar_avatar_frame_description": "Muestra el marco decorativo alrededor de los avatares en la barra lateral de amigos.",
                     "sidebar_nameplate": "Mostrar placa de nombre",
-                    "sidebar_nameplate_description": "Muestra la placa de nombre a la derecha de cada fila en la barra lateral de amigos."
+                    "sidebar_nameplate_description": "Muestra la placa de nombre a la derecha de cada fila en la barra lateral de amigos.",
+                    "hover_card": "Tarjeta de vista previa",
+                    "hover_card_avatar_frame": "Mostrar marco del avatar",
+                    "hover_card_avatar_frame_description": "Muestra el marco decorativo alrededor del avatar en las tarjetas de vista previa.",
+                    "hover_card_profile_effect": "Mostrar efecto del perfil",
+                    "hover_card_profile_effect_description": "Muestra el efecto del perfil sobre las tarjetas de vista previa.",
+                    "hover_card_nameplate": "Mostrar placa de nombre",
+                    "hover_card_nameplate_description": "Muestra la placa de nombre detrás del nombre en las tarjetas de vista previa."
                 },
                 "user_dialog": {
                     "header": "Ventana de usuario",

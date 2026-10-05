@@ -325,6 +325,9 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     showUserDialogNameplateEffect: true,
     showSidebarAvatarFrame: true,
     showSidebarNameplate: true,
+    showHoverCardAvatarFrame: true,
+    showHoverCardProfileEffect: false,
+    showHoverCardNameplate: false,
     weekStartsOn: 1,
     dtIsoFormat: false,
     dtHour12: false,
@@ -508,6 +511,11 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         ),
         showSidebarAvatarFrame: normalizeBool(next.showSidebarAvatarFrame),
         showSidebarNameplate: normalizeBool(next.showSidebarNameplate),
+        showHoverCardAvatarFrame: normalizeBool(next.showHoverCardAvatarFrame),
+        showHoverCardProfileEffect: normalizeBool(
+            next.showHoverCardProfileEffect
+        ),
+        showHoverCardNameplate: normalizeBool(next.showHoverCardNameplate),
         weekStartsOn: normalizeWeekStartsOn(next.weekStartsOn),
         dtIsoFormat: normalizeBool(next.dtIsoFormat),
         dtHour12: normalizeBool(next.dtHour12),

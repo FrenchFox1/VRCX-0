@@ -2657,7 +2657,14 @@
                     "sidebar_avatar_frame": "アイコンフレームを表示",
                     "sidebar_avatar_frame_description": "フレンドサイドバーのアイコンにフレームを表示します。",
                     "sidebar_nameplate": "ネームプレートを表示",
-                    "sidebar_nameplate_description": "フレンドサイドバーの各行の右側にネームプレートを表示します。"
+                    "sidebar_nameplate_description": "フレンドサイドバーの各行の右側にネームプレートを表示します。",
+                    "hover_card": "ホバーカード",
+                    "hover_card_avatar_frame": "アイコンフレームを表示",
+                    "hover_card_avatar_frame_description": "ホバーカードのアイコンにフレームを表示します。",
+                    "hover_card_profile_effect": "プロフィールエフェクトを表示",
+                    "hover_card_profile_effect_description": "ホバーカードにプロフィールエフェクトを重ねて表示します。",
+                    "hover_card_nameplate": "ネームプレートを表示",
+                    "hover_card_nameplate_description": "ホバーカードの表示名の背景にネームプレートを表示します。"
                 },
                 "user_dialog": {
                     "header": "ユーザーダイアログ",

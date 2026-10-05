@@ -2657,7 +2657,14 @@
                     "sidebar_avatar_frame": "显示头像框",
                     "sidebar_avatar_frame_description": "在好友侧边栏的头像周围显示装饰框。",
                     "sidebar_nameplate": "显示名牌",
-                    "sidebar_nameplate_description": "在好友侧边栏每一行的右侧显示名牌。"
+                    "sidebar_nameplate_description": "在好友侧边栏每一行的右侧显示名牌。",
+                    "hover_card": "悬停卡片",
+                    "hover_card_avatar_frame": "显示头像框",
+                    "hover_card_avatar_frame_description": "在悬停卡片的头像周围显示装饰框。",
+                    "hover_card_profile_effect": "显示个人资料特效",
+                    "hover_card_profile_effect_description": "在悬停卡片上叠加显示个人资料特效。",
+                    "hover_card_nameplate": "显示名牌",
+                    "hover_card_nameplate_description": "在悬停卡片的昵称后方显示名牌。"
                 },
                 "user_dialog": {
                     "header": "玩家信息",

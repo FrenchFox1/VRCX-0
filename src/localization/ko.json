@@ -2600,7 +2600,14 @@
                     "sidebar_avatar_frame": "아이콘 프레임 표시",
                     "sidebar_avatar_frame_description": "친구 사이드바의 아이콘 주위에 프레임을 표시합니다.",
                     "sidebar_nameplate": "이름표 표시",
-                    "sidebar_nameplate_description": "친구 사이드바의 각 행 오른쪽에 이름표를 표시합니다."
+                    "sidebar_nameplate_description": "친구 사이드바의 각 행 오른쪽에 이름표를 표시합니다.",
+                    "hover_card": "호버 카드",
+                    "hover_card_avatar_frame": "아이콘 프레임 표시",
+                    "hover_card_avatar_frame_description": "호버 카드의 아이콘 주위에 프레임을 표시합니다.",
+                    "hover_card_profile_effect": "프로필 효과 표시",
+                    "hover_card_profile_effect_description": "호버 카드 위에 프로필 효과를 표시합니다.",
+                    "hover_card_nameplate": "이름표 표시",
+                    "hover_card_nameplate_description": "호버 카드의 표시 이름 뒤에 이름표를 표시합니다."
                 },
                 "user_dialog": {
                     "header": "사용자 정보 대화 상자",

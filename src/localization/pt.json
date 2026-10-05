@@ -2659,7 +2659,14 @@
                     "sidebar_avatar_frame": "Mostrar moldura do avatar",
                     "sidebar_avatar_frame_description": "Mostra a moldura decorativa ao redor dos avatares na barra lateral de amigos.",
                     "sidebar_nameplate": "Mostrar placa de nome",
-                    "sidebar_nameplate_description": "Mostra a placa de nome à direita de cada linha na barra lateral de amigos."
+                    "sidebar_nameplate_description": "Mostra a placa de nome à direita de cada linha na barra lateral de amigos.",
+                    "hover_card": "Cartão de pré-visualização",
+                    "hover_card_avatar_frame": "Mostrar moldura do avatar",
+                    "hover_card_avatar_frame_description": "Mostra a moldura decorativa ao redor do avatar nos cartões de pré-visualização.",
+                    "hover_card_profile_effect": "Mostrar efeito do perfil",
+                    "hover_card_profile_effect_description": "Mostra o efeito do perfil sobre os cartões de pré-visualização.",
+                    "hover_card_nameplate": "Mostrar placa de nome",
+                    "hover_card_nameplate_description": "Mostra a placa de nome atrás do nome nos cartões de pré-visualização."
                 },
                 "user_dialog": {
                     "header": "Diálogo de Usuário",

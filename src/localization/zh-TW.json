@@ -2657,7 +2657,14 @@
                     "sidebar_avatar_frame": "顯示頭像框",
                     "sidebar_avatar_frame_description": "在好友側邊欄的頭像周圍顯示裝飾框。",
                     "sidebar_nameplate": "顯示名牌",
-                    "sidebar_nameplate_description": "在好友側邊欄每一列的右側顯示名牌。"
+                    "sidebar_nameplate_description": "在好友側邊欄每一列的右側顯示名牌。",
+                    "hover_card": "懸停卡片",
+                    "hover_card_avatar_frame": "顯示頭像框",
+                    "hover_card_avatar_frame_description": "在懸停卡片的頭像周圍顯示裝飾框。",
+                    "hover_card_profile_effect": "顯示個人資料特效",
+                    "hover_card_profile_effect_description": "在懸停卡片上疊加顯示個人資料特效。",
+                    "hover_card_nameplate": "顯示名牌",
+                    "hover_card_nameplate_description": "在懸停卡片的暱稱後方顯示名牌。"
                 },
                 "user_dialog": {
                     "header": "用戶資訊",
