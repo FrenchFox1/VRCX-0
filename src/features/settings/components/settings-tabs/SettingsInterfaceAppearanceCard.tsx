@@ -10,7 +10,7 @@ import {
     APP_FONT_DEFAULT_KEY,
     APP_FONT_FAMILIES
 } from '@/shared/constants/fonts';
-import type { NotificationLayout, TableDensity } from '@/state/shellStore';
+import type { TableDensity } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -41,12 +41,6 @@ import { Switch } from '@/ui/shadcn/switch';
 import { SettingsCard } from '../SettingsCard';
 import { Field, SegmentedPreference } from '../SettingsField';
 
-type SettingsOption = readonly [value: string, labelKey: string];
-type SettingsOptionItem = {
-    label: string;
-    value: string;
-};
-
 type FontPreferencePrefs = {
     appFontFamily: string;
     appCjkFontPack: string;
@@ -57,9 +51,6 @@ type FontPreferencePrefs = {
 };
 
 type AppearancePrefs = FontPreferencePrefs & {
-    notificationLayout: string;
-    notificationIconDot: boolean;
-    taskbarIconDot: boolean;
     tableDensity: string;
     dataTableStriped: boolean;
     reducedMotionAndBlur: boolean;
@@ -71,16 +62,11 @@ type SettingsInterfaceAppearanceCardProps = {
     prefs: AppearancePrefs;
     zoomInput: string;
     hideFontControls: boolean;
-    showTaskbarIconDot: boolean;
     onLanguageChange: (value: string | null) => void;
     onFontFamilyChange: (value: string) => void;
     onCjkFontPackChange: (value: string) => void;
     onZoomInputChange: (value: string) => void;
     onZoomBlur: (value: string) => void;
-    notificationLayoutOptions: readonly SettingsOption[];
-    onNotificationLayoutChange: (value: NotificationLayout) => void;
-    onNotificationIconDotChange: (value: boolean) => void;
-    onTaskbarIconDotChange: (value: boolean) => void;
     onTableDensityChange: (value: TableDensity) => void;
     onDataTableStripedChange: (value: boolean) => void;
     onAccessibleStatusIndicatorsChange: (value: boolean) => void;
@@ -278,27 +264,17 @@ export function SettingsInterfaceAppearanceCard({
     prefs,
     zoomInput,
     hideFontControls,
-    showTaskbarIconDot,
     onLanguageChange,
     onFontFamilyChange,
     onCjkFontPackChange,
     onZoomInputChange,
     onZoomBlur,
-    notificationLayoutOptions,
-    onNotificationLayoutChange,
-    onNotificationIconDotChange,
-    onTaskbarIconDotChange,
     onTableDensityChange,
     onDataTableStripedChange,
     onAccessibleStatusIndicatorsChange,
     onReducedMotionAndBlurChange
 }: SettingsInterfaceAppearanceCardProps) {
     const { t } = useTranslation();
-    const notificationLayoutItems: SettingsOptionItem[] =
-        notificationLayoutOptions.map(([value, labelKey]: SettingsOption) => ({
-            value,
-            label: t(labelKey)
-        }));
 
     return (
         <SettingsCard
@@ -367,67 +343,6 @@ export function SettingsInterfaceAppearanceCard({
                     </NumberField>
                 </div>
             </Field>
-
-            <Field
-                label={t('view.settings.notifications.notifications.layout')}
-                controlId="settings-notification-layout"
-            >
-                <Select
-                    value={prefs.notificationLayout}
-                    items={notificationLayoutItems}
-                    onValueChange={(value) => {
-                        if (
-                            value === 'notification-center' ||
-                            value === 'table'
-                        ) {
-                            onNotificationLayoutChange(value);
-                        }
-                    }}
-                >
-                    <SelectTrigger
-                        id="settings-notification-layout"
-                        className="w-56"
-                    >
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {notificationLayoutItems.map(({ value, label }) => (
-                                <SelectItem key={value} value={value}>
-                                    {label}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </Field>
-
-            <Field
-                label={t(
-                    'view.settings.appearance.appearance.show_notification_icon_dot'
-                )}
-            >
-                <Switch
-                    checked={prefs.notificationIconDot}
-                    onCheckedChange={onNotificationIconDotChange}
-                />
-            </Field>
-
-            {showTaskbarIconDot ? (
-                <Field
-                    label={t(
-                        'view.settings.appearance.appearance.show_taskbar_icon_dot'
-                    )}
-                    description={t(
-                        'view.settings.appearance.appearance.show_taskbar_icon_dot_description'
-                    )}
-                >
-                    <Switch
-                        checked={prefs.taskbarIconDot}
-                        onCheckedChange={onTaskbarIconDotChange}
-                    />
-                </Field>
-            ) : null}
 
             <Field
                 label={t('view.settings.appearance.appearance.table_density')}

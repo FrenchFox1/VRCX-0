@@ -1184,6 +1184,7 @@
             "instance_population": "Hráčů v instanci: {users}",
             "instance_population_capacity": "Hráčů v instanci: {users} / max. {capacity}",
             "other_online": "Ostatní přátelé online",
+            "favorite_friends": "Oblíbení přátelé",
             "favorite": "Oblíbení",
             "same_instance": "Stejná instance",
             "active": "Aktivní",
@@ -1196,6 +1197,7 @@
                 "dense": "Hustá"
             },
             "show_same_instance_in_online": "Zobrazit stejnou instanci v Online",
+            "show_favorites_in_online": "Zobrazit oblíbené přátele v Online",
             "loading_more": "Načítání dalších",
             "busy": "Zaneprázdněn",
             "local_group": "Lokální: {name}",
@@ -2528,7 +2530,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Aplikace",
+                    "startup_header": "Spuštění",
+                    "window_header": "Okno a systémová lišta",
+                    "updates_header": "Aktualizace",
+                    "network_header": "Přihlášení a síť",
                     "startup": "Spustit při startu Windows",
                     "startup_system": "Spustit při startu systému",
                     "startup_system_description": "Vytvoří položku automatického spouštění na ploše, která spustí VRCX-0 s parametrem --autostart.",
@@ -2723,8 +2728,11 @@
                     "layout": "Zobrazení oznámení",
                     "layout_notification_center": "Centrum oznámení",
                     "layout_table": "Stránka oznámení",
-                    "post_update_changelog_prompt": "Zobrazit poznámky k aktualizaci po aktualizaci",
-                    "post_update_changelog_prompt_description": "Zobrazí novinky po instalaci aktualizace.",
+                    "in_app": {
+                        "header": "Upozornění v aplikaci"
+                    },
+                    "post_update_changelog_prompt": "Otevřít poznámky k aktualizaci po aktualizaci",
+                    "post_update_changelog_prompt_description": "Při prvním spuštění po aktualizaci automaticky otevře novinky.",
                     "test_notification": {
                         "header": "Testovací oznámení",
                         "description": "Odešle ukázkovou událost do všech kanálů oznámení. Filtry oznámení se přeskočí, ale přepínač, podmínka zobrazení a režim Nerušit každého kanálu stále platí.",
@@ -3733,7 +3741,8 @@
                     "description": "Návštěva se zde zobrazí, jakmile opustíš svět.",
                     "filtered_title": "V tomto období žádné návštěvy"
                 },
-                "all_dates": "Všechna data"
+                "all_dates": "Všechna data",
+                "screenshots": "Snímky"
             }
         },
         "my_groups": {

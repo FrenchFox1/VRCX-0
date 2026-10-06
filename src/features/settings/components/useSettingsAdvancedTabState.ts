@@ -2,7 +2,6 @@ import { useShallow } from 'zustand/react/shallow';
 
 import type { AvatarAutoCleanupPreference } from '@/shared/constants/settings';
 import { usePreferencesStore } from '@/state/preferencesStore';
-import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useSettingsPageSection } from '../SettingsPageStateContext';
 
@@ -10,9 +9,6 @@ export function useSettingsAdvancedTabState() {
     const advanced = useSettingsPageSection('advanced');
     const prefs = usePreferencesStore(
         useShallow((state) => ({
-            relaunchVRChatAfterCrash: state.relaunchVRChatAfterCrash,
-            vrcQuitFix: state.vrcQuitFix,
-            focusVrchatOnJoin: state.focusVrchatOnJoin,
             autoSweepVRChatCache: state.autoSweepVRChatCache,
             avatarAutoCleanup: state.avatarAutoCleanup,
             gameLogDisabled: state.gameLogDisabled,
@@ -21,9 +17,6 @@ export function useSettingsAdvancedTabState() {
             udonExceptionLogging: state.udonExceptionLogging,
             logResourceLoad: state.logResourceLoad
         }))
-    );
-    const hostPlatform = useRuntimeStore(
-        (state) => state.hostCapabilities.platform
     );
     const {
         avatarAutoCleanupOptions,
@@ -49,7 +42,6 @@ export function useSettingsAdvancedTabState() {
     } = advanced;
 
     const advancedTab = {
-        hostPlatform,
         prefs,
         avatarAutoCleanupOptions,
         sqliteTableSizes,
@@ -57,23 +49,6 @@ export function useSettingsAdvancedTabState() {
         onlineVisitCount,
         configTreeData,
         appDataDirState,
-        onRelaunchVRChatAfterCrashChange: (checked: boolean) => {
-            saveBoolPreference(
-                'relaunchVRChatAfterCrash',
-                'VRCX_relaunchVRChatAfterCrash',
-                checked
-            );
-        },
-        onVrcQuitFixChange: (checked: boolean) => {
-            saveBoolPreference('vrcQuitFix', 'vrcQuitFix', checked);
-        },
-        onFocusVrchatOnJoinChange: (checked: boolean) => {
-            saveBoolPreference(
-                'focusVrchatOnJoin',
-                'focusVrchatOnJoin',
-                checked
-            );
-        },
         onAutoSweepVRChatCacheChange: (checked: boolean) => {
             saveBoolPreference(
                 'autoSweepVRChatCache',

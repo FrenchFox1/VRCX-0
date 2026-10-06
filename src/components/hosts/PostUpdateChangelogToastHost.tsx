@@ -52,6 +52,15 @@ export function PostUpdateChangelogToastHost(): null {
                         );
                     });
                 };
+                const openChangelog = () => {
+                    recordSeen();
+                    setChangelogTargetVersion(state.currentVersion);
+                    setSystemHostOpen('changelogOpen', true);
+                };
+                if (state.autoOpen) {
+                    openChangelog();
+                    return;
+                }
                 const displayVersion =
                     formatReleaseDisplayVersion(state.currentVersion) ||
                     state.currentVersion;
@@ -61,15 +70,13 @@ export function PostUpdateChangelogToastHost(): null {
                         value: displayVersion
                     }),
                     description: t('dialog.change_log.toast_description'),
-                    timeout: 0,
+                    timeout: 15000,
                     position: 'bottom-right',
                     actionProps: {
                         children: t('dialog.change_log.view_changes'),
                         onClick: () => {
-                            recordSeen();
                             toast.close(toastId);
-                            setChangelogTargetVersion(state.currentVersion);
-                            setSystemHostOpen('changelogOpen', true);
+                            openChangelog();
                         }
                     },
                     onClose: recordSeen,

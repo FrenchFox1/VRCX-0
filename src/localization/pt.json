@@ -1178,6 +1178,7 @@
             "instance_population": "Jogadores na instância: {users}",
             "instance_population_capacity": "Jogadores na instância: {users} / máx. {capacity}",
             "other_online": "Outros amigos online",
+            "favorite_friends": "Amigos favoritos",
             "favorite": "Favoritos",
             "same_instance": "Mesma instância",
             "active": "Ativo",
@@ -1190,6 +1191,7 @@
                 "dense": "Denso"
             },
             "show_same_instance_in_online": "Mostrar a mesma instância em Online",
+            "show_favorites_in_online": "Mostrar amigos favoritos em Online",
             "loading_more": "Carregando mais",
             "busy": "Ocupado",
             "local_group": "Local: {name}",
@@ -2518,7 +2520,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Aplicativo",
+                    "startup_header": "Inicialização",
+                    "window_header": "Janela e bandeja",
+                    "updates_header": "Atualizações",
+                    "network_header": "Login e rede",
                     "startup": "Iniciar com o Windows",
                     "startup_system": "Iniciar com o sistema",
                     "startup_system_description": "Cria uma entrada de inicialização automática na área de trabalho que abre o VRCX-0 com --autostart.",
@@ -2713,8 +2718,11 @@
                     "layout": "Visualização de notificações",
                     "layout_notification_center": "Central de notificações",
                     "layout_table": "Página de notificações",
-                    "post_update_changelog_prompt": "Mostrar notas de atualização após atualizar",
-                    "post_update_changelog_prompt_description": "Mostra as novidades após a instalação de uma atualização.",
+                    "in_app": {
+                        "header": "Indicadores no aplicativo"
+                    },
+                    "post_update_changelog_prompt": "Abrir notas de atualização após atualizar",
+                    "post_update_changelog_prompt_description": "Abre automaticamente as novidades na primeira inicialização após uma atualização.",
                     "test_notification": {
                         "header": "Notificação de teste",
                         "description": "Envia um evento de exemplo por todos os canais de notificação. Os filtros de notificação são ignorados, mas o interruptor, a condição de apresentação e o modo Não incomodar de cada canal continuam a aplicar-se.",
@@ -3711,7 +3719,8 @@
                     "description": "A visita aparece aqui depois que você sai do mundo.",
                     "filtered_title": "Nenhuma visita neste período"
                 },
-                "all_dates": "Todas as datas"
+                "all_dates": "Todas as datas",
+                "screenshots": "Capturas"
             }
         },
         "my_groups": {

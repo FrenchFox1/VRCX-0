@@ -579,7 +579,12 @@ function VisitItem({
                         </div>
                     ) : null}
                     {style.photosBelow && photoStrip ? (
-                        <div className="pt-1">{photoStrip}</div>
+                        <div className="flex flex-col gap-1.5 pt-1">
+                            <p className="text-muted-foreground text-xs">
+                                {t('view.activity.journey.screenshots')}
+                            </p>
+                            {photoStrip}
+                        </div>
                     ) : null}
                 </div>
                 {!style.photosBelow && photoStrip ? (

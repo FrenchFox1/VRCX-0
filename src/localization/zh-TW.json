@@ -1176,6 +1176,7 @@
             "instance_population": "房間內人數：{users}",
             "instance_population_capacity": "房間內人數：{users} / 上限 {capacity}",
             "other_online": "其他線上好友",
+            "favorite_friends": "收藏好友",
             "favorite": "收藏",
             "same_instance": "在同個房間",
             "active": "活躍",
@@ -1188,6 +1189,7 @@
                 "dense": "緊密"
             },
             "show_same_instance_in_online": "同時在「線上」中顯示同一房間的好友",
+            "show_favorites_in_online": "同時在「線上」中顯示收藏好友",
             "loading_more": "載入更多",
             "busy": "忙碌",
             "local_group": "本機：{name}",
@@ -2516,7 +2518,10 @@
             },
             "general": {
                 "application": {
-                    "header": "應用程式",
+                    "startup_header": "啟動",
+                    "window_header": "視窗與系統列",
+                    "updates_header": "更新",
+                    "network_header": "登入與網路",
                     "startup": "在 Windows 啟動時啟動",
                     "startup_system": "隨系統啟動",
                     "startup_system_description": "建立桌面環境自動啟動項目，並使用 --autostart 參數啟動 VRCX-0。",
@@ -2711,8 +2716,11 @@
                     "layout": "通知顯示模式",
                     "layout_notification_center": "通知中心",
                     "layout_table": "通知頁面",
-                    "post_update_changelog_prompt": "更新後顯示更新內容",
-                    "post_update_changelog_prompt_description": "安裝更新後顯示新版本的更新內容。",
+                    "in_app": {
+                        "header": "應用程式內提示"
+                    },
+                    "post_update_changelog_prompt": "更新後自動開啟更新內容",
+                    "post_update_changelog_prompt_description": "升級後首次啟動新版本時自動開啟更新內容。",
                     "test_notification": {
                         "header": "測試通知",
                         "description": "向所有通知管道傳送一則範例事件。不套用通知篩選，但各管道本身的開關、顯示時機與勿擾模式仍會生效。",
@@ -3705,7 +3713,8 @@
                     "description": "離開世界後，這次造訪就會出現在這裡。",
                     "filtered_title": "這段時間沒有造訪紀錄"
                 },
-                "all_dates": "全部日期"
+                "all_dates": "全部日期",
+                "screenshots": "截圖"
             }
         },
         "my_groups": {

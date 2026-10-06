@@ -1176,6 +1176,7 @@
             "instance_population": "インスタンス内の人数：{users}",
             "instance_population_capacity": "インスタンス内の人数：{users}（上限 {capacity}）",
             "other_online": "その他のオンラインフレンド",
+            "favorite_friends": "お気に入りのフレンド",
             "favorite": "お気に入り",
             "same_instance": "同じインスタンス",
             "active": "アクティブ",
@@ -1188,6 +1189,7 @@
                 "dense": "高密度"
             },
             "show_same_instance_in_online": "「オンライン」欄にも同じインスタンスのフレンドを表示",
+            "show_favorites_in_online": "「オンライン」欄にもお気に入りのフレンドを表示",
             "loading_more": "読み込み中",
             "busy": "取り込み中",
             "local_group": "ローカル: {name}",
@@ -2516,7 +2518,10 @@
             },
             "general": {
                 "application": {
-                    "header": "アプリケーション",
+                    "startup_header": "起動",
+                    "window_header": "ウィンドウとタスクトレイ",
+                    "updates_header": "アップデート",
+                    "network_header": "ログインとネットワーク",
                     "startup": "Windows と一緒に起動",
                     "startup_system": "システム起動時に開始",
                     "startup_system_description": "--autostart 付きで VRCX-0 を起動するデスクトップ自動起動エントリを作成します。",
@@ -2711,8 +2716,11 @@
                     "layout": "通知のレイアウト",
                     "layout_notification_center": "通知センター",
                     "layout_table": "通知タブ",
-                    "post_update_changelog_prompt": "更新後に更新内容の通知を表示",
-                    "post_update_changelog_prompt_description": "アップデート後に更新内容を表示します。",
+                    "in_app": {
+                        "header": "アプリ内の通知表示"
+                    },
+                    "post_update_changelog_prompt": "アップデート後に更新内容を自動で開く",
+                    "post_update_changelog_prompt_description": "アップデート後の初回起動時に更新内容を自動で開きます。",
                     "test_notification": {
                         "header": "テスト通知",
                         "description": "すべての通知チャンネルにサンプルのイベントを送ります。通知フィルターは適用されませんが、各チャンネルのオン/オフ、表示タイミング、通知の一時停止はそのまま有効です。",
@@ -3705,7 +3713,8 @@
                     "description": "ワールドを出ると、ここに記録されます。",
                     "filtered_title": "この期間の記録はありません"
                 },
-                "all_dates": "すべての日付"
+                "all_dates": "すべての日付",
+                "screenshots": "スクリーンショット"
             }
         },
         "my_groups": {

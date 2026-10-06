@@ -131,16 +131,17 @@ English body
         expect(resolvePreferredChangelogLanguage(entries, 'ja')).toBe('en');
     });
 
-    test('shows the post-update changelog toast only once for an upgraded version', () => {
+    test('shows the post-update changelog only once for an upgraded version', () => {
         expect(
             resolvePostUpdateChangelogToastState({
                 currentVersion: '2026.06.02',
                 lastStartedVersion: '2026.05.30',
                 seenVersion: '',
-                enabled: true
+                autoOpen: true
             })
         ).toEqual({
             currentVersion: '2026.06.02',
+            autoOpen: true,
             shouldShow: true,
             shouldRecordStartedVersion: true
         });
@@ -150,7 +151,7 @@ English body
                 currentVersion: '2026.06.02',
                 lastStartedVersion: '2026.05.30',
                 seenVersion: '2026.06.02',
-                enabled: true
+                autoOpen: true
             }).shouldShow
         ).toBe(false);
 
@@ -159,16 +160,16 @@ English body
                 currentVersion: '2026.06.02',
                 lastStartedVersion: '2026.05.30',
                 seenVersion: '',
-                enabled: false
-            }).shouldShow
-        ).toBe(false);
+                autoOpen: false
+            })
+        ).toMatchObject({ autoOpen: false, shouldShow: true });
 
         expect(
             resolvePostUpdateChangelogToastState({
                 currentVersion: '2026.06.02',
                 lastStartedVersion: '',
                 seenVersion: '',
-                enabled: true
+                autoOpen: true
             }).shouldShow
         ).toBe(false);
     });

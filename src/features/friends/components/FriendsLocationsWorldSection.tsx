@@ -2,6 +2,8 @@ import { GlobeIcon, UserIcon, UsersIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
+import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
+import { useRecentlyOnline } from '@/components/friends/useRecentlyOnline';
 import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
 import { LocationPendingText } from '@/components/location/LocationPendingText';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
@@ -63,19 +65,28 @@ function FriendChip({
     showNameplate: boolean;
     onOpen: () => void;
 }) {
+    const { t } = useTranslation();
     const decorationHover = useDecorationHover();
+    const recentlyOnline = useRecentlyOnline(normalizeString(friend.id));
+    const decorationActive = decorationHover.active || recentlyOnline;
     const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
     const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
     const isTraveling = friendLocationTarget(friend).isTraveling;
-    const statusDescription = twoLine
-        ? normalizeString(friend.statusDescription)
-        : '';
+    const isPendingOffline = friend.$presence?.kind === 'pendingOffline';
+    const chipRef = usePendingOfflineBlink<HTMLButtonElement>(isPendingOffline);
+    const statusDescription = !twoLine
+        ? ''
+        : isPendingOffline
+          ? t('side_panel.pending_offline')
+          : normalizeString(friend.statusDescription);
 
     return (
         <UserHoverCard userId={friend.id} seed={friend}>
             <button
+                ref={chipRef}
                 type="button"
+                data-pending-offline={isPendingOffline || undefined}
                 className={cn(
                     'focus-visible:ring-ring/50 relative isolate flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
                     twoLine ? 'h-10' : 'h-8'
@@ -86,7 +97,7 @@ function FriendChip({
                 {nameplateId ? (
                     <ProfileNameplate
                         templateId={nameplateId}
-                        active={decorationHover.active}
+                        active={decorationActive}
                     />
                 ) : null}
                 <Avatar
@@ -102,7 +113,7 @@ function FriendChip({
                     {iconFrameId ? (
                         <ProfileAvatarFrame
                             templateId={iconFrameId}
-                            active={decorationHover.active}
+                            active={decorationActive || isTraveling}
                         />
                     ) : null}
                     <UserStatusDot

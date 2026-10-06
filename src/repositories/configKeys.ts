@@ -281,6 +281,7 @@ export const ConfigKeys = defineConfigKeys({
     FriendLocationCardScale: { type: 'string', default: '1' },
     FriendLocationCardSpacing: { type: 'string', default: '1' },
     FriendLocationDensity: { type: 'string', default: 'compact' },
+    FriendLocationShowFavoritesInOnline: { type: 'bool', default: null },
     FriendLocationShowSameInstance: { type: 'bool', default: null },
     FriendLocationViewMode: { type: 'string', default: 'people' },
     InstanceActivityBarWidth: { type: 'int', default: 25 },

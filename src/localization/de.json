@@ -1178,6 +1178,7 @@
             "instance_population": "Spieler in der Instanz: {users}",
             "instance_population_capacity": "Spieler in der Instanz: {users} / max. {capacity}",
             "other_online": "Weitere Online-Freunde",
+            "favorite_friends": "Favorisierte Freunde",
             "favorite": "Favoriten",
             "same_instance": "Gleiche Instanz",
             "active": "Aktiv",
@@ -1190,6 +1191,7 @@
                 "dense": "Dicht"
             },
             "show_same_instance_in_online": "Gleiche Instanz unter Online anzeigen",
+            "show_favorites_in_online": "Favorisierte Freunde unter Online anzeigen",
             "loading_more": "Weitere werden geladen",
             "busy": "Beschäftigt",
             "local_group": "Lokal: {name}",
@@ -2518,7 +2520,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Anwendung",
+                    "startup_header": "Start",
+                    "window_header": "Fenster & Infobereich",
+                    "updates_header": "Updates",
+                    "network_header": "Anmeldung & Netzwerk",
                     "startup": "Beim Windows-Start starten",
                     "startup_system": "Beim Systemstart starten",
                     "startup_system_description": "Erstellt einen Autostart-Eintrag, der VRCX-0 mit --autostart startet.",
@@ -2713,8 +2718,11 @@
                     "layout": "Benachrichtigungsansicht",
                     "layout_notification_center": "Benachrichtigungszentrale",
                     "layout_table": "Benachrichtigungsseite",
-                    "post_update_changelog_prompt": "Update-Hinweise nach Aktualisierung anzeigen",
-                    "post_update_changelog_prompt_description": "Zeigt die Neuerungen nach einer Aktualisierung an.",
+                    "in_app": {
+                        "header": "Hinweise in der App"
+                    },
+                    "post_update_changelog_prompt": "Update-Hinweise nach Aktualisierung öffnen",
+                    "post_update_changelog_prompt_description": "Öffnet beim ersten Start nach einer Aktualisierung automatisch die Neuerungen.",
                     "test_notification": {
                         "header": "Testbenachrichtigung",
                         "description": "Sendet ein Beispielereignis über alle Benachrichtigungskanäle. Benachrichtigungsfilter werden übersprungen; Schalter, Anzeigebedingung und „Nicht stören“ der einzelnen Kanäle gelten weiterhin.",
@@ -3711,7 +3719,8 @@
                     "description": "Ein Besuch erscheint hier, sobald du die Welt verlässt.",
                     "filtered_title": "Keine Besuche in diesem Zeitraum"
                 },
-                "all_dates": "Alle Tage"
+                "all_dates": "Alle Tage",
+                "screenshots": "Screenshots"
             }
         },
         "my_groups": {
