@@ -5880,7 +5880,7 @@
         },
         "database": {
             "migration_found_title": "Base de datos de VRCX existente detectada",
-            "migration_found_description": "Se encontró una base de datos de VRCX existente en este equipo. ¿Quieres migrarla a VRCX-0? Los datos originales de VRCX no se modificarán",
+            "migration_found_description": "Se encontró una base de datos de VRCX existente en este equipo. ¿Quieres migrarla a VRCX-0? Los datos originales de VRCX no se modificarán. Antes de migrar, asegúrate de que VRCX esté completamente cerrado, incluido su icono en la bandeja del sistema.",
             "legacy_vrcx_running_title": "VRCX sigue en ejecución",
             "legacy_vrcx_running_description": "VRCX-0 ha detectado que VRCX sigue en ejecución. Ciérralo y selecciona «Reintentar». Forzar la migración puede provocar que falle.",
             "legacy_vrcx_check_again": "Reintentar",

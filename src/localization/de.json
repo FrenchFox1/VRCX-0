@@ -5832,7 +5832,7 @@
         },
         "database": {
             "migration_found_title": "Bestehende VRCX-Datenbank gefunden",
-            "migration_found_description": "Auf diesem Computer wurde eine bestehende VRCX-Datenbank gefunden. Möchtest du sie zu VRCX-0 migrieren? Die ursprünglichen VRCX-Daten werden dabei nicht verändert",
+            "migration_found_description": "Auf diesem Computer wurde eine bestehende VRCX-Datenbank gefunden. Möchtest du sie zu VRCX-0 migrieren? Die ursprünglichen VRCX-Daten werden dabei nicht verändert. Stelle vor der Migration sicher, dass VRCX vollständig beendet ist, auch im Infobereich der Taskleiste.",
             "legacy_vrcx_running_title": "VRCX wird noch ausgeführt",
             "legacy_vrcx_running_description": "VRCX-0 hat erkannt, dass VRCX noch ausgeführt wird. Beenden Sie es und wählen Sie anschließend „Erneut versuchen“. Eine erzwungene Migration kann fehlschlagen.",
             "legacy_vrcx_check_again": "Erneut versuchen",

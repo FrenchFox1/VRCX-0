@@ -5865,7 +5865,7 @@
         },
         "database": {
             "migration_found_title": "偵測到現有的 VRCX 資料庫",
-            "migration_found_description": "在這台電腦上偵測到現有的 VRCX 資料庫。要將它遷移至 VRCX-0 嗎？原始的 VRCX 資料將不會被修改。",
+            "migration_found_description": "在這台電腦上偵測到現有的 VRCX 資料庫。要將它遷移至 VRCX-0 嗎？原始的 VRCX 資料將不會被修改。遷移前請確認 VRCX 已完全關閉，包含系統匣中的圖示。",
             "legacy_vrcx_running_title": "偵測到 VRCX 正在執行",
             "legacy_vrcx_running_description": "VRCX-0 偵測到 VRCX 仍在執行。請先將其關閉，然後按一下「重試」。強制遷移可能會失敗。",
             "legacy_vrcx_check_again": "重試",
