@@ -3706,6 +3706,24 @@
             },
             "avatars": {
                 "all_time": "全部时间"
+            },
+            "mode": {
+                "overview": "概览",
+                "journey": "旅程"
+            },
+            "journey": {
+                "alone": "独自一人",
+                "open_in_screenshots": "查看全部截图",
+                "others_count_other": "另有 {count} 人",
+                "world_count_other": "{count} 个世界",
+                "friend_count_other": "{count} 位好友",
+                "photo_count_other": "{count} 张截图",
+                "empty": {
+                    "title": "还没有访问记录",
+                    "description": "离开世界后，这次访问就会出现在这里。",
+                    "filtered_title": "这段时间没有访问记录"
+                },
+                "all_dates": "全部日期"
             }
         },
         "my_groups": {

@@ -3649,6 +3649,24 @@
             },
             "avatars": {
                 "all_time": "전체 기간"
+            },
+            "mode": {
+                "overview": "개요",
+                "journey": "여정"
+            },
+            "journey": {
+                "alone": "혼자",
+                "open_in_screenshots": "스크린샷 모두 보기",
+                "others_count_other": "외 {count}명",
+                "world_count_other": "월드 {count}개",
+                "friend_count_other": "친구 {count}명",
+                "photo_count_other": "스크린샷 {count}장",
+                "empty": {
+                    "title": "아직 방문 기록이 없습니다",
+                    "description": "월드를 나가면 여기에 방문 기록이 표시됩니다.",
+                    "filtered_title": "이 기간에는 방문 기록이 없습니다"
+                },
+                "all_dates": "전체 기간"
             }
         },
         "my_groups": {

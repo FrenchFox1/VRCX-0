@@ -3716,6 +3716,36 @@
             },
             "avatars": {
                 "all_time": "За всё время"
+            },
+            "mode": {
+                "overview": "Обзор",
+                "journey": "Хроника"
+            },
+            "journey": {
+                "alone": "В одиночку",
+                "open_in_screenshots": "Все скриншоты",
+                "others_count_one": "ещё {count}",
+                "others_count_few": "ещё {count}",
+                "others_count_many": "ещё {count}",
+                "others_count_other": "ещё {count}",
+                "world_count_one": "{count} мир",
+                "world_count_few": "{count} мира",
+                "world_count_many": "{count} миров",
+                "world_count_other": "{count} мира",
+                "friend_count_one": "{count} друг",
+                "friend_count_few": "{count} друга",
+                "friend_count_many": "{count} друзей",
+                "friend_count_other": "{count} друга",
+                "photo_count_one": "{count} скриншот",
+                "photo_count_few": "{count} скриншота",
+                "photo_count_many": "{count} скриншотов",
+                "photo_count_other": "{count} скриншота",
+                "empty": {
+                    "title": "Посещений пока нет",
+                    "description": "Посещение появится здесь, когда вы покинете мир.",
+                    "filtered_title": "За этот период посещений нет"
+                },
+                "all_dates": "Все даты"
             }
         },
         "my_groups": {

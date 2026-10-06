@@ -3722,6 +3722,36 @@
             },
             "avatars": {
                 "all_time": "Celé období"
+            },
+            "mode": {
+                "overview": "Přehled",
+                "journey": "Deník"
+            },
+            "journey": {
+                "alone": "O samotě",
+                "open_in_screenshots": "Zobrazit všechny snímky",
+                "others_count_one": "další {count}",
+                "others_count_few": "další {count}",
+                "others_count_many": "dalších {count}",
+                "others_count_other": "dalších {count}",
+                "world_count_one": "{count} svět",
+                "world_count_few": "{count} světy",
+                "world_count_many": "{count} světa",
+                "world_count_other": "{count} světů",
+                "friend_count_one": "{count} přítel",
+                "friend_count_few": "{count} přátelé",
+                "friend_count_many": "{count} přítele",
+                "friend_count_other": "{count} přátel",
+                "photo_count_one": "{count} snímek",
+                "photo_count_few": "{count} snímky",
+                "photo_count_many": "{count} snímku",
+                "photo_count_other": "{count} snímků",
+                "empty": {
+                    "title": "Zatím žádné návštěvy",
+                    "description": "Návštěva se zde zobrazí, jakmile opustíš svět.",
+                    "filtered_title": "V tomto období žádné návštěvy"
+                },
+                "all_dates": "Všechna data"
             }
         },
         "my_groups": {

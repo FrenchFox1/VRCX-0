@@ -3708,6 +3708,28 @@
             },
             "avatars": {
                 "all_time": "Gesamter Zeitraum"
+            },
+            "mode": {
+                "overview": "Übersicht",
+                "journey": "Reise"
+            },
+            "journey": {
+                "alone": "Allein",
+                "open_in_screenshots": "Alle Screenshots ansehen",
+                "others_count_one": "{count} weitere",
+                "others_count_other": "{count} weitere",
+                "world_count_one": "{count} Welt",
+                "world_count_other": "{count} Welten",
+                "friend_count_one": "{count} Freund",
+                "friend_count_other": "{count} Freunde",
+                "photo_count_one": "{count} Screenshot",
+                "photo_count_other": "{count} Screenshots",
+                "empty": {
+                    "title": "Noch keine Besuche",
+                    "description": "Ein Besuch erscheint hier, sobald du die Welt verlässt.",
+                    "filtered_title": "Keine Besuche in diesem Zeitraum"
+                },
+                "all_dates": "Alle Tage"
             }
         },
         "my_groups": {

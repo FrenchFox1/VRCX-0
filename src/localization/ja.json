@@ -3706,6 +3706,24 @@
             },
             "avatars": {
                 "all_time": "全期間"
+            },
+            "mode": {
+                "overview": "概要",
+                "journey": "足あと"
+            },
+            "journey": {
+                "alone": "ひとり",
+                "open_in_screenshots": "スクリーンショットをすべて見る",
+                "others_count_other": "ほか{count}人",
+                "world_count_other": "{count}ワールド",
+                "friend_count_other": "フレンド{count}人",
+                "photo_count_other": "スクリーンショット{count}枚",
+                "empty": {
+                    "title": "まだ記録がありません",
+                    "description": "ワールドを出ると、ここに記録されます。",
+                    "filtered_title": "この期間の記録はありません"
+                },
+                "all_dates": "すべての日付"
             }
         },
         "my_groups": {

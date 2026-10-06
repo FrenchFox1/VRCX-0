@@ -3712,6 +3712,28 @@
             },
             "avatars": {
                 "all_time": "All time"
+            },
+            "mode": {
+                "overview": "Overview",
+                "journey": "Journey"
+            },
+            "journey": {
+                "alone": "Alone",
+                "open_in_screenshots": "View all screenshots",
+                "others_count_one": "{count} other",
+                "others_count_other": "{count} others",
+                "world_count_one": "{count} world",
+                "world_count_other": "{count} worlds",
+                "friend_count_one": "{count} friend",
+                "friend_count_other": "{count} friends",
+                "photo_count_one": "{count} screenshot",
+                "photo_count_other": "{count} screenshots",
+                "empty": {
+                    "title": "No visits recorded yet",
+                    "description": "A visit shows up here once you leave the world.",
+                    "filtered_title": "No visits in this date range"
+                },
+                "all_dates": "All dates"
             }
         },
         "my_groups": {

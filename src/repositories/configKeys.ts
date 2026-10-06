@@ -291,6 +291,8 @@ export const ConfigKeys = defineConfigKeys({
     MutualGraphCommunitySeparation: { type: 'float', default: null },
 
     // ── Activity ─────────────────────────────────────
+    activityPageMode: { type: 'string', default: null },
+    activityJourneyDensity: { type: 'string', default: null },
     activityPageRange: { type: 'string', default: null },
     activityPageShowHomeWorld: { type: 'bool', default: false },
     activityPageCompanionOrder: { type: 'string', default: null },
@@ -353,6 +355,8 @@ export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
 });
 
 export const ACTIVITY_PAGE_CONFIG_KEYS = Object.freeze({
+    mode: 'activityPageMode',
+    journeyDensity: 'activityJourneyDensity',
     range: 'activityPageRange',
     showHomeWorld: 'activityPageShowHomeWorld',
     companionOrder: 'activityPageCompanionOrder'
