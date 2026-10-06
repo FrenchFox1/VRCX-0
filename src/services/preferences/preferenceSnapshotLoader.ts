@@ -117,6 +117,8 @@ export async function loadPreferenceSnapshot() {
         showFriendsLocationsPeopleNameplate,
         showFriendsLocationsWorldsAvatarFrame,
         showFriendsLocationsWorldsNameplate,
+        showActivityJourneyAvatarFrame,
+        showActivityJourneyNameplate,
         weekStartsOn,
         hideUserNotes,
         hideUserMemos,
@@ -269,6 +271,8 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('showFriendsLocationsPeopleNameplate', false),
         configRepository.getBool('showFriendsLocationsWorldsAvatarFrame', true),
         configRepository.getBool('showFriendsLocationsWorldsNameplate', true),
+        configRepository.getBool('showActivityJourneyAvatarFrame', true),
+        configRepository.getBool('showActivityJourneyNameplate', true),
         configRepository.getInt('weekStartsOn', 1),
         configRepository.getBool('hideUserNotes', false),
         configRepository.getBool('hideUserMemos', false),
@@ -501,6 +505,8 @@ export async function loadPreferenceSnapshot() {
         showFriendsLocationsWorldsNameplate: Boolean(
             showFriendsLocationsWorldsNameplate
         ),
+        showActivityJourneyAvatarFrame: Boolean(showActivityJourneyAvatarFrame),
+        showActivityJourneyNameplate: Boolean(showActivityJourneyNameplate),
         weekStartsOn: normalizeWeekStartsOn(weekStartsOn),
         hideUserNotes: Boolean(hideUserNotes),
         hideUserMemos: Boolean(hideUserMemos),

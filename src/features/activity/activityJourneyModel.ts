@@ -56,6 +56,7 @@ export type JourneyVisitView = {
     peopleCount: number;
     friendCount: number;
     shownPeople: JourneyPerson[];
+    otherPeople: JourneyPerson[];
     brief: boolean;
 };
 
@@ -166,6 +167,7 @@ export function buildJourneyVisitView(
                   .slice(0, limits.strangers)
             : [];
     const durationMs = Math.max(0, visit.endMs - visit.startMs);
+    const shownPeople = [...close, ...strangers];
 
     return {
         key: journeyVisitKey(visit),
@@ -173,7 +175,8 @@ export function buildJourneyVisitView(
         durationMs,
         peopleCount: people.length,
         friendCount: close.length,
-        shownPeople: [...close, ...strangers],
+        shownPeople,
+        otherPeople: people.filter((person) => !shownPeople.includes(person)),
         brief:
             close.length === 0 &&
             photoCount === 0 &&

@@ -1,11 +1,17 @@
-import { CalendarDaysIcon, GlobeIcon, ImageIcon } from 'lucide-react';
+import { CalendarDaysIcon, GlobeIcon, ImageIcon, UserIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import { EmptyState, LoadingState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import {
+    ProfileAvatarFrame,
+    ProfileNameplate,
+    useDecorationHover
+} from '@/components/ProfileDecorations';
 import {
     Timeline,
     TimelineDate,
@@ -15,6 +21,7 @@ import {
 } from '@/components/reui/timeline';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
+import type { FriendRecord } from '@/domain/friends/types';
 import { useFriendsLocationsWorldSummaries } from '@/features/friends/useFriendsLocationsWorldSummaries';
 import {
     formatDateLabel,
@@ -31,8 +38,17 @@ import type {
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
 import { requestScreenshotThumbnail } from '@/services/screenshotThumbnailQueueService';
 import { useFavoriteStore } from '@/state/favoriteStore';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
+import { usePreferencesStore } from '@/state/preferencesStore';
+import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger
+} from '@/ui/shadcn/hover-card';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     buildJourneyVisitView,
@@ -46,7 +62,6 @@ import {
     type JourneyVisitView
 } from '../activityJourneyModel';
 import { useActivityUserAvatars } from '../useActivityUserAvatars';
-import { Face } from './ActivityPeopleExhibit';
 
 type JourneyPhotos = ReadonlyMap<string, ScreenshotWindowImages>;
 
@@ -60,9 +75,7 @@ const DENSITY_STYLES = {
         contentGap: 'gap-3',
         worldImage: 'w-44',
         worldName: 'text-foreground text-[15px] font-semibold',
-        avatar: 'size-8',
         twoLine: true,
-        people: 'flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1',
         photo: 'w-36',
         photosBelow: true
     },
@@ -71,9 +84,7 @@ const DENSITY_STYLES = {
         contentGap: 'gap-2.5',
         worldImage: 'w-40',
         worldName: 'text-foreground text-sm font-semibold',
-        avatar: 'size-6',
         twoLine: false,
-        people: 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5',
         photo: 'w-28',
         photosBelow: true
     },
@@ -82,9 +93,7 @@ const DENSITY_STYLES = {
         contentGap: 'gap-2',
         worldImage: 'w-32',
         worldName: 'text-foreground text-sm font-semibold',
-        avatar: 'size-6',
         twoLine: false,
-        people: 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5',
         photo: 'w-24',
         photosBelow: false
     }
@@ -92,17 +101,32 @@ const DENSITY_STYLES = {
 
 type DensityStyle = (typeof DENSITY_STYLES)[JourneyDensity];
 
+type JourneyPeopleSource = {
+    avatarOf(userId: string): string;
+    friendOf(userId: string): FriendRecord | undefined;
+    showAvatarFrame: boolean;
+    showNameplate: boolean;
+};
+
 function PersonChip({
     person,
-    avatarUrl,
+    people,
     style
 }: {
     person: JourneyPerson;
-    avatarUrl: string;
+    people: JourneyPeopleSource;
     style: DensityStyle;
 }) {
+    const decorationHover = useDecorationHover();
+    const friend = people.friendOf(person.userId);
+    const avatarUrl = people.avatarOf(person.userId);
+    const iconFrameId = people.showAvatarFrame ? friend?.iconFrame?.trim() : '';
+    const nameplateId = people.showNameplate
+        ? friend?.nameplateEffect?.trim()
+        : '';
+
     return (
-        <UserHoverCard userId={person.userId} side="bottom">
+        <UserHoverCard userId={person.userId} seed={friend ?? null}>
             <button
                 type="button"
                 onClick={() =>
@@ -112,17 +136,45 @@ function PersonChip({
                     })
                 }
                 className={cn(
-                    'flex max-w-52 min-w-0 items-center gap-2 rounded-full text-left transition-opacity duration-100 ease-out hover:opacity-85 active:opacity-70',
-                    style.twoLine ? 'h-10' : 'h-7'
+                    'focus-visible:ring-ring/50 relative isolate flex w-[200px] min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-left text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
+                    style.twoLine ? 'h-10' : 'h-8'
                 )}
+                {...decorationHover.hoverProps}
             >
-                <Face url={avatarUrl} className={style.avatar} />
-                <span className="flex min-w-0 flex-col leading-4">
-                    <span className="text-foreground/90 truncate text-sm">
-                        {person.displayName}
+                {nameplateId ? (
+                    <ProfileNameplate
+                        templateId={nameplateId}
+                        active={decorationHover.active}
+                    />
+                ) : null}
+                <Avatar
+                    size={style.twoLine ? 'default' : 'sm'}
+                    className="shrink-0 after:hidden"
+                >
+                    {avatarUrl ? (
+                        <AvatarImage src={avatarUrl} alt="" loading="lazy" />
+                    ) : null}
+                    <AvatarFallback>
+                        <UserIcon aria-hidden="true" className="size-3" />
+                    </AvatarFallback>
+                    {iconFrameId ? (
+                        <ProfileAvatarFrame
+                            templateId={iconFrameId}
+                            active={decorationHover.active}
+                        />
+                    ) : null}
+                </Avatar>
+                <span className="flex min-w-0 flex-col items-start">
+                    <span className="flex max-w-full min-w-0 items-center gap-1 leading-4">
+                        <span className="min-w-0 truncate">
+                            {person.displayName}
+                        </span>
+                        {person.isFavorite ? (
+                            <AffinityBadge isFavorite iconOnly />
+                        ) : null}
                     </span>
                     {style.twoLine && person.sharedMs > 0 ? (
-                        <span className="text-muted-foreground text-xs tabular-nums">
+                        <span className="text-muted-foreground text-xs leading-4 tabular-nums">
                             {timeToText(person.sharedMs)}
                         </span>
                     ) : null}
@@ -132,10 +184,68 @@ function PersonChip({
     );
 }
 
-function StrangerName({ person }: { person: JourneyPerson }) {
+function OtherPeople({ people }: { people: JourneyPerson[] }) {
+    const { t } = useTranslation();
+    const label = t('view.activity.journey.others_count', {
+        count: people.length
+    });
     return (
+        <HoverCard>
+            <HoverCardTrigger
+                delay={250}
+                closeDelay={120}
+                render={
+                    <button
+                        type="button"
+                        aria-label={label}
+                        className="hover:text-foreground text-xs transition-colors"
+                    />
+                }
+            >
+                {label}
+            </HoverCardTrigger>
+            <HoverCardContent
+                side="bottom"
+                align="start"
+                sideOffset={6}
+                className="w-64 p-1.5"
+            >
+                <ul className="flex max-h-72 flex-col overflow-y-auto">
+                    {people.map((person) => (
+                        <li key={person.key}>
+                            <button
+                                type="button"
+                                disabled={!person.userId}
+                                onClick={() =>
+                                    openUserDialog({
+                                        userId: person.userId,
+                                        title: person.displayName
+                                    })
+                                }
+                                className="flex w-full min-w-0 items-center justify-between gap-3 rounded-md px-2 py-1 text-left text-sm enabled:hover:bg-(--state-hover-surface)"
+                            >
+                                <span className="min-w-0 truncate">
+                                    {person.displayName}
+                                </span>
+                                {person.sharedMs > 0 ? (
+                                    <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                                        {timeToText(person.sharedMs)}
+                                    </span>
+                                ) : null}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </HoverCardContent>
+        </HoverCard>
+    );
+}
+
+function StrangerName({ person }: { person: JourneyPerson }) {
+    const button = (
         <button
             type="button"
+            aria-label={person.displayName}
             disabled={!person.userId}
             onClick={() =>
                 openUserDialog({
@@ -143,30 +253,16 @@ function StrangerName({ person }: { person: JourneyPerson }) {
                     title: person.displayName
                 })
             }
-            className="text-muted-foreground enabled:hover:text-foreground max-w-40 truncate text-left text-sm transition-colors"
-        >
-            {person.displayName}
-        </button>
-    );
-}
-
-function PersonEntry({
-    person,
-    avatarOf,
-    style
-}: {
-    person: JourneyPerson;
-    avatarOf: (userId: string) => string;
-    style: DensityStyle;
-}) {
-    return person.userId && (person.isFriend || person.isFavorite) ? (
-        <PersonChip
-            person={person}
-            avatarUrl={avatarOf(person.userId)}
-            style={style}
+            className="enabled:hover:text-foreground max-w-40 truncate text-left transition-colors"
         />
-    ) : (
-        <StrangerName person={person} />
+    );
+    return (
+        <Tooltip>
+            <TooltipTrigger render={button}>
+                {person.displayName}
+            </TooltipTrigger>
+            <TooltipContent>{timeToText(person.sharedMs)}</TooltipContent>
+        </Tooltip>
     );
 }
 
@@ -360,7 +456,7 @@ function VisitItem({
     worldImageUrl,
     dayStartMs,
     style,
-    avatarOf
+    people
 }: {
     view: JourneyVisitView;
     step: number;
@@ -369,7 +465,7 @@ function VisitItem({
     worldImageUrl: string;
     dayStartMs: number;
     style: DensityStyle;
-    avatarOf: (userId: string) => string;
+    people: JourneyPeopleSource;
 }) {
     const photoStrip =
         photos && photos.total > 0 ? (
@@ -383,7 +479,12 @@ function VisitItem({
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { visit } = view;
-    const unlistedCount = view.peopleCount - view.shownPeople.length;
+    const friends = view.shownPeople.filter(
+        (person) => person.userId && (person.isFriend || person.isFavorite)
+    );
+    const strangers = view.shownPeople.filter(
+        (person) => !friends.includes(person)
+    );
 
     function openInInstanceHistory() {
         const params = new URLSearchParams();
@@ -448,13 +549,13 @@ function VisitItem({
                             worldNameClassName={style.worldName}
                         />
                     </button>
-                    {view.shownPeople.length > 0 ? (
-                        <div className={style.people}>
-                            {view.shownPeople.map((person) => (
-                                <PersonEntry
+                    {friends.length > 0 ? (
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+                            {friends.map((person) => (
+                                <PersonChip
                                     key={person.key}
                                     person={person}
-                                    avatarOf={avatarOf}
+                                    people={people}
                                     style={style}
                                 />
                             ))}
@@ -464,12 +565,18 @@ function VisitItem({
                         <p className="text-muted-foreground text-xs">
                             {t('view.activity.journey.alone')}
                         </p>
-                    ) : unlistedCount > 0 ? (
-                        <p className="text-muted-foreground text-xs">
-                            {t('view.activity.journey.others_count', {
-                                count: unlistedCount
-                            })}
-                        </p>
+                    ) : strangers.length > 0 || view.otherPeople.length > 0 ? (
+                        <div className="text-muted-foreground flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm">
+                            {strangers.map((person) => (
+                                <StrangerName
+                                    key={person.key}
+                                    person={person}
+                                />
+                            ))}
+                            {view.otherPeople.length > 0 ? (
+                                <OtherPeople people={view.otherPeople} />
+                            ) : null}
+                        </div>
                     ) : null}
                     {style.photosBelow && photoStrip ? (
                         <div className="pt-1">{photoStrip}</div>
@@ -543,7 +650,7 @@ function JourneyDay({
     homeWorldId,
     density,
     worldImageOf,
-    avatarOf
+    people
 }: {
     dayKey: string;
     dayVisits: ActivityJourneyVisit[];
@@ -552,7 +659,7 @@ function JourneyDay({
     homeWorldId: string;
     density: JourneyDensity;
     worldImageOf: (visit: ActivityJourneyVisit) => string;
-    avatarOf: (userId: string) => string;
+    people: JourneyPeopleSource;
 }) {
     const { t } = useTranslation();
     const style = DENSITY_STYLES[density];
@@ -620,7 +727,7 @@ function JourneyDay({
                             worldImageUrl={worldImageOf(view.visit)}
                             dayStartMs={dayStartMs}
                             style={style}
-                            avatarOf={avatarOf}
+                            people={people}
                         />
                     )
                 )}
@@ -692,6 +799,22 @@ export function ActivityJourneyView({
         [favoriteIdSet, visits]
     );
     const avatarOf = useActivityUserAvatars(avatarUserIds);
+    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const showAvatarFrame = usePreferencesStore(
+        (state) => state.showActivityJourneyAvatarFrame
+    );
+    const showNameplate = usePreferencesStore(
+        (state) => state.showActivityJourneyNameplate
+    );
+    const people = useMemo<JourneyPeopleSource>(
+        () => ({
+            avatarOf,
+            friendOf: (userId) => friendsById[userId],
+            showAvatarFrame,
+            showNameplate
+        }),
+        [avatarOf, friendsById, showAvatarFrame, showNameplate]
+    );
 
     useEffect(() => {
         const sentinel = sentinelRef.current;
@@ -759,7 +882,7 @@ export function ActivityJourneyView({
                         fetchedWorlds.get(visit.worldId)?.thumbnailUrl ||
                         ''
                     }
-                    avatarOf={avatarOf}
+                    people={people}
                 />
             ))}
             <div ref={sentinelRef} className="flex justify-center py-4">

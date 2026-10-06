@@ -98,7 +98,10 @@ export function SettingsInterfaceProfileAppearanceCard() {
             showFriendsLocationsWorldsAvatarFrame:
                 state.showFriendsLocationsWorldsAvatarFrame,
             showFriendsLocationsWorldsNameplate:
-                state.showFriendsLocationsWorldsNameplate
+                state.showFriendsLocationsWorldsNameplate,
+            showActivityJourneyAvatarFrame:
+                state.showActivityJourneyAvatarFrame,
+            showActivityJourneyNameplate: state.showActivityJourneyNameplate
         }))
     );
     const {
@@ -114,7 +117,9 @@ export function SettingsInterfaceProfileAppearanceCard() {
         onShowFriendsLocationsPeopleAvatarFrameChange,
         onShowFriendsLocationsPeopleNameplateChange,
         onShowFriendsLocationsWorldsAvatarFrameChange,
-        onShowFriendsLocationsWorldsNameplateChange
+        onShowFriendsLocationsWorldsNameplateChange,
+        onShowActivityJourneyAvatarFrameChange,
+        onShowActivityJourneyNameplateChange
     } = settingsInterface;
 
     return (
@@ -229,6 +234,26 @@ export function SettingsInterfaceProfileAppearanceCard() {
                             checked: prefs.showFriendsLocationsWorldsNameplate,
                             onCheckedChange:
                                 onShowFriendsLocationsWorldsNameplateChange
+                        }
+                    ]}
+                />
+            </FieldGroup>
+            <FieldGroup className="gap-0">
+                <SettingsSectionHeading title={t('view.activity.title')} />
+                <ProfileDecorationField
+                    label={t('view.activity.mode.journey')}
+                    toggles={[
+                        {
+                            kind: 'avatarFrame',
+                            checked: prefs.showActivityJourneyAvatarFrame,
+                            onCheckedChange:
+                                onShowActivityJourneyAvatarFrameChange
+                        },
+                        {
+                            kind: 'nameplate',
+                            checked: prefs.showActivityJourneyNameplate,
+                            onCheckedChange:
+                                onShowActivityJourneyNameplateChange
                         }
                     ]}
                 />

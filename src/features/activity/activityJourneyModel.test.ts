@@ -85,6 +85,7 @@ describe('buildJourneyVisitView', () => {
         expect(crowd.shownPeople.map((person) => person.userId)).toEqual([
             'usr_friend'
         ]);
+        expect(crowd.otherPeople).toHaveLength(20);
         expect(crowd.peopleCount).toBe(21);
     });
 

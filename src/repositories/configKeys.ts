@@ -90,6 +90,8 @@ export const ConfigKeys = defineConfigKeys({
     showFriendsLocationsPeopleNameplate: { type: 'bool', default: false },
     showFriendsLocationsWorldsAvatarFrame: { type: 'bool', default: true },
     showFriendsLocationsWorldsNameplate: { type: 'bool', default: true },
+    showActivityJourneyAvatarFrame: { type: 'bool', default: true },
+    showActivityJourneyNameplate: { type: 'bool', default: true },
     hideUserMemos: { type: 'bool', default: false },
     hideUserNotes: { type: 'bool', default: false },
     compactTableMode: { type: 'bool', default: false },

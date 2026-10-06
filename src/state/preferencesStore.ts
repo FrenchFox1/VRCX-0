@@ -332,6 +332,8 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     showFriendsLocationsPeopleNameplate: false,
     showFriendsLocationsWorldsAvatarFrame: true,
     showFriendsLocationsWorldsNameplate: true,
+    showActivityJourneyAvatarFrame: true,
+    showActivityJourneyNameplate: true,
     weekStartsOn: 1,
     dtIsoFormat: false,
     dtHour12: false,
@@ -531,6 +533,12 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         ),
         showFriendsLocationsWorldsNameplate: normalizeBool(
             next.showFriendsLocationsWorldsNameplate
+        ),
+        showActivityJourneyAvatarFrame: normalizeBool(
+            next.showActivityJourneyAvatarFrame
+        ),
+        showActivityJourneyNameplate: normalizeBool(
+            next.showActivityJourneyNameplate
         ),
         weekStartsOn: normalizeWeekStartsOn(next.weekStartsOn),
         dtIsoFormat: normalizeBool(next.dtIsoFormat),

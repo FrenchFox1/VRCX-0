@@ -271,6 +271,20 @@ export function buildInterfaceSection({
                 checked
             );
         },
+        onShowActivityJourneyAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showActivityJourneyAvatarFrame',
+                'showActivityJourneyAvatarFrame',
+                checked
+            );
+        },
+        onShowActivityJourneyNameplateChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showActivityJourneyNameplate',
+                'showActivityJourneyNameplate',
+                checked
+            );
+        },
         onShowNewDashboardButtonChange: (checked: boolean) => {
             savePreferenceValue('showNewDashboardButton', checked, () =>
                 setShowNewDashboardButtonPreference(checked)

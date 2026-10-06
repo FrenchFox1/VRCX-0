@@ -22,7 +22,7 @@ function hours(minutes: number) {
     return (minutes / 60).toFixed(1);
 }
 
-export function Face({ url, className }: { url: string; className: string }) {
+function Face({ url, className }: { url: string; className: string }) {
     const fallback = (
         <span className="flex size-full items-center justify-center rounded-full bg-[var(--act-track)]">
             <UserIcon className="text-muted-foreground size-1/2" />
