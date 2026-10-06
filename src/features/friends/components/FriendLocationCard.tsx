@@ -193,6 +193,8 @@ export function FriendLocationCard({
     const travelingValue = localLocation
         ? undefined
         : presenceTravelingTag(presence) || undefined;
+    const isTraveling =
+        travelingValue !== undefined && locationValue === 'traveling';
     const resolvedDensityConfig = densityConfig || DEFAULT_CARD_DENSITY_CONFIG;
     const isDense = resolvedDensityConfig.layout === 'item';
     const resolvedWorldActionLabel =
@@ -242,7 +244,7 @@ export function FriendLocationCard({
                 {iconFrameId ? (
                     <ProfileAvatarFrame
                         templateId={iconFrameId}
-                        active={decorationHover.active}
+                        active={decorationHover.active || isTraveling}
                     />
                 ) : null}
                 <UserStatusDot

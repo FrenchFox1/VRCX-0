@@ -35,9 +35,13 @@ vi.mock('@/components/UserDetailTile', () => ({
 }));
 
 vi.mock('@/components/ProfileDecorations', () => ({
-    ProfileAvatarFrame: ({ templateId }: { templateId: string }) => (
-        <span data-avatar-frame={templateId} />
-    ),
+    ProfileAvatarFrame: ({
+        templateId,
+        active
+    }: {
+        templateId: string;
+        active: boolean;
+    }) => <span data-avatar-frame={templateId} data-active={active} />,
     ProfileNameplate: ({ templateId }: { templateId: string }) => (
         <span data-nameplate={templateId} />
     ),
@@ -65,7 +69,8 @@ vi.mock('./FriendsSidebarActionItems', () => ({
 import {
     activePresence,
     onlinePresence,
-    pendingPresence
+    pendingPresence,
+    travelingPresence
 } from '@/test/presenceFixtures';
 
 import { FriendRow } from './FriendsSidebarFriendRow';
@@ -163,5 +168,38 @@ describe('FriendsSidebarFriendRow pending offline', () => {
         expect(pending).toContain('data-pending-offline="true"');
         expect(pending).toContain('side_panel.pending_offline');
         expect(online).not.toContain('data-pending-offline=');
+    });
+});
+
+describe('FriendsSidebarFriendRow traveling', () => {
+    const friend = {
+        id: 'usr_a',
+        displayName: 'Friend',
+        iconFrame: 'invt_frame'
+    };
+
+    it('keeps the avatar frame animated while the friend is traveling', () => {
+        const traveling = renderToStaticMarkup(
+            <FriendRow
+                friend={{
+                    ...friend,
+                    $presence: travelingPresence('wrld_next:1')
+                }}
+                appearance={{ showAvatarFrame: true }}
+            />
+        );
+        const settled = renderToStaticMarkup(
+            <FriendRow
+                friend={{ ...friend, $presence: onlinePresence() }}
+                appearance={{ showAvatarFrame: true }}
+            />
+        );
+
+        expect(traveling).toContain(
+            'data-avatar-frame="invt_frame" data-active="true"'
+        );
+        expect(settled).toContain(
+            'data-avatar-frame="invt_frame" data-active="false"'
+        );
     });
 });

@@ -102,7 +102,7 @@ function FriendChip({
                     {iconFrameId ? (
                         <ProfileAvatarFrame
                             templateId={iconFrameId}
-                            active={decorationHover.active}
+                            active={decorationHover.active || isTraveling}
                         />
                     ) : null}
                     <UserStatusDot

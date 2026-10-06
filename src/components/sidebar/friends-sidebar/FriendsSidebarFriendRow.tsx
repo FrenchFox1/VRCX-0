@@ -290,7 +290,10 @@ export function FriendRow({
                     iconFrameId ? (
                         <ProfileAvatarFrame
                             templateId={iconFrameId}
-                            active={decorationActive}
+                            active={
+                                decorationActive ||
+                                (showLocationSubline && isTraveling)
+                            }
                         />
                     ) : null
                 }
