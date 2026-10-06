@@ -23,6 +23,8 @@ pub struct TelemetryContext {
     pub local_hour: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_ended: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vrchat_seen: Option<bool>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
@@ -79,6 +81,8 @@ pub struct TelemetryErrorDetail {
 pub struct RouteUsageEntry {
     pub route: String,
     pub visits: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub landings: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub load_fail: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]

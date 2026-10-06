@@ -31,6 +31,7 @@ pub struct TelemetryAccumulator {
 #[derive(Default)]
 struct RouteUsage {
     visits: u32,
+    landings: u32,
     load_fail: u32,
     render_crash: u32,
     details: DetailAccumulator,
@@ -86,7 +87,9 @@ pub(super) struct ClientErrorSnapshot {
 impl TelemetryAccumulator {
     pub fn record(&mut self, event: TelemetryClientEvent) {
         match event {
-            TelemetryClientEvent::PageVisit { route } => self.record_page_visit(route),
+            TelemetryClientEvent::PageVisit { route, landing } => {
+                self.record_page_visit(route, landing)
+            }
             TelemetryClientEvent::ToolOpen { tool } => self.record_tool_open(tool),
             TelemetryClientEvent::RouteError {
                 error_class,
@@ -274,13 +277,13 @@ impl TelemetryAccumulator {
         self.client_errors_sent_revision = self.client_errors_sent_revision.max(revision);
     }
 
-    fn record_page_visit(&mut self, route: String) {
+    fn record_page_visit(&mut self, route: String, landing: bool) {
         let Some(route) = sanitize_dimension_value(route) else {
             self.current_route = None;
             return;
         };
         self.current_route = Some(route.clone());
-        self.record_visit(route);
+        self.record_visit(route, landing);
     }
 
     fn record_tool_open(&mut self, tool: String) {
@@ -297,11 +300,14 @@ impl TelemetryAccumulator {
         }
     }
 
-    fn record_visit(&mut self, route: String) {
+    fn record_visit(&mut self, route: String, landing: bool) {
         let Some(usage) = ensure_entry(&mut self.routes, route.clone(), MAX_ROUTE_KEYS) else {
             return;
         };
         usage.visits = increment(usage.visits);
+        if landing {
+            usage.landings = increment(usage.landings);
+        }
         let revision = self.advance_revision();
         if let Some(usage) = self.routes.get_mut(&route) {
             usage.revision = revision;
@@ -387,6 +393,7 @@ fn route_usage_entry(route: &str, usage: &RouteUsage) -> RouteUsageEntry {
     RouteUsageEntry {
         route: route.to_string(),
         visits: usage.visits,
+        landings: (usage.landings > 0).then_some(usage.landings),
         load_fail: (usage.load_fail > 0).then_some(usage.load_fail),
         render_crash: (usage.render_crash > 0).then_some(usage.render_crash),
         details: usage.details.serialize(),
@@ -563,6 +570,7 @@ mod tests {
         for index in 0..70 {
             acc.record(TelemetryClientEvent::PageVisit {
                 route: format!("route_{index}"),
+                landing: false,
             });
         }
         assert_eq!(acc.route_entries().len(), MAX_ROUTE_KEYS);
@@ -570,6 +578,7 @@ mod tests {
         let mut detail_acc = TelemetryAccumulator::default();
         detail_acc.record(TelemetryClientEvent::PageVisit {
             route: "game_log".into(),
+            landing: false,
         });
         for index in 0..70 {
             detail_acc.record(TelemetryClientEvent::RouteError {
@@ -587,10 +596,35 @@ mod tests {
     }
 
     #[test]
+    fn landing_visits_are_counted_within_route_visits() {
+        let mut acc = TelemetryAccumulator::default();
+        acc.record(TelemetryClientEvent::PageVisit {
+            route: "feed".into(),
+            landing: true,
+        });
+        acc.record(TelemetryClientEvent::PageVisit {
+            route: "feed".into(),
+            landing: false,
+        });
+        acc.record(TelemetryClientEvent::PageVisit {
+            route: "game_log".into(),
+            landing: false,
+        });
+
+        let routes = acc.route_entries();
+        assert_eq!(routes[0].route, "feed");
+        assert_eq!(routes[0].visits, 2);
+        assert_eq!(routes[0].landings, Some(1));
+        assert_eq!(routes[1].route, "game_log");
+        assert_eq!(routes[1].landings, None);
+    }
+
+    #[test]
     fn collector_snapshots_become_dirty_again_after_acknowledgement() {
         let mut acc = TelemetryAccumulator::default();
         acc.record(TelemetryClientEvent::PageVisit {
             route: "game_log".into(),
+            landing: false,
         });
 
         let first = acc.route_snapshot().expect("route should be dirty");
@@ -600,6 +634,7 @@ mod tests {
 
         acc.record(TelemetryClientEvent::PageVisit {
             route: "game_log".into(),
+            landing: false,
         });
         let second = acc.route_snapshot().expect("new visit should be dirty");
         assert_eq!(second.entries[0].visits, 2);

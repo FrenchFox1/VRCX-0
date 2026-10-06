@@ -6409,7 +6409,7 @@ export type StartupBootstrapSnapshot = {
     systemCulture: string;
 };
 export type TelemetryClientEvent =
-    | { type: 'pageVisit'; route: string }
+    | { type: 'pageVisit'; route: string; landing: boolean }
     | { type: 'toolOpen'; tool: string }
     | {
           type: 'routeError';

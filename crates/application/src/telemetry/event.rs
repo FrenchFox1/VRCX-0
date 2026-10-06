@@ -5,6 +5,7 @@ use serde::Deserialize;
 pub enum TelemetryClientEvent {
     PageVisit {
         route: String,
+        landing: bool,
     },
     ToolOpen {
         tool: String,

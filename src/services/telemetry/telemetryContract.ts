@@ -1,4 +1,6 @@
 export const TELEMETRY_ROUTE_KEYS = [
+    'login',
+    'feed',
     'friends_locations',
     'game_log',
     'instance_history',

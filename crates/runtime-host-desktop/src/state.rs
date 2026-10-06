@@ -340,6 +340,7 @@ impl DesktopRuntimeHostState {
             tasks: builder.desktop_assembly().tasks().clone(),
             backend_runtime: builder.backend_runtime().clone(),
             auth_scope: builder.desktop_assembly().auth_scope().clone(),
+            session: builder.desktop_assembly().session().clone(),
             app_version: app_version.clone(),
         });
         let profile_config: Arc<dyn vrcx_0_application::profile::ProfileConfigStore> =

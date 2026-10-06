@@ -66,6 +66,7 @@ fn context_omits_session_ended_unless_true() {
         local_weekday: 4,
         local_hour: 17,
         session_ended: None,
+        vrchat_seen: None,
     };
 
     let value = serde_json::to_value(&context).unwrap();

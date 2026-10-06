@@ -5,6 +5,8 @@ import type {
 } from './telemetryTypes';
 
 const EXACT_ROUTES: Record<string, TelemetryPageRouteKey> = {
+    '/login': 'login',
+    '/feed': 'feed',
     '/friends-locations': 'friends_locations',
     '/game-log': 'game_log',
     '/instance-history': 'instance_history',
@@ -24,11 +26,16 @@ const EXACT_ROUTES: Record<string, TelemetryPageRouteKey> = {
 };
 
 let currentRoute: TelemetryPageRouteKey | null = null;
+let landingPending = true;
+
+function normalizePath(pathname: string): string {
+    return pathname.split('?')[0].replace(/\/+$/, '') || '/';
+}
 
 export function normalizeRouteKey(
     pathname: string
 ): TelemetryPageRouteKey | null {
-    const path = pathname.split('?')[0].replace(/\/+$/, '') || '/';
+    const path = normalizePath(pathname);
     const exact = EXACT_ROUTES[path];
     if (exact) {
         return exact;
@@ -40,12 +47,18 @@ export function normalizeRouteKey(
 }
 
 export function recordRouteEnter(pathname: string): void {
+    if (normalizePath(pathname) === '/') {
+        currentRoute = null;
+        return;
+    }
     const route = normalizeRouteKey(pathname);
+    const landing = landingPending && route !== 'login';
+    landingPending = route === 'login';
     currentRoute = route;
     if (!route) {
         return;
     }
-    recordTelemetryEvent({ type: 'pageVisit', route });
+    recordTelemetryEvent({ type: 'pageVisit', route, landing });
 }
 
 export function recordRouteError(
