@@ -8,10 +8,7 @@ export type FavoriteSeedData = Record<string, unknown> & {
     groupName?: string;
     id?: string;
     releaseStatus?: string;
-    state?: string;
-    stateBucket?: string;
     status?: string | null;
-    travelingToWorld?: string;
     worldName?: string;
 };
 
@@ -47,6 +44,7 @@ export type FavoriteItem = {
     isLoadingDetail?: boolean;
     location?: string;
     orderIndex?: number;
+    customIndex?: number;
     playerCount?: number;
     statusLabel?: string;
     statusVariant?: string;

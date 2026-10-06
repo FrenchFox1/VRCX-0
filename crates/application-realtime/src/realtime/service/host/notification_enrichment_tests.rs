@@ -170,7 +170,7 @@ fn notification_cache_hit_enriches_avatar_image_for_runtime_delivery() -> Result
         .notification_by_id("notif-avatar-cache-hit")
         .expect("runtime delivery should reach the activity sink");
     assert_eq!(
-        delivered["imageUrl"],
+        delivered.facts.image_url,
         "https://images.example/user-icon.png"
     );
     Ok(())
@@ -289,8 +289,8 @@ fn notification_avatar_fallback_skips_owner_receiver_when_sender_is_absent() -> 
         .activity_sink_for_test()
         .notification_by_id("notif-avatar-receiver")
         .expect("runtime delivery should reach the activity sink");
-    assert!(delivered["senderUserId"].is_null());
-    assert!(delivered["imageUrl"].is_null());
+    assert!(delivered.actor.user_id.is_empty());
+    assert!(delivered.facts.image_url.is_empty());
     Ok(())
 }
 
@@ -350,8 +350,8 @@ fn notification_avatar_fallback_skips_current_user_sender() -> Result<()> {
         .activity_sink_for_test()
         .notification_by_id("notif-avatar-self-sender")
         .expect("runtime delivery should reach the activity sink");
-    assert_eq!(delivered["senderUserId"], "usr_self");
-    assert!(delivered["imageUrl"].is_null());
+    assert_eq!(delivered.actor.user_id, "usr_self");
+    assert!(delivered.facts.image_url.is_empty());
     Ok(())
 }
 
@@ -445,6 +445,7 @@ fn notification_avatar_fallback_preserves_existing_image_and_skips_group_sender(
 fn unresolved_person_location_notification_persists_without_runtime_projection() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("notification-unresolved-basic")?;
+    runtime.set_task_executor_for_test(DiscardTaskExecutor);
     let notification = json!({
         "id": "notif-unresolved",
         "createdAt": "2026-06-21T00:00:00.000Z",
@@ -513,8 +514,8 @@ fn unresolved_person_location_notification_persists_without_runtime_projection()
             .lock()
             .unwrap()
             .world_enrichment
-            .fetches
-            .contains_key("wrld_missing"),
+            .inflight
+            .contains("wrld_missing"),
         "notification resolver failures should register async world warm"
     );
     Ok(())
@@ -559,9 +560,9 @@ fn resolved_sender_does_not_wait_for_world_or_avatar() -> Result<()> {
         .activity_sink_for_test()
         .notification_by_id("notif-resolved-sender-only")
         .expect("resolved sender should be delivered without world or avatar resolution");
-    assert_eq!(delivered["senderDisplayName"], "Ready Sender");
-    assert_eq!(delivered["details"]["worldName"], "");
-    assert!(delivered["imageUrl"].is_null());
+    assert_eq!(delivered.actor.display_name, "Ready Sender");
+    assert!(delivered.facts.world_name.is_empty());
+    assert!(delivered.facts.image_url.is_empty());
     Ok(())
 }
 
@@ -622,18 +623,23 @@ fn notification_facts_prefer_the_current_friend_record() -> Result<()> {
             endpoint: endpoint.clone(),
             friends_by_id: [(
                 "usr_target".to_string(),
-                vrcx_0_core::friends::FriendRecord {
-                    id: "usr_target".into(),
-                    display_name: "Current Friend".into(),
-                    location: "wrld_target:instance~region(jp)".into(),
-                    icon_url: "https://images.example/current.png".into(),
-                    extra: json!({
-                        "world": { "name": "Current World" }
-                    })
-                    .as_object()
-                    .cloned()
-                    .unwrap(),
-                    ..vrcx_0_core::friends::FriendRecord::default()
+                vrcx_0_core::friends::FriendBaselineEntry {
+                    record: vrcx_0_core::friends::FriendRecord {
+                        id: "usr_target".into(),
+                        display_name: "Current Friend".into(),
+                        icon_url: "https://images.example/current.png".into(),
+                        extra: json!({
+                            "world": { "name": "Current World" }
+                        })
+                        .as_object()
+                        .cloned()
+                        .unwrap(),
+                        ..vrcx_0_core::friends::FriendRecord::default()
+                    },
+                    presence: vrcx_0_core::friends::FriendBaselinePresence {
+                        location: "wrld_target:instance~region(jp)".into(),
+                        ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                    },
                 },
             )]
             .into_iter()
@@ -678,7 +684,7 @@ fn notification_facts_prefer_the_current_friend_record() -> Result<()> {
         .activity_sink_for_test()
         .notification_by_id("notif-current-friend-facts")
         .expect("friend notification should be delivered without remote resolution");
-    assert_eq!(delivered["senderDisplayName"], "Current Friend");
+    assert_eq!(delivered.actor.display_name, "Current Friend");
     Ok(())
 }
 

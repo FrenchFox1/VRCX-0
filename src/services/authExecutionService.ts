@@ -5,6 +5,7 @@ import {
     type LoginFailureKind,
     type LoginSessionState
 } from '@/platform/tauri/bindings';
+import { flashWindow } from '@/platform/tauri/webview';
 import authRepository, {
     type SavedAuthSnapshot,
     type SavedCredentialRecord
@@ -20,7 +21,6 @@ import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
-import { useNotificationStore } from '@/state/notificationStore';
 import {
     createGroupInstancesState,
     useRuntimeStore
@@ -35,7 +35,6 @@ import {
     type AuthAttempt
 } from './authAttempt';
 import { applySavedAuthSnapshot } from './authSnapshotService';
-import { buildAvatarWearSnapshotUpdate } from './avatarWearTimeService';
 import {
     recordCurrentUserSnapshot,
     resetDomainFacts
@@ -216,13 +215,7 @@ function setCurrentUserRuntimeAuth(
     user: AuthUserRecord | null,
     { endpoint = '', websocket = '' }: Record<string, string> = {}
 ) {
-    const runtimeStore = useRuntimeStore.getState();
-    const { snapshot } = buildAvatarWearSnapshotUpdate({
-        previousSnapshot: runtimeStore.auth.currentUserSnapshot,
-        nextSnapshot: user,
-        isGameRunning: runtimeStore.gameState.isGameRunning
-    });
-    const nextSnapshot = isRecord(snapshot) ? snapshot : null;
+    const nextSnapshot = isRecord(user) ? user : null;
     const currentUserId = normalizeText(nextSnapshot?.id);
 
     resetCurrentUserRuntimeCaches();
@@ -295,6 +288,8 @@ async function completeTwoFactorChallenge(
 ): Promise<ResolvedLoginSession> {
     let mode = normalizeTwoFactorMode(challenge.mode);
     let challengeAttemptId = challenge.attemptId;
+
+    flashWindow().catch(() => {});
 
     while (true) {
         ensureCurrentAuthAttempt(attempt);
@@ -453,7 +448,6 @@ export async function logoutWithoutConfirmation() {
 
     useDialogStore.getState().clearDialogState();
     useModalStore.getState().resetModalState();
-    useNotificationStore.getState().resetNotificationState();
     useVrcNotificationStore.getState().resetVrcNotificationState();
 
     if (!currentUserId && sessionPhase !== 'authenticating') {

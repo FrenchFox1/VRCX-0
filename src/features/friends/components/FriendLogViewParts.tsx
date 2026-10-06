@@ -165,7 +165,7 @@ export function renderUserCell(row: FriendLogRow) {
         <Button
             type="button"
             variant="ghost"
-            className="h-auto justify-start p-0 text-left text-sm font-medium underline-offset-4 hover:bg-transparent hover:underline"
+            className="h-auto justify-start p-0 text-left text-sm font-medium hover:bg-transparent"
             onClick={() =>
                 openUserDialog({
                     userId: row.userId,

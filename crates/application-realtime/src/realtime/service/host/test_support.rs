@@ -20,23 +20,20 @@ pub(super) use vrcx_0_contracts::realtime::{FriendLogUpsert, NotificationV2Updat
 #[cfg(test)]
 pub(super) use crate::world_enrich::PendingEntryCorrection;
 #[cfg(test)]
-pub(super) use crate::{
-    FriendProjection, RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
-    RealtimeNotificationProjection,
-};
+pub(super) use crate::{FriendProjection, RealtimeNotificationProjection};
 #[cfg(test)]
 pub(super) use vrcx_0_application_core::RealtimeNotificationProjectionObserver;
+#[cfg(test)]
+pub(super) use vrcx_0_application_core::{ActivityIngress, LocalGameContextSnapshot};
 pub(super) use vrcx_0_application_core::{
     HostSessionRuntime, LocalGameContextSource, RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor,
     UnavailableLocalGameContextSource, WebClient,
 };
-#[cfg(test)]
-pub(super) use vrcx_0_application_core::{LocalGameContextSnapshot, OverlayActivityInputSink};
 use vrcx_0_application_core::{
     MemoryFileCachePort, MemoryWorldCachePort, NoopPrintCleanupInputSink, NoopWebClientPort,
     Result, RuntimeAuthScope, RuntimeEventForTest, RuntimeTaskExecutor,
 };
-use vrcx_0_core::friends::FriendRecord;
+use vrcx_0_core::friends::FriendBaselineEntry;
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 
 #[cfg(test)]
@@ -136,7 +133,7 @@ impl TestRealtimeHostRuntime {
     pub fn prepare_pending_friend_baseline(
         &self,
         session: &RealtimeSessionContext,
-        friends_by_id: HashMap<String, FriendRecord>,
+        friends_by_id: HashMap<String, FriendBaselineEntry>,
     ) -> Result<()> {
         self.runtime.state.lock().unwrap().connection.active_context = None;
         self.runtime.friends.clear();
@@ -207,6 +204,34 @@ impl TestRealtimeHostRuntime {
 }
 
 #[cfg(test)]
+#[derive(Clone, Copy)]
+pub(super) struct DiscardTaskExecutor;
+
+#[cfg(test)]
+struct FinishedTaskHandle;
+
+#[cfg(test)]
+impl RuntimeTaskExecutor for DiscardTaskExecutor {
+    fn spawn(
+        &self,
+        _task: vrcx_0_application_core::RuntimeTask,
+    ) -> Box<dyn vrcx_0_application_core::RuntimeTaskHandle> {
+        Box::new(FinishedTaskHandle)
+    }
+}
+
+#[cfg(test)]
+impl vrcx_0_application_core::RuntimeTaskHandle for FinishedTaskHandle {
+    fn abort(&self) {}
+
+    fn is_finished(&self) -> bool {
+        true
+    }
+
+    fn join_or_abort(&mut self, _timeout: std::time::Duration) {}
+}
+
+#[cfg(test)]
 pub(super) mod config_store {
     use vrcx_0_application_core::Result;
 
@@ -262,6 +287,7 @@ pub fn feed_lookup_input(user_id: String) -> FeedRowsQueryInput {
         vip_list: Vec::new(),
         scoped_user_ids: Vec::new(),
         excluded_user_ids: Vec::new(),
+        location_hidden_user_ids: Vec::new(),
         max_entries: 20,
         date_from: String::new(),
         date_to: String::new(),
@@ -281,11 +307,16 @@ pub fn seed_friend_baseline(
             websocket: active_session.websocket.clone(),
             friends_by_id: [(
                 "usr_friend".to_string(),
-                vrcx_0_core::friends::FriendRecord {
-                    id: "usr_friend".into(),
-                    display_name: "Friend".into(),
-                    state: "online".into(),
-                    ..vrcx_0_core::friends::FriendRecord::default()
+                vrcx_0_core::friends::FriendBaselineEntry {
+                    record: vrcx_0_core::friends::FriendRecord {
+                        id: "usr_friend".into(),
+                        display_name: "Friend".into(),
+                        ..vrcx_0_core::friends::FriendRecord::default()
+                    },
+                    presence: vrcx_0_core::friends::FriendBaselinePresence {
+                        state: "online".into(),
+                        ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                    },
                 },
             )]
             .into_iter()
@@ -313,10 +344,9 @@ pub(super) struct TestActivitySink {
 #[cfg(test)]
 #[derive(Default)]
 struct TestActivitySinkState {
-    delivery_armed: bool,
     friend_user_ids: Vec<String>,
-    friend_projections: Vec<FriendProjection>,
-    notification_projections: Vec<RealtimeNotificationProjection>,
+    friend_updates: usize,
+    events: Vec<vrcx_0_contracts::activity::ActivityEvent>,
 }
 
 #[cfg(test)]
@@ -329,46 +359,54 @@ impl TestActivitySink {
         self.lock_state().friend_user_ids.clone()
     }
 
-    pub(super) fn take_friend_projections(&self) -> Vec<FriendProjection> {
-        std::mem::take(&mut self.lock_state().friend_projections)
+    pub(super) fn take_friend_updates(&self) -> usize {
+        std::mem::take(&mut self.lock_state().friend_updates)
     }
 
-    pub(super) fn notification_by_id(&self, id: &str) -> Option<serde_json::Value> {
+    pub(super) fn take_events(&self) -> Vec<vrcx_0_contracts::activity::ActivityEvent> {
+        std::mem::take(&mut self.lock_state().events)
+    }
+
+    pub(super) fn notification_by_id(
+        &self,
+        id: &str,
+    ) -> Option<vrcx_0_contracts::activity::ActivityEvent> {
+        let source_id = format!("notification:{id}");
         self.lock_state()
-            .notification_projections
+            .events
             .iter()
             .rev()
-            .flat_map(|projection| projection.upserts.iter())
-            .find(|upsert| upsert.notification["id"] == id)
-            .map(|upsert| upsert.notification.as_value().clone())
+            .find(|event| event.source_id == source_id)
+            .cloned()
     }
 }
 
 #[cfg(test)]
-impl OverlayActivityInputSink for TestActivitySink {
-    fn set_friend_user_ids(&self, user_ids: Vec<String>) {
+impl ActivityIngress for TestActivitySink {
+    fn ingest_activity(&self, events: Vec<vrcx_0_contracts::activity::ActivityEvent>) {
+        self.lock_state().events.extend(events);
+    }
+
+    fn replace_friend_ids(&self, user_ids: Vec<String>) {
         self.lock_state().friend_user_ids = user_ids;
     }
 
-    fn set_delivery_armed(&self, armed: bool) {
-        self.lock_state().delivery_armed = armed;
+    fn update_friend_ids(&self, added: Vec<String>, removed: Vec<String>) {
+        let mut state = self.lock_state();
+        state.friend_updates += 1;
+        state
+            .friend_user_ids
+            .retain(|user_id| !removed.contains(user_id));
+        for user_id in added {
+            if !state.friend_user_ids.contains(&user_id) {
+                state.friend_user_ids.push(user_id);
+            }
+        }
     }
 
-    fn ingest_friend_projection(&self, projection: &FriendProjection) {
-        self.lock_state()
-            .friend_projections
-            .push(projection.clone());
-    }
+    fn set_current_instance(&self, _location: &str, _user_ids: Vec<String>) {}
 
-    fn ingest_notification_projection(&self, projection: &RealtimeNotificationProjection) {
-        self.lock_state()
-            .notification_projections
-            .push(projection.clone());
-    }
-
-    fn ingest_instance_queue_projection(&self, _projection: &RealtimeInstanceQueueProjection) {}
-
-    fn ingest_instance_closed_projection(&self, _projection: &RealtimeInstanceClosedProjection) {}
+    fn arm_delivery(&self) {}
 }
 
 #[cfg(test)]
@@ -701,9 +739,9 @@ fn runtime_with_active_session_game_context(
         remote_mutations: Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
         local_game_context,
         #[cfg(test)]
-        activity_sink: Some(activity_sink.clone()),
+        activity: Some(activity_sink.clone()),
         #[cfg(not(test))]
-        activity_sink: None,
+        activity: None,
         #[cfg(test)]
         notification_projection_observer: Some(notification_projection_observer.clone()),
         #[cfg(not(test))]

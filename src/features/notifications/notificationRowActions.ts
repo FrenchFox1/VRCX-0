@@ -7,6 +7,7 @@ import {
     CheckCheckIcon,
     CheckIcon,
     ExternalLinkIcon,
+    EyeOffIcon,
     GlobeIcon,
     LinkIcon,
     MessageCircleIcon,
@@ -26,6 +27,7 @@ import type {
     NotificationRow
 } from '@/repositories/notificationPersistenceRepository';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
+import { canIgnoreNotificationLocally } from '@/shared/utils/notificationLifecycle';
 import { isUnseenNotification } from '@/shared/utils/notificationSeen';
 
 import {
@@ -57,6 +59,9 @@ export type NotificationRowActionHandlers = {
     onAcceptFriendRequest(notification: NotificationRow): void | Promise<void>;
     onAcceptRequestInvite(notification: NotificationRow): void | Promise<void>;
     onHideNotification(notification: NotificationRow): void | Promise<void>;
+    onIgnoreNotificationLocally(
+        notification: NotificationRow
+    ): void | Promise<void>;
     onMarkSeen(notification: NotificationRow): void | Promise<void>;
     onSendInviteResponseWithMessage(
         notification: NotificationRow,
@@ -238,6 +243,14 @@ export function buildOrderedActions({
             label: t('view.notification.actions.decline'),
             Icon: XIcon,
             onClick: () => handlers.onHideNotification(notification)
+        });
+    }
+    if (canIgnoreNotificationLocally(type)) {
+        actions.push({
+            key: 'ignore-locally',
+            label: t('view.notification.actions.ignore_locally'),
+            Icon: EyeOffIcon,
+            onClick: () => handlers.onIgnoreNotificationLocally(notification)
         });
     }
     if (type === 'friendRequest' && isUnseenNotification(notification)) {

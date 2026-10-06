@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
+import { commands } from '@/platform/tauri/bindings';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 import { useSettingsPageSection } from '../SettingsPageStateContext';
@@ -13,8 +14,10 @@ export function useSettingsNotificationsTabState() {
             desktopToast: state.desktopToast,
             afkDesktopToast: state.afkDesktopToast,
             desktopNotificationSound: state.desktopNotificationSound,
+            desktopNotificationAvatars: state.desktopNotificationAvatars,
             notificationDoNotDisturbEndOnGameStart:
                 state.notificationDoNotDisturbEndOnGameStart,
+            busyStatusDoNotDisturb: state.busyStatusDoNotDisturb,
             notificationTTS: state.notificationTTS,
             notificationTTSVoiceNative: state.notificationTTSVoiceNative,
             notificationTTSVolume: state.notificationTTSVolume,
@@ -67,10 +70,24 @@ export function useSettingsNotificationsTabState() {
                 enabled
             );
         },
+        onDesktopNotificationAvatarsChange: (enabled: boolean) => {
+            saveBoolPreference(
+                'desktopNotificationAvatars',
+                'desktopNotificationAvatars',
+                enabled
+            );
+        },
         onNotificationDoNotDisturbEndOnGameStartChange: (enabled: boolean) => {
             saveBoolPreference(
                 'notificationDoNotDisturbEndOnGameStart',
                 'notificationDoNotDisturbEndOnGameStart',
+                enabled
+            );
+        },
+        onBusyStatusDoNotDisturbChange: (enabled: boolean) => {
+            saveBoolPreference(
+                'busyStatusDoNotDisturb',
+                'busyStatusDoNotDisturb',
                 enabled
             );
         },
@@ -96,6 +113,17 @@ export function useSettingsNotificationsTabState() {
                 'notificationTTSNameMode',
                 value
             );
+        },
+        onSendTestNotification: () => {
+            commands
+                .appNotificationTestSend(
+                    t(
+                        'view.settings.notifications.notifications.test_notification.message'
+                    )
+                )
+                .catch((error) => {
+                    console.warn('Failed to send test notification', error);
+                });
         },
         onNotificationTtsTestVisibleChange: setNotificationTtsTestVisible,
         onNotificationTtsTestChange: setNotificationTtsTest,

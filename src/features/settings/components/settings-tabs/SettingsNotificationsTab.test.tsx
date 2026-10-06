@@ -120,9 +120,11 @@ function createProps(overrides: Partial<TabProps> = {}): TabProps {
         notificationTtsTestVisible: true,
         onAfkDesktopToastChange: vi.fn(),
         onDesktopNotificationSoundChange: vi.fn(),
+        onDesktopNotificationAvatarsChange: vi.fn(),
         onDesktopToastChange: vi.fn(),
         onNotificationTtsModeChange: vi.fn(),
         onNotificationDoNotDisturbEndOnGameStartChange: vi.fn(),
+        onBusyStatusDoNotDisturbChange: vi.fn(),
         onNotificationTtsNameModeChange: vi.fn(),
         onNotificationTtsTestChange: vi.fn(),
         onNotificationTtsTestVisibleChange: vi.fn(),
@@ -130,12 +132,15 @@ function createProps(overrides: Partial<TabProps> = {}): TabProps {
         onNotificationTtsVolumeChange: vi.fn(),
         onOpenDesktopNotificationFiltersDialog: vi.fn(),
         onOpenTtsNotificationFiltersDialog: vi.fn(),
+        onSendTestNotification: vi.fn(),
         onSpeakNotificationTts: vi.fn(),
         prefs: {
             desktopToast: 'Always',
             afkDesktopToast: false,
             desktopNotificationSound: true,
+            desktopNotificationAvatars: true,
             notificationDoNotDisturbEndOnGameStart: true,
+            busyStatusDoNotDisturb: true,
             notificationTTS: 'Never',
             notificationTTSNameMode: 'username',
             notificationTTSNickName: false,
@@ -169,6 +174,20 @@ const playLabel =
 
 describe('SettingsNotificationsTab', () => {
     afterEach(cleanup);
+
+    it('sends a test notification from its settings field', () => {
+        const props = createProps();
+        render(<SettingsNotificationsTab {...props} />);
+
+        const field = document.querySelector(
+            '[data-field-label="view.settings.notifications.notifications.test_notification.send"]'
+        );
+        const button = field?.querySelector('button');
+        expect(button).toBeInstanceOf(HTMLButtonElement);
+        fireEvent.click(button as HTMLButtonElement);
+
+        expect(props.onSendTestNotification).toHaveBeenCalledTimes(1);
+    });
 
     it('disables automatic TTS details when delivery is Never but keeps manual preview available', () => {
         const props = createProps();

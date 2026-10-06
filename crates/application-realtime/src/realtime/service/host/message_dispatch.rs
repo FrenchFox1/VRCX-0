@@ -1,12 +1,16 @@
 use vrcx_0_application_core::PrintCleanupTrigger;
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 
+use crate::realtime::activity_events::queue_ready_activity_event;
 use crate::realtime::connection::RealtimeMessageSink;
 use crate::realtime::event_kind::RealtimeWsEventKind;
 use crate::realtime::instance_queue::apply_instance_queue_ws_event;
 use crate::realtime::notifications::{apply_instance_closed_ws_event, apply_notification_ws_event};
 use crate::realtime::print_content_refresh::is_print_created_content_refresh_event;
-use crate::realtime::{RealtimeSessionContext, RealtimeTransportLifecycleEvent, RealtimeWsStatus};
+use crate::realtime::{
+    RealtimeInstanceQueueKind, RealtimeSessionContext, RealtimeTransportLifecycleEvent,
+    RealtimeWsStatus,
+};
 
 use super::state::RealtimeHostRuntimeMessageSink;
 
@@ -22,8 +26,8 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
         status: RealtimeWsStatus,
     ) {
         if status == RealtimeWsStatus::Connected {
-            if let Some(activity_sink) = &self.runtime.deps.activity_sink {
-                activity_sink.set_delivery_armed(true);
+            if let Some(activity) = &self.runtime.deps.activity {
+                activity.arm_delivery();
             }
             if let Some(transport) =
                 self.runtime
@@ -109,8 +113,10 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
         {
             self.runtime
                 .enrich_instance_queue_projection(&mut projection);
-            if let Some(activity_sink) = &self.runtime.deps.activity_sink {
-                activity_sink.ingest_instance_queue_projection(&projection);
+            if let (Some(activity), RealtimeInstanceQueueKind::Ready) =
+                (&self.runtime.deps.activity, projection.kind)
+            {
+                activity.ingest_activity(vec![queue_ready_activity_event(&projection)]);
             }
             self.runtime
                 .deps
@@ -124,17 +130,17 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
             generation,
             &event_kind,
             payload,
-            self.runtime.current_user_authority(),
+            self.runtime.local_game_context(),
         ) {
             let overlay_patch = output.projection.patch.clone();
-            let timer_action = output.timer_action.clone();
+            let wake_at_ms = output.wake_at_ms;
             self.runtime.apply_current_user_output(output);
-            self.runtime
-                .schedule_current_user_pending_offline(generation, timer_action);
+            if let Some(at_ms) = wake_at_ms {
+                self.runtime.schedule_current_user_wake(generation, at_ms);
+            }
             if is_user_update {
                 self.runtime.refresh_current_user_snapshot_after_update(
                     generation,
-                    session.clone(),
                     overlay_patch.into_map(),
                 );
             }

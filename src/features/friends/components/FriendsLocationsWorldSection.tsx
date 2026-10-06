@@ -3,10 +3,16 @@ import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
+import { LocationPendingText } from '@/components/location/LocationPendingText';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { useInstancePopulation } from '@/components/location/useInstancePopulation';
 import { useLocationMetadata } from '@/components/location/useLocationMetadata';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import {
+    ProfileAvatarFrame,
+    ProfileNameplate,
+    useDecorationHover
+} from '@/components/ProfileDecorations';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
@@ -16,14 +22,14 @@ import { userImage } from '@/services/entityMediaService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import { parseLocation, translateAccessType } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
-import { useRuntimeStore } from '@/state/runtimeStore';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { getFriendsLocationsDensityConfig } from '../friendsLocationsDensity';
-import { resolveLocationTarget } from '../friendsLocationsRows';
+import { friendLocationTarget } from '../friendsLocationsRows';
 import type {
     FriendsLocationsWorldGroup,
     FriendsLocationsWorldInstance
@@ -34,7 +40,6 @@ type FriendsLocationsWorldSectionProps = {
     group: FriendsLocationsWorldGroup;
     summary?: FriendsLocationsWorldSummary;
     densityConfig: ReturnType<typeof getFriendsLocationsDensityConfig>;
-    currentUserId?: string | null;
     favoriteIds: ReadonlySet<string>;
     onOpenWorld: (group: FriendsLocationsWorldGroup, name: string) => void;
     onOpenGroup: (groupId: string) => void;
@@ -46,16 +51,23 @@ function FriendChip({
     isFavorite,
     statusDotClassName,
     twoLine,
+    showAvatarFrame,
+    showNameplate,
     onOpen
 }: {
     friend: FriendRecord;
     isFavorite: boolean;
     statusDotClassName: string;
     twoLine: boolean;
+    showAvatarFrame: boolean;
+    showNameplate: boolean;
     onOpen: () => void;
 }) {
+    const decorationHover = useDecorationHover();
+    const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
+    const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
-    const isTraveling = resolveLocationTarget(friend).isTraveling;
+    const isTraveling = friendLocationTarget(friend).isTraveling;
     const statusDescription = twoLine
         ? normalizeString(friend.statusDescription)
         : '';
@@ -65,11 +77,18 @@ function FriendChip({
             <button
                 type="button"
                 className={cn(
-                    'focus-visible:ring-ring/50 flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
+                    'focus-visible:ring-ring/50 relative isolate flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
                     twoLine ? 'h-10' : 'h-8'
                 )}
                 onClick={onOpen}
+                {...decorationHover.hoverProps}
             >
+                {nameplateId ? (
+                    <ProfileNameplate
+                        templateId={nameplateId}
+                        active={decorationHover.active}
+                    />
+                ) : null}
                 <Avatar
                     size={twoLine ? 'default' : 'sm'}
                     className="shrink-0 after:hidden"
@@ -80,6 +99,12 @@ function FriendChip({
                     <AvatarFallback>
                         <UserIcon aria-hidden="true" className="size-3" />
                     </AvatarFallback>
+                    {iconFrameId ? (
+                        <ProfileAvatarFrame
+                            templateId={iconFrameId}
+                            active={decorationHover.active}
+                        />
+                    ) : null}
                     <UserStatusDot
                         statusDotClassName={statusDotClassName}
                         className="absolute -right-0.5 -bottom-0.5 z-10 size-3"
@@ -110,24 +135,21 @@ function FriendChip({
 
 export function FriendsLocationsFriendChips({
     friends,
-    currentUserId,
     favoriteIds,
     twoLine,
     onOpenUser
 }: {
     friends: FriendRecord[];
-    currentUserId?: string | null;
     favoriteIds: ReadonlySet<string>;
     twoLine: boolean;
     onOpenUser: (friend: FriendRecord) => void;
 }) {
-    const currentUserSnapshot = useRuntimeStore(
-        (state) => state.auth.currentUserSnapshot
+    const showAvatarFrame = usePreferencesStore(
+        (state) => state.showFriendsLocationsWorldsAvatarFrame
     );
-    const isGameRunning = useRuntimeStore(
-        (state) => state.gameState.isGameRunning === true
+    const showNameplate = usePreferencesStore(
+        (state) => state.showFriendsLocationsWorldsNameplate
     );
-
     return (
         <div className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(0,200px))] gap-1.5">
             {friends.map((friend) => (
@@ -136,11 +158,13 @@ export function FriendsLocationsFriendChips({
                     friend={friend}
                     isFavorite={favoriteIds.has(friend.id)}
                     twoLine={twoLine}
+                    showAvatarFrame={showAvatarFrame}
+                    showNameplate={showNameplate}
                     statusDotClassName={resolveSidebarStatusDotClassName(
                         friend,
-                        currentUserSnapshot,
-                        friend.id === currentUserId,
-                        { hideNonFriend: false, isGameRunning }
+                        {
+                            hideNonFriend: false
+                        }
                     )}
                     onOpen={() => onOpenUser(friend)}
                 />
@@ -151,14 +175,12 @@ export function FriendsLocationsFriendChips({
 
 function InstanceRow({
     instance,
-    currentUserId,
     favoriteIds,
     twoLine,
     onOpenGroup,
     onOpenUser
 }: {
     instance: FriendsLocationsWorldInstance;
-    currentUserId?: string | null;
     favoriteIds: ReadonlySet<string>;
     twoLine: boolean;
     onOpenGroup: (groupId: string) => void;
@@ -181,7 +203,9 @@ function InstanceRow({
         enabled: parsed.isRealInstance,
         refreshKey: instance.friends.length
     });
-    const groupName = metadata.groupName || instance.groupName;
+    const groupName = metadata.groupNamePending
+        ? ''
+        : metadata.groupName || instance.groupName;
     const label = [
         translateAccessType(parsed.accessTypeName, t, accessTypeLocaleKeyMap),
         parsed.instanceName ? `#${parsed.instanceName}` : ''
@@ -240,30 +264,35 @@ function InstanceRow({
                         location={instance.location}
                         className="shrink-0"
                     />
-                    {groupName ? (
-                        <span
-                            role="button"
-                            tabIndex={0}
-                            className="min-w-0 cursor-pointer truncate underline-offset-4 hover:underline"
-                            onClick={() => onOpenGroup(instance.groupId)}
-                            onKeyDown={(event) => {
-                                if (
-                                    event.key === 'Enter' ||
-                                    event.key === ' '
-                                ) {
-                                    event.preventDefault();
-                                    onOpenGroup(instance.groupId);
-                                }
-                            }}
+                    {groupName || metadata.groupNamePending ? (
+                        <LocationPendingText
+                            pending={metadata.groupNamePending}
+                            className="flex min-w-0"
+                            placeholderClassName="w-16"
                         >
-                            ({groupName})
-                        </span>
+                            <span
+                                role="button"
+                                tabIndex={0}
+                                className="hover:text-foreground min-w-0 cursor-pointer truncate"
+                                onClick={() => onOpenGroup(instance.groupId)}
+                                onKeyDown={(event) => {
+                                    if (
+                                        event.key === 'Enter' ||
+                                        event.key === ' '
+                                    ) {
+                                        event.preventDefault();
+                                        onOpenGroup(instance.groupId);
+                                    }
+                                }}
+                            >
+                                ({groupName})
+                            </span>
+                        </LocationPendingText>
                     ) : null}
                 </span>
             </div>
             <FriendsLocationsFriendChips
                 friends={instance.friends}
-                currentUserId={currentUserId}
                 favoriteIds={favoriteIds}
                 twoLine={twoLine}
                 onOpenUser={onOpenUser}
@@ -276,7 +305,6 @@ export function FriendsLocationsWorldSection({
     group,
     summary,
     densityConfig,
-    currentUserId,
     favoriteIds,
     onOpenWorld,
     onOpenGroup,
@@ -284,6 +312,7 @@ export function FriendsLocationsWorldSection({
 }: FriendsLocationsWorldSectionProps) {
     const { t } = useTranslation();
     const name = summary?.name || group.nameHint || group.worldId;
+    const namePending = !summary && !group.nameHint;
     const thumbnailWidth = densityConfig.worldThumbnailWidth;
     const thumbnailHeight = Math.round((thumbnailWidth * 3) / 4);
 
@@ -314,10 +343,15 @@ export function FriendsLocationsWorldSection({
                 <div className="flex h-6 min-w-0 items-baseline gap-2.5">
                     <button
                         type="button"
-                        className="min-w-0 cursor-pointer truncate text-left text-sm font-semibold underline-offset-4 outline-none hover:underline focus-visible:underline"
+                        className="focus-visible:ring-ring/50 min-w-0 cursor-pointer truncate rounded-sm text-left text-sm font-semibold outline-none focus-visible:ring-3"
                         onClick={() => onOpenWorld(group, name)}
                     >
-                        {name}
+                        <LocationPendingText
+                            pending={namePending}
+                            placeholderClassName="h-3.5 w-32"
+                        >
+                            {name}
+                        </LocationPendingText>
                     </button>
                     {group.instances.length > 1 ? (
                         <span className="text-muted-foreground ml-auto shrink-0 pl-3 text-xs tabular-nums">
@@ -332,7 +366,6 @@ export function FriendsLocationsWorldSection({
                         <InstanceRow
                             key={instance.location}
                             instance={instance}
-                            currentUserId={currentUserId}
                             favoriteIds={favoriteIds}
                             twoLine={densityConfig.worldChipLines === 2}
                             onOpenGroup={onOpenGroup}

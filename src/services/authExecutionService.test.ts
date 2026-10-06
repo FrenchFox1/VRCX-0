@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
     cancelLoginSession: vi.fn(),
     clearEntityQueryCache: vi.fn(),
     applySavedAuthSnapshot: vi.fn(),
-    buildAvatarWearSnapshotUpdate: vi.fn(),
     recordCurrentUserSnapshot: vi.fn(),
     resetDomainFacts: vi.fn(),
     loadVrchatConfigSnapshot: vi.fn(),
@@ -20,7 +19,8 @@ const mocks = vi.hoisted(() => ({
     t: vi.fn(),
     bootstrapAuthenticatedSession: vi.fn(),
     confirm: vi.fn(),
-    otpPrompt: vi.fn()
+    otpPrompt: vi.fn(),
+    flashWindow: vi.fn()
 }));
 
 vi.mock('@/services/toastService', () => ({
@@ -57,12 +57,13 @@ vi.mock('@/platform/tauri/bindings', () => ({
     }
 }));
 
-vi.mock('./authSnapshotService', () => ({
-    applySavedAuthSnapshot: mocks.applySavedAuthSnapshot
+vi.mock('@/platform/tauri/webview', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/platform/tauri/webview')>()),
+    flashWindow: mocks.flashWindow
 }));
 
-vi.mock('./avatarWearTimeService', () => ({
-    buildAvatarWearSnapshotUpdate: mocks.buildAvatarWearSnapshotUpdate
+vi.mock('./authSnapshotService', () => ({
+    applySavedAuthSnapshot: mocks.applySavedAuthSnapshot
 }));
 
 vi.mock('./domainIngestionService', () => ({
@@ -101,10 +102,7 @@ import {
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useModalStore } from '@/state/modalStore';
-import {
-    type CurrentUserSnapshotState,
-    useRuntimeStore
-} from '@/state/runtimeStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import {
@@ -238,13 +236,6 @@ describe('authExecutionService characterization', () => {
         mocks.applySavedAuthSnapshot.mockImplementation(
             (snapshot: SavedAuthSnapshot) => snapshot
         );
-        mocks.buildAvatarWearSnapshotUpdate.mockImplementation(
-            ({
-                nextSnapshot
-            }: {
-                nextSnapshot: CurrentUserSnapshotState | null;
-            }) => ({ snapshot: nextSnapshot })
-        );
         mocks.t.mockImplementation((key: string, values?: { name?: string }) =>
             Promise.resolve(values?.name ? `${key}:${values.name}` : key)
         );
@@ -252,6 +243,7 @@ describe('authExecutionService characterization', () => {
         mocks.loadVrchatConfigSnapshot.mockResolvedValue({});
         mocks.confirm.mockResolvedValue({ ok: true });
         mocks.otpPrompt.mockResolvedValue({ ok: true, value: '123456' });
+        mocks.flashWindow.mockResolvedValue(undefined);
     });
 
     it('rejects manual login without username or password', async () => {
@@ -294,9 +286,9 @@ describe('authExecutionService characterization', () => {
         expect(mocks.loadVrchatConfigSnapshot).toHaveBeenCalledTimes(1);
         expect(useAssistantChatStore.getState()).toMatchObject({
             open: false,
-            activeSessionId: null,
-            messagesBySession: {}
+            activeSessionId: null
         });
+        expect(useAssistantChatStore.getState().messagesBySession).toEqual({});
         expect(mocks.bootstrapAuthenticatedSession).toHaveBeenCalledWith(
             user(),
             expect.any(Number)
@@ -672,6 +664,7 @@ describe('authExecutionService characterization', () => {
             expect(
                 mocks.otpPrompt.mock.calls.map(([prompt]) => prompt.mode)
             ).toEqual(['totp', 'otp', 'totp']);
+            expect(mocks.flashWindow).toHaveBeenCalledTimes(1);
             expect(mocks.cancelLoginSession).not.toHaveBeenCalled();
             expect(mocks.respondLoginSession).toHaveBeenCalledTimes(1);
             expect(mocks.respondLoginSession).toHaveBeenCalledWith({

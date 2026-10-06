@@ -36,6 +36,7 @@ export function useSettingsVrTabState() {
     const vr = useSettingsPageSection('vr');
     const prefs = usePreferencesStore(
         useShallow((state) => ({
+            overlayToast: state.overlayToast,
             xsNotifications: state.xsNotifications,
             ovrtHudNotifications: state.ovrtHudNotifications,
             ovrtWristNotifications: state.ovrtWristNotifications,
@@ -47,6 +48,8 @@ export function useSettingsVrTabState() {
             hmdNotificationOpacity: state.hmdNotificationOpacity,
             hmdNotificationStartMode: state.hmdNotificationStartMode,
             hmdNotificationPosition: state.hmdNotificationPosition,
+            hmdNotificationStyle: state.hmdNotificationStyle,
+            hmdNotificationAvatars: state.hmdNotificationAvatars,
             wristOverlayEnabled: state.wristOverlayEnabled,
             wristOverlayStartMode: state.wristOverlayStartMode,
             wristOverlayButton: state.wristOverlayButton,
@@ -60,6 +63,9 @@ export function useSettingsVrTabState() {
     );
     const isSteamVRRunning = useRuntimeStore(
         (state) => state.gameState.isSteamVRRunning
+    );
+    const hostPlatform = useRuntimeStore(
+        (state) => state.hostCapabilities.platform
     );
     const overlayTestMode = useVrOverlayTestStore((state) => state.testMode);
     const overlayTestPending = useVrOverlayTestStore((state) => state.pending);
@@ -116,24 +122,28 @@ export function useSettingsVrTabState() {
     };
 
     const saveHmdNotificationOpacity = (value: number) => {
-        const opacity = roundedBoundedNumber(value, 0, 100, 100);
+        const opacity = roundedBoundedNumber(value, 0, 100, 90);
         savePreferenceValue('hmdNotificationOpacity', opacity, () =>
             setIntConfigPreference('hmdNotificationOpacity', opacity, {
                 min: 0,
                 max: 100,
-                fallback: 100
+                fallback: 90
             })
         );
     };
 
     return {
         prefs,
+        hostPlatform,
         overlayTestMode,
         overlayTestModeDisabled:
             overlayTestPending ||
             (!overlayTestMode && isSteamVRRunning !== true),
         onOverlayTestModeChange: (enabled: boolean) => {
             void setOverlayTestMode(enabled);
+        },
+        onOverlayToastChange: (value: string) => {
+            saveStringPreference('overlayToast', 'overlayToast', value);
         },
         onXsNotificationsChange: (enabled: boolean) => {
             saveBoolPreference('xsNotifications', 'xsNotifications', enabled);
@@ -170,6 +180,13 @@ export function useSettingsVrTabState() {
                 enabled
             );
         },
+        onHmdNotificationAvatarsChange: (enabled: boolean) => {
+            saveBoolPreference(
+                'hmdNotificationAvatars',
+                'hmdNotificationAvatars',
+                enabled
+            );
+        },
         onHmdNotificationTimeoutSecondsChange:
             saveHmdNotificationTimeoutSeconds,
         onHmdNotificationOpacityChange: saveHmdNotificationOpacity,
@@ -188,6 +205,15 @@ export function useSettingsVrTabState() {
             saveStringPreference(
                 'hmdNotificationPosition',
                 'hmdNotificationPosition',
+                value
+            );
+        },
+        onHmdNotificationStyleChange: (
+            value: PreferencesSnapshot['hmdNotificationStyle']
+        ) => {
+            saveStringPreference(
+                'hmdNotificationStyle',
+                'hmdNotificationStyle',
                 value
             );
         },

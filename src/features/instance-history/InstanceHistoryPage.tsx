@@ -26,7 +26,6 @@ import {
 } from '@/components/layout/ToolbarControls';
 import { UserPickerRow } from '@/components/search/UserPickerRow';
 import { normalizeEndpoint, normalizeUserId } from '@/domain/users/userFacts';
-import type { UserFact } from '@/domain/users/userFacts';
 import { InstanceActivityDateControls } from '@/features/instance-history/components/InstanceActivityDateControls';
 import { InstanceActivitySettingsPopover } from '@/features/instance-history/components/InstanceActivitySettingsPopover';
 import { InstanceHistoryList } from '@/features/instance-history/components/InstanceHistoryList';
@@ -54,13 +53,19 @@ import {
     filterPreviousInstanceRowsForDay,
     findActivityRowForPreviousInstanceRow,
     findPreviousInstanceRowForActivityRow,
+    findPreviousInstanceRowForVisit,
     sanitizeInstanceHistoryMode
 } from '@/features/instance-history/instanceHistoryDayMode';
 import { formatCompactDateTime, timeToText } from '@/lib/dateTime';
+import { useKnownUserFact } from '@/lib/useKnownUser';
+import {
+    knownUserName,
+    useKnownUserOptions,
+    type KnownUserOption
+} from '@/lib/useKnownUserOptions';
 import { useTodayDate } from '@/lib/useTodayDate';
 import { cn } from '@/lib/utils';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useUserFactsStore } from '@/state/userFactsStore';
 import { Button } from '@/ui/shadcn/button';
 import { Field, FieldContent, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
@@ -92,12 +97,6 @@ import {
 } from './instanceHistoryController';
 import { useInstanceHistoryRowsController } from './useInstanceHistoryRowsController';
 
-type KnownUserOption = Partial<UserFact> & {
-    id: string;
-    endpoint: string;
-    name?: string;
-};
-
 type TargetOption = {
     value: string;
     label: string;
@@ -105,10 +104,6 @@ type TargetOption = {
 };
 
 const CHART_LOADING_INDICATOR_DELAY_MS = 150;
-
-function knownUserName(user: Partial<KnownUserOption> | null | undefined) {
-    return user?.displayName || user?.username || user?.name || '';
-}
 
 export function InstanceHistoryPage({
     embedded = false
@@ -123,7 +118,6 @@ export function InstanceHistoryPage({
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
-    const usersByKey = useUserFactsStore((state) => state.usersByKey);
     const mode = sanitizeInstanceHistoryMode(searchParams.get('mode'));
     const isDayMode = mode === 'day';
     const [targetPickerOpen, setTargetPickerOpen] = useState(false);
@@ -144,6 +138,11 @@ export function InstanceHistoryPage({
     const endpoint = normalizeEndpoint(currentEndpoint);
     const paramUserId = normalizeUserId(searchParams.get('id'));
     const paramSearch = searchParams.get('q') || '';
+    const paramDay = searchParams.get('day') || '';
+    const [pendingVisit, setPendingVisit] = useState<{
+        location: string;
+        leftAtMs: number;
+    } | null>(null);
     const activeUserId = paramUserId || normalizeUserId(currentUserId);
     const isSelfScope = activeUserId === normalizeUserId(currentUserId);
     const dateRange = dateRangeState.range;
@@ -157,43 +156,27 @@ export function InstanceHistoryPage({
         selectedDate: isDayMode ? selectedDayForData : ''
     });
 
-    const knownUsers = useMemo(() => {
-        const usersById = new Map<string, KnownUserOption>();
-        if (currentUserId) {
-            usersById.set(currentUserId, {
-                id: currentUserId,
-                displayName: currentUserDisplayName,
-                endpoint
-            });
-        }
-        for (const user of Object.values(usersByKey || {}).filter((user) => {
-            const userId = normalizeUserId(user?.id);
-            return (
-                userId &&
-                normalizeEndpoint(user?.endpoint || endpoint) === endpoint
-            );
-        })) {
-            const userId = normalizeUserId(user?.id);
-            if (!usersById.has(userId)) {
-                usersById.set(userId, user);
-            }
-        }
-        return Array.from(usersById.values())
-            .sort((left, right) =>
-                (knownUserName(left) || left?.id || '').localeCompare(
-                    knownUserName(right) || right?.id || ''
-                )
-            )
-            .slice(0, 500);
-    }, [currentUserDisplayName, currentUserId, endpoint, usersByKey]);
-
-    const activeKnownUser = useMemo<KnownUserOption | null>(
+    const otherKnownUsers = useKnownUserOptions({
+        enabled: targetPickerOpen,
+        endpoint,
+        excludeUserId: currentUserId,
+        query: targetSearch
+    });
+    const knownUsers = useMemo<KnownUserOption[]>(
         () =>
-            knownUsers.find(
-                (user) => normalizeUserId(user?.id) === activeUserId
-            ) || null,
-        [activeUserId, knownUsers]
+            currentUserId
+                ? [
+                      {
+                          id: currentUserId,
+                          displayName: currentUserDisplayName,
+                          endpoint
+                      },
+                      ...otherKnownUsers
+                  ]
+                : otherKnownUsers,
+        [currentUserDisplayName, currentUserId, endpoint, otherKnownUsers]
     );
+    const activeKnownUser = useKnownUserFact(activeUserId, { endpoint });
 
     const activeUserLabel =
         (activeUserId && activeUserId === normalizeUserId(currentUserId)
@@ -351,6 +334,39 @@ export function InstanceHistoryPage({
         nextParams.delete('q');
         setSearchParams(nextParams, { replace: true });
     }, [paramSearch, searchParams, setSearchParams]);
+
+    useEffect(() => {
+        if (!paramDay) {
+            return;
+        }
+        setSelectedDay(paramDay);
+        const location = searchParams.get('location') || '';
+        setPendingVisit(
+            location
+                ? { location, leftAtMs: Number(searchParams.get('at')) || 0 }
+                : null
+        );
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete('day');
+        nextParams.delete('location');
+        nextParams.delete('at');
+        setSearchParams(nextParams, { replace: true });
+    }, [paramDay, searchParams, setSearchParams]);
+
+    useEffect(() => {
+        if (!pendingVisit || rawDayRows.length === 0) {
+            return;
+        }
+        const row = findPreviousInstanceRowForVisit(
+            rawDayRows,
+            pendingVisit.location,
+            pendingVisit.leftAtMs
+        );
+        setPendingVisit(null);
+        if (row) {
+            setDetailRow(row);
+        }
+    }, [pendingVisit, rawDayRows, setDetailRow]);
 
     const [displayedOnlineTime, setDisplayedOnlineTime] = useState(0);
     useEffect(() => {

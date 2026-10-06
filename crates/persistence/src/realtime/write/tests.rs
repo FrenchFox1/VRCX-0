@@ -8,9 +8,9 @@ use crate::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
 use crate::realtime::ensure_realtime_tables;
 
 use super::{
-    normalize_user_table_prefix, write_realtime_batch, FriendLogDelete, FriendLogUpsert,
-    NotificationExpiration, NotificationV2Update, RealtimePersistenceBatch, SelfProfileField,
-    SelfProfileLogEntry,
+    normalize_user_table_prefix, write_realtime_batch, AvatarTimeSpentUpsert, FriendLogDelete,
+    FriendLogUpsert, NotificationExpiration, NotificationV2Update, RealtimePersistenceBatch,
+    SelfProfileField, SelfProfileObservation,
 };
 use crate::ownership::OwnerId;
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
@@ -215,6 +215,42 @@ fn writes_bio_feed_rows() -> Result<(), crate::Error> {
             json!("new bio"),
             json!("old bio")
         ]
+    );
+    Ok(())
+}
+
+#[test]
+fn writes_bio_feed_rows_into_upstream_v18_layout() -> Result<(), crate::Error> {
+    let dir = TestDir::new("realtime-feed-bio-upstream-v18");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    db.execute_non_query(
+        "CREATE TABLE usrself_feed_bio (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, bio TEXT, previous_bio TEXT, bio_links TEXT DEFAULT '[]', previous_bio_links TEXT DEFAULT '[]')",
+        &Default::default(),
+    )?;
+    let counts = write_realtime_batch(
+        &db,
+        &OwnerId::new("usr_self"),
+        &RealtimePersistenceBatch {
+            feed_entries: vec![FeedLiveEntry::Bio {
+                created_at: "2026-10-05T00:00:00Z".into(),
+                user_id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                bio: "new bio".into(),
+                previous_bio: "old bio".into(),
+                owner_user_id: String::new(),
+            }],
+            ..RealtimePersistenceBatch::default()
+        },
+    )?;
+    assert_eq!(counts.affected_count, 1);
+
+    let feed = db.execute(
+        "SELECT bio, previous_bio, bio_links, previous_bio_links FROM usrself_feed_bio WHERE user_id = @user_id",
+        &ParamsBuilder::new().set("user_id", "usr_friend").build(),
+    )?;
+    assert_eq!(
+        feed[0],
+        vec![json!("new bio"), json!("old bio"), json!("[]"), json!("[]")]
     );
     Ok(())
 }
@@ -649,6 +685,31 @@ fn rejects_trust_feed_without_matching_friend_log_upsert() {
 }
 
 #[test]
+fn rejects_display_name_feed_without_matching_friend_log_upsert() {
+    let dir = TestDir::new("realtime-unpaired-display-name-feed");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
+
+    let error = write_realtime_batch(
+        &db,
+        &OwnerId::new("usr_self"),
+        &RealtimePersistenceBatch {
+            feed_entries: vec![FeedLiveEntry::DisplayName {
+                created_at: "2026-05-15T00:00:00Z".into(),
+                user_id: "usr_friend".into(),
+                display_name: "New Name".into(),
+                previous_display_name: "Old Name".into(),
+                friend_number: 7,
+                owner_user_id: String::new(),
+            }],
+            ..RealtimePersistenceBatch::default()
+        },
+    )
+    .unwrap_err();
+
+    assert!(matches!(error, crate::Error::InvalidData(_)));
+}
+
+#[test]
 fn rolls_back_friend_log_rows_when_later_feed_entry_fails() -> Result<(), crate::Error> {
     let dir = TestDir::new("realtime-rollback-feed");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
@@ -987,31 +1048,33 @@ fn rejects_notifications_missing_required_fields() {
 
 fn self_profile_log_rows(db: &DatabaseService) -> Vec<Vec<serde_json::Value>> {
     db.execute(
-        "SELECT field, value, previous_value FROM usrself_self_profile_log ORDER BY id",
+        "SELECT created_at, field, value, previous_value FROM usrself_self_profile_log ORDER BY id",
         &Default::default(),
     )
     .unwrap()
 }
 
-fn self_profile_entry(
+fn self_profile_observation(
+    observed_at: &str,
     field: SelfProfileField,
     value: &str,
-    previous_value: &str,
-) -> SelfProfileLogEntry {
-    SelfProfileLogEntry {
-        created_at: "2026-05-15T00:00:00Z".to_string(),
+) -> SelfProfileObservation {
+    SelfProfileObservation {
+        observed_at: observed_at.to_string(),
         field,
         value: value.to_string(),
-        previous_value: previous_value.to_string(),
     }
 }
 
-fn write_self_profile_log(db: &DatabaseService, entries: Vec<SelfProfileLogEntry>) {
+fn write_self_profile_observations(
+    db: &DatabaseService,
+    observations: Vec<SelfProfileObservation>,
+) {
     write_realtime_batch(
         db,
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
-            self_profile_log_entries: entries,
+            self_profile_observations: observations,
             ..RealtimePersistenceBatch::default()
         },
     )
@@ -1019,40 +1082,85 @@ fn write_self_profile_log(db: &DatabaseService, entries: Vec<SelfProfileLogEntry
 }
 
 #[test]
-fn writes_one_self_profile_log_row_per_changed_field() {
-    let dir = TestDir::new("self-profile-log-records");
+fn self_profile_observations_log_only_values_that_differ_from_the_latest_row() {
+    let dir = TestDir::new("self-profile-changes");
     let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
 
-    write_self_profile_log(
-        &db,
-        vec![
-            self_profile_entry(SelfProfileField::Status, "ask me", "join me"),
-            self_profile_entry(SelfProfileField::StatusDescription, "afk", "come vibe"),
-            self_profile_entry(SelfProfileField::Bio, "new bio", ""),
-        ],
-    );
+    for (observed_at, bio) in [
+        ("2026-05-15T00:00:00Z", "old bio"),
+        ("2026-05-16T00:00:00Z", "old bio"),
+        ("2026-05-17T00:00:00Z", "new bio"),
+        ("2026-05-18T00:00:00Z", "new bio"),
+    ] {
+        write_self_profile_observations(
+            &db,
+            vec![
+                self_profile_observation(observed_at, SelfProfileField::Status, "join me"),
+                self_profile_observation(observed_at, SelfProfileField::Bio, bio),
+            ],
+        );
+    }
 
-    let rows = self_profile_log_rows(&db);
-    assert_eq!(rows.len(), 3);
-    assert_eq!(rows[0][0], json!("status"));
-    assert_eq!(rows[0][1], json!("ask me"));
-    assert_eq!(rows[0][2], json!("join me"));
-    assert_eq!(rows[1][0], json!("statusDescription"));
-    assert_eq!(rows[2][0], json!("bio"));
+    assert_eq!(
+        self_profile_log_rows(&db),
+        vec![
+            vec![
+                json!("2026-05-15T00:00:00Z"),
+                json!("status"),
+                json!("join me"),
+                json!(""),
+            ],
+            vec![
+                json!("2026-05-15T00:00:00Z"),
+                json!("bio"),
+                json!("old bio"),
+                json!(""),
+            ],
+            vec![
+                json!("2026-05-17T00:00:00Z"),
+                json!("bio"),
+                json!("new bio"),
+                json!("old bio"),
+            ],
+        ]
+    );
 }
 
 #[test]
-fn skips_self_profile_log_rows_that_did_not_change() {
-    let dir = TestDir::new("self-profile-log-skips");
-    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
+fn checkpointed_avatar_wear_extends_one_log_row_and_adds_only_the_new_time(
+) -> Result<(), crate::Error> {
+    let dir = TestDir::new("avatar-wear-checkpoint");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let started_at_ms = 1_790_863_200_000;
+    for (time_spent, ended_after_ms) in [(60_000, 60_000), (30_000, 90_000)] {
+        write_realtime_batch(
+            &db,
+            &OwnerId::new("usr_self"),
+            &RealtimePersistenceBatch {
+                avatar_time_spent_upserts: vec![AvatarTimeSpentUpsert {
+                    avatar_id: "avtr_worn".into(),
+                    created_at: "2026-10-01T14:00:00.000Z".into(),
+                    time_spent,
+                    started_at_ms,
+                    ended_at_ms: started_at_ms + ended_after_ms,
+                }],
+                ..RealtimePersistenceBatch::default()
+            },
+        )?;
+    }
 
-    write_self_profile_log(
-        &db,
-        vec![
-            self_profile_entry(SelfProfileField::Status, "join me", "join me"),
-            self_profile_entry(SelfProfileField::Bio, "", ""),
-        ],
-    );
-
-    assert!(self_profile_log_rows(&db).is_empty());
+    let wear_rows = db.execute(
+        "SELECT started_at, ended_at, time FROM usrself_avatar_wear_log",
+        &Default::default(),
+    )?;
+    assert_eq!(wear_rows.len(), 1);
+    assert_eq!(wear_rows[0][0], json!("2026-10-01T14:00:00.000Z"));
+    assert_eq!(wear_rows[0][1], json!("2026-10-01T14:01:30.000Z"));
+    assert_eq!(wear_rows[0][2], json!(90_000));
+    let history = db.execute(
+        "SELECT time FROM usrself_avatar_history WHERE avatar_id = 'avtr_worn'",
+        &Default::default(),
+    )?;
+    assert_eq!(history[0][0], json!(90_000));
+    Ok(())
 }

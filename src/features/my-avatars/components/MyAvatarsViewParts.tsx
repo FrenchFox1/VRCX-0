@@ -204,7 +204,7 @@ export function MyAvatarNameCell({
                         <Button
                             type="button"
                             variant="ghost"
-                            className="h-auto min-w-0 p-0 text-left text-sm font-medium underline-offset-4 hover:bg-transparent hover:underline"
+                            className="h-auto min-w-0 p-0 text-left text-sm font-medium hover:bg-transparent"
                             onClick={() => openAvatarDetails(avatar)}
                         >
                             <span className="truncate">{name}</span>

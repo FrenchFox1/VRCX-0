@@ -111,7 +111,7 @@ function GameLogWidgetUserName({
             type="button"
             variant="ghost"
             className={cn(
-                'h-auto min-w-0 cursor-pointer justify-start p-0 text-left font-normal underline-offset-4 hover:underline',
+                'h-auto min-w-0 cursor-pointer justify-start p-0 text-left font-normal',
                 className
             )}
             onClick={() => openGameLogWidgetUser(row)}

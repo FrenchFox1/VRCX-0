@@ -1,10 +1,11 @@
+use crate::VrOverlayRuntimeServices;
 use vrcx_0_host_desktop::vr_overlay::OverlayActivationButton;
-use vrcx_0_persistence::config::ConfigRepository;
 
 use super::eligibility::WristOverlayStartMode;
 use super::localization::OverlayLocale;
 use super::runtime::{
-    HmdNotificationConfig, HmdNotificationPosition, VrOverlayRuntimeConfig, WristOverlayHand,
+    HmdNotificationConfig, HmdNotificationPosition, HmdNotificationStyle, VrOverlayRuntimeConfig,
+    WristOverlayHand,
 };
 use super::service::OverlayBackendPreference;
 use super::{WristOverlayRenderOptions, WristOverlaySizePreset};
@@ -24,11 +25,16 @@ pub const HMD_NOTIFICATION_START_MODE_CONFIG_KEY: &str = "hmdNotificationStartMo
 pub const HMD_NOTIFICATION_TIMEOUT_CONFIG_KEY: &str = "hmdNotificationTimeout";
 pub const HMD_NOTIFICATION_OPACITY_CONFIG_KEY: &str = "hmdNotificationOpacity";
 pub const HMD_NOTIFICATION_POSITION_CONFIG_KEY: &str = "hmdNotificationPosition";
+pub const HMD_NOTIFICATION_STYLE_CONFIG_KEY: &str = "hmdNotificationStyle";
+pub const HMD_NOTIFICATION_AVATARS_CONFIG_KEY: &str = "hmdNotificationAvatars";
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 const DATE_TIME_HOUR12_CONFIG_KEY: &str = "dtHour12";
 const SHOW_INSTANCE_ID_IN_LOCATION_CONFIG_KEY: &str = "VRCX_showInstanceIdInLocation";
 
-pub(super) fn load_runtime_config(config: &ConfigRepository) -> VrOverlayRuntimeConfig {
+pub(super) fn load_runtime_config(
+    services: &dyn VrOverlayRuntimeServices,
+) -> VrOverlayRuntimeConfig {
+    let config = services.config();
     let start_mode = config
         .get_string(VR_OVERLAY_START_MODE_CONFIG_KEY, "vrchatVrMode")
         .map(|value| WristOverlayStartMode::from_config(&value))
@@ -86,11 +92,15 @@ pub(super) fn load_runtime_config(config: &ConfigRepository) -> VrOverlayRuntime
         .ok()
         .flatten()
         .and_then(|value| value.trim().parse::<u8>().ok())
-        .unwrap_or(100)
+        .unwrap_or(90)
         .min(100);
     let hmd_position = config
         .get_string(HMD_NOTIFICATION_POSITION_CONFIG_KEY, "bottom")
         .map(|value| HmdNotificationPosition::from_config(&value))
+        .unwrap_or_default();
+    let hmd_style = config
+        .get_string(HMD_NOTIFICATION_STYLE_CONFIG_KEY, "standard")
+        .map(|value| HmdNotificationStyle::from_config(&value))
         .unwrap_or_default();
     let locale = config
         .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
@@ -114,6 +124,10 @@ pub(super) fn load_runtime_config(config: &ConfigRepository) -> VrOverlayRuntime
             timeout_ms: hmd_timeout_ms,
             opacity_percent: hmd_opacity_percent,
             position: hmd_position,
+            style: hmd_style,
+            avatars: config
+                .get_bool(HMD_NOTIFICATION_AVATARS_CONFIG_KEY, true)
+                .unwrap_or(true),
         },
         render: WristOverlayRenderOptions {
             size,

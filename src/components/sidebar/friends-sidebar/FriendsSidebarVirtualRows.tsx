@@ -1,8 +1,8 @@
 import { ListSectionHeader } from '@/components/layout/ListSectionHeader';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
-import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
 import type { UserStatus } from '@/platform/tauri/bindings';
+import type { UserNameColourStyle } from '@/shared/utils/entityMedia';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import type { TrustColorMap } from '@/shared/utils/trustColors';
 import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
@@ -11,10 +11,7 @@ import { Skeleton } from '@/ui/shadcn/skeleton';
 import type { StatusPreset } from './FriendsSidebarActionItems';
 import { FriendRow } from './FriendsSidebarFriendRow';
 import { InstanceHeaderRow } from './FriendsSidebarHeaders';
-import {
-    readFriendStatusSource,
-    type SidebarFriendRecord
-} from './friendsSidebarModel';
+import type { SidebarFriendRecord } from './friendsSidebarModel';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
 import {
     isFriendsSidebarGroupKey,
@@ -36,10 +33,8 @@ type RuntimeView = {
         | null;
     currentUserId?: string | null;
     gameState: {
-        isGameRunning?: boolean | null;
         currentLocationStartedAt?: string | number | null;
     };
-    onlineIdSet: Set<string>;
     instanceActionGatesByUserId: Map<string, LocalInstanceActionGates>;
 };
 
@@ -47,8 +42,11 @@ type AppearanceView = {
     ageGatedInstancesVisible?: boolean;
     isDarkMode?: boolean;
     randomUserColours?: boolean;
+    randomUserColourStyle?: UserNameColourStyle;
     recentActionVersion?: number;
     showInstanceIdInLocation?: boolean;
+    showSidebarAvatarFrame?: boolean;
+    showSidebarNameplate?: boolean;
     trustColor?: TrustColorMap;
 };
 
@@ -133,11 +131,7 @@ function FriendVirtualRow({
     runtime: RuntimeView;
     statusCommands: StatusCommandsView;
 }) {
-    const source = readFriendStatusSource(friend);
-    const state = normalizeStateBucket(source?.state);
     const friendId = friend.id || '';
-    const isOnlineFriend =
-        runtime.onlineIdSet.has(friendId) || state === 'online';
     const instanceActionGates =
         runtime.instanceActionGatesByUserId.get(friendId);
 
@@ -152,9 +146,7 @@ function FriendVirtualRow({
                 canSendInvite: Boolean(instanceActionGates?.canInvite),
                 canRequestInvite: !isCurrentUser,
                 canBoop: Boolean(runtime.currentUser?.isBoopingEnabled),
-                canUseFriendInstance: Boolean(
-                    isOnlineFriend && instanceActionGates?.canJoin
-                )
+                canUseFriendInstance: Boolean(instanceActionGates?.canJoin)
             }}
             rowCommands={{
                 onOpen: () => friendCommands.onOpenFriend(friend),
@@ -170,17 +162,18 @@ function FriendVirtualRow({
             }}
             appearance={{
                 randomUserColours: appearance.randomUserColours,
+                randomUserColourStyle: appearance.randomUserColourStyle,
                 isDarkMode: appearance.isDarkMode,
                 trustColor: appearance.trustColor,
-                currentUserSnapshot: runtime.currentUser,
-                isGameRunning: runtime.gameState.isGameRunning,
                 currentLocationStartedAt:
                     runtime.gameState.currentLocationStartedAt,
                 recentActionVersion: appearance.recentActionVersion,
                 locationMetadata:
                     location.locationMetadataByKey.get(metadataKey),
                 showInstanceIdInLocation: appearance.showInstanceIdInLocation,
-                ageGatedInstancesVisible: appearance.ageGatedInstancesVisible
+                ageGatedInstancesVisible: appearance.ageGatedInstancesVisible,
+                showAvatarFrame: appearance.showSidebarAvatarFrame,
+                showNameplate: appearance.showSidebarNameplate
             }}
         />
     );

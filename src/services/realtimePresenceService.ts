@@ -15,7 +15,6 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
-import { buildAvatarWearSnapshotUpdate } from './avatarWearTimeService';
 import { recordCurrentUserSnapshot } from './domainIngestionService';
 import { handleQueuedInstancePatch } from './realtimeInstanceQueueService';
 import {
@@ -23,7 +22,6 @@ import {
     queueRealtimeFriendRosterUpdate,
     queueRealtimeUserFactsUpdate
 } from './realtimeRosterUpdateQueue';
-import { pushSharedFeedNotification } from './sharedFeedNotificationService';
 
 type ProjectionRecord = Record<string, unknown>;
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
@@ -77,17 +75,7 @@ function getCurrentUserProjectionFriendBucketSource(
     payload: RealtimeCurrentUserProjectionPayload
 ) {
     const patch = payload.patch;
-    if (hasCompleteCurrentUserFriendBucketSnapshot(patch)) {
-        return patch;
-    }
-    const snapshot = payload.snapshot;
-    if (
-        Object.keys(patch).length === 0 &&
-        hasCompleteCurrentUserFriendBucketSnapshot(snapshot)
-    ) {
-        return snapshot;
-    }
-    return null;
+    return hasCompleteCurrentUserFriendBucketSnapshot(patch) ? patch : null;
 }
 
 function mergeCurrentUserProjectionSnapshot(
@@ -95,14 +83,11 @@ function mergeCurrentUserProjectionSnapshot(
     payload: RealtimeCurrentUserProjectionPayload
 ) {
     const currentSnapshot = getCurrentUserSnapshot(runtimeState);
-    const source = Object.keys(payload.patch).length
-        ? payload.patch
-        : payload.snapshot;
     const completeFriendBucketSource =
         getCurrentUserProjectionFriendBucketSource(payload);
     const nextSnapshot: ProjectionRecord = {
         ...currentSnapshot,
-        ...source
+        ...payload.patch
     };
 
     if (completeFriendBucketSource) {
@@ -137,14 +122,6 @@ function handleRealtimeFeedProjection(payload: RealtimeFeedProjectionPayload) {
         ownerUserId: payload.ownerUserId
     });
     useFeedLiveStore.getState().pushPatches(payload.patches);
-    for (const upsert of upserts) {
-        pushSharedFeedNotification(upsert.entry).catch((error: unknown) => {
-            console.warn(
-                'Failed to publish realtime feed notification:',
-                error
-            );
-        });
-    }
 }
 
 function clearNotificationMenuIfNoUnseen() {
@@ -205,13 +182,14 @@ function handleRealtimeFriendProjection(
     }
 
     const patchEntries = payload.patches.map((patchEntry) => {
-        const patch = patchEntry.patch;
+        const record = patchEntry.record;
         return {
             userId: normalizeUserId(
-                patchEntry.userId || patch.id || patch.userId
+                patchEntry.userId || record.id || record.userId
             ),
-            patch,
-            stateBucketAuthority: patchEntry.stateBucketAuthority
+            patch: record,
+            presence: patchEntry.presence,
+            generation: payload.generation
         };
     });
     queueRealtimeFriendRosterUpdate(
@@ -291,18 +269,7 @@ function handleRealtimeCurrentUserProjection(
     payload: RealtimeCurrentUserProjectionPayload
 ) {
     const runtimeStore = useRuntimeStore.getState();
-    const mergedSnapshot = mergeCurrentUserProjectionSnapshot(
-        runtimeStore,
-        payload
-    );
-    const { snapshot: stampedSnapshot } = buildAvatarWearSnapshotUpdate({
-        previousSnapshot: runtimeStore.auth.currentUserSnapshot,
-        nextSnapshot: mergedSnapshot,
-        isGameRunning: runtimeStore.gameState.isGameRunning
-    });
-    const snapshot = isRecord(stampedSnapshot)
-        ? stampedSnapshot
-        : mergedSnapshot;
+    const snapshot = mergeCurrentUserProjectionSnapshot(runtimeStore, payload);
     runtimeStore.setAuthBootstrap({
         currentUserSnapshot: snapshot,
         currentUserDisplayName: currentUserDisplayName(

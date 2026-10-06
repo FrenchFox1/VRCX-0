@@ -215,7 +215,7 @@ function WorldRoomItem({
                         {showGroupName ? (
                             <button
                                 type="button"
-                                className="min-w-0 cursor-pointer truncate text-left font-medium underline-offset-4 hover:underline"
+                                className="hover:text-foreground min-w-0 cursor-pointer truncate text-left font-medium"
                                 onClick={() =>
                                     openGroupDialog({
                                         groupId,

@@ -5,16 +5,14 @@ use vrcx_0_application_core::{Error, Result};
 use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::friends::FriendRecord;
 
-use super::friends::{FriendStateMap, SnapshotFriendIds};
 use super::{
-    auth_scope_matches, build_friend_state_map, build_snapshot_friend_ids,
-    execute_vrchat_json_request, fetch_paged_array, get_config_array, json, normalize_endpoint,
-    normalize_text, object_field, object_field_normalized, object_field_string,
+    auth_scope_matches, execute_vrchat_json_request, fetch_paged_array, get_config_array, json,
+    normalize_endpoint, normalize_text, object_field, object_field_normalized, object_field_string,
     stale_favorites_output, unique_values, value_as_i64, value_as_string, BTreeMap, Map, RawJson,
     SocialBaselineDeps, SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput,
     SocialFavoritesBaselineRequest, FAVORITES_PAGE_SIZE, FAVORITE_GROUPS_PAGE_SIZE,
 };
-use crate::{FavoriteBaselineSnapshot, FavoriteGroupOutput};
+use crate::social_baseline::types::{FavoriteBaselineSnapshot, FavoriteGroupOutput};
 use vrcx_0_core::OwnerId;
 
 const MAX_FAVORITE_GROUPS_KEY: &str = "maxFavoriteGroups";
@@ -317,34 +315,6 @@ impl<'a> FriendRosterView<'a> {
     }
 }
 
-pub(super) struct CurrentUserSnapshotView {
-    pub(super) user_id: String,
-    pub(super) state_by_id: HashMap<String, String>,
-    pub(super) state_order_ids: Vec<String>,
-    pub(super) friend_ids: Vec<String>,
-    pub(super) has_friend_list: bool,
-}
-
-impl CurrentUserSnapshotView {
-    pub(super) fn from_raw(snapshot: &Value) -> Self {
-        let FriendStateMap {
-            state_by_id,
-            ordered_ids: state_order_ids,
-        } = build_friend_state_map(snapshot);
-        let SnapshotFriendIds {
-            friend_ids,
-            has_friend_list,
-        } = build_snapshot_friend_ids(snapshot);
-        Self {
-            user_id: object_field_string(snapshot, &["id"]),
-            state_by_id,
-            state_order_ids,
-            friend_ids,
-            has_friend_list,
-        }
-    }
-}
-
 fn build_remote_favorite_snapshot(
     remote_favorites: Vec<Value>,
     friend_roster: &FriendRosterView<'_>,
@@ -412,12 +382,14 @@ fn build_local_grouped_ids(
     fallback_group: &str,
 ) -> (BTreeMap<String, Vec<String>>, Vec<String>, Vec<String>) {
     let mut groups = BTreeMap::new();
+    let mut groups_list = Vec::new();
     let mut list = Vec::new();
 
     for group_name in explicit_groups {
         let group_name = normalize_text(group_name);
         if !group_name.is_empty() && !groups.contains_key(&group_name) {
-            groups.insert(group_name, Vec::new());
+            groups.insert(group_name.clone(), Vec::new());
+            groups_list.push(group_name);
         }
     }
 
@@ -433,6 +405,9 @@ fn build_local_grouped_ids(
             continue;
         }
 
+        if !groups.contains_key(&group_name) {
+            groups_list.push(group_name.clone());
+        }
         groups
             .entry(group_name)
             .or_default()
@@ -442,10 +417,9 @@ fn build_local_grouped_ids(
 
     if groups.is_empty() {
         groups.insert(fallback_group.to_string(), Vec::new());
+        groups_list.push(fallback_group.to_string());
     }
 
-    let mut groups_list = groups.keys().cloned().collect::<Vec<_>>();
-    groups_list.sort();
     (groups, groups_list, unique_values(list))
 }
 
@@ -518,9 +492,8 @@ async fn build_favorites_baseline_inner(
     request: SocialFavoritesBaselineRequest,
     friend_roster: FriendRosterView<'_>,
 ) -> Result<SocialFavoritesBaselineOutput> {
-    let current_user = CurrentUserSnapshotView::from_raw(request.current_user_snapshot.as_value());
     let user_id = normalize_text(if request.user_id.is_empty() {
-        current_user.user_id
+        object_field_string(request.current_user_snapshot.as_value(), &["id"])
     } else {
         request.user_id.clone()
     });
@@ -563,11 +536,9 @@ async fn build_favorites_baseline_inner(
     )?;
     let explicit_local_world_groups = get_config_array(&deps, "localFavoriteWorldGroups")?;
     let explicit_local_avatar_groups = get_config_array(&deps, "localFavoriteAvatarGroups")?;
-    let mut explicit_local_friend_groups = get_config_array(&deps, "localFavoriteFriendGroups")?;
-    explicit_local_friend_groups.extend(get_config_array(
-        &deps,
-        &format!("localFavoriteFriendGroups:{user_id}"),
-    )?);
+    let mut explicit_local_friend_groups =
+        get_config_array(&deps, &format!("localFavoriteFriendGroups:{user_id}"))?;
+    explicit_local_friend_groups.extend(get_config_array(&deps, "localFavoriteFriendGroups")?);
     let explicit_local_friend_groups = unique_values(explicit_local_friend_groups);
 
     let favorite_limits = merge_favorite_limits(&favorite_limits_response);
@@ -671,4 +642,35 @@ async fn build_favorites_baseline_inner(
         count: u32::try_from(count).unwrap_or(u32::MAX),
         snapshot: Some(snapshot),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vrcx_0_core::FavoriteEntityKind;
+
+    fn avatar_row(avatar_id: &str, group_name: &str) -> FavoriteRow {
+        FavoriteRow::new(
+            FavoriteEntityKind::Avatar,
+            String::new(),
+            avatar_id.into(),
+            group_name.into(),
+        )
+    }
+
+    #[test]
+    fn local_groups_keep_explicit_order_and_append_inferred_groups() {
+        let (groups, groups_list, _) = build_local_grouped_ids(
+            vec![
+                avatar_row("avtr_1", "inferred"),
+                avatar_row("avtr_2", "Zeta"),
+                avatar_row("avtr_3", "Zeta"),
+            ],
+            vec!["Zeta".into(), "Alpha".into()],
+            "Favorites",
+        );
+
+        assert_eq!(groups_list, vec!["Zeta", "Alpha", "inferred"]);
+        assert_eq!(groups["Zeta"], vec!["avtr_3", "avtr_2"]);
+    }
 }

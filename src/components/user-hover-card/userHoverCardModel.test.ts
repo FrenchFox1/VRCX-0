@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+    activePresence,
+    offlinePresence,
+    onlinePresence
+} from '@/test/presenceFixtures';
+
+import {
     buildUserHoverCardModel,
     normalizeInstanceCounts
 } from './userHoverCardModel';
@@ -9,21 +15,42 @@ const NOW = 1_700_000_600_000;
 const REAL_INSTANCE = 'wrld_12345678-1234-1234-1234-123456789012:99999';
 
 describe('buildUserHoverCardModel', () => {
+    it('takes profile decorations from the profile and falls back to the seed', () => {
+        const model = buildUserHoverCardModel({
+            seed: {
+                id: 'usr_1',
+                iconFrame: 'invt_seed_frame',
+                nameplateEffect: 'invt_seed_plate'
+            },
+            profile: {
+                id: 'usr_1',
+                iconFrame: 'invt_profile_frame',
+                profileEffect: 'invt_profile_effect'
+            },
+            nowMs: NOW
+        });
+
+        expect(model.decorations).toEqual({
+            iconFrame: 'invt_profile_frame',
+            profileEffect: 'invt_profile_effect',
+            nameplateEffect: 'invt_seed_plate'
+        });
+    });
+
     it('marks a friend in a real instance', () => {
         const model = buildUserHoverCardModel({
             seed: {
                 id: 'usr_1',
                 displayName: 'Alice',
-                state: 'online',
                 status: 'join me',
-                location: REAL_INSTANCE
+                $presence: onlinePresence(REAL_INSTANCE)
             },
             profile: null,
             nowMs: NOW
         });
 
         expect(model.variant).toBe('in-instance');
-        expect(model.statusKey).toBe('join_me');
+        expect(model.statusKey).toBe('dialog.user.status.join_me');
         expect(model.displayName).toBe('Alice');
         expect(model.location.isRealInstance).toBe(true);
         expect(model.location.worldId).toBe(
@@ -36,24 +63,38 @@ describe('buildUserHoverCardModel', () => {
         const model = buildUserHoverCardModel({
             seed: {
                 id: 'usr_2',
-                state: 'online',
                 status: 'active',
-                location: 'private'
+                $presence: onlinePresence('private')
             },
             profile: null,
             nowMs: NOW
         });
 
         expect(model.variant).toBe('private');
-        expect(model.statusKey).toBe('online');
+        expect(model.statusKey).toBe('dialog.user.status.online');
+    });
+
+    it('shows the local game room for a private friend in my instance', () => {
+        const model = buildUserHoverCardModel({
+            seed: {
+                id: 'usr_2',
+                status: 'active',
+                $presence: onlinePresence('private')
+            },
+            profile: null,
+            localLocation: REAL_INSTANCE,
+            nowMs: NOW
+        });
+
+        expect(model.variant).toBe('in-instance');
+        expect(model.location.tag).toBe(REAL_INSTANCE);
     });
 
     it('uses the active variant when online with no resolvable instance', () => {
         const seed = {
             id: 'usr_3',
-            state: 'active',
             status: 'active',
-            location: ''
+            $presence: activePresence()
         };
         const model = buildUserHoverCardModel({
             seed,
@@ -62,7 +103,7 @@ describe('buildUserHoverCardModel', () => {
         });
 
         expect(model.variant).toBe('active');
-        expect(model.statusKey).toBe('active');
+        expect(model.statusKey).toBe('dialog.user.status.active');
         expect(model.statusDotClassName).toBe(
             'user-status-indicator online border-[var(--status-online)] bg-background'
         );
@@ -72,8 +113,7 @@ describe('buildUserHoverCardModel', () => {
         const model = buildUserHoverCardModel({
             seed: {
                 id: 'usr_4',
-                state: 'offline',
-                location: 'offline',
+                $presence: offlinePresence,
                 last_login: 1_699_999_000_000
             },
             profile: { status: 'active', last_login: 1_699_999_000_000 },
@@ -106,9 +146,8 @@ describe('buildUserHoverCardModel', () => {
         const model = buildUserHoverCardModel({
             seed: {
                 id: 'usr_6',
-                state: 'online',
                 status: 'active',
-                location: REAL_INSTANCE,
+                $presence: onlinePresence(REAL_INSTANCE),
                 last_login: 1_700_000_000_000
             },
             profile: null,

@@ -124,7 +124,6 @@ struct FriendBaselineMetadata {
     user_id: String,
     stale: bool,
     detail: String,
-    ordered_friend_ids: Arc<[String]>,
 }
 
 impl AuthenticatedRuntimeOrchestrator {
@@ -155,16 +154,7 @@ impl AuthenticatedRuntimeOrchestrator {
             )
         };
         let current_friends = match friend_baseline.as_ref() {
-            Some(friend_baseline) => match self
-                .realtime_runtime
-                .friend_roster_snapshot(&friend_baseline.ordered_friend_ids)
-            {
-                Ok(current_friends) => current_friends,
-                Err(error) => {
-                    tracing::warn!(error = %error, "failed to build current friend phase snapshot");
-                    None
-                }
-            },
+            Some(_) => self.realtime_runtime.friend_roster_snapshot(),
             None => None,
         };
         assemble_authenticated_runtime_snapshot(
@@ -180,25 +170,10 @@ impl AuthenticatedRuntimeOrchestrator {
     }
 
     pub fn update_favorites_baseline(&self, output: SocialFavoritesBaselineOutput) {
-        if output.stale || output.snapshot.is_none() {
-            return;
+        let accepted = accept_favorites_baseline(&mut self.lock_state(), output);
+        if let Some(snapshot) = accepted {
+            self.apply_favorites_snapshot(&snapshot);
         }
-        let mut state = self.lock_state();
-        if state.phase.user_id != output.user_id
-            || !matches!(
-                state.phase.phase,
-                AuthenticatedRuntimePhase::Starting | AuthenticatedRuntimePhase::Ready
-            )
-        {
-            return;
-        }
-        state.favorite_group_memberships = output
-            .snapshot
-            .as_ref()
-            .map(favorite_group_memberships_from_baseline)
-            .map(Arc::new);
-        state.favorites_baseline = Some(output);
-        state.phase.updated_at = now_iso();
     }
 
     pub fn favorite_friend_group_membership(&self) -> Option<HashMap<String, Vec<String>>> {
@@ -989,21 +964,10 @@ fn commit_favorites_baseline(
 }
 
 fn friend_baseline_metadata(output: &SocialFriendRosterBaselineOutput) -> FriendBaselineMetadata {
-    let ordered_friend_ids = output
-        .snapshot
-        .as_ref()
-        .and_then(|snapshot| snapshot.as_value().get("orderedFriendIds"))
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_str)
-        .map(str::to_string)
-        .collect::<Vec<_>>();
     FriendBaselineMetadata {
         user_id: output.user_id.clone(),
         stale: output.stale,
         detail: output.detail.clone(),
-        ordered_friend_ids: ordered_friend_ids.into(),
     }
 }
 
@@ -1064,6 +1028,28 @@ fn apply_realtime_connected(
         return;
     }
     snapshot.realtime = ready_step(attempt, "Realtime transport connected.".into());
+}
+
+fn accept_favorites_baseline(
+    state: &mut AuthenticatedRuntimeState,
+    output: SocialFavoritesBaselineOutput,
+) -> Option<FavoriteBaselineSnapshot> {
+    if output.stale
+        || state.phase.user_id != output.user_id
+        || !matches!(
+            state.phase.phase,
+            AuthenticatedRuntimePhase::Starting | AuthenticatedRuntimePhase::Ready
+        )
+    {
+        return None;
+    }
+    let snapshot = output.snapshot.clone()?;
+    state.favorite_group_memberships = Some(Arc::new(favorite_group_memberships_from_baseline(
+        &snapshot,
+    )));
+    state.favorites_baseline = Some(output);
+    state.phase.updated_at = now_iso();
+    Some(snapshot)
 }
 
 fn require_favorites_baseline(

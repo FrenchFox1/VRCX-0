@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use vrcx_0_application_core::{
-    BackendRuntimeStatusPublisher, InstanceRosterMember, InstanceRosterObserver,
+    ActivityIngress, BackendRuntimeStatusPublisher, InstanceRosterMember, InstanceRosterObserver,
     InstanceRosterSnapshot, RuntimeOperationStatus,
 };
 
@@ -11,6 +11,7 @@ use vrcx_0_contracts::game_log::{GameLogJoinLeaveEntry, GameLogWriteBatch};
 use vrcx_0_core::game_log_parser::GameLogEvent;
 use vrcx_0_core::location::{is_meaningful_world_name, world_id_from_location};
 
+use crate::activity_events::{game_log_activity_events, lobby_avatar_change_event};
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::ingest::{
     GameLogIngestEngine, GameLogIngestOptions, GameLogIngestOutput, GameLogProcessEvent,
@@ -18,7 +19,7 @@ use crate::game_log::ingest::{
 };
 use crate::game_log::instance_media::InstanceMediaQueue;
 use crate::game_log::runtime_state::{RuntimeSnapshot, RuntimeSnapshotStore};
-use crate::overlay_activity::OverlayActivityGameIngestExt;
+use crate::game_log::video::NowPlayingClock;
 use crate::GameLogEventOrigin;
 use crate::RuntimeAuthScope;
 use crate::RuntimeEventBus;
@@ -26,7 +27,6 @@ use crate::RuntimeGameEventBusExt;
 use crate::{Error, Result};
 use crate::{GameLogPersistenceFallbackPayload, RuntimeGameLogEventPayload};
 use crate::{InstanceMediaPort, RuntimeSyncEngine, TaskSupervisor, VideoMetadataPort, WorldCache};
-use vrcx_0_application_activity::OverlayActivityRuntime;
 
 use self::side_effects::{dispatch_side_effect, GameLogSideEffectDeps};
 use vrcx_0_core::OwnerId;
@@ -72,7 +72,7 @@ pub struct GameLogProcessorDeps {
     pub auth_scope: RuntimeAuthScope,
     pub snapshot: RuntimeSnapshotStore,
     pub host_actions: Arc<dyn GameLogHostActions>,
-    pub overlay_activity: OverlayActivityRuntime,
+    pub activity: Arc<dyn ActivityIngress>,
     pub world_cache: Arc<WorldCache>,
     pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
 }
@@ -133,8 +133,8 @@ impl GameLogProcessorDeps {
         };
         self.snapshot.replace(snapshot);
         if let Some((current_location, current_player_user_ids)) = current_instance_presence {
-            self.overlay_activity
-                .set_current_instance_presence(&current_location, current_player_user_ids);
+            self.activity
+                .set_current_instance(&current_location, current_player_user_ids);
         }
         if let (Some(observer), Some(snapshot)) =
             (&self.instance_roster_observer, instance_roster_snapshot)
@@ -161,6 +161,7 @@ pub struct GameLogProcessor {
     deps: GameLogProcessorDeps,
     engine: Arc<Mutex<GameLogIngestEngine>>,
     media_queue: InstanceMediaQueue,
+    now_playing: NowPlayingClock,
     persistence_resume_after_ms: Arc<AtomicI64>,
     stop_requested: Arc<AtomicBool>,
     scan_cursor: Arc<Mutex<Option<crate::GameLogScanCursor>>>,
@@ -208,6 +209,7 @@ impl GameLogProcessor {
             deps,
             engine: Arc::new(Mutex::new(engine)),
             media_queue: InstanceMediaQueue::new(),
+            now_playing: NowPlayingClock::default(),
             persistence_resume_after_ms: Arc::new(AtomicI64::new(i64::MIN)),
         }
     }
@@ -335,7 +337,11 @@ impl GameLogProcessor {
     }
 
     fn side_effect_deps(&self) -> GameLogSideEffectDeps {
-        GameLogSideEffectDeps::new(&self.deps, self.media_queue.clone())
+        GameLogSideEffectDeps::new(
+            &self.deps,
+            self.media_queue.clone(),
+            self.now_playing.clone(),
+        )
     }
 
     fn ingest_events_now(&self, events: &[GameLogEvent], origin: GameLogEventOrigin) -> Result<()> {
@@ -631,16 +637,32 @@ impl GameLogProcessor {
         let current_location = snapshot.location.clone();
         let current_started_at = snapshot.started_at.clone();
         let current_user_id = self.deps.auth_scope.snapshot().current_user_id;
+        let owner = OwnerId::new(current_user_id.clone());
         let context = OverlayJoinLeaveSuppressionContext::from_output(
             output,
             current_location,
             current_started_at,
         );
-        self.deps
-            .overlay_activity
-            .ingest_game_log_output_with_join_leave_filter(output, |entry| {
-                should_deliver_join_leave_overlay_activity(entry, &context, &current_user_id)
-            });
+        let mut events = game_log_activity_events(
+            output,
+            |entry| should_deliver_join_leave_overlay_activity(entry, &context, &current_user_id),
+            |entry| {
+                self.deps
+                    .store
+                    .player_moderation(&owner, &entry.user_id)
+                    .unwrap_or_default()
+            },
+        );
+        events.extend(
+            output
+                .avatar_changes
+                .iter()
+                .filter(|change| {
+                    current_user_id.trim().is_empty() || change.user_id != current_user_id.trim()
+                })
+                .map(lobby_avatar_change_event),
+        );
+        self.deps.activity.ingest_activity(events);
     }
 
     fn enrich_ingest_output_world_names(&self, output: &mut GameLogIngestOutput) {

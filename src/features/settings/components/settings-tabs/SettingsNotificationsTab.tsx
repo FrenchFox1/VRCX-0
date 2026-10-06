@@ -30,8 +30,10 @@ type SettingsNotificationsPrefs = Pick<
     PreferencesSnapshot,
     | 'afkDesktopToast'
     | 'desktopNotificationSound'
+    | 'desktopNotificationAvatars'
     | 'desktopToast'
     | 'notificationDoNotDisturbEndOnGameStart'
+    | 'busyStatusDoNotDisturb'
     | 'notificationTTS'
     | 'notificationTTSNameMode'
     | 'notificationTTSNickName'
@@ -47,9 +49,11 @@ type SettingsNotificationsTabContentProps = {
     notificationTtsTestVisible: boolean;
     onAfkDesktopToastChange: (checked: boolean) => void;
     onDesktopNotificationSoundChange: (checked: boolean) => void;
+    onDesktopNotificationAvatarsChange: (checked: boolean) => void;
     onDesktopToastChange: (value: string) => void;
     onNotificationTtsModeChange: (value: string) => void;
     onNotificationDoNotDisturbEndOnGameStartChange: (checked: boolean) => void;
+    onBusyStatusDoNotDisturbChange: (checked: boolean) => void;
     onNotificationTtsNameModeChange: (value: string) => void;
     onNotificationTtsTestChange: (value: string) => void;
     onNotificationTtsTestVisibleChange: (visible: boolean) => void;
@@ -57,6 +61,7 @@ type SettingsNotificationsTabContentProps = {
     onNotificationTtsVolumeChange: (value: number) => void;
     onOpenDesktopNotificationFiltersDialog: () => void;
     onOpenTtsNotificationFiltersDialog: () => void;
+    onSendTestNotification: () => void;
     onSpeakNotificationTts: (message: string) => void;
     prefs: SettingsNotificationsPrefs;
     ttsVoices: TtsVoice[];
@@ -80,13 +85,16 @@ export function SettingsNotificationsTabContent({
     onDesktopToastChange,
     onAfkDesktopToastChange,
     onDesktopNotificationSoundChange,
+    onDesktopNotificationAvatarsChange,
     onNotificationTtsModeChange,
     onNotificationDoNotDisturbEndOnGameStartChange,
+    onBusyStatusDoNotDisturbChange,
     onNotificationTtsVoiceChange,
     onNotificationTtsVolumeChange,
     onNotificationTtsNameModeChange,
     onNotificationTtsTestVisibleChange,
     onNotificationTtsTestChange,
+    onSendTestNotification,
     onSpeakNotificationTts
 }: SettingsNotificationsTabContentProps) {
     const { t } = useTranslation();
@@ -103,6 +111,31 @@ export function SettingsNotificationsTabContent({
 
     return (
         <SettingsTabContent value="notifications">
+            <SettingsCard
+                cardId="notifications.test"
+                title={t(
+                    'view.settings.notifications.notifications.test_notification.header'
+                )}
+                description={t(
+                    'view.settings.notifications.notifications.test_notification.description'
+                )}
+            >
+                <Field
+                    label={t(
+                        'view.settings.notifications.notifications.test_notification.send'
+                    )}
+                >
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onSendTestNotification}
+                    >
+                        {t(
+                            'view.settings.notifications.notifications.test_notification.button'
+                        )}
+                    </Button>
+                </Field>
+            </SettingsCard>
             <SettingsCard
                 cardId="notifications.dnd"
                 title={t(
@@ -125,6 +158,19 @@ export function SettingsNotificationsTabContent({
                         onCheckedChange={
                             onNotificationDoNotDisturbEndOnGameStartChange
                         }
+                    />
+                </Field>
+                <Field
+                    label={t(
+                        'view.settings.notifications.notifications.do_not_disturb.busy_status'
+                    )}
+                    description={t(
+                        'view.settings.notifications.notifications.do_not_disturb.busy_status_description'
+                    )}
+                >
+                    <Switch
+                        checked={prefs.busyStatusDoNotDisturb}
+                        onCheckedChange={onBusyStatusDoNotDisturbChange}
                     />
                 </Field>
             </SettingsCard>
@@ -203,6 +249,17 @@ export function SettingsNotificationsTabContent({
                     <Switch
                         checked={prefs.desktopNotificationSound}
                         onCheckedChange={onDesktopNotificationSoundChange}
+                    />
+                </Field>
+
+                <Field
+                    label={t(
+                        'view.settings.notifications.notifications.desktop_notifications.friend_icons'
+                    )}
+                >
+                    <Switch
+                        checked={prefs.desktopNotificationAvatars}
+                        onCheckedChange={onDesktopNotificationAvatarsChange}
                     />
                 </Field>
             </SettingsCard>

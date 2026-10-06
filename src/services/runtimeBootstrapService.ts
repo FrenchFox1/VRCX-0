@@ -1,13 +1,13 @@
 import { normalizeLanguageCode } from '@/localization/locales';
 import type { RuntimeNotificationLevel } from '@/platform/tauri/bindings';
-import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { DEFAULT_TIME_UNIT_LABELS, useShellStore } from '@/state/shellStore';
+import { useShellStore } from '@/state/shellStore';
 
-import { getTimeUnitLabels, setI18nLanguage } from './i18nService';
+import { setI18nLanguage } from './i18nService';
 import { bindRuntimeEvents } from './runtimeEventBridgeService';
 import { initializeReactRuntime } from './startupService';
 import { applyThemeMode } from './themeService';
+import { toast } from './toastService';
 import { startRuntimeUpdateLoop } from './updateLoopService';
 import { hydrateVrcStatus } from './vrcStatusService';
 
@@ -23,10 +23,10 @@ function pushRuntimeNotification({
     title,
     error
 }: RuntimeNotificationOptions) {
-    useNotificationStore.getState().pushNotification({
-        level,
+    toast.add({
+        type: level,
         title,
-        message: error instanceof Error ? error.message : String(error)
+        description: error instanceof Error ? error.message : String(error)
     });
 }
 
@@ -154,23 +154,13 @@ export function startI18nLanguageSync() {
         if (typeof document !== 'undefined') {
             document.documentElement.setAttribute('lang', nextLocale);
         }
-        setI18nLanguage(nextLocale)
-            .then(() => {
-                const shellStore = useShellStore.getState();
-                if (normalizeLanguageCode(shellStore.locale) !== nextLocale) {
-                    return;
-                }
-                shellStore.setTimeUnitLabels(
-                    getTimeUnitLabels(nextLocale, DEFAULT_TIME_UNIT_LABELS)
-                );
-            })
-            .catch((error: unknown) => {
-                pushRuntimeNotification({
-                    level: 'warning',
-                    title: 'Language sync failed',
-                    error
-                });
+        setI18nLanguage(nextLocale).catch((error: unknown) => {
+            pushRuntimeNotification({
+                level: 'warning',
+                title: 'Language sync failed',
+                error
             });
+        });
     };
 
     syncLanguage(useShellStore.getState().locale);

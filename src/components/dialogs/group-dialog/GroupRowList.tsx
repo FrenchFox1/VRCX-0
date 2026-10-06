@@ -107,7 +107,7 @@ export function GroupPostUserButton({
         <Button
             type="button"
             variant="ghost"
-            className="h-auto max-w-full justify-start gap-1 p-0 text-left text-xs underline-offset-4 hover:bg-transparent hover:underline"
+            className="h-auto max-w-full justify-start gap-1 p-0 text-left text-xs hover:bg-transparent"
             onClick={() =>
                 openUserDialog({
                     userId,

@@ -6,9 +6,11 @@ fn telemetry_accumulator_keeps_session_totals_without_resetting() {
 
     acc.record(TelemetryClientEvent::PageVisit {
         route: "game_log".into(),
+        landing: false,
     });
     acc.record(TelemetryClientEvent::PageVisit {
         route: "game_log".into(),
+        landing: false,
     });
     acc.record(TelemetryClientEvent::RouteError {
         error_class: "render_crash".into(),
@@ -37,6 +39,7 @@ fn tool_opens_use_separate_session_counts_without_changing_error_attribution() {
 
     acc.record(TelemetryClientEvent::PageVisit {
         route: "tools".into(),
+        landing: false,
     });
     acc.record(TelemetryClientEvent::ToolOpen {
         tool: "profile-backup".into(),

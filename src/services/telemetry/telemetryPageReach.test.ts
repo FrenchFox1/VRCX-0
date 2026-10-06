@@ -22,8 +22,8 @@ describe('page reach telemetry', () => {
     it('normalizes dynamic and nested paths to canonical route slugs', async () => {
         mockTelemetryCommand();
         const mod = await import('./telemetryPageReach');
-        expect(mod.normalizeRouteKey('/feed')).toBeNull();
-        expect(mod.normalizeRouteKey('/login')).toBeNull();
+        expect(mod.normalizeRouteKey('/feed')).toBe('feed');
+        expect(mod.normalizeRouteKey('/login')).toBe('login');
         expect(mod.normalizeRouteKey('/dashboard/abc-123')).toBe('dashboard');
         expect(mod.normalizeRouteKey('/social/friend-log')).toBe('friend_log');
         expect(mod.normalizeRouteKey('/charts/mutual')).toBe('charts_mutual');
@@ -39,9 +39,31 @@ describe('page reach telemetry', () => {
 
         expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
             type: 'pageVisit',
-            route: 'game_log'
+            route: 'game_log',
+            landing: true
         });
         expect(appTelemetryRecordEvent).toHaveBeenCalledTimes(1);
+    });
+
+    it('marks the first page after startup or login as the landing page', async () => {
+        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const mod = await import('./telemetryPageReach');
+
+        mod.recordRouteEnter('/');
+        mod.recordRouteEnter('/feed');
+        mod.recordRouteEnter('/game-log');
+        mod.recordRouteEnter('/login');
+        mod.recordRouteEnter('/activity');
+        mod.recordRouteEnter('/feed');
+
+        expect(
+            appTelemetryRecordEvent.mock.calls.map(([event]) => event)
+        ).toEqual([
+            { type: 'pageVisit', route: 'feed', landing: true },
+            { type: 'pageVisit', route: 'game_log', landing: false },
+            { type: 'pageVisit', route: 'login', landing: false },
+            { type: 'pageVisit', route: 'feed', landing: false }
+        ]);
     });
 
     it('forwards route errors only after a recognized current route', async () => {
@@ -57,7 +79,8 @@ describe('page reach telemetry', () => {
 
         expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
             type: 'pageVisit',
-            route: 'game_log'
+            route: 'game_log',
+            landing: true
         });
         expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(2, {
             type: 'routeError',

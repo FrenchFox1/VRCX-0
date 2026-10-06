@@ -1,4 +1,4 @@
-import { ChevronRightIcon, ExternalLinkIcon } from 'lucide-react';
+import { ChevronRightIcon, ExternalLinkIcon, PencilIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,6 +29,7 @@ import {
 } from '@/services/entityMediaService';
 import type { UserDialogPreviousInstance } from '@/services/userDialogSessionCacheService';
 import type { UserDialogRelationshipEvent } from '@/services/userDialogSessionCacheService';
+import { parseLocation } from '@/shared/utils/location';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -44,6 +45,7 @@ import {
     PopoverTrigger
 } from '@/ui/shadcn/popover';
 import { Separator } from '@/ui/shadcn/separator';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { EntityDialogTabContent } from '../../EntityDialogScaffold';
 import { formatStatsDuration } from '../userDialogRows';
@@ -51,9 +53,6 @@ import { EntityList } from '../UserDialogViewParts';
 
 type OpenGroupDialog =
     (typeof import('@/services/dialogService'))['openGroupDialog'];
-type UserDialogInfoProfile = UserProfileEntity & {
-    $location?: { groupName?: string; shortName?: string };
-};
 type PresenceModel = {
     visiblePresenceLocation?: string;
     locationInstance?: EntityRecord & {
@@ -97,11 +96,10 @@ export type UserDialogPresenceSectionProps = {
         onRefreshLocation?: (requestLocation: string) => void;
         onShowInstanceHistory?: () => void;
     };
-    profile: UserDialogInfoProfile;
 };
 
 export type UserDialogNotesSectionProps = {
-    profile: UserDialogInfoProfile;
+    profile: UserProfileEntity;
     hideUserNotes: boolean;
     memo: string;
     hideUserMemos: boolean;
@@ -109,8 +107,9 @@ export type UserDialogNotesSectionProps = {
 };
 
 export type UserDialogBioSectionProps = {
-    profile: UserDialogInfoProfile;
+    profile: UserProfileEntity;
     bioLinks: string[];
+    onEditBio?: () => void;
 };
 
 export type UserDialogProfileLinksSectionProps = {
@@ -119,7 +118,7 @@ export type UserDialogProfileLinksSectionProps = {
     representedGroupStatus: string;
     representedGroup: RepresentedGroup | null;
     openGroupDialog: OpenGroupDialog;
-    profile: UserDialogInfoProfile;
+    profile: UserProfileEntity;
     visibleHomeLocationTarget: string;
 };
 
@@ -132,7 +131,7 @@ export type UserDialogActivitySummarySectionProps = {
     onOpenFeed?: () => void;
     onOpenInstanceHistory?: () => void;
     presenceActivityAt: string | null | undefined;
-    profile: UserDialogInfoProfile;
+    profile: UserProfileEntity;
     userTimeSpent: number | null | undefined;
     userJoinCount: number | null | undefined;
 };
@@ -328,8 +327,7 @@ function handlePanelKeyDown(
 
 function UserDialogPresenceSection({
     presence,
-    actions,
-    profile
+    actions
 }: UserDialogPresenceSectionProps) {
     const { t } = useTranslation();
     const {
@@ -367,11 +365,7 @@ function UserDialogPresenceSection({
                                     locationInstance?.recommendedCapacity
                             }}
                             currentUserId={currentUserId}
-                            grouphint={
-                                locationInstance?.groupName ||
-                                profile.$location?.groupName ||
-                                ''
-                            }
+                            grouphint={locationInstance?.groupName || ''}
                             endpoint={currentEndpoint}
                             hint={locationWorldTitle}
                             instanceClickAction="world"
@@ -384,7 +378,8 @@ function UserDialogPresenceSection({
                                 location: visiblePresenceLocation,
                                 shortName:
                                     locationInstance?.shortName ||
-                                    profile?.$location?.shortName ||
+                                    parseLocation(visiblePresenceLocation)
+                                        .shortName ||
                                     '',
                                 worldName: locationWorldTitle
                             }}
@@ -560,7 +555,7 @@ function UserDialogProfileLinksPanel({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-foreground h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal text-inherit underline-offset-4 hover:bg-transparent hover:underline"
+                        className="hover:text-foreground h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal text-inherit hover:bg-transparent"
                         onClick={() =>
                             openGroupDialog({
                                 groupId: representedGroup.groupId,
@@ -620,8 +615,13 @@ function UserDialogProfileLinksPanel({
     );
 }
 
-function UserDialogBioPanel({ profile, bioLinks }: UserDialogBioSectionProps) {
+export function UserDialogBioPanel({
+    profile,
+    bioLinks,
+    onEditBio
+}: UserDialogBioSectionProps) {
     const { t } = useTranslation();
+    const editLabel = t('dialog.user.actions.edit_profile_details');
 
     return (
         <TranslatableText
@@ -630,7 +630,34 @@ function UserDialogBioPanel({ profile, bioLinks }: UserDialogBioSectionProps) {
             density="button"
         >
             {({ action, meta, error, text }) => (
-                <InfoPanel title={t('dialog.user.info.bio')} action={action}>
+                <InfoPanel
+                    title={t('dialog.user.info.bio')}
+                    action={
+                        onEditBio ? (
+                            <div className="flex items-center gap-1">
+                                {action}
+                                <Tooltip>
+                                    <TooltipTrigger
+                                        render={
+                                            <Button
+                                                type="button"
+                                                size="icon-xs"
+                                                variant="outline"
+                                                aria-label={editLabel}
+                                                onClick={onEditBio}
+                                            >
+                                                <PencilIcon data-icon="inline-start" />
+                                            </Button>
+                                        }
+                                    />
+                                    <TooltipContent>{editLabel}</TooltipContent>
+                                </Tooltip>
+                            </div>
+                        ) : (
+                            action
+                        )
+                    }
+                >
                     {meta}
                     <div className="min-w-0">
                         <TextScroll className="h-52 min-w-0">{text}</TextScroll>
@@ -845,7 +872,7 @@ export function UserDialogInfoTab({
     profileLinksSection,
     activitySummarySection
 }: UserDialogInfoTabProps) {
-    const { profile, bioLinks } = bioSection;
+    const { profile, bioLinks, onEditBio } = bioSection;
 
     return (
         <EntityDialogTabContent value="info" className="pt-3">
@@ -854,7 +881,6 @@ export function UserDialogInfoTab({
                     <UserDialogPresenceSection
                         presence={presenceSection.presence}
                         actions={presenceSection.actions}
-                        profile={presenceSection.profile}
                     />
                     <UserDialogNotesPanel
                         profile={notesSection.profile}
@@ -863,7 +889,11 @@ export function UserDialogInfoTab({
                         hideUserMemos={notesSection.hideUserMemos}
                         onEditMemo={notesSection.onEditMemo}
                     />
-                    <UserDialogBioPanel profile={profile} bioLinks={bioLinks} />
+                    <UserDialogBioPanel
+                        profile={profile}
+                        bioLinks={bioLinks}
+                        onEditBio={onEditBio}
+                    />
                 </div>
                 <div className="flex min-w-0 flex-col gap-4">
                     <UserDialogProfileLinksPanel

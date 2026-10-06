@@ -23,6 +23,8 @@ pub struct TelemetryContext {
     pub local_hour: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub session_ended: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vrchat_seen: Option<bool>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
@@ -36,11 +38,6 @@ pub enum TelemetryVrcxOrigin {
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryConfigSnapshot {
-    pub background_mode_enabled: bool,
-    pub wrist_overlay_enabled: bool,
-    pub ovrt_wrist_notifications: bool,
-    pub hmd_notifications_enabled: bool,
-    pub webhook_enabled: bool,
     pub auto_state_change_enabled: bool,
     pub auto_accept_invite_requests: String,
     pub avatar_auto_cleanup: String,
@@ -84,6 +81,8 @@ pub struct TelemetryErrorDetail {
 pub struct RouteUsageEntry {
     pub route: String,
     pub visits: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub landings: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub load_fail: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]

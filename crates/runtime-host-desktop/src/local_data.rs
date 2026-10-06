@@ -12,7 +12,7 @@ use vrcx_0_application::social::{
     MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput, MutualGraphRequestDeps,
     UserMutualFriendsListInput, UserMutualFriendsListOutput,
 };
-use vrcx_0_application_activity::OverlayActivityRuntime;
+use vrcx_0_application_activity::ActivityRouter;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     AvatarCache, FavoriteEntityKind, FileCache, Result, RuntimeAuthScope, TaskSupervisor,
@@ -33,6 +33,9 @@ use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_persistence::DatabaseService;
 
 pub use vrcx_0_application_activity::activity_page::{ActivityPageBuildInput, ActivityPageView};
+pub use vrcx_0_contracts::activity_page::{
+    ActivityJourneyDayInput, ActivityJourneyDaysInput, ActivityJourneyVisit,
+};
 pub use vrcx_0_core::OwnerId;
 pub use vrcx_0_persistence::activity::{
     ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
@@ -40,7 +43,7 @@ pub use vrcx_0_persistence::activity::{
 };
 pub use vrcx_0_persistence::avatars::{
     AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
-    AvatarTimeSpentOutput, AvatarUsageRow,
+    AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment,
 };
 pub use vrcx_0_persistence::browse_history::{
     BrowseHistoryEntityKind, BrowseHistoryPageOutput, BrowseHistoryQueryInput,
@@ -124,7 +127,7 @@ impl LocalDataRuntime {
         world_cache: Arc<WorldCache>,
         file_cache: FileCache,
         realtime: Arc<RealtimeHostRuntime>,
-        overlay_activity: OverlayActivityRuntime,
+        activity_router: ActivityRouter,
         favorite_mutations: FavoriteMutationCoordinator,
         mutual_graph_fetch: MutualGraphFetchRuntime,
     ) -> Self {
@@ -138,7 +141,7 @@ impl LocalDataRuntime {
             Arc::new(
                 vrcx_0_outbound_adapters::LocalSavedGroupFavoritesAdapter::new(
                     Arc::clone(&db),
-                    overlay_activity,
+                    activity_router,
                 ),
             ),
             auth_scope.clone(),
@@ -366,6 +369,26 @@ impl LocalDataRuntime {
         )
     }
 
+    pub fn activity_journey_visits(
+        &self,
+        input: ActivityJourneyDayInput,
+    ) -> Result<Vec<ActivityJourneyVisit>> {
+        Ok(vrcx_0_persistence::activity_page::read_journey_visits(
+            self.db.as_ref(),
+            &input.owner_user_id,
+            input.from_ms,
+            input.to_ms,
+        )?)
+    }
+
+    pub fn activity_journey_days(&self, input: ActivityJourneyDaysInput) -> Result<Vec<String>> {
+        Ok(vrcx_0_persistence::activity_page::read_journey_days(
+            self.db.as_ref(),
+            &input.owner_user_id,
+            input.utc_offset_minutes,
+        )?)
+    }
+
     pub fn avatar_history_clear(&self, user_id: String) -> Result<()> {
         Ok(vrcx_0_persistence::avatars::avatar_history_clear(
             self.db.as_ref(),
@@ -390,6 +413,20 @@ impl LocalDataRuntime {
             self.db.as_ref(),
             user_id,
             limit,
+        )?)
+    }
+
+    pub fn avatar_wear_segments(
+        &self,
+        user_id: String,
+        from_ms: i64,
+        to_ms: i64,
+    ) -> Result<Vec<AvatarWearSegment>> {
+        Ok(vrcx_0_persistence::avatars::avatar_wear_segments(
+            self.db.as_ref(),
+            user_id,
+            from_ms,
+            to_ms,
         )?)
     }
 
@@ -467,20 +504,6 @@ impl LocalDataRuntime {
             self.db.as_ref(),
             avatar_id,
             entries,
-        )?)
-    }
-
-    pub fn avatar_time_spent_add(
-        &self,
-        user_id: String,
-        avatar_id: String,
-        time_spent: i64,
-    ) -> Result<()> {
-        Ok(vrcx_0_persistence::avatars::avatar_time_spent_add(
-            self.db.as_ref(),
-            user_id,
-            avatar_id,
-            time_spent,
         )?)
     }
 
@@ -594,6 +617,15 @@ impl LocalDataRuntime {
     pub fn favorite_list(&self, kind: FavoriteEntityKind) -> Result<Vec<FavoriteRow>> {
         let store = vrcx_0_outbound_adapters::LocalFavoriteStore::new(Arc::clone(&self.db));
         vrcx_0_application::favorites::list_local_favorites(&store, &self.current_owner(), kind)
+    }
+
+    pub fn favorite_custom_order(&self, kind: FavoriteEntityKind) -> Result<Vec<FavoriteRow>> {
+        let store = vrcx_0_outbound_adapters::LocalFavoriteStore::new(Arc::clone(&self.db));
+        vrcx_0_application::favorites::list_local_favorite_custom_order(
+            &store,
+            &self.current_owner(),
+            kind,
+        )
     }
 
     pub fn favorite_snapshot(&self, kind: FavoriteEntityKind) -> Result<LocalFavoriteSnapshot> {
@@ -711,6 +743,29 @@ impl LocalDataRuntime {
                 &self.current_owner(),
                 location,
             )?,
+        )
+    }
+
+    pub fn game_log_import_inspect(
+        &self,
+        paths: Vec<String>,
+        game_running: bool,
+    ) -> Result<Vec<vrcx_0_application_game::GameLogImportFile>> {
+        crate::game_log_import::inspect_game_log_import(&self.current_owner(), &paths, game_running)
+    }
+
+    pub fn game_log_import(
+        &self,
+        paths: Vec<String>,
+        consent: vrcx_0_application_game::GameLogImportConsent,
+        game_running: bool,
+    ) -> Result<Vec<vrcx_0_application_game::GameLogImportFile>> {
+        crate::game_log_import::import_game_log(
+            &self.db,
+            &self.current_owner(),
+            &paths,
+            consent,
+            game_running,
         )
     }
 

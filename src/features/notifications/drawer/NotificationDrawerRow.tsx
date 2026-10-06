@@ -207,7 +207,7 @@ export function NotificationDrawerRow({
                                         <button
                                             type="button"
                                             className={cn(
-                                                'max-w-full min-w-0 truncate text-left hover:underline',
+                                                'hover:text-foreground max-w-full min-w-0 truncate text-left',
                                                 isBroadcast
                                                     ? 'text-muted-foreground text-xs'
                                                     : 'text-sm',

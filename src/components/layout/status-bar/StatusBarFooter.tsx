@@ -2,6 +2,7 @@ import {
     ClockIcon,
     Minimize2Icon,
     MinusIcon,
+    MusicIcon,
     NetworkIcon,
     PlusIcon
 } from 'lucide-react';
@@ -260,6 +261,13 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                 <StatusSegment
                     visible={sidebarWindowMode || visibility.servers}
                     active={!vrcStatusHasIssue}
+                    alert={
+                        vrcStatusHasIssue
+                            ? vrcStatusIsMajor
+                                ? 'danger'
+                                : 'warn'
+                            : null
+                    }
                     dotClassName={cn(
                         vrcStatus.refreshing && 'motion-safe:animate-pulse',
                         vrcStatusHasIssue
@@ -516,7 +524,9 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             visible={
                                 visibility.nowPlaying && Boolean(nowPlaying.url)
                             }
-                            active
+                            icon={
+                                <MusicIcon className="text-content-tertiary size-3 shrink-0" />
+                            }
                             label={t('status_bar.now_playing')}
                             value={nowPlaying.name || nowPlaying.url}
                             tooltip={t('status_bar.now_playing_hint')}
@@ -652,9 +662,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             valueClassName="text-muted-foreground"
                         />
                         <StatusSegment
-                            visible={
-                                visibility.mutualGraph && mutualGraphVisible
-                            }
+                            visible={mutualGraphVisible}
                             showDot={false}
                             label={formatMutualGraphLabel(mutualGraph, t)}
                             value={formatMutualGraphValue(mutualGraph)}

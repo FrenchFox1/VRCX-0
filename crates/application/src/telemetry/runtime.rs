@@ -9,7 +9,8 @@ use std::time::{Duration, Instant};
 use chrono::{Datelike, Local, Timelike};
 use uuid::Uuid;
 use vrcx_0_application_core::{
-    BackendRuntime, BackendRuntimeMode, RuntimeAuthScope, TaskStopToken, TaskSupervisor,
+    BackendRuntime, BackendRuntimeMode, HostSessionRuntime, RuntimeAuthScope, TaskStopToken,
+    TaskSupervisor,
 };
 use vrcx_0_contracts::telemetry::{
     AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, PageHealthPayload,
@@ -102,6 +103,7 @@ pub struct TelemetryRuntimeDeps {
     pub tasks: TaskSupervisor,
     pub backend_runtime: BackendRuntime,
     pub auth_scope: RuntimeAuthScope,
+    pub session: HostSessionRuntime,
     pub app_version: String,
 }
 
@@ -111,6 +113,7 @@ struct TelemetryRuntimeInner {
     tasks: TaskSupervisor,
     backend_runtime: BackendRuntime,
     auth_scope: RuntimeAuthScope,
+    session: HostSessionRuntime,
     app_version: String,
     state: Mutex<TelemetryState>,
     flush_lock: tokio::sync::Mutex<()>,
@@ -130,6 +133,7 @@ struct TelemetryState {
     account_config_snapshot_attempted_at: Option<Instant>,
     signed_in_at: Option<Instant>,
     last_heartbeat_at: Option<Instant>,
+    vrchat_seen: bool,
     pending_error_cursor: Option<String>,
     acc: TelemetryAccumulator,
 }
@@ -150,6 +154,7 @@ impl TelemetryRuntime {
                 tasks: deps.tasks,
                 backend_runtime: deps.backend_runtime,
                 auth_scope: deps.auth_scope,
+                session: deps.session,
                 app_version: normalize_app_version(&deps.app_version),
                 state: Mutex::new(TelemetryState::default()),
                 flush_lock: tokio::sync::Mutex::new(()),
@@ -262,6 +267,7 @@ impl TelemetryRuntime {
         self.ensure_session_start(&session).await;
         self.send_config_snapshot_once(&session).await;
         self.send_account_config_snapshot_once(&session).await;
+        self.observe_vrchat();
         self.send_heartbeat_if_due(&session).await;
     }
 
@@ -274,7 +280,8 @@ impl TelemetryRuntime {
         };
         let _flush_guard = self.inner.flush_lock.lock().await;
         self.drain_rust_errors();
-        let context = self.context(&session, Some(true));
+        self.observe_vrchat();
+        let context = self.heartbeat_context(&session, Some(true));
         self.post_debug(
             "/api/v1/telemetry/session/heartbeat",
             &context,
@@ -485,11 +492,36 @@ impl TelemetryRuntime {
         if self.inner.shutdown_requested.load(Ordering::Acquire) {
             return;
         }
+        self.send_heartbeat_locked(session).await;
+    }
+
+    async fn send_heartbeat_locked(&self, session: &TelemetrySession) {
         self.drain_rust_errors();
-        let context = self.context(session, None);
-        self.post_debug("/api/v1/telemetry/session/heartbeat", &context, "heartbeat")
-            .await;
+        let context = self.heartbeat_context(session, None);
+        if self
+            .post_debug("/api/v1/telemetry/session/heartbeat", &context, "heartbeat")
+            .await
+        {
+            if let Ok(mut state) = self.inner.state.lock() {
+                state.vrchat_seen = false;
+            }
+        }
         self.flush_collectors_locked(session).await;
+    }
+
+    fn observe_vrchat(&self) {
+        let seen = self
+            .inner
+            .state
+            .lock()
+            .map(|state| state.vrchat_seen)
+            .unwrap_or(true);
+        if seen || !self.inner.session.snapshot().is_game_running {
+            return;
+        }
+        if let Ok(mut state) = self.inner.state.lock() {
+            state.vrchat_seen = true;
+        }
     }
 
     async fn flush_collectors_locked(&self, session: &TelemetrySession) {
@@ -624,6 +656,24 @@ impl TelemetryRuntime {
             local_weekday: local_weekday_number(now.weekday()),
             local_hour: now.hour(),
             session_ended,
+            vrchat_seen: None,
+        }
+    }
+
+    fn heartbeat_context(
+        &self,
+        session: &TelemetrySession,
+        session_ended: Option<bool>,
+    ) -> TelemetryContext {
+        let vrchat_seen = self
+            .inner
+            .state
+            .lock()
+            .map(|state| state.vrchat_seen)
+            .unwrap_or(false);
+        TelemetryContext {
+            vrchat_seen: Some(vrchat_seen),
+            ..self.context(session, session_ended)
         }
     }
 
@@ -636,11 +686,6 @@ impl TelemetryRuntime {
 
     fn config_snapshot(&self, scale: TelemetryDatabaseScale) -> TelemetryConfigSnapshot {
         TelemetryConfigSnapshot {
-            background_mode_enabled: self.config_bool("backgroundModeEnabled", false),
-            wrist_overlay_enabled: self.config_bool("wristOverlayEnabled", false),
-            ovrt_wrist_notifications: self.config_bool("ovrtWristNotifications", false),
-            hmd_notifications_enabled: self.config_bool("hmdNotificationsEnabled", false),
-            webhook_enabled: self.config_bool("webhookEnabled", false),
             auto_state_change_enabled: has_enabled_rules(
                 &self.config_string("presenceAutomationContextRules", "[]"),
             ),
@@ -741,15 +786,12 @@ impl TelemetryRuntime {
 
     fn locale(&self) -> String {
         let app_language = self.config_string("appLanguage", "");
-        if !app_language.trim().is_empty() {
-            return normalize_locale(&app_language);
-        }
-        self.inner
-            .environment
-            .system_locale()
-            .map(|locale| normalize_locale(&locale))
-            .filter(|locale| !locale.trim().is_empty())
-            .unwrap_or_else(|| "unknown".into())
+        let language = if app_language.trim().is_empty() {
+            self.inner.environment.system_locale().unwrap_or_default()
+        } else {
+            app_language
+        };
+        vrcx_0_i18n::resolve_app_locale(&language)
     }
 
     fn theme_category(&self) -> String {
@@ -909,10 +951,6 @@ fn normalize_enum_value(value: &str) -> String {
     } else {
         normalized.to_string()
     }
-}
-
-fn normalize_locale(value: &str) -> String {
-    value.trim().replace('_', "-")
 }
 
 fn theme_mode_category(value: &str, system_theme: &str) -> &'static str {

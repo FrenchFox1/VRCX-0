@@ -166,6 +166,7 @@ fn runtime_with_auth_scope(
         tasks: TaskSupervisor::new(),
         backend_runtime: BackendRuntime::new(vrcx_0_application_core::RuntimeHostProfile::Desktop),
         auth_scope,
+        session: HostSessionRuntime::new(),
         app_version: app_version.into(),
     })
 }
@@ -259,6 +260,48 @@ async fn startup_config_with_stored_friends_skips_the_sign_in_resend() {
     assert_eq!(payloads[0]["friendCountBucket"], "100_500");
 }
 
+fn heartbeat_payloads(transport: &FakeTransport) -> Vec<serde_json::Value> {
+    transport
+        .payloads
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|(path, _)| path == "/api/v1/telemetry/session/heartbeat")
+        .map(|(_, payload)| payload.clone())
+        .collect()
+}
+
+fn set_game_running(runtime: &TelemetryRuntime, is_game_running: bool) {
+    runtime.inner.session.apply_game_process_status(
+        vrcx_0_application_core::HostSessionGameProcessStatus {
+            is_game_running,
+            is_steamvr_running: false,
+            changed_at: "2026-10-06T00:00:00Z".into(),
+        },
+    );
+}
+
+#[tokio::test]
+async fn heartbeat_reports_vrchat_seen_until_a_heartbeat_is_delivered() {
+    let transport = Arc::new(FakeTransport::new(Some(1)));
+    let runtime = runtime(Arc::new(FakeEnvironment::default()), transport.clone());
+    let session = runtime.ensure_session().unwrap();
+
+    set_game_running(&runtime, true);
+    runtime.observe_vrchat();
+    set_game_running(&runtime, false);
+    for _ in 0..3 {
+        runtime.observe_vrchat();
+        runtime.send_heartbeat_locked(&session).await;
+    }
+
+    let seen = heartbeat_payloads(&transport)
+        .iter()
+        .map(|payload| payload["vrchatSeen"].clone())
+        .collect::<Vec<_>>();
+    assert_eq!(seen, [true, true, false].map(serde_json::Value::Bool));
+}
+
 #[test]
 fn account_snapshot_waits_for_friends_until_the_grace_period() {
     assert!(!account_snapshot_ready(None, Duration::ZERO));
@@ -337,8 +380,21 @@ fn theme_mode_category_resolves_system_without_unknown() {
 fn helpers_normalize_config_and_dimension_values() {
     assert_eq!(normalize_enum_value(" On Demand "), "on_demand");
     assert_eq!(normalize_enum_value(""), "unknown");
-    assert_eq!(normalize_locale("zh_CN"), "zh-CN");
     assert_eq!(normalize_app_version(""), "unknown");
+}
+
+#[test]
+fn locale_reports_the_ui_language() {
+    let environment = Arc::new(FakeEnvironment::default());
+    let runtime = runtime(environment.clone(), Arc::new(FakeTransport::new(None)));
+
+    assert_eq!(runtime.locale(), "en");
+
+    environment.set("appLanguage", "zh_CN");
+    assert_eq!(runtime.locale(), "zh-CN");
+
+    environment.set("appLanguage", "ja");
+    assert_eq!(runtime.locale(), "ja");
 }
 
 #[tokio::test]

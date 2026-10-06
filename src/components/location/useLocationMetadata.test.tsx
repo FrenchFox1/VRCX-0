@@ -34,7 +34,10 @@ vi.mock('@tanstack/react-query', async (importOriginal) => {
         await importOriginal<typeof import('@tanstack/react-query')>();
     return {
         ...actual,
-        useQueries: () => mocks.groupProfilesById
+        useQueries: () => ({
+            groupProfilesById: mocks.groupProfilesById,
+            pendingGroupIds: new Set()
+        })
     };
 });
 
@@ -68,7 +71,12 @@ vi.mock('@/state/runtimeStore', () => ({
     ) => selector(mocks.runtimeState)
 }));
 
-import { useLocationMetadataBatch } from './useLocationMetadata';
+import { parseLocation } from '@/shared/utils/location';
+
+import {
+    useLocationMetadata,
+    useLocationMetadataBatch
+} from './useLocationMetadata';
 
 function metadataEntries(worldIds: readonly string[] = [WORLD_ID]) {
     return worldIds.map((worldId) => ({
@@ -113,6 +121,35 @@ describe('useLocationMetadataBatch', () => {
             'Stable World'
         );
         expect(mocks.getWorldProfile).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the world name pending until both lookups settle without a name', async () => {
+        let rejectProfile!: (error: Error) => void;
+        mocks.getWorldProfile.mockReturnValueOnce(
+            new Promise((_, reject) => {
+                rejectProfile = reject;
+            })
+        );
+
+        const { result } = renderHook(() =>
+            useLocationMetadataBatch(metadataEntries())
+        );
+
+        await waitFor(() => {
+            expect(mocks.getWorldNameByWorldId).toHaveBeenCalledTimes(1);
+        });
+        expect(result.current.get(`friend:${WORLD_ID}`)?.worldNamePending).toBe(
+            true
+        );
+
+        rejectProfile(new Error('offline'));
+
+        await waitFor(() => {
+            expect(
+                result.current.get(`friend:${WORLD_ID}`)?.worldNamePending
+            ).toBe(false);
+        });
+        expect(result.current.get(`friend:${WORLD_ID}`)?.worldName).toBe('');
     });
 
     it('treats reordered world ids as the same request set', async () => {
@@ -197,5 +234,24 @@ describe('useLocationMetadataBatch', () => {
                 result.current.get(`friend:${SECOND_WORLD_ID}`)?.worldName
             ).toBe('Second World');
         });
+    });
+
+    it('looks up the local world name once while a caller passes a fresh location object every render', async () => {
+        mocks.getWorldProfile.mockImplementation(
+            () => new Promise(() => undefined)
+        );
+
+        renderHook(() =>
+            useLocationMetadata({
+                locationInfo: parseLocation(`${WORLD_ID}:12345`),
+                currentLocation: `${WORLD_ID}:12345`
+            })
+        );
+
+        await waitFor(() => {
+            expect(mocks.getWorldNameByWorldId).toHaveBeenCalledTimes(1);
+        });
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(mocks.getWorldNameByWorldId).toHaveBeenCalledTimes(1);
     });
 });

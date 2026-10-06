@@ -31,9 +31,11 @@ import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { MutualFriendAvatars } from '@/components/mutual-friends/MutualFriendAvatars';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
+import { UserStatusDot } from '@/components/UserStatusDot';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { getNameColour, openExternalLink } from '@/services/entityMediaService';
+import type { UserNameColourStyle } from '@/shared/utils/entityMedia';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -71,16 +73,22 @@ function AvatarCell({ row }: { row: AppRow<PlayerListRow> }) {
 function DisplayNameCell({
     isDarkMode,
     randomUserColours,
+    randomUserColourStyle,
     row
 }: {
     isDarkMode: boolean;
     randomUserColours: boolean;
+    randomUserColourStyle: UserNameColourStyle;
     row: AppRow<PlayerListRow>;
 }) {
     const style =
         randomUserColours && row.original?.userId
             ? {
-                  color: getNameColour(row.original.userId, isDarkMode)
+                  color: getNameColour(
+                      row.original.userId,
+                      isDarkMode,
+                      randomUserColourStyle
+                  )
               }
             : undefined;
 
@@ -166,9 +174,11 @@ function StatusCell({ row }: { row: AppRow<PlayerListRow> }) {
 
     return (
         <span className="flex w-full min-w-0 items-center gap-2">
-            {status.indicatorClassName ? (
-                <i className={status.indicatorClassName} />
-            ) : null}
+            <UserStatusDot
+                statusDotClassName={status.statusDotClassName}
+                className="size-2.5 shrink-0"
+                variant="inline"
+            />
             <span className="min-w-0 truncate text-sm">{status.label}</span>
         </span>
     );
@@ -412,6 +422,9 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
     const randomUserColours = usePreferencesStore(
         (state) => state.randomUserColours
     );
+    const randomUserColourStyle = usePreferencesStore(
+        (state) => state.randomUserColourStyle
+    );
     const isDarkMode =
         typeof document !== 'undefined' &&
         document.documentElement.classList.contains('dark');
@@ -484,6 +497,7 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                     <DisplayNameCell
                         isDarkMode={isDarkMode}
                         randomUserColours={randomUserColours}
+                        randomUserColourStyle={randomUserColourStyle}
                         row={row}
                     />
                 )
@@ -640,6 +654,6 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                 )
             }
         ],
-        [isDarkMode, randomUserColours, t]
+        [isDarkMode, randomUserColours, randomUserColourStyle, t]
     );
 }

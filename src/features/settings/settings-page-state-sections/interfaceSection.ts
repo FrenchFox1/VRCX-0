@@ -1,5 +1,8 @@
 import type { TrustColorKey } from '@/shared/utils/trustColors';
-import { normalizeFeedTimeDisplayMode } from '@/state/preferencesStore';
+import {
+    normalizeFeedTimeDisplayMode,
+    normalizeUserNameColourStyle
+} from '@/state/preferencesStore';
 import type { NotificationLayout, TableDensity } from '@/state/shellStore';
 
 import { notificationLayoutOptions } from '../settingsOptions';
@@ -205,6 +208,83 @@ export function buildInterfaceSection({
                 checked
             );
         },
+        onShowSidebarAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showSidebarAvatarFrame',
+                'showSidebarAvatarFrame',
+                checked
+            );
+        },
+        onShowSidebarNameplateChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showSidebarNameplate',
+                'showSidebarNameplate',
+                checked
+            );
+        },
+        onShowHoverCardAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showHoverCardAvatarFrame',
+                'showHoverCardAvatarFrame',
+                checked
+            );
+        },
+        onShowHoverCardProfileEffectChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showHoverCardProfileEffect',
+                'showHoverCardProfileEffect',
+                checked
+            );
+        },
+        onShowHoverCardNameplateChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showHoverCardNameplate',
+                'showHoverCardNameplate',
+                checked
+            );
+        },
+        onShowFriendsLocationsPeopleAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showFriendsLocationsPeopleAvatarFrame',
+                'showFriendsLocationsPeopleAvatarFrame',
+                checked
+            );
+        },
+        onShowFriendsLocationsPeopleNameplateChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showFriendsLocationsPeopleNameplate',
+                'showFriendsLocationsPeopleNameplate',
+                checked
+            );
+        },
+        onShowFriendsLocationsWorldsAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showFriendsLocationsWorldsAvatarFrame',
+                'showFriendsLocationsWorldsAvatarFrame',
+                checked
+            );
+        },
+        onShowFriendsLocationsWorldsNameplateChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showFriendsLocationsWorldsNameplate',
+                'showFriendsLocationsWorldsNameplate',
+                checked
+            );
+        },
+        onShowActivityJourneyAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showActivityJourneyAvatarFrame',
+                'showActivityJourneyAvatarFrame',
+                checked
+            );
+        },
+        onShowActivityJourneyNameplateChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showActivityJourneyNameplate',
+                'showActivityJourneyNameplate',
+                checked
+            );
+        },
         onShowNewDashboardButtonChange: (checked: boolean) => {
             savePreferenceValue('showNewDashboardButton', checked, () =>
                 setShowNewDashboardButtonPreference(checked)
@@ -251,6 +331,13 @@ export function buildInterfaceSection({
                 'randomUserColours',
                 'randomUserColours',
                 checked
+            );
+        },
+        onRandomUserColourStyleChange: (value: string) => {
+            saveStringPreference(
+                'randomUserColourStyle',
+                'randomUserColourStyle',
+                normalizeUserNameColourStyle(value)
             );
         },
         onResetTrustColors: () => {

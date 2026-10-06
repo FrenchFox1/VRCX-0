@@ -550,23 +550,22 @@ const generatedCommands = {
         });
     },
     async appOverlayActivityDefinitionsGet(): Promise<
-        OverlayActivityTypeDefinition[]
+        ActivityTypeDefinition[]
     > {
         return await TAURI_INVOKE('app__overlay_activity_definitions_get');
     },
-    async appOverlayActivityFiltersSet(
-        filters: OverlayActivityPreferenceFilters
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__overlay_activity_filters_set', {
-            filters
-        });
+    async appNotificationActivityFiltersGet(): Promise<NotificationActivityFilterProfiles> {
+        return await TAURI_INVOKE('app__notification_activity_filters_get');
     },
     async appNotificationActivityFiltersSet(
         input: NotificationActivityFiltersSetInput
-    ): Promise<null> {
+    ): Promise<ActivityFilterProfile> {
         return await TAURI_INVOKE('app__notification_activity_filters_set', {
             input
         });
+    },
+    async appNotificationTestSend(message: string): Promise<void> {
+        await TAURI_INVOKE('app__notification_test_send', { message });
     },
     async appPresenceAutomationRulesGet(
         kind: PresenceAutomationRuleKind
@@ -798,15 +797,15 @@ const generatedCommands = {
             limit
         });
     },
-    async appAvatarTimeSpentAdd(
+    async appAvatarWearSegments(
         userId: string,
-        avatarId: string,
-        timeSpent: number
-    ): Promise<null> {
-        return await TAURI_INVOKE('app__avatar_time_spent_add', {
+        fromMs: number,
+        toMs: number
+    ): Promise<AvatarWearSegment[]> {
+        return await TAURI_INVOKE('app__avatar_wear_segments', {
             userId,
-            avatarId,
-            timeSpent
+            fromMs,
+            toMs
         });
     },
     async appAvatarTimeSpentGet(
@@ -920,6 +919,15 @@ const generatedCommands = {
             entries
         });
     },
+    async appGameLogImportSelectFiles(): Promise<GameLogImportFile[]> {
+        return await TAURI_INVOKE('app__game_log_import_select_files');
+    },
+    async appGameLogImport(
+        paths: string[],
+        consent: GameLogImportConsent
+    ): Promise<GameLogImportFile[]> {
+        return await TAURI_INVOKE('app__game_log_import', { paths, consent });
+    },
     async appGameLogPersistenceSetDisabled(disabled: boolean): Promise<null> {
         return await TAURI_INVOKE('app__game_log_persistence_set_disabled', {
             disabled
@@ -1015,6 +1023,16 @@ const generatedCommands = {
     ): Promise<ActivityPageView> {
         return await TAURI_INVOKE('app__activity_page_view', { input });
     },
+    async appActivityJourneyVisits(
+        input: ActivityJourneyDayInput
+    ): Promise<ActivityJourneyVisit[]> {
+        return await TAURI_INVOKE('app__activity_journey_visits', { input });
+    },
+    async appActivityJourneyDays(
+        input: ActivityJourneyDaysInput
+    ): Promise<string[]> {
+        return await TAURI_INVOKE('app__activity_journey_days', { input });
+    },
     async appActivityOverlapView(
         input: ActivityOverlapViewBuildInput
     ): Promise<ActivityOverlapViewOutput> {
@@ -1064,6 +1082,11 @@ const generatedCommands = {
     },
     async appFavoriteList(kind: FavoriteEntityKind): Promise<FavoriteRow[]> {
         return await TAURI_INVOKE('app__favorite_list', { kind });
+    },
+    async appFavoriteLocalCustomOrder(
+        kind: FavoriteEntityKind
+    ): Promise<FavoriteRow[]> {
+        return await TAURI_INVOKE('app__favorite_local_custom_order', { kind });
     },
     async appFavoriteLocalSnapshot(
         kind: FavoriteEntityKind
@@ -1494,8 +1517,20 @@ const generatedCommands = {
             input
         });
     },
+    async appLocalFavoriteGroupReorder(
+        input: LocalFavoriteGroupReorderInput
+    ): Promise<string[]> {
+        return await TAURI_INVOKE('app__local_favorite_group_reorder', {
+            input
+        });
+    },
     async appLocalFavoriteRemove(input: LocalFavoriteInput): Promise<number> {
         return await TAURI_INVOKE('app__local_favorite_remove', { input });
+    },
+    async appLocalFavoriteReorder(
+        input: LocalFavoriteReorderInput
+    ): Promise<number> {
+        return await TAURI_INVOKE('app__local_favorite_reorder', { input });
     },
     async appVrchatFriendStatusGet(
         input: VrchatFriendUserInput
@@ -2640,6 +2675,15 @@ const generatedCommands = {
     ): Promise<ScreenshotLibraryImage[]> {
         return await TAURI_INVOKE('app__get_world_screenshots', { worldId });
     },
+    async appGetScreenshotsInWindows(
+        windows: ScreenshotTimeWindow[],
+        limitPerWindow: number
+    ): Promise<ScreenshotWindowImages[]> {
+        return await TAURI_INVOKE('app__get_screenshots_in_windows', {
+            windows,
+            limitPerWindow
+        });
+    },
     async appEnsureScreenshotThumbnail(path: string): Promise<string> {
         return await TAURI_INVOKE('app__ensure_screenshot_thumbnail', { path });
     },
@@ -2745,7 +2789,82 @@ export const commands: TypedCommands<typeof generatedCommands> =
 /** user-defined types **/
 
 export type ActiveTurn = { turnId: string; status: TurnStatus };
+export type ActivityCategory =
+    | 'actionRequired'
+    | 'currentInstance'
+    | 'favoriteMovement'
+    | 'profileChange'
+    | 'groupSocial'
+    | 'systemSafety'
+    | 'media';
 export type ActivityCompanionOrder = 'minutes' | 'days';
+export type ActivityFilterProfile = {
+    version: number;
+    types: Partial<{ [key in string]: ActivityRule }>;
+};
+export type ActivityJourneyCompanion = {
+    userId: string;
+    displayName: string;
+    isFriend: boolean;
+    sharedMs: number;
+};
+export type ActivityJourneyDayInput = {
+    ownerUserId: OwnerId;
+    fromMs: number;
+    toMs: number;
+};
+export type ActivityJourneyDaysInput = {
+    ownerUserId: OwnerId;
+    utcOffsetMinutes: number;
+};
+export type ActivityJourneyVisit = {
+    location: string;
+    worldId: string;
+    worldName: string;
+    worldImageUrl: string;
+    startMs: number;
+    endMs: number;
+    companions: ActivityJourneyCompanion[];
+};
+export type ActivityKind =
+    | 'invite'
+    | 'requestInvite'
+    | 'inviteResponse'
+    | 'requestInviteResponse'
+    | 'friendRequest'
+    | 'boop'
+    | 'group.queueReady'
+    | 'instance.closed'
+    | 'OnPlayerJoining'
+    | 'OnPlayerJoined'
+    | 'OnPlayerLeft'
+    | 'LobbyAvatarChange'
+    | 'Online'
+    | 'Offline'
+    | 'GPS'
+    | 'Status'
+    | 'Friend'
+    | 'Unfriend'
+    | 'DisplayName'
+    | 'TrustLevel'
+    | 'AvatarChange'
+    | 'Bio'
+    | 'groupChange'
+    | 'group.instanceOpened'
+    | 'group.announcement'
+    | 'group.event.created'
+    | 'group.event.starting'
+    | 'group.informative'
+    | 'group.invite'
+    | 'group.joinRequest'
+    | 'group.transfer'
+    | 'Event'
+    | 'External'
+    | 'BlockedOnPlayerJoined'
+    | 'BlockedOnPlayerLeft'
+    | 'MutedOnPlayerJoined'
+    | 'MutedOnPlayerLeft'
+    | 'VideoPlay';
 export type ActivityOverlapViewBuildInput = {
     ownerUserId: OwnerId;
     currentUserId: string;
@@ -2852,8 +2971,28 @@ export type ActivityPageWorlds = {
     newWorldMinutes: number;
     returningWorldMinutes: number;
 };
+export type ActivityRule = {
+    scope: ActivityScope;
+    favoriteGroupKeys: string | string[];
+};
+export type ActivityScope =
+    | 'off'
+    | 'on'
+    | 'friends'
+    | 'selectedFavorites'
+    | 'allFavorites'
+    | 'everyoneInInstance';
 export type ActivitySeriesBucket = 'day' | 'week';
 export type ActivitySeriesPoint = { startDate: string; minutes: number };
+export type ActivityTypeDefinition = {
+    key: ActivityKind;
+    category: ActivityCategory;
+    allowedScopes: ActivityScope[];
+    wristDefaultScope: ActivityScope;
+    alertDefaultScope: ActivityScope;
+    ttsDefaultScope: ActivityScope;
+    aliases: string[];
+};
 export type ActivityViewBuildInput = {
     ownerUserId: OwnerId;
     targetUserId: string;
@@ -3217,6 +3356,14 @@ export type AvatarUsageRow = {
     thumbnailImageUrl: string;
     imageUrl: string;
     timeSpent: number;
+};
+export type AvatarWearSegment = {
+    avatarId: string;
+    name: string;
+    thumbnailImageUrl: string;
+    imageUrl: string;
+    startedAtMs: number;
+    endedAtMs: number;
 };
 export type BackendRuntimeAuthStatus =
     | 'unknown'
@@ -4004,6 +4151,7 @@ export type FeedLatestQueryInput = {
     favoriteUserIds?: string[];
     scopedUserIds?: string[];
     excludedUserIds?: string[];
+    locationHiddenUserIds?: string[];
     favoritesOnly?: boolean;
     maxRows: number;
 };
@@ -4092,6 +4240,15 @@ export type FeedLiveEntry =
           ownerUserId: string;
       }
     | {
+          type: 'DisplayName';
+          created_at: string;
+          userId: string;
+          displayName: string;
+          previousDisplayName: string;
+          friendNumber: number;
+          ownerUserId: string;
+      }
+    | {
           type: 'Friend';
           created_at: string;
           userId: string;
@@ -4173,6 +4330,7 @@ export type FeedRowsQueryInput = {
     vipList?: string[];
     scopedUserIds?: string[];
     excludedUserIds?: string[];
+    locationHiddenUserIds?: string[];
     maxEntries: number;
     dateFrom?: string;
     dateTo?: string;
@@ -4185,6 +4343,7 @@ export type FeedSearchQueryInput = {
     favoriteUserIds?: string[];
     scopedUserIds?: string[];
     excludedUserIds?: string[];
+    locationHiddenUserIds?: string[];
     favoritesOnly?: boolean;
     dateFrom?: string;
     dateTo?: string;
@@ -4267,14 +4426,13 @@ export type FriendProjection = {
     baselineRevision: number;
     patches?: FriendProjectionPatch[];
     removals?: string[];
-    feedEntries?: FeedLiveEntry[];
     locationTimeSnapshot?: FriendLocationTime[] | null;
     friendLogChanged: boolean;
 };
 export type FriendProjectionPatch = {
     userId: string;
-    patch: FriendRecord;
-    stateBucketAuthority: FriendStateBucketAuthority;
+    record: FriendRecord;
+    presence: PresenceEntry;
 };
 export type FriendRecord = Partial<{
     [key in string]:
@@ -4288,11 +4446,6 @@ export type FriendRecord = Partial<{
     id?: string;
     displayName?: string;
     username?: string;
-    state?: string;
-    location?: string;
-    travelingToLocation?: string;
-    worldId?: string;
-    platform?: string;
     lastPlatform?: string;
     status?: string;
     statusDescription?: string;
@@ -4302,7 +4455,12 @@ export type FriendRecord = Partial<{
     last_login?: string | null;
     last_mobile?: string | null;
 };
-export type FriendStateBucketAuthority = 'explicit' | 'preserve';
+export type FriendRosterSnapshot = {
+    currentUserId: string;
+    friendsById: Partial<{ [key in string]: FriendRecord }>;
+    presenceById: Partial<{ [key in string]: PresenceEntry }>;
+    generation: number;
+};
 export type GameClientEvent =
     | { kind: 'crashRelaunchDecision'; payload: CrashRelaunchDecisionPayload }
     | { kind: 'debugLoggingOutcome'; payload: DebugLoggingOutcome }
@@ -4321,6 +4479,23 @@ export type GameLogEntryDeleteKind =
     | 'ImageLoad'
     | 'Event'
     | 'External';
+export type GameLogImportConsent = {
+    unverifiedAccount: boolean;
+    accountMismatch: boolean;
+};
+export type GameLogImportFile = {
+    path: string;
+    fileName: string;
+    status: GameLogImportFileStatus;
+    imported: boolean;
+    insertedCount: number;
+};
+export type GameLogImportFileStatus =
+    | 'ready'
+    | 'accountUnverified'
+    | 'accountMismatch'
+    | 'liveFile'
+    | 'unreadable';
 export type GameLogInstanceJoinOutput = {
     created_at: string;
     location: string;
@@ -4594,8 +4769,7 @@ export type GameLogSideEffectEvent =
     | { kind: 'nowPlaying'; payload: NowPlayingPayload }
     | { kind: 'nowPlayingReset'; payload: EmptyEventPayload }
     | { kind: 'screenshotProcessed'; payload: ScreenshotProcessedPayload }
-    | { kind: 'gameNoVR'; payload: GameNoVrPayload }
-    | { kind: 'notification'; payload: RuntimeNotificationPayload };
+    | { kind: 'gameNoVR'; payload: GameNoVrPayload };
 export type GameLogUserStatsOutput = {
     timeSpent: number;
     lastSeen: string;
@@ -5026,6 +5200,7 @@ export type InviteMessageType =
     | 'requestResponse'
     | 'response';
 export type JsonValue = unknown;
+export type LeaveTarget = 'offline' | 'active';
 export type LegacyVrcxMigrationStatus = {
     detected: boolean;
     available: boolean;
@@ -5081,6 +5256,10 @@ export type LocalFavoriteGroupRenameInput = {
     groupName?: string;
     newGroupName?: string;
 };
+export type LocalFavoriteGroupReorderInput = {
+    kind: FavoriteEntityKind;
+    groupNames: string[];
+};
 export type LocalFavoriteGroupWrite = {
     configKey: string;
     groupNames: string[];
@@ -5090,6 +5269,11 @@ export type LocalFavoriteInput = {
     kind: FavoriteEntityKind;
     entityId?: string;
     groupName?: string;
+};
+export type LocalFavoriteReorderInput = {
+    kind: FavoriteEntityKind;
+    groupName?: string;
+    entityIds: string[];
 };
 export type LocalFavoriteSnapshot = {
     favorites: FavoriteRow[];
@@ -5359,7 +5543,16 @@ export type NotificationActionStatus =
     | 'remoteOkLocalFailed'
     | 'alreadyResolved'
     | 'remoteFailed';
+export type NotificationActivityFilterProfiles = {
+    wrist: ActivityFilterProfile;
+    vr: ActivityFilterProfile;
+    hmd: ActivityFilterProfile;
+    desktop: ActivityFilterProfile;
+    webhook: ActivityFilterProfile;
+    tts: ActivityFilterProfile;
+};
 export type NotificationActivityFilterSurface =
+    | 'wrist'
     | 'vr'
     | 'hmd'
     | 'desktop'
@@ -5367,7 +5560,7 @@ export type NotificationActivityFilterSurface =
     | 'tts';
 export type NotificationActivityFiltersSetInput = {
     surface: NotificationActivityFilterSurface;
-    filters: OverlayActivityFilterProfile;
+    filters: ActivityFilterProfile;
 };
 export type NotificationBoopDismissInput = {
     ownerUserId: OwnerId;
@@ -5532,45 +5725,6 @@ export type NowPlayingSnapshot = {
     videoId?: string | null;
     updatedAt: string | null;
 };
-export type OverlayActivityCategory =
-    | 'actionRequired'
-    | 'currentInstance'
-    | 'favoriteMovement'
-    | 'profileChange'
-    | 'groupSocial'
-    | 'systemSafety'
-    | 'media';
-export type OverlayActivityFilterProfile = {
-    version: number;
-    types: Partial<{ [key in string]: OverlayActivityRule }>;
-};
-export type OverlayActivityPreferenceFilters = {
-    version: number;
-    wrist: OverlayActivityPreferenceSurface;
-    hmd: OverlayActivityPreferenceSurface;
-};
-export type OverlayActivityPreferenceSurface = {
-    types: Partial<{ [key in string]: OverlayActivityRule }>;
-};
-export type OverlayActivityRule = {
-    scope: OverlayActivityScope;
-    favoriteGroupKeys: string | string[];
-};
-export type OverlayActivityScope =
-    | 'off'
-    | 'on'
-    | 'friends'
-    | 'selectedFavorites'
-    | 'allFavorites'
-    | 'everyoneInInstance';
-export type OverlayActivityTypeDefinition = {
-    key: string;
-    category: OverlayActivityCategory;
-    allowedScopes: OverlayActivityScope[];
-    defaultScope: OverlayActivityScope;
-    hmdDefaultScope: OverlayActivityScope;
-    aliases: string[];
-};
 export type OwnerId = string;
 export type ParsedLocation = {
     tag: string;
@@ -5631,6 +5785,28 @@ export type PlayerState = {
     joinTimeMs: number | null;
 };
 export type PresenceAutomationRuleKind = 'time' | 'context';
+export type PresenceEntry = { rev: number; view: PresenceView };
+export type PresencePlace = {
+    location: ParsedLocation;
+    travelingTo: ParsedLocation | null;
+};
+export type PresenceView =
+    | {
+          kind: 'online';
+          place: PresencePlace;
+          platform: string;
+          onlineSinceMs: number | null;
+      }
+    | {
+          kind: 'pendingOffline';
+          place: PresencePlace;
+          platform: string;
+          onlineSinceMs: number | null;
+          target: LeaveTarget;
+          deadlineMs: number;
+      }
+    | { kind: 'active'; platform: string }
+    | { kind: 'offline' };
 export type PrintAutoCleanupEvent = {
     deleted: number;
     remaining: number;
@@ -5837,7 +6013,6 @@ export type RawJsonObject = Partial<{ [key in string]: JsonValue }>;
 export type RealtimeCurrentUserProjection = {
     generation: number;
     patch: RawJsonObject;
-    snapshot: RawJsonObject;
     gameStatePatch?: RawJsonObject | null;
 };
 export type RealtimeEntryCorrection = {
@@ -5962,7 +6137,7 @@ export type RuntimeJobRecordInput = {
     status: RuntimeOperationStatus;
     detail?: string;
 };
-export type RuntimeNotificationLevel = 'info' | 'warning' | 'error';
+export type RuntimeNotificationLevel = 'warning' | 'error';
 export type RuntimeNotificationPayload = {
     level: RuntimeNotificationLevel;
     title: string;
@@ -6079,6 +6254,7 @@ export type ScreenshotLibraryImage = {
     worldId: string | null;
     worldName: string | null;
     capturedAt: string | null;
+    capturedAtMs: number;
     metadata: ScreenshotMetadata | null;
     error: string | null;
 };
@@ -6113,6 +6289,11 @@ export type ScreenshotSearchResult = {
     width: number | null;
     height: number | null;
     metadata: ScreenshotMetadata;
+};
+export type ScreenshotTimeWindow = { fromMs: number; toMs: number };
+export type ScreenshotWindowImages = {
+    total: number;
+    images: ScreenshotLibraryImage[];
 };
 export type SendResult = { sessionId: string; turnId: string };
 export type Session = {
@@ -6235,7 +6416,7 @@ export type SocialFriendRosterBaselineOutput = {
     stale: boolean;
     count: number;
     detail: string;
-    snapshot: RawJson | null;
+    snapshot: FriendRosterSnapshot | null;
     friendLogChanged: boolean;
 };
 export type SocialUnfriendBatchInput = {
@@ -6277,7 +6458,7 @@ export type StartupBootstrapSnapshot = {
     systemCulture: string;
 };
 export type TelemetryClientEvent =
-    | { type: 'pageVisit'; route: string }
+    | { type: 'pageVisit'; route: string; landing: boolean }
     | { type: 'toolOpen'; tool: string }
     | {
           type: 'routeError';

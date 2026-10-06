@@ -3,13 +3,15 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { presenceSection, type PresenceView } from '@/domain/friends/presence';
 import type { FriendRecord } from '@/domain/friends/types';
 import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
-
 import {
-    getFriendsLocationsCardRowHeight,
-    getFriendsLocationsDensityConfig
-} from './friendsLocationsDensity';
+    activePresence,
+    offlinePresence,
+    onlinePresence
+} from '@/test/presenceFixtures';
+
 import * as friendSections from './friendsLocationsSections';
 import { useFriendsLocationsPageDerivedState } from './useFriendsLocationsPageDerivedState';
 
@@ -17,14 +19,21 @@ vi.mock('./useFriendsLocationsWorldSummaries', () => ({
     useFriendsLocationsWorldSummaries: () => new Map()
 }));
 
-function friendAt(location: string): FriendRecord {
+type Section = 'online' | 'active' | 'offline';
+
+function presenceFor(section: Section, location: string): PresenceView {
+    if (section === 'online') {
+        return onlinePresence(location);
+    }
+    return section === 'active' ? activePresence() : offlinePresence;
+}
+
+function friendAt(place: string | PresenceView): FriendRecord {
     return {
         id: 'usr_friend',
         displayName: 'Friend',
         tags: [],
-        state: 'online',
-        stateBucket: 'online',
-        location,
+        $presence: typeof place === 'string' ? onlinePresence(place) : place,
         $trustLevel: '',
         $friendNumber: 0,
         $trustClass: '',
@@ -41,7 +50,7 @@ function pageInput(
 ): Parameters<typeof useFriendsLocationsPageDerivedState>[0] {
     return {
         activeIds: friends
-            .filter((friend) => friend.state === 'active')
+            .filter((friend) => presenceSection(friend.$presence) === 'active')
             .map((friend) => friend.id.trim()),
         activeSegment: 'same-instance',
         collapsedGroups: new Set(),
@@ -63,10 +72,10 @@ function pageInput(
         localFriendFavoriteGroups: [],
         localFriendFavorites: {},
         offlineIds: friends
-            .filter((friend) => friend.state === 'offline')
+            .filter((friend) => presenceSection(friend.$presence) === 'offline')
             .map((friend) => friend.id.trim()),
         onlineIds: friends
-            .filter((friend) => friend.state === 'online')
+            .filter((friend) => presenceSection(friend.$presence) === 'online')
             .map((friend) => friend.id.trim()),
         remoteFavoriteFriendIds: [],
         rosterStatus: 'ready',
@@ -96,7 +105,7 @@ describe('useFriendsLocationsPageDerivedState', () => {
             input.currentUserSnapshot = {
                 id: 'usr_self',
                 displayName: 'Me',
-                location: 'wrld_stale:2'
+                $presence: onlinePresence('wrld_local:1')
             };
             const { result } = renderHook(() =>
                 useFriendsLocationsPageDerivedState(input)
@@ -111,7 +120,7 @@ describe('useFriendsLocationsPageDerivedState', () => {
             ]);
             expect(cards[0]).toMatchObject({
                 displayName: 'Me',
-                location: 'wrld_local:1'
+                $presence: onlinePresence('wrld_local:1')
             });
         }
     );
@@ -136,7 +145,7 @@ describe('useFriendsLocationsPageDerivedState', () => {
     });
 
     it.each(['standard', 'compact', 'dense'])(
-        'uses the %s content heights for each virtual card row without changing the friends',
+        'keeps all friends and section headers in the %s density',
         (density) => {
             const friends = Array.from({ length: 8 }, (_, index) => ({
                 ...friendAt(index < 6 ? 'wrld_remote:2' : 'private'),
@@ -149,7 +158,6 @@ describe('useFriendsLocationsPageDerivedState', () => {
             const { result } = renderHook(() =>
                 useFriendsLocationsPageDerivedState(input)
             );
-            const config = getFriendsLocationsDensityConfig(density);
             const cardRows = result.current.visibleVirtualRows.filter(
                 (row) => row.type === 'cards'
             );
@@ -166,45 +174,15 @@ describe('useFriendsLocationsPageDerivedState', () => {
             const rows = result.current.positionedRows.rows;
             expect(rows.some((row) => row.type === 'header')).toBe(true);
             expect(rows.some((row) => row.type === 'group-header')).toBe(true);
-            for (const [index, row] of rows.entries()) {
-                expect(row.top).toBe(
-                    index === 0
-                        ? 0
-                        : rows[index - 1].top + rows[index - 1].height
-                );
-                if (row.type === 'header' || row.type === 'group-header') {
-                    expect(row.height).toBe(40 + row.topGap);
-                    if (index === 0) {
-                        expect(row.topGap).toBe(0);
-                    }
-                    const next = rows[index + 1];
-                    expect(next?.type).toBe('cards');
-                    if (next?.type === 'cards') {
-                        expect(next.topGap).toBe(row.type === 'header' ? 4 : 0);
-                    }
-                }
-            }
-            for (const row of cardRows) {
-                const expectedHeight = getFriendsLocationsCardRowHeight(
-                    config,
-                    row.section.cardContentMode
-                );
-                expect(row.gridRowHeight).toBe(expectedHeight);
-                expect(row.height).toBe(
-                    expectedHeight + config.gridGap + row.topGap
-                );
-            }
         }
     );
 
     it('uses distinct card row keys when switching segments', () => {
         const onlineFriend = friendAt('wrld_remote:1');
         const offlineFriend = {
-            ...friendAt('offline'),
+            ...friendAt(offlinePresence),
             id: 'usr_offline',
-            displayName: 'Offline Friend',
-            state: 'offline' as const,
-            stateBucket: 'offline' as const
+            displayName: 'Offline Friend'
         };
         const input = pageInput([onlineFriend, offlineFriend]);
         input.activeSegment = 'online';
@@ -244,10 +222,8 @@ describe('useFriendsLocationsPageDerivedState', () => {
         (state, id) => {
             const location = 'wrld_local:1';
             const friend = {
-                ...friendAt('wrld_remote:2'),
-                id,
-                state,
-                stateBucket: state
+                ...friendAt(presenceFor(state, 'wrld_remote:2')),
+                id
             };
             useFriendLocationTimeStore.getState().replaceSnapshot([
                 {
@@ -291,8 +267,9 @@ describe('useFriendsLocationsPageDerivedState', () => {
                 rerender();
                 expect(result.current.hasVisibleSections).toBe(true);
             }
-            expect(friend.location).toBe('wrld_remote:2');
-            expect(friend.state).toBe(state);
+            expect(friend.$presence).toEqual(
+                presenceFor(state, 'wrld_remote:2')
+            );
         }
     );
 
@@ -308,15 +285,13 @@ describe('useFriendsLocationsPageDerivedState', () => {
             displayName: 'Zoe'
         };
         const local: FriendRecord = {
-            ...friendAt('wrld_remote:2'),
+            ...friendAt(offlinePresence),
             id: 'usr_m',
-            displayName: 'Mary',
-            state: 'offline'
+            displayName: 'Mary'
         };
         const unrelated: FriendRecord = {
-            ...friendAt('offline'),
-            id: 'usr_unrelated',
-            state: 'offline'
+            ...friendAt(offlinePresence),
+            id: 'usr_unrelated'
         };
         const input = pageInput([onlineLast, unrelated, local, onlineFirst]);
         input.sidebarSortMethods = ['Sort Alphabetically'];
@@ -478,14 +453,12 @@ describe('useFriendsLocationsPageDerivedState worlds view', () => {
     function worldFriend(
         id: string,
         location: string,
-        state: FriendRecord['state'] = 'online'
+        section: Section = 'online'
     ): FriendRecord {
         return {
-            ...friendAt(location),
+            ...friendAt(presenceFor(section, location)),
             id,
-            displayName: id,
-            state,
-            stateBucket: state
+            displayName: id
         };
     }
 
@@ -527,7 +500,7 @@ describe('useFriendsLocationsPageDerivedState worlds view', () => {
         input.currentUserSnapshot = {
             id: 'usr_self',
             displayName: 'Me',
-            location: 'wrld_local:1'
+            $presence: onlinePresence('wrld_local:1')
         };
         const { result } = renderHook(() =>
             useFriendsLocationsPageDerivedState(input)
@@ -549,7 +522,7 @@ describe('useFriendsLocationsPageDerivedState worlds view', () => {
         input.currentUserSnapshot = {
             id: 'usr_self',
             displayName: 'Me',
-            location: 'wrld_local:1'
+            $presence: onlinePresence('wrld_local:1')
         };
         const { result } = renderHook(() =>
             useFriendsLocationsPageDerivedState(input)

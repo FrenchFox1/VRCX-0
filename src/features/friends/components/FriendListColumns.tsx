@@ -15,6 +15,7 @@ import {
 } from '@/components/data-table/DataTableView';
 import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { UserStatusDot } from '@/components/UserStatusDot';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import {
@@ -22,6 +23,7 @@ import {
     openExternalLink,
     userImage
 } from '@/services/entityMediaService';
+import type { UserNameColourStyle } from '@/shared/utils/entityMedia';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -46,6 +48,7 @@ type FriendListColumnsOptions = {
     onConfirmDeleteFriend(friend: FriendListRow): void;
     onToggleSelectedFriend(friendId: string): void;
     randomUserColours: boolean;
+    randomUserColourStyle: UserNameColourStyle;
     selectedFriendIds: Set<string>;
 };
 
@@ -71,6 +74,7 @@ export function useFriendListColumns({
     onConfirmDeleteFriend,
     onToggleSelectedFriend,
     randomUserColours,
+    randomUserColourStyle,
     selectedFriendIds
 }: FriendListColumnsOptions) {
     const { t } = useTranslation();
@@ -210,7 +214,11 @@ export function useFriendListColumns({
                     const nameStyle =
                         randomUserColours && friendId
                             ? {
-                                  color: getNameColour(friendId, isDarkMode)
+                                  color: getNameColour(
+                                      friendId,
+                                      isDarkMode,
+                                      randomUserColourStyle
+                                  )
                               }
                             : undefined;
                     return (
@@ -268,9 +276,11 @@ export function useFriendListColumns({
                     const status = resolveStatusMeta(row.original);
                     return (
                         <span className="flex min-w-0 items-center gap-2">
-                            {status.showIndicator ? (
-                                <i className={status.indicatorClassName} />
-                            ) : null}
+                            <UserStatusDot
+                                statusDotClassName={status.statusDotClassName}
+                                className="size-2.5 shrink-0"
+                                variant="inline"
+                            />
                             {status.label ? (
                                 <span className="truncate">{status.label}</span>
                             ) : null}
@@ -606,6 +616,7 @@ export function useFriendListColumns({
             onConfirmDeleteFriend,
             onToggleSelectedFriend,
             randomUserColours,
+            randomUserColourStyle,
             selectedFriendIds,
             t
         ]

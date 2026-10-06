@@ -7,12 +7,6 @@ import {
     APP_CJK_FONT_PACK_DEFAULT_KEY,
     APP_FONT_DEFAULT_KEY
 } from '@/shared/constants/fonts';
-import {
-    DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS,
-    DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
-    parseHmdOverlayActivityFilterProfile,
-    parseOverlayActivityFilterProfile
-} from '@/shared/constants/overlayActivityFilters';
 import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
 import {
     DEFAULT_TRANSLATION_ENDPOINT,
@@ -27,18 +21,19 @@ import {
     normalizeFeedTimeDisplayMode,
     normalizeFeedHiddenUsers,
     normalizeHmdNotificationPosition,
+    normalizeHmdNotificationStyle,
     normalizeNotificationTtsNameMode,
     normalizeOverlayStartMode,
     normalizeTableLimits,
     normalizeTablePageSize,
     normalizeTablePageSizes,
     normalizeTranslationApiType,
+    normalizeUserNameColourStyle,
     normalizeWeekStartsOn,
     normalizeWristOverlayButton,
     normalizeWristOverlayHand,
     normalizeWristOverlaySize,
     normalizeWristOverlayStartMode,
-    parseOverlayActivityFiltersPreference,
     type PreferencesSnapshot,
     usePreferencesStore
 } from '@/state/preferencesStore';
@@ -66,8 +61,6 @@ import {
     applyDataTableStripedClass,
     applyReducedMotionAndBlurClass,
     applyTableDensityClass,
-    getBoolConfigWithLegacy,
-    getIntConfigWithLegacy,
     normalizeStringList,
     setDocumentLanguage
 } from './preferencesCore';
@@ -96,6 +89,7 @@ export async function loadPreferenceSnapshot() {
         accessibleStatusIndicators,
         showNewDashboardButton,
         recentActionCooldownEnabled,
+        autoDeclineFriendRequests,
         recentActionCooldownMinutes,
         screenshotHelper,
         screenshotHelperModifyFilename,
@@ -114,6 +108,17 @@ export async function loadPreferenceSnapshot() {
         showUserDialogAvatarFrame,
         showUserDialogProfileEffect,
         showUserDialogNameplateEffect,
+        showSidebarAvatarFrame,
+        showSidebarNameplate,
+        showHoverCardAvatarFrame,
+        showHoverCardProfileEffect,
+        showHoverCardNameplate,
+        showFriendsLocationsPeopleAvatarFrame,
+        showFriendsLocationsPeopleNameplate,
+        showFriendsLocationsWorldsAvatarFrame,
+        showFriendsLocationsWorldsNameplate,
+        showActivityJourneyAvatarFrame,
+        showActivityJourneyNameplate,
         weekStartsOn,
         hideUserNotes,
         hideUserMemos,
@@ -121,14 +126,18 @@ export async function loadPreferenceSnapshot() {
         hideUnfriends,
         profileBioScanEnabled,
         randomUserColours,
+        randomUserColourStyle,
         notificationIconDot,
         taskbarIconDot,
         showPostUpdateChangelogToast,
         autoInstallUpdatesOnStartup,
         desktopToast,
         afkDesktopToast,
+        overlayToast,
         desktopNotificationSound,
+        desktopNotificationAvatars,
         notificationDoNotDisturbEndOnGameStart,
+        busyStatusDoNotDisturb,
         notificationTTS,
         notificationTTSNickName,
         notificationTTSNameMode,
@@ -145,6 +154,8 @@ export async function loadPreferenceSnapshot() {
         hmdNotificationTimeout,
         hmdNotificationOpacity,
         hmdNotificationPosition,
+        hmdNotificationStyle,
+        hmdNotificationAvatars,
         webhookEnabled,
         webhookAuthEventsEnabled,
         webhookUrl,
@@ -190,12 +201,9 @@ export async function loadPreferenceSnapshot() {
         searchLimit,
         localFavoriteFriendsGroups,
         feedHiddenUsers,
-        overlayActivityFilters,
-        vrNotificationActivityFilters,
-        hmdNotificationActivityFilters,
-        desktopNotificationActivityFilters,
-        webhookActivityFilters,
-        ttsNotificationActivityFilters,
+        feedHiddenUsersHideNotifications,
+        hidePrivateFromFeed,
+        activityFilterProfiles,
         feedTimeDisplayMode,
         youtubeAPI,
         translationAPI,
@@ -235,6 +243,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('VRCX_accessibleStatusIndicators', false),
         configRepository.getBool('showNewDashboardButton', true),
         configRepository.getBool('recentActionCooldownEnabled', false),
+        configRepository.getBool('autoDeclineFriendRequests', false),
         configRepository.getInt('recentActionCooldownMinutes', 60),
         configRepository.getBool('screenshotHelper', true),
         configRepository.getBool('screenshotHelperModifyFilename', false),
@@ -253,6 +262,17 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('showUserDialogAvatarFrame', true),
         configRepository.getBool('showUserDialogProfileEffect', true),
         configRepository.getBool('showUserDialogNameplateEffect', true),
+        configRepository.getBool('showSidebarAvatarFrame', true),
+        configRepository.getBool('showSidebarNameplate', true),
+        configRepository.getBool('showHoverCardAvatarFrame', true),
+        configRepository.getBool('showHoverCardProfileEffect', false),
+        configRepository.getBool('showHoverCardNameplate', false),
+        configRepository.getBool('showFriendsLocationsPeopleAvatarFrame', true),
+        configRepository.getBool('showFriendsLocationsPeopleNameplate', false),
+        configRepository.getBool('showFriendsLocationsWorldsAvatarFrame', true),
+        configRepository.getBool('showFriendsLocationsWorldsNameplate', true),
+        configRepository.getBool('showActivityJourneyAvatarFrame', true),
+        configRepository.getBool('showActivityJourneyNameplate', true),
         configRepository.getInt('weekStartsOn', 1),
         configRepository.getBool('hideUserNotes', false),
         configRepository.getBool('hideUserMemos', false),
@@ -260,33 +280,39 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('hideUnfriends', false),
         configRepository.getBool('profileBioScanEnabled', false),
         configRepository.getBool('randomUserColours', false),
+        configRepository.getString('randomUserColourStyle', 'classic'),
         configRepository.getBool('notificationIconDot', true),
         configRepository.getBool('taskbarIconDot', true),
         configRepository.getBool(POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY, true),
         configRepository.getBool('autoInstallUpdatesOnStartup', true),
         configRepository.getString('desktopToast', 'Never'),
         configRepository.getBool('afkDesktopToast', false),
+        configRepository.getString('overlayToast', 'Game Running'),
         configRepository.getBool('desktopNotificationSound', false),
+        configRepository.getBool('desktopNotificationAvatars', true),
         configRepository.getBool(
             'notificationDoNotDisturbEndOnGameStart',
             true
         ),
+        configRepository.getBool('busyStatusDoNotDisturb', true),
         configRepository.getString('notificationTTS', 'Never'),
         configRepository.getBool('notificationTTSNickName', false),
         configRepository.getString('notificationTTSNameMode', ''),
         configRepository.getString('notificationTTSVoiceNative', ''),
         configRepository.getInt('notificationTTSVolume', 100),
-        getBoolConfigWithLegacy('xsNotifications', false),
-        getBoolConfigWithLegacy('ovrtHudNotifications', false),
-        getBoolConfigWithLegacy('ovrtWristNotifications', false),
-        getBoolConfigWithLegacy('imageNotifications', true),
-        getIntConfigWithLegacy('notificationTimeout', 3000),
-        getIntConfigWithLegacy('notificationOpacity', 100),
+        configRepository.getBool('xsNotifications', false),
+        configRepository.getBool('ovrtHudNotifications', false),
+        configRepository.getBool('ovrtWristNotifications', false),
+        configRepository.getBool('imageNotifications', true),
+        configRepository.getInt('notificationTimeout', 3000),
+        configRepository.getInt('notificationOpacity', 100),
         configRepository.getBool('hmdNotificationsEnabled', false),
         configRepository.getString('hmdNotificationStartMode', 'vrchatVrMode'),
         configRepository.getInt('hmdNotificationTimeout', 5000),
-        configRepository.getInt('hmdNotificationOpacity', 100),
+        configRepository.getInt('hmdNotificationOpacity', 90),
         configRepository.getString('hmdNotificationPosition', 'bottom'),
+        configRepository.getString('hmdNotificationStyle', 'standard'),
+        configRepository.getBool('hmdNotificationAvatars', true),
         configRepository.getBool('webhookEnabled', false),
         configRepository.getBool('webhookAuthEventsEnabled', true),
         configRepository.getString('webhookUrl', ''),
@@ -347,12 +373,9 @@ export async function loadPreferenceSnapshot() {
         ),
         configRepository.getArray('localFavoriteFriendsGroups', []),
         configRepository.getString('feedHiddenUsers', '[]'),
-        configRepository.getString('overlayActivityFilters', ''),
-        configRepository.getString('vrNotificationActivityFilters', ''),
-        configRepository.getString('hmdNotificationActivityFilters', ''),
-        configRepository.getString('desktopNotificationActivityFilters', ''),
-        configRepository.getString('webhookActivityFilters', ''),
-        configRepository.getString('ttsNotificationActivityFilters', ''),
+        configRepository.getBool('feedHiddenUsersHideNotifications', true),
+        configRepository.getBool('hidePrivateFromFeed', false),
+        commands.appNotificationActivityFiltersGet(),
         configRepository.getString('feedTimeDisplayMode', 'relative'),
         configRepository.getBool('youtubeAPI', false),
         configRepository.getBool('translationAPI', false),
@@ -440,6 +463,7 @@ export async function loadPreferenceSnapshot() {
         accessibleStatusIndicators: Boolean(accessibleStatusIndicators),
         showNewDashboardButton: Boolean(showNewDashboardButton),
         recentActionCooldownEnabled: Boolean(recentActionCooldownEnabled),
+        autoDeclineFriendRequests: Boolean(autoDeclineFriendRequests),
         recentActionCooldownMinutes: normalizedRecentActionCooldownMinutes,
         screenshotHelper: Boolean(screenshotHelper),
         screenshotHelperModifyFilename: Boolean(screenshotHelperModifyFilename),
@@ -464,6 +488,25 @@ export async function loadPreferenceSnapshot() {
         showUserDialogAvatarFrame: Boolean(showUserDialogAvatarFrame),
         showUserDialogProfileEffect: Boolean(showUserDialogProfileEffect),
         showUserDialogNameplateEffect: Boolean(showUserDialogNameplateEffect),
+        showSidebarAvatarFrame: Boolean(showSidebarAvatarFrame),
+        showSidebarNameplate: Boolean(showSidebarNameplate),
+        showHoverCardAvatarFrame: Boolean(showHoverCardAvatarFrame),
+        showHoverCardProfileEffect: Boolean(showHoverCardProfileEffect),
+        showHoverCardNameplate: Boolean(showHoverCardNameplate),
+        showFriendsLocationsPeopleAvatarFrame: Boolean(
+            showFriendsLocationsPeopleAvatarFrame
+        ),
+        showFriendsLocationsPeopleNameplate: Boolean(
+            showFriendsLocationsPeopleNameplate
+        ),
+        showFriendsLocationsWorldsAvatarFrame: Boolean(
+            showFriendsLocationsWorldsAvatarFrame
+        ),
+        showFriendsLocationsWorldsNameplate: Boolean(
+            showFriendsLocationsWorldsNameplate
+        ),
+        showActivityJourneyAvatarFrame: Boolean(showActivityJourneyAvatarFrame),
+        showActivityJourneyNameplate: Boolean(showActivityJourneyNameplate),
         weekStartsOn: normalizeWeekStartsOn(weekStartsOn),
         hideUserNotes: Boolean(hideUserNotes),
         hideUserMemos: Boolean(hideUserMemos),
@@ -471,16 +514,22 @@ export async function loadPreferenceSnapshot() {
         hideUnfriends: Boolean(hideUnfriends),
         profileBioScanEnabled: Boolean(profileBioScanEnabled),
         randomUserColours: Boolean(randomUserColours),
+        randomUserColourStyle: normalizeUserNameColourStyle(
+            randomUserColourStyle
+        ),
         notificationIconDot: Boolean(notificationIconDot),
         taskbarIconDot: Boolean(taskbarIconDot),
         showPostUpdateChangelogToast: Boolean(showPostUpdateChangelogToast),
         autoInstallUpdatesOnStartup: Boolean(autoInstallUpdatesOnStartup),
         desktopToast: desktopToast || 'Never',
         afkDesktopToast: Boolean(afkDesktopToast),
+        overlayToast: overlayToast || 'Game Running',
         desktopNotificationSound: Boolean(desktopNotificationSound),
+        desktopNotificationAvatars: Boolean(desktopNotificationAvatars),
         notificationDoNotDisturbEndOnGameStart: Boolean(
             notificationDoNotDisturbEndOnGameStart
         ),
+        busyStatusDoNotDisturb: Boolean(busyStatusDoNotDisturb),
         notificationTTS: notificationTTS || 'Never',
         notificationTTSNickName: Boolean(notificationTTSNickName),
         notificationTTSNameMode: normalizeNotificationTtsNameMode(
@@ -510,10 +559,13 @@ export async function loadPreferenceSnapshot() {
             : 5000,
         hmdNotificationOpacity: Number.isFinite(hmdNotificationOpacity)
             ? Math.min(100, Math.max(0, hmdNotificationOpacity))
-            : 100,
+            : 90,
         hmdNotificationPosition: normalizeHmdNotificationPosition(
             hmdNotificationPosition
         ),
+        hmdNotificationStyle:
+            normalizeHmdNotificationStyle(hmdNotificationStyle),
+        hmdNotificationAvatars: Boolean(hmdNotificationAvatars),
         webhookEnabled: Boolean(webhookEnabled),
         webhookAuthEventsEnabled: Boolean(webhookAuthEventsEnabled),
         webhookUrl: String(webhookUrl || ''),
@@ -568,25 +620,16 @@ export async function loadPreferenceSnapshot() {
             localFavoriteFriendsGroups
         ),
         feedHiddenUsers: normalizeFeedHiddenUsers(feedHiddenUsers),
-        overlayActivityFilters: parseOverlayActivityFiltersPreference(
-            overlayActivityFilters
+        feedHiddenUsersHideNotifications: Boolean(
+            feedHiddenUsersHideNotifications
         ),
-        vrNotificationActivityFilters: parseOverlayActivityFilterProfile(
-            vrNotificationActivityFilters
-        ),
-        hmdNotificationActivityFilters: parseHmdOverlayActivityFilterProfile(
-            hmdNotificationActivityFilters
-        ),
-        desktopNotificationActivityFilters: parseOverlayActivityFilterProfile(
-            desktopNotificationActivityFilters
-        ),
-        webhookActivityFilters: parseOverlayActivityFilterProfile(
-            webhookActivityFilters || DEFAULT_WEBHOOK_ACTIVITY_FILTERS
-        ),
-        ttsNotificationActivityFilters: parseOverlayActivityFilterProfile(
-            ttsNotificationActivityFilters ||
-                DEFAULT_TTS_NOTIFICATION_ACTIVITY_FILTERS
-        ),
+        hidePrivateFromFeed: Boolean(hidePrivateFromFeed),
+        overlayActivityFilters: activityFilterProfiles.wrist,
+        vrNotificationActivityFilters: activityFilterProfiles.vr,
+        hmdNotificationActivityFilters: activityFilterProfiles.hmd,
+        desktopNotificationActivityFilters: activityFilterProfiles.desktop,
+        webhookActivityFilters: activityFilterProfiles.webhook,
+        ttsNotificationActivityFilters: activityFilterProfiles.tts,
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(feedTimeDisplayMode),
         youtubeAPI: Boolean(youtubeAPI),
         translationAPI: Boolean(translationAPI),

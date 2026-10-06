@@ -118,14 +118,15 @@ pub(crate) fn build_desktop_runtime_services_deps(
         image_cache: Arc::clone(context.image_cache()),
         config: context.config().clone(),
         notification_config: context.notification_config(),
+        notification_resolver: context.notification_resolver(),
         auth_credentials: context.auth_credentials_shared(),
         auth_scope: context.auth_scope().clone(),
         session: context.session().clone(),
         world_cache: Arc::clone(context.world_cache()),
         tasks: context.tasks().clone(),
         event_bus: context.event_bus().clone(),
-        overlay_activity: context.overlay_activity(),
-        overlay_activity_sinks: context.overlay_activity_sink_registry(),
+        activity_router: context.activity_router(),
+        activity_sinks: context.activity_sink_registry(),
         notification_projection_observers: context
             .realtime_notification_projection_observer_registry(),
     }
@@ -294,7 +295,7 @@ impl DesktopRuntimeHostState {
             builder.desktop_assembly().event_bus().clone(),
             Some(game_log_observer),
         );
-        let overlay_activity = desktop_services.overlay_activity();
+        let activity_router = desktop_services.activity_router();
         let game_log_snapshot = desktop_services.game_log_snapshot_handle();
         let discord_rpc = Arc::new(DiscordRpc::new());
         let process_monitor = ProcessMonitor::new();
@@ -315,11 +316,14 @@ impl DesktopRuntimeHostState {
             integration_api_publisher_channel();
         let instance_roster_observer: Arc<dyn InstanceRosterObserver> =
             Arc::new(integration_api_publisher);
+        let current_user_presence_observer =
+            Arc::new(crate::log_watcher::CurrentUserLocalPresenceObserver::default());
         let game_roster_observer: Arc<dyn InstanceRosterObserver> =
             Arc::new(crate::log_watcher::HostInstanceRosterFanout::new(vec![
                 Arc::clone(&instance_roster_observer),
                 Arc::clone(builder.desktop_assembly().instance_dwell())
                     as Arc<dyn InstanceRosterObserver>,
+                Arc::clone(&current_user_presence_observer) as Arc<dyn InstanceRosterObserver>,
             ]));
         let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
             environment: Arc::new(vrcx_0_outbound_adapters::LocalTelemetryEnvironment::new(
@@ -336,6 +340,7 @@ impl DesktopRuntimeHostState {
             tasks: builder.desktop_assembly().tasks().clone(),
             backend_runtime: builder.backend_runtime().clone(),
             auth_scope: builder.desktop_assembly().auth_scope().clone(),
+            session: builder.desktop_assembly().session().clone(),
             app_version: app_version.clone(),
         });
         let profile_config: Arc<dyn vrcx_0_application::profile::ProfileConfigStore> =
@@ -373,7 +378,7 @@ impl DesktopRuntimeHostState {
             file_access: host_file_access.clone(),
             app_paths: builder.paths().clone(),
             snapshot: game_log_snapshot.clone(),
-            overlay_activity: overlay_activity.clone(),
+            activity_router: activity_router.clone(),
             instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
             backend_status: backend_status.clone(),
             side_effect_sink: game_log_side_effect_sink,
@@ -397,6 +402,7 @@ impl DesktopRuntimeHostState {
             host: desktop_services.host.clone(),
             instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
             backend_status: backend_status.clone(),
+            activity_router: desktop_services.activity_router(),
         }));
         let session_runtime = Arc::new(SessionHostRuntime::new(
             builder.desktop_assembly().session().clone(),
@@ -494,6 +500,7 @@ impl DesktopRuntimeHostState {
             friend_projection_observer: Some(friend_projection_observer),
             profile_extension: Some(extension.clone()),
         })?;
+        current_user_presence_observer.bind(runtime.realtime_runtime());
         let realtime_runtime = Arc::downgrade(runtime.realtime_runtime());
         runtime
             .desktop_assembly()
@@ -535,7 +542,7 @@ impl DesktopRuntimeHostState {
             Arc::clone(runtime.desktop_assembly().world_cache()),
             runtime.desktop_assembly().file_cache().clone(),
             Arc::clone(runtime.realtime_runtime()),
-            desktop_services.overlay_activity(),
+            desktop_services.activity_router(),
             runtime.desktop_assembly().favorite_mutations().clone(),
             runtime.desktop_assembly().mutual_graph_fetch().clone(),
         );
@@ -660,18 +667,9 @@ impl DesktopRuntimeHostState {
                     .upgrade()
                     .is_some_and(|runtime| runtime.is_current_friend(user_id))
             });
-        let hmd_context_runtime = Arc::downgrade(runtime.realtime_runtime());
-        desktop
-            .vr_overlay_runtime
-            .set_hmd_friend_context_provider(move |user_id| {
-                let snapshot = hmd_context_runtime
-                    .upgrade()?
-                    .current_friend_record(user_id)?;
-                Some((snapshot.record, snapshot.endpoint))
-            });
         desktop
             .services
-            .set_realtime_user_image_resolver(runtime.realtime_runtime());
+            .attach_realtime_runtime(runtime.realtime_runtime());
         start_integration_api_input_task(
             Arc::clone(runtime.desktop_assembly().database()),
             runtime.desktop_assembly().event_bus().clone(),
@@ -1034,11 +1032,26 @@ impl DesktopRuntimeHostState {
         group_name: String,
         new_group_name: String,
     ) -> Result<vrcx_0_application::favorites::LocalFavoriteGroupWrite> {
-        Ok(self
+        let write = self
             .runtime
             .desktop_assembly()
             .favorite_mutations()
-            .rename_local_group(kind, group_name, new_group_name)?)
+            .rename_local_group(kind, group_name.clone(), new_group_name.clone())?;
+        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
+            self.runtime.database(),
+        ));
+        vrcx_0_application_game::presence_automation_local_group_renamed(
+            &store,
+            kind,
+            &group_name,
+            &new_group_name,
+        )?;
+        if kind == vrcx_0_application_core::FavoriteEntityKind::Friend {
+            self.desktop
+                .services
+                .rename_local_favorite_group_in_activity_filters(&group_name, &new_group_name)?;
+        }
+        Ok(write)
     }
 
     pub fn favorite_local_group_delete(
@@ -1051,6 +1064,31 @@ impl DesktopRuntimeHostState {
             .desktop_assembly()
             .favorite_mutations()
             .delete_local_group(kind, group_name)?)
+    }
+
+    pub fn favorite_local_group_reorder(
+        &self,
+        kind: vrcx_0_application_core::FavoriteEntityKind,
+        group_names: Vec<String>,
+    ) -> Result<Vec<String>> {
+        Ok(self
+            .runtime
+            .desktop_assembly()
+            .favorite_mutations()
+            .reorder_local_groups(kind, group_names)?)
+    }
+
+    pub fn favorite_local_reorder(
+        &self,
+        kind: vrcx_0_application_core::FavoriteEntityKind,
+        group_name: String,
+        entity_ids: Vec<String>,
+    ) -> Result<i64> {
+        Ok(self
+            .runtime
+            .desktop_assembly()
+            .favorite_mutations()
+            .reorder_local(kind, group_name, entity_ids)?)
     }
 
     pub fn favorite_import_start(
@@ -1729,26 +1767,31 @@ impl DesktopRuntimeHostState {
         )
     }
 
-    pub fn set_overlay_activity_filters(
+    pub fn send_test_notification(&self, message: &str) {
+        self.desktop
+            .services
+            .activity_router()
+            .deliver_test_notification(message);
+    }
+
+    pub fn notification_activity_filter_profiles(
         &self,
-        filters: vrcx_0_application_activity::notification::OverlayActivityPreferenceFilters,
-    ) -> Result<()> {
+    ) -> vrcx_0_application_activity::notification::NotificationActivityFilterProfiles {
         self.runtime
             .desktop_assembly()
-            .set_overlay_activity_preference_filters(filters)?;
-        self.desktop.vr_overlay_runtime.reconcile_current();
-        Ok(())
+            .notification_activity_filter_profiles()
     }
 
     pub fn set_notification_activity_filters(
         &self,
         input: vrcx_0_application_activity::notification::NotificationActivityFiltersSetInput,
-    ) -> Result<()> {
-        self.runtime
+    ) -> Result<vrcx_0_application_activity::notification::ActivityFilterProfile> {
+        let profile = self
+            .runtime
             .desktop_assembly()
             .set_notification_activity_filters(input)?;
         self.desktop.vr_overlay_runtime.reconcile_current();
-        Ok(())
+        Ok(profile)
     }
 
     pub fn active_owner_id(&self) -> Option<vrcx_0_core::OwnerId> {
@@ -2102,12 +2145,14 @@ impl DesktopRuntimeHostState {
         entries: Vec<crate::local_data::ConfigWriteEntry>,
     ) -> Result<()> {
         self.local_data.config_set_values(entries)?;
+        self.desktop.services.reload_overlay_activity_filters();
         self.desktop.vr_overlay_runtime.mark_config_dirty();
         Ok(())
     }
 
     pub fn config_remove_value(&self, key: String) -> Result<i64> {
         let removed = self.local_data.config_remove_value(key)?;
+        self.desktop.services.reload_overlay_activity_filters();
         self.desktop.vr_overlay_runtime.mark_config_dirty();
         Ok(removed)
     }
@@ -2140,11 +2185,6 @@ impl DesktopRuntimeHostState {
             self.desktop.vr_overlay_runtime.clear_hmd_notifications();
         }
         Ok(snapshot)
-    }
-
-    pub fn reload_overlay_activity_filters(&self) {
-        self.desktop.services.reload_overlay_activity_filters();
-        self.desktop.vr_overlay_runtime.reconcile_current();
     }
 
     pub fn set_app_launcher_enabled(&self, enabled: bool) -> Result<AppLauncherSnapshot> {

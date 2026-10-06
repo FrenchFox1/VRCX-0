@@ -4,7 +4,6 @@ use std::sync::{Arc, Mutex};
 use vrcx_0_application_core::NoopWorldCachePort;
 use vrcx_0_contracts::game_log::{GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
-use vrcx_0_core::json::JsonExt;
 
 use crate::game_log::runtime_state::RuntimeSnapshotStore;
 use crate::game_log::NoopGameLogHostActions;
@@ -14,32 +13,51 @@ use crate::RuntimeAuthScope;
 use crate::RuntimeEventBus;
 use crate::{GameStateStore, RuntimeSyncEngine, TaskSupervisor};
 use vrcx_0_application_activity::{
-    OverlayActivityDelivery, OverlayActivityFilters, OverlayActivityRuntime, OverlayActivitySink,
-    OverlayActivitySnapshot, OverlayFavoriteGroups,
+    ActivityDelivery, ActivityFavoriteGroups, ActivityFilters, ActivityRouter, ActivitySink,
+    ActivitySnapshot,
 };
-use vrcx_0_application_core::FriendProjection;
+use vrcx_0_contracts::activity::{ActivityActor, ActivityEvent, ActivityKind, ActivitySubject};
 use vrcx_0_core::game_process::GameProcessEvent;
 
 use super::{GameLogProcessEvent, GameLogProcessor, GameLogProcessorDeps, GameLogWorkerJob};
 use vrcx_0_core::OwnerId;
 
-#[derive(Clone, Default)]
-struct RecordingOverlaySink {
-    deliveries: Arc<Mutex<Vec<OverlayActivityDelivery>>>,
+fn place_from_record(
+    entry: &vrcx_0_core::friends::FriendBaselineEntry,
+    observed_ms: i64,
+) -> vrcx_0_application_core::FriendPlace {
+    vrcx_0_application_core::FriendPlace::Present {
+        location: entry.presence.location.clone(),
+        since_ms: observed_ms,
+    }
 }
 
-impl OverlayActivitySink for RecordingOverlaySink {
-    fn emit_overlay_activity_snapshot(&self, _snapshot: OverlayActivitySnapshot) {}
+#[derive(Clone, Default)]
+struct RecordingOverlaySink {
+    deliveries: Arc<Mutex<Vec<ActivityDelivery>>>,
+}
 
-    fn emit_overlay_activity_delivery(&self, delivery: OverlayActivityDelivery) {
+impl ActivitySink for RecordingOverlaySink {
+    fn emit_overlay_activity_snapshot(&self, _snapshot: ActivitySnapshot) {}
+
+    fn emit_overlay_activity_delivery(&self, delivery: ActivityDelivery) {
         self.deliveries.lock().unwrap().push(delivery);
     }
 }
 
 impl RecordingOverlaySink {
-    fn take_deliveries(&self) -> Vec<OverlayActivityDelivery> {
+    fn take_deliveries(&self) -> Vec<ActivityDelivery> {
         std::mem::take(&mut *self.deliveries.lock().unwrap())
     }
+}
+
+thread_local! {
+    static TEST_OVERLAY: std::cell::RefCell<ActivityRouter> =
+        std::cell::RefCell::new(ActivityRouter::new());
+}
+
+fn test_overlay() -> ActivityRouter {
+    TEST_OVERLAY.with(|overlay| overlay.borrow().clone())
 }
 
 struct TestDir {
@@ -101,11 +119,27 @@ fn side_effect_dependencies_capture_the_authenticated_identity() -> Result<()> {
 
 fn build_test_processor(store: Arc<TestGameStateStore>) -> Result<GameLogProcessor> {
     let world_cache = Arc::new(crate::WorldCache::new(NoopWorldCachePort));
+    let overlay = ActivityRouter::with_filters(ActivityFilters::from_json(serde_json::json!({
+        "version": 1,
+        "wrist": {
+            "types": {
+                "OnPlayerJoined": {
+                    "scope": "everyoneInInstance",
+                    "favoriteGroupKeys": "all"
+                },
+                "OnPlayerLeft": {
+                    "scope": "everyoneInInstance",
+                    "favoriteGroupKeys": "all"
+                }
+            }
+        }
+    })));
+    TEST_OVERLAY.with(|current| *current.borrow_mut() = overlay.clone());
     let event_bus = RuntimeEventBus::new();
     let processor = GameLogProcessor::new(GameLogProcessorDeps {
         store,
-        instance_media: Arc::new(TestGameMediaPort),
-        video_metadata: Arc::new(TestGameMediaPort),
+        instance_media: Arc::new(TestGameMediaPort::default()),
+        video_metadata: Arc::new(TestGameMediaPort::default()),
         event_bus: event_bus.clone(),
         backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
             vrcx_0_application_core::BackendRuntime::new(
@@ -119,23 +153,7 @@ fn build_test_processor(store: Arc<TestGameStateStore>) -> Result<GameLogProcess
         auth_scope: RuntimeAuthScope::new(),
         snapshot: RuntimeSnapshotStore::default(),
         host_actions: Arc::new(NoopGameLogHostActions),
-        overlay_activity: OverlayActivityRuntime::with_filters(OverlayActivityFilters::from_json(
-            serde_json::json!({
-                "version": 1,
-                "wrist": {
-                    "types": {
-                        "OnPlayerJoined": {
-                            "scope": "everyoneInInstance",
-                            "favoriteGroupKeys": "all"
-                        },
-                        "OnPlayerLeft": {
-                            "scope": "everyoneInInstance",
-                            "favoriteGroupKeys": "all"
-                        }
-                    }
-                }
-            }),
-        )),
+        activity: Arc::new(overlay),
         world_cache,
         instance_roster_observer: None,
     });
@@ -287,7 +305,7 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
     assert_eq!(snapshot.players[0].user_id, "usr_live");
     assert!(store.get_bool("isGameNoVR", false)?);
     assert_eq!(
-        processor.deps.overlay_activity.snapshot().entries[0].actor_user_id,
+        test_overlay().snapshot().entries[0].actor_user_id,
         "usr_live"
     );
     let events = processor.deps.event_bus.take_events_for_test();
@@ -305,17 +323,24 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
 fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Result<()> {
     let (_dir, store, mut processor) = test_processor("runtime-gamelog-disabled-replay")?;
     let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
-    timers.observe_friend_record(
+    timers.observe_friend(
         "usr_replay",
-        &vrcx_0_core::friends::FriendRecord {
-            id: "usr_replay".into(),
-            state: "online".into(),
-            location: "wrld_replay:1".into(),
-            ..Default::default()
-        },
-        chrono::DateTime::parse_from_rfc3339("2026-05-14T05:11:00Z")
-            .unwrap()
-            .timestamp_millis(),
+        &place_from_record(
+            &vrcx_0_core::friends::FriendBaselineEntry {
+                record: vrcx_0_core::friends::FriendRecord {
+                    id: "usr_replay".into(),
+                    ..Default::default()
+                },
+                presence: vrcx_0_core::friends::FriendBaselinePresence {
+                    state: "online".into(),
+                    location: "wrld_replay:1".into(),
+                    ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                },
+            },
+            chrono::DateTime::parse_from_rfc3339("2026-05-14T05:11:00Z")
+                .unwrap()
+                .timestamp_millis(),
+        ),
     );
     processor.deps.instance_roster_observer = Some(timers.clone());
     store.set_bool("gameLogDisabled", true)?;
@@ -354,12 +379,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
         vrcx_0_application_core::FriendLocationTimeSource::GameLog
     );
     assert!(!store.get_bool("isGameNoVR", false)?);
-    assert!(processor
-        .deps
-        .overlay_activity
-        .snapshot()
-        .entries
-        .is_empty());
+    assert!(test_overlay().snapshot().entries.is_empty());
     Ok(())
 }
 
@@ -371,15 +391,22 @@ fn entering_a_friends_instance_keeps_dwell_without_rewriting_log_join_time() -> 
         let started_at = chrono::DateTime::parse_from_rfc3339("2026-09-06T10:00:00Z")
             .unwrap()
             .timestamp_millis();
-        timers.observe_friend_record(
+        timers.observe_friend(
             "usr_friend",
-            &vrcx_0_core::friends::FriendRecord {
-                id: "usr_friend".into(),
-                state: "online".into(),
-                location: "wrld_local:1".into(),
-                ..Default::default()
-            },
-            started_at,
+            &place_from_record(
+                &vrcx_0_core::friends::FriendBaselineEntry {
+                    record: vrcx_0_core::friends::FriendRecord {
+                        id: "usr_friend".into(),
+                        ..Default::default()
+                    },
+                    presence: vrcx_0_core::friends::FriendBaselinePresence {
+                        state: "online".into(),
+                        location: "wrld_local:1".into(),
+                        ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                    },
+                },
+                started_at,
+            ),
         );
         processor.deps.instance_roster_observer = Some(timers.clone());
         let location = GameLogWorkerJob::Event(event(
@@ -433,15 +460,22 @@ fn room_exit_cleanup_preserves_the_dwell_of_friends_staying_in_the_old_instance(
                 },
             )];
             for (user_id, since_ms) in [("usr_a", 1_000), ("usr_b", 2_000)] {
-                timers.observe_friend_record(
+                timers.observe_friend(
                     user_id,
-                    &vrcx_0_core::friends::FriendRecord {
-                        id: user_id.into(),
-                        state: "online".into(),
-                        location: "wrld_old:1".into(),
-                        ..Default::default()
-                    },
-                    since_ms,
+                    &place_from_record(
+                        &vrcx_0_core::friends::FriendBaselineEntry {
+                            record: vrcx_0_core::friends::FriendRecord {
+                                id: user_id.into(),
+                                ..Default::default()
+                            },
+                            presence: vrcx_0_core::friends::FriendBaselinePresence {
+                                state: "online".into(),
+                                location: "wrld_old:1".into(),
+                                ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                            },
+                        },
+                        since_ms,
+                    ),
                 );
                 initial.push(event(
                     "1970-01-01T00:30:25Z",
@@ -537,15 +571,22 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
         store.set_bool("gameLogDisabled", persistence_disabled)?;
         let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
         for user_id in ["usr_remote", "usr_local"] {
-            timers.observe_friend_record(
+            timers.observe_friend(
                 user_id,
-                &vrcx_0_core::friends::FriendRecord {
-                    id: user_id.into(),
-                    state: "online".into(),
-                    location: "wrld_current:2".into(),
-                    ..Default::default()
-                },
-                500,
+                &place_from_record(
+                    &vrcx_0_core::friends::FriendBaselineEntry {
+                        record: vrcx_0_core::friends::FriendRecord {
+                            id: user_id.into(),
+                            ..Default::default()
+                        },
+                        presence: vrcx_0_core::friends::FriendBaselinePresence {
+                            state: "online".into(),
+                            location: "wrld_current:2".into(),
+                            ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                        },
+                    },
+                    500,
+                ),
             );
         }
         processor.deps.instance_roster_observer = Some(timers.clone());
@@ -615,15 +656,22 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
 fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-resume-departures")?;
     let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
-    timers.observe_friend_record(
+    timers.observe_friend(
         "usr_friend",
-        &vrcx_0_core::friends::FriendRecord {
-            id: "usr_friend".into(),
-            state: "online".into(),
-            location: "wrld_local:1".into(),
-            ..Default::default()
-        },
-        500,
+        &place_from_record(
+            &vrcx_0_core::friends::FriendBaselineEntry {
+                record: vrcx_0_core::friends::FriendRecord {
+                    id: "usr_friend".into(),
+                    ..Default::default()
+                },
+                presence: vrcx_0_core::friends::FriendBaselinePresence {
+                    state: "online".into(),
+                    location: "wrld_local:1".into(),
+                    ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                },
+            },
+            500,
+        ),
     );
     processor.deps.instance_roster_observer = Some(timers.clone());
     processor.set_persistence_resume_after("1970-01-01T00:00:03Z");
@@ -672,15 +720,22 @@ fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> 
 fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-local-mode")?;
     let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
-    timers.observe_friend_record(
+    timers.observe_friend(
         "usr_friend",
-        &vrcx_0_core::friends::FriendRecord {
-            id: "usr_friend".into(),
-            state: "online".into(),
-            location: "wrld_local:1".into(),
-            ..Default::default()
-        },
-        500,
+        &place_from_record(
+            &vrcx_0_core::friends::FriendBaselineEntry {
+                record: vrcx_0_core::friends::FriendRecord {
+                    id: "usr_friend".into(),
+                    ..Default::default()
+                },
+                presence: vrcx_0_core::friends::FriendBaselinePresence {
+                    state: "online".into(),
+                    location: "wrld_local:1".into(),
+                    ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                },
+            },
+            500,
+        ),
     );
     processor.deps.instance_roster_observer = Some(timers.clone());
     let joined = GameLogEventKind::PlayerJoined {
@@ -743,15 +798,22 @@ fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()
 fn local_mode_player_leave_is_not_lost_when_own_exit_is_in_the_same_batch() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-batched-leave")?;
     let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
-    timers.observe_friend_record(
+    timers.observe_friend(
         "usr_friend",
-        &vrcx_0_core::friends::FriendRecord {
-            id: "usr_friend".into(),
-            state: "online".into(),
-            location: "wrld_local:1".into(),
-            ..Default::default()
-        },
-        500,
+        &place_from_record(
+            &vrcx_0_core::friends::FriendBaselineEntry {
+                record: vrcx_0_core::friends::FriendRecord {
+                    id: "usr_friend".into(),
+                    ..Default::default()
+                },
+                presence: vrcx_0_core::friends::FriendBaselinePresence {
+                    state: "online".into(),
+                    location: "wrld_local:1".into(),
+                    ..vrcx_0_core::friends::FriendBaselinePresence::default()
+                },
+            },
+            500,
+        ),
     );
     processor.deps.instance_roster_observer = Some(timers.clone());
     processor.handle_jobs(vec![
@@ -934,12 +996,7 @@ fn enabled_write_failure_emits_fallback_and_skips_persisted_outputs() -> Result<
     assert!(worker.join().unwrap().is_err());
 
     assert!(store.get_bool("isGameNoVR", false)?);
-    assert!(processor
-        .deps
-        .overlay_activity
-        .snapshot()
-        .entries
-        .is_empty());
+    assert!(test_overlay().snapshot().entries.is_empty());
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events
         .iter()
@@ -974,21 +1031,14 @@ fn join_leave_events_reuse_current_world_name_for_overlay_content() -> Result<()
         )),
     ])?;
 
-    let entries = processor.deps.overlay_activity.snapshot().entries;
+    let entries = test_overlay().snapshot().entries;
     let entry = entries
         .iter()
-        .find(|entry| entry.activity_type == "OnPlayerJoined")
+        .find(|entry| entry.kind == ActivityKind::OnPlayerJoined)
         .expect("join overlay entry");
     assert_eq!(entry.content.world_name, "Named World");
     assert_eq!(entry.content.world_id, "wrld_named");
     assert_eq!(entry.content.display_location, "Named World public");
-    assert_eq!(
-        entry
-            .payload
-            .get("worldName")
-            .and_then(|value| value.as_str()),
-        Some("Named World")
-    );
     Ok(())
 }
 
@@ -1015,12 +1065,7 @@ fn suppresses_initial_current_instance_join_overlay_notifications() -> Result<()
 
     let join_leave = store.join_leave(&OwnerId::new(""));
     assert_eq!(join_leave.len(), 1);
-    assert!(processor
-        .deps
-        .overlay_activity
-        .snapshot()
-        .entries
-        .is_empty());
+    assert!(test_overlay().snapshot().entries.is_empty());
     Ok(())
 }
 
@@ -1045,17 +1090,142 @@ fn allows_later_current_instance_join_overlay_notifications() -> Result<()> {
         )),
     ])?;
 
-    let entries = processor.deps.overlay_activity.snapshot().entries;
+    let entries = test_overlay().snapshot().entries;
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].actor_user_id, "usr_late");
     Ok(())
 }
 
 #[test]
+fn instance_avatar_changes_reach_overlay_activity_except_for_the_current_user() -> Result<()> {
+    let (_dir, _store, processor) = test_processor("runtime-gamelog-lobby-avatar")?;
+    processor.deps.auth_scope.set("usr_self", "");
+    test_overlay().set_filters(ActivityFilters::from_json(serde_json::json!({
+        "version": 1,
+        "wrist": { "types": {
+            "OnPlayerJoined": { "scope": "off", "favoriteGroupKeys": "all" },
+            "LobbyAvatarChange": { "scope": "everyoneInInstance", "favoriteGroupKeys": "all" }
+        } }
+    })));
+    let mut jobs = vec![GameLogWorkerJob::Event(event(
+        "2026-05-14T08:30:00.000Z",
+        GameLogEventKind::Location {
+            location: "wrld_public:321".into(),
+            world_name: "Public World".into(),
+        },
+    ))];
+    for (display_name, user_id) in [("Self", "usr_self"), ("Alice", "usr_alice")] {
+        jobs.push(GameLogWorkerJob::Event(event(
+            "2026-05-14T08:30:01.000Z",
+            GameLogEventKind::PlayerJoined {
+                display_name: display_name.into(),
+                user_id: user_id.into(),
+            },
+        )));
+        for (created_at, avatar_name) in [
+            ("2026-05-14T08:30:02.000Z", "First"),
+            ("2026-05-14T08:31:00.000Z", "Second"),
+        ] {
+            jobs.push(GameLogWorkerJob::Event(event(
+                created_at,
+                GameLogEventKind::AvatarChange {
+                    display_name: display_name.into(),
+                    avatar_name: avatar_name.into(),
+                },
+            )));
+        }
+    }
+
+    processor.handle_jobs(jobs)?;
+
+    let entries = test_overlay().snapshot().entries;
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].kind.key(), "LobbyAvatarChange");
+    assert_eq!(entries[0].actor_user_id, "usr_alice");
+    assert_eq!(
+        entries[0].content.body.source_text(),
+        "changed avatar to Second"
+    );
+    Ok(())
+}
+
+#[test]
+fn moderated_players_add_blocked_and_muted_join_leave_overlay_activity() -> Result<()> {
+    let (_dir, store, processor) = test_processor("runtime-gamelog-moderated-join")?;
+    store.set_player_moderation(
+        "usr_blocked",
+        crate::PlayerModeration {
+            blocked: true,
+            muted: true,
+        },
+    );
+    test_overlay().set_filters(ActivityFilters::from_json(serde_json::json!({
+        "version": 1,
+        "wrist": { "types": {
+            "OnPlayerJoined": { "scope": "off", "favoriteGroupKeys": "all" },
+            "OnPlayerLeft": { "scope": "off", "favoriteGroupKeys": "all" },
+            "BlockedOnPlayerJoined": { "scope": "everyoneInInstance", "favoriteGroupKeys": "all" },
+            "MutedOnPlayerJoined": { "scope": "everyoneInInstance", "favoriteGroupKeys": "all" },
+            "MutedOnPlayerLeft": { "scope": "everyoneInInstance", "favoriteGroupKeys": "all" }
+        } }
+    })));
+
+    processor.handle_jobs(vec![
+        GameLogWorkerJob::Event(event(
+            "2026-05-14T08:20:00.000Z",
+            GameLogEventKind::Location {
+                location: "wrld_public:789".into(),
+                world_name: "Public World".into(),
+            },
+        )),
+        GameLogWorkerJob::Event(event(
+            "2026-05-14T08:20:31.000Z",
+            GameLogEventKind::PlayerJoined {
+                display_name: "Blocked Player".into(),
+                user_id: "usr_blocked".into(),
+            },
+        )),
+        GameLogWorkerJob::Event(event(
+            "2026-05-14T08:20:41.000Z",
+            GameLogEventKind::PlayerJoined {
+                display_name: "Other Player".into(),
+                user_id: "usr_other".into(),
+            },
+        )),
+        GameLogWorkerJob::Event(event(
+            "2026-05-14T08:21:00.000Z",
+            GameLogEventKind::PlayerLeft {
+                display_name: "Blocked Player".into(),
+                user_id: "usr_blocked".into(),
+            },
+        )),
+    ])?;
+
+    let activity_types: Vec<_> = test_overlay()
+        .snapshot()
+        .entries
+        .into_iter()
+        .map(|entry| (entry.kind.key().to_string(), entry.actor_user_id))
+        .collect();
+    assert_eq!(
+        activity_types,
+        [
+            (
+                "BlockedOnPlayerJoined".to_string(),
+                "usr_blocked".to_string()
+            ),
+            ("MutedOnPlayerJoined".to_string(), "usr_blocked".to_string()),
+            ("MutedOnPlayerLeft".to_string(), "usr_blocked".to_string()),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn game_log_presence_enables_current_instance_gps_surface_filtering() -> Result<()> {
     let (_dir, _db, processor) = test_processor("runtime-gamelog-gps-surface-filter")?;
-    let overlay = &processor.deps.overlay_activity;
-    overlay.set_filters(OverlayActivityFilters::from_json(serde_json::json!({
+    let overlay = &test_overlay();
+    overlay.set_filters(ActivityFilters::from_json(serde_json::json!({
         "version": 1,
         "wrist": { "types": {
             "OnPlayerJoined": { "scope": "off", "favoriteGroupKeys": "all" },
@@ -1083,13 +1253,13 @@ fn game_log_presence_enables_current_instance_gps_surface_filtering() -> Result<
         } }
     })));
     overlay.set_friend_user_ids(["usr_selected"]);
-    overlay.set_favorite_groups(OverlayFavoriteGroups::from_pairs([(
+    overlay.set_favorite_groups(ActivityFavoriteGroups::from_pairs([(
         "fav-selected",
         ["usr_selected"].as_slice(),
     )]));
     let sink = RecordingOverlaySink::default();
     overlay.set_sink(sink.clone());
-    overlay.set_delivery_armed(true);
+    overlay.arm_delivery();
     let location_at = (chrono::Utc::now() - chrono::Duration::seconds(40)).to_rfc3339();
     let joined_at = chrono::Utc::now().to_rfc3339();
 
@@ -1114,22 +1284,15 @@ fn game_log_presence_enables_current_instance_gps_surface_filtering() -> Result<
     assert_eq!(joined.len(), 1);
     assert!(joined[0].vr);
     assert!(joined[0].hmd);
-    overlay.ingest_friend_projection(&FriendProjection {
-        feed_entries: vec![vrcx_0_application_core::FeedLiveEntry::Gps {
-            created_at: chrono::Utc::now().to_rfc3339(),
-            user_id: "usr_selected".into(),
-            display_name: "Selected Friend".into(),
-            location: "wrld_current:123".into(),
-            world_name: String::new(),
-            previous_location: String::new(),
-            time: 0,
-            group_name: String::new(),
-            world_id: None,
-            display_location: None,
-            owner_user_id: String::new(),
-        }],
-        ..FriendProjection::new(0, 0)
-    });
+    let mut gps = ActivityEvent::new(
+        ActivityKind::Gps,
+        "friend-feed:GPS:usr_selected",
+        chrono::Utc::now().to_rfc3339(),
+    );
+    gps.actor = ActivityActor::new("usr_selected", "Selected Friend");
+    gps.subject = ActivitySubject::User("usr_selected".into());
+    gps.facts.location = "wrld_current:123".into();
+    overlay.ingest(gps);
 
     let gps = sink.take_deliveries();
     assert_eq!(gps.len(), 1);
@@ -1138,7 +1301,7 @@ fn game_log_presence_enables_current_instance_gps_surface_filtering() -> Result<
     assert!(!gps[0].hmd);
     let entries = overlay.snapshot().entries;
     assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0].activity_type, "GPS");
+    assert_eq!(entries[0].kind.key(), "GPS");
     Ok(())
 }
 
@@ -1171,9 +1334,9 @@ fn suppresses_leave_overlay_notifications_right_after_destination() -> Result<()
 
     let join_leave = store.join_leave(&OwnerId::new(""));
     assert_eq!(join_leave.len(), 2);
-    let entries = processor.deps.overlay_activity.snapshot().entries;
+    let entries = test_overlay().snapshot().entries;
     assert_eq!(entries.len(), 1);
-    assert_eq!(entries[0].activity_type, "OnPlayerJoined");
+    assert_eq!(entries[0].kind.key(), "OnPlayerJoined");
     Ok(())
 }
 
@@ -1210,12 +1373,7 @@ fn suppresses_current_user_join_leave_overlay_notifications() -> Result<()> {
 
     let join_leave = store.join_leave(&OwnerId::new("usr_self"));
     assert_eq!(join_leave.len(), 2);
-    assert!(processor
-        .deps
-        .overlay_activity
-        .snapshot()
-        .entries
-        .is_empty());
+    assert!(test_overlay().snapshot().entries.is_empty());
     Ok(())
 }
 
@@ -1418,12 +1576,7 @@ fn current_file_replay_restores_members_without_backfilling_history() -> Result<
     assert_eq!(snapshot.players.len(), 2);
     assert!(store.join_leave(&OwnerId::new("")).is_empty());
     assert!(store.locations(&OwnerId::new("")).is_empty());
-    assert!(processor
-        .deps
-        .overlay_activity
-        .snapshot()
-        .entries
-        .is_empty());
+    assert!(test_overlay().snapshot().entries.is_empty());
     let displayed = crate::player_list_runtime_snapshot(&snapshot, "wrld_current:1");
     assert_eq!(displayed.players.len(), 2);
     assert!(displayed
@@ -1512,7 +1665,7 @@ fn live_chunks_use_current_engine_for_join_suppression() -> Result<()> {
             *origin = crate::GameLogEventOrigin::Live;
         }
         processor.handle_jobs(vec![joined])?;
-        let count = processor.deps.overlay_activity.snapshot().entries.len();
+        let count = test_overlay().snapshot().entries.len();
         assert_eq!(count, 0);
     }
     Ok(())
@@ -1688,7 +1841,7 @@ fn regression_runtime_acknowledges_failure_and_continues_after_config_recovers()
         crate::HostSessionRuntime::new(),
         deps.snapshot.clone(),
         deps.host_actions,
-        deps.overlay_activity,
+        deps.activity,
         deps.world_cache,
         None,
     ));
@@ -1894,12 +2047,7 @@ fn side_effect_events_without_history_rows_still_advance_the_restart_position() 
             world_name: "Sync".into(),
         },
     );
-    let video_sync = event(
-        "2026-05-14T04:00:20Z",
-        GameLogEventKind::VideoSync {
-            timestamp: "1000".into(),
-        },
-    );
+    let desktop_mode = event("2026-05-14T04:00:20Z", GameLogEventKind::DesktopMode);
     let side_effects = |processor: &GameLogProcessor| {
         processor
             .deps
@@ -1919,7 +2067,7 @@ fn side_effect_events_without_history_rows_still_advance_the_restart_position() 
     processor.handle_jobs(vec![scan_job(
         "output_log_current.txt",
         300,
-        vec![video_sync.clone()],
+        vec![desktop_mode.clone()],
         true,
     )])?;
     assert_eq!(side_effects(&processor), 1);
@@ -1931,7 +2079,7 @@ fn side_effect_events_without_history_rows_still_advance_the_restart_position() 
         replayed.push(location);
     }
     if resume_position <= 200 {
-        replayed.push(video_sync);
+        replayed.push(desktop_mode);
     }
     let mut context = crate::game_log_parser::LogContext::new();
     context.position = 300;
@@ -1968,7 +2116,9 @@ impl vrcx_0_application_core::RuntimeTaskExecutor for InlineVideoTaskExecutor {
             .enable_all()
             .build()
             .unwrap()
-            .block_on(task);
+            .block_on(async {
+                let _ = tokio::time::timeout(std::time::Duration::from_secs(1), task).await;
+            });
         Box::new(Self)
     }
 }
@@ -2018,14 +2168,14 @@ fn video_notifications_use_enriched_activity_and_respect_replay_and_surface_filt
         processor.deps.video_metadata = Arc::new(VideoMetadataFixture);
         processor.deps.auth_scope.set("usr_video_owner", "");
         processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
-        let overlay = &processor.deps.overlay_activity;
+        let overlay = &test_overlay();
         let scope = if enabled { "on" } else { "off" };
         let mut filters = serde_json::json!({ "version": 1 });
         for surface in ["wrist", "desktop", "vr", "hmd", "webhook", "tts"] {
             filters[surface] = serde_json::json!({ "types": { "VideoPlay": { "scope": scope } } });
         }
-        overlay.set_filters(OverlayActivityFilters::from_json(filters));
-        overlay.set_delivery_armed(true);
+        overlay.set_filters(ActivityFilters::from_json(filters));
+        overlay.arm_delivery();
         let sink = RecordingOverlaySink::default();
         overlay.set_sink(sink.clone());
         let timestamp = chrono::Utc::now().to_rfc3339();
@@ -2062,14 +2212,14 @@ fn video_notifications_use_enriched_activity_and_respect_replay_and_surface_filt
         } else {
             assert_eq!(deliveries.len(), 1);
             let delivery = &deliveries[0];
-            assert_eq!(delivery.entry.activity_type, "VideoPlay");
+            assert_eq!(delivery.entry.kind.key(), "VideoPlay");
             assert_eq!(
                 delivery.entry.content.body.source_text(),
-                "Resolved video title"
+                "Resolved video title (Video User)"
             );
             assert_eq!(delivery.entry.content.world_name, "Video World");
             assert_eq!(
-                delivery.entry.payload.trimmed_text("thumbnailUrl"),
+                delivery.entry.content.image_url,
                 "https://example.test/thumbnail.jpg"
             );
             assert!(
@@ -2083,7 +2233,7 @@ fn video_notifications_use_enriched_activity_and_respect_replay_and_surface_filt
 
 struct ScopeChangingVideoMetadata {
     auth_scope: RuntimeAuthScope,
-    overlay: OverlayActivityRuntime,
+    overlay: ActivityRouter,
     next_user_id: &'static str,
 }
 
@@ -2098,7 +2248,7 @@ impl crate::VideoMetadataPort for ScopeChangingVideoMetadata {
         self.overlay.clear_runtime_state();
         if !self.next_user_id.is_empty() {
             self.auth_scope.set(self.next_user_id, "");
-            self.overlay.set_delivery_armed(true);
+            self.overlay.arm_delivery();
         }
         VideoMetadataFixture
             .youtube_metadata(video_id, api_key)
@@ -2116,13 +2266,13 @@ fn video_notifications_discard_metadata_completed_after_auth_scope_changes() -> 
         processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
         processor.deps.video_metadata = Arc::new(ScopeChangingVideoMetadata {
             auth_scope: processor.deps.auth_scope.clone(),
-            overlay: processor.deps.overlay_activity.clone(),
+            overlay: test_overlay(),
             next_user_id,
         });
-        let overlay = &processor.deps.overlay_activity;
+        let overlay = &test_overlay();
         let sink = RecordingOverlaySink::default();
         overlay.set_sink(sink.clone());
-        overlay.set_delivery_armed(true);
+        overlay.arm_delivery();
         processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
             &chrono::Utc::now().to_rfc3339(),
             GameLogEventKind::VideoPlay {
@@ -2133,5 +2283,43 @@ fn video_notifications_discard_metadata_completed_after_auth_scope_changes() -> 
         assert!(sink.take_deliveries().is_empty());
         assert!(overlay.snapshot().entries.is_empty());
     }
+    Ok(())
+}
+
+#[test]
+fn group_instance_locations_record_the_owning_group_name() -> Result<()> {
+    let (_dir, store, mut processor) = test_processor("runtime-gamelog-group-name")?;
+    let mut media = TestGameMediaPort::default();
+    media.groups.insert(
+        "grp_owner".into(),
+        serde_json::json!({ "id": "grp_owner", "name": " Owner Group " }),
+    );
+    processor.deps.instance_media = Arc::new(media);
+    processor
+        .deps
+        .auth_scope
+        .set_identity("usr_owner", "Owner", "");
+    processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
+
+    processor.handle_jobs(vec![
+        GameLogWorkerJob::Event(event(
+            "2026-05-14T04:00:00.000Z",
+            GameLogEventKind::Location {
+                location: "wrld_group:1~group(grp_owner)~groupAccessType(public)".into(),
+                world_name: "Group World".into(),
+            },
+        )),
+        GameLogWorkerJob::Event(event(
+            "2026-05-14T05:00:00.000Z",
+            GameLogEventKind::Location {
+                location: "wrld_group:2~hidden(usr_owner)".into(),
+                world_name: "Group World".into(),
+            },
+        )),
+    ])?;
+
+    let locations = store.locations(&OwnerId::new("usr_owner"));
+    assert_eq!(locations[0].group_name, "Owner Group");
+    assert_eq!(locations[1].group_name, "");
     Ok(())
 }

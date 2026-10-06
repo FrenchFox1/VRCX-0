@@ -1,6 +1,10 @@
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
+use vrcx_0_core::game_process::GameProcessEvent;
 
-use super::{GameLogIngestEngine, GameLogIngestOptions, GameLogIngestOutput, GameLogSideEffect};
+use super::{
+    GameLogAvatarChange, GameLogIngestEngine, GameLogIngestOptions, GameLogIngestOutput,
+    GameLogProcessEvent, GameLogSideEffect,
+};
 
 fn event(created_at: &str, kind: GameLogEventKind) -> GameLogEvent {
     GameLogEvent {
@@ -8,6 +12,62 @@ fn event(created_at: &str, kind: GameLogEventKind) -> GameLogEvent {
         created_at: created_at.into(),
         kind,
     }
+}
+
+#[test]
+fn reports_an_instance_avatar_change_only_after_the_first_avatar_seen() {
+    let mut engine = GameLogIngestEngine::default();
+    let avatar = |created_at: &str, avatar_name: &str| {
+        event(
+            created_at,
+            GameLogEventKind::AvatarChange {
+                display_name: "Alice".into(),
+                avatar_name: avatar_name.into(),
+            },
+        )
+    };
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-09-06T15:52:04Z",
+                GameLogEventKind::Location {
+                    location: "wrld_room:1".into(),
+                    world_name: "Room".into(),
+                },
+            ),
+            event(
+                "2026-09-06T15:52:05Z",
+                GameLogEventKind::PlayerJoined {
+                    display_name: "Alice".into(),
+                    user_id: "usr_alice".into(),
+                },
+            ),
+            avatar("2026-09-06T15:52:06Z", "First"),
+            avatar("2026-09-06T15:52:07Z", "First"),
+            avatar("2026-09-06T15:52:08Z", "Second"),
+            event(
+                "2026-09-06T15:53:00Z",
+                GameLogEventKind::Location {
+                    location: "wrld_next:2".into(),
+                    world_name: "Next".into(),
+                },
+            ),
+            avatar("2026-09-06T15:53:01Z", "Third"),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    assert_eq!(
+        output.avatar_changes,
+        [GameLogAvatarChange {
+            created_at: "2026-09-06T15:52:08Z".into(),
+            user_id: "usr_alice".into(),
+            display_name: "Alice".into(),
+            avatar_name: "Second".into(),
+            location: "wrld_room:1".into(),
+            world_name: "Room".into(),
+        }]
+    );
 }
 
 #[test]
@@ -230,6 +290,53 @@ fn leaving_room_resets_now_playing_for_world_switch_and_rejoin() {
             [GameLogSideEffect::Video(_)]
         ));
     }
+}
+
+#[test]
+fn videos_from_a_closed_game_never_stay_now_playing() {
+    let video = |at: &str| {
+        event(
+            at,
+            GameLogEventKind::VideoPlay {
+                video_url: format!("https://example.test/{at}.mp4"),
+                display_name: "Player".into(),
+            },
+        )
+    };
+    let game_closed = GameLogProcessEvent {
+        process: GameProcessEvent {
+            is_game_running: false,
+            is_steamvr_running: false,
+            game_changed: false,
+        },
+        changed_at: "2026-05-14T00:10:00.000Z".into(),
+    };
+
+    let mut scanned_first = GameLogIngestEngine::default();
+    scanned_first.ingest_events(
+        &[video("2026-05-14T00:01:00.000Z")],
+        GameLogIngestOptions::default(),
+    );
+    assert_eq!(
+        scanned_first
+            .handle_process_event(game_closed.clone())
+            .side_effects,
+        vec![GameLogSideEffect::NowPlayingReset]
+    );
+
+    let mut closed_first = GameLogIngestEngine::default();
+    closed_first.handle_process_event(game_closed);
+    let output = closed_first.ingest_events(
+        &[video("2026-05-14T00:01:00.000Z")],
+        GameLogIngestOptions::default(),
+    );
+    assert!(matches!(
+        output.side_effects.as_slice(),
+        [
+            GameLogSideEffect::Video(_),
+            GameLogSideEffect::NowPlayingReset
+        ]
+    ));
 }
 
 #[test]

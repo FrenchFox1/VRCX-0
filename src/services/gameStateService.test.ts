@@ -2,8 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     appRuntimeDiscordReconcileRequest: vi.fn(),
-    startCurrentAvatarWearTimer: vi.fn(),
-    stopCurrentAvatarWearTimer: vi.fn(),
     resetGameLogSessionState: vi.fn()
 }));
 
@@ -14,16 +12,10 @@ vi.mock('@/platform/tauri/bindings', () => ({
     }
 }));
 
-vi.mock('@/services/avatarWearTimeService', () => ({
-    startCurrentAvatarWearTimer: mocks.startCurrentAvatarWearTimer,
-    stopCurrentAvatarWearTimer: mocks.stopCurrentAvatarWearTimer
-}));
-
 vi.mock('@/services/gameLogIngestService', () => ({
     resetGameLogSessionState: mocks.resetGameLogSessionState
 }));
 
-import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
@@ -36,12 +28,10 @@ describe('gameStateService lifecycle transitions', () => {
         vi.clearAllMocks();
         useRuntimeStore.getState().resetRuntimeState();
         useSessionStore.getState().resetSessionState();
-        useNotificationStore.getState().resetNotificationState();
         useSessionStore.getState().setSessionState({
             sessionPhase: 'ready',
             isLoggedIn: true
         });
-        mocks.stopCurrentAvatarWearTimer.mockResolvedValue(undefined);
         mocks.appRuntimeDiscordReconcileRequest.mockResolvedValue(1);
     });
 
@@ -94,18 +84,12 @@ describe('gameStateService lifecycle transitions', () => {
             url: '',
             name: ''
         });
-        expect(mocks.startCurrentAvatarWearTimer).toHaveBeenCalledTimes(1);
         expect(mocks.appRuntimeDiscordReconcileRequest).toHaveBeenCalledTimes(
             1
         );
-        expect(useNotificationStore.getState().items[0]).toMatchObject({
-            level: 'info',
-            title: 'VRChat running',
-            message: 'SteamVR is running.'
-        });
     });
 
-    it('stops a game session by clearing stale local current-user presence and stopping avatar timing', async () => {
+    it('stops a game session by clearing the local game state', async () => {
         useRuntimeStore.getState().setGameState({
             isGameRunning: true,
             isSteamVRRunning: true,
@@ -114,18 +98,6 @@ describe('gameStateService lifecycle transitions', () => {
             currentWorldName: 'Old World',
             currentDestination: 'wrld_next:456',
             lastGameStartedAt: '2026-06-08T09:00:00.000Z'
-        });
-        useRuntimeStore.getState().setAuthBootstrap({
-            currentUserId: 'usr_self',
-            currentUserSnapshot: {
-                id: 'usr_self',
-                location: 'wrld_old:123',
-                $locationTag: 'wrld_old:123',
-                travelingToLocation: 'wrld_next:456',
-                $travelingToLocation: 'wrld_next:456',
-                worldId: 'wrld_old',
-                status: 'active'
-            }
         });
         useRuntimeStore.getState().setInstanceQueueState({
             active: true,
@@ -154,28 +126,11 @@ describe('gameStateService lifecycle transitions', () => {
             lastGameLogType: 'game-stopped'
         });
         expect(useRuntimeStore.getState().instanceQueue.active).toBe(false);
-        expect(
-            useRuntimeStore.getState().auth.currentUserSnapshot
-        ).toMatchObject({
-            id: 'usr_self',
-            location: '',
-            $locationTag: '',
-            travelingToLocation: '',
-            $travelingToLocation: '',
-            worldId: '',
-            status: 'active'
-        });
         expect(mocks.resetGameLogSessionState).toHaveBeenCalledWith(
             '2026-06-08T10:00:00.000Z'
         );
         expect(mocks.appRuntimeDiscordReconcileRequest).toHaveBeenCalledTimes(
             1
         );
-        expect(mocks.stopCurrentAvatarWearTimer).toHaveBeenCalledTimes(1);
-        expect(useNotificationStore.getState().items[0]).toMatchObject({
-            level: 'info',
-            title: 'VRChat stopped',
-            message: 'SteamVR is not running.'
-        });
     });
 });

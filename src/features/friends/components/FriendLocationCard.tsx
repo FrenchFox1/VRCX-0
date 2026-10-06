@@ -9,22 +9,26 @@ import { useTranslation } from 'react-i18next';
 import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
+import {
+    ProfileAvatarFrame,
+    ProfileNameplate,
+    useDecorationHover
+} from '@/components/ProfileDecorations';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
+import {
+    presenceDotClassName,
+    presenceLocationTag,
+    presenceTravelingTag
+} from '@/domain/friends/presence';
 import type { FriendRecord } from '@/domain/friends/types';
 import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
 import { cn } from '@/lib/utils';
 import type { FriendLocationTimeSource } from '@/platform/tauri/bindings';
 import { userImage } from '@/services/entityMediaService';
-import {
-    normalizeUserStatus,
-    SOLID_USER_STATUS_DOT_CLASS_NAMES,
-    USER_STATUS_INDICATOR_CLASS_NAMES
-} from '@/shared/utils/friendStatus';
+import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
-import { useRuntimeStore } from '@/state/runtimeStore';
-import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -51,29 +55,10 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 
-import type { FriendLocationRecord } from '../friends-locations-rows/types';
 import type {
     FriendsLocationsCardContentMode,
     getFriendsLocationsDensityConfig
 } from '../friendsLocationsDensity';
-
-type FriendLocationCardSource = Pick<
-    FriendLocationRecord,
-    | 'id'
-    | 'userId'
-    | 'location'
-    | 'state'
-    | 'stateBucket'
-    | 'status'
-    | 'travelingToLocation'
-    | '$travelingToLocation'
-> & { pendingOffline?: boolean };
-
-export type FriendLocationCardFriend = FriendRecord & {
-    ref?: FriendLocationCardSource | null;
-    pendingOffline?: boolean;
-    travelingToLocation?: string | null;
-};
 
 type FriendLocationCardDensity = Pick<
     ReturnType<typeof getFriendsLocationsDensityConfig>,
@@ -89,216 +74,6 @@ type FriendLocationCardDensity = Pick<
     | 'statusLineClamp'
     | 'showStatusDescription'
 >;
-
-function normalizeStatusText(value: unknown) {
-    const status = normalizeUserStatus(value);
-    if (status === 'private:private') {
-        return 'private';
-    }
-    if (status === 'traveling:traveling') {
-        return 'traveling';
-    }
-    return status;
-}
-
-function readFriendRef(friend: FriendLocationCardFriend) {
-    return friend?.ref && typeof friend.ref === 'object' ? friend.ref : friend;
-}
-
-function hasFriendRef(friend: FriendLocationCardFriend) {
-    return Boolean(friend?.ref && typeof friend.ref === 'object');
-}
-
-function isLiveBucketState(value: unknown) {
-    const state = normalizeStatusText(value);
-    return state === 'online' || state === 'active';
-}
-
-function isStaleOfflineLocationForLiveState(location: unknown, state: unknown) {
-    return (
-        isLiveBucketState(state) &&
-        normalizeLocationStatus(location) === 'offline'
-    );
-}
-
-function resolveRawCardLocation(
-    rawLocation: unknown,
-    friend: FriendLocationCardFriend
-) {
-    const source = readFriendRef(friend);
-    return (
-        normalizeLocationValue(source?.location) ||
-        (hasFriendRef(friend) ? '' : normalizeLocationValue(rawLocation)) ||
-        ''
-    );
-}
-
-function resolveCardLocation(
-    rawLocation: unknown,
-    friend: FriendLocationCardFriend
-) {
-    const source = readFriendRef(friend);
-    const state = normalizeStatusText(source?.stateBucket || source?.state);
-    const explicitLocation = resolveRawCardLocation(rawLocation, friend);
-    if (isStaleOfflineLocationForLiveState(explicitLocation, state)) {
-        return '';
-    }
-    const parsedExplicitLocation = parseLocation(explicitLocation);
-    if (parsedExplicitLocation.isOffline) {
-        return 'offline';
-    }
-    if (parsedExplicitLocation.isPrivate) {
-        return 'private';
-    }
-    if (parsedExplicitLocation.isTraveling) {
-        return 'traveling';
-    }
-    if (explicitLocation) {
-        return explicitLocation;
-    }
-    return '';
-}
-
-function normalizeLocationStatus(value: unknown) {
-    const parsedLocation = parseLocation(value);
-    if (parsedLocation.isOffline) {
-        return 'offline';
-    }
-    if (parsedLocation.isPrivate) {
-        return 'private';
-    }
-    if (parsedLocation.isTraveling) {
-        return 'traveling';
-    }
-    return normalizeStatusText(value);
-}
-
-function resolveFriendLocationStatus(
-    friend: FriendLocationCardFriend,
-    currentUser: CurrentUserSnapshotState | null
-) {
-    const source = readFriendRef(friend);
-    if (!source) {
-        return '';
-    }
-    const userId = normalizeStatusText(source.id || source.userId);
-    const rawStatus = normalizeStatusText(source.status);
-    const friendStatus = normalizeStatusText(source.status);
-    const state = normalizeStatusText(source.stateBucket || source.state);
-    const location = normalizeLocationStatus(source.location);
-    const isOnlineByCurrentSnapshot = (
-        currentUser?.onlineFriends || []
-    ).includes(userId);
-    const isActiveByCurrentSnapshot = (
-        currentUser?.activeFriends || []
-    ).includes(userId);
-
-    if (friend?.pendingOffline || source?.pendingOffline) {
-        return 'offline';
-    }
-    if (
-        rawStatus !== 'active' &&
-        location === 'private' &&
-        state === '' &&
-        userId &&
-        !isOnlineByCurrentSnapshot
-    ) {
-        return isActiveByCurrentSnapshot ? 'active-state' : 'offline';
-    }
-    if (state === 'active') {
-        if (friendStatus === 'join me') {
-            return 'active-join';
-        }
-        if (friendStatus === 'ask me') {
-            return 'active-ask';
-        }
-        if (friendStatus === 'busy') {
-            return 'active-busy';
-        }
-        return 'active-state';
-    }
-    if (state === 'offline' || (location === 'offline' && state !== 'online')) {
-        return 'offline';
-    }
-    if (rawStatus === 'active') {
-        return 'online';
-    }
-    if (rawStatus === 'join me') {
-        return 'join me';
-    }
-    if (rawStatus === 'ask me') {
-        return 'ask me';
-    }
-    if (rawStatus === 'busy') {
-        return 'busy';
-    }
-    return '';
-}
-
-function resolveStatusTone(
-    friend: FriendLocationCardFriend,
-    currentUser: CurrentUserSnapshotState | null
-) {
-    const status = resolveFriendLocationStatus(friend, currentUser);
-
-    if (status === 'join me') {
-        return {
-            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES['join me']
-        };
-    }
-
-    if (status === 'ask me') {
-        return {
-            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES['ask me']
-        };
-    }
-
-    if (status === 'busy') {
-        return {
-            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES.busy
-        };
-    }
-
-    if (status === 'online') {
-        return {
-            dotClassName: SOLID_USER_STATUS_DOT_CLASS_NAMES.active
-        };
-    }
-
-    if (
-        status === 'active-state' ||
-        status === 'active-join' ||
-        status === 'active-ask' ||
-        status === 'active-busy'
-    ) {
-        const colorClassName =
-            status === 'active-join'
-                ? 'border-[var(--status-joinme)]'
-                : status === 'active-ask'
-                  ? 'border-[var(--status-askme)]'
-                  : status === 'active-busy'
-                    ? 'border-[var(--status-busy)]'
-                    : 'border-[var(--status-online)]';
-        let statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES.active;
-        if (status === 'active-join') {
-            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES['join me'];
-        } else if (status === 'active-ask') {
-            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES['ask me'];
-        } else if (status === 'active-busy') {
-            statusClassName = USER_STATUS_INDICATOR_CLASS_NAMES.busy;
-        }
-        return {
-            dotClassName: cn(statusClassName, 'bg-background', colorClassName)
-        };
-    }
-
-    return {
-        dotClassName:
-            status === 'offline'
-                ? SOLID_USER_STATUS_DOT_CLASS_NAMES.offline
-                : 'hidden'
-    };
-}
 
 const DEFAULT_CARD_DENSITY_CONFIG: FriendLocationCardDensity = {
     value: 'compact',
@@ -323,8 +98,6 @@ export interface FriendLocationCardLocationModel {
     label?: string;
     groupHint?: string;
     raw?: string | null;
-    traveling?: boolean;
-    travelingTo?: string | null;
     timerLocation?: string | null;
 }
 
@@ -332,6 +105,8 @@ interface FriendLocationCardPresentation {
     density?: FriendLocationCardDensity;
     contentMode?: FriendsLocationsCardContentMode;
     displayInstanceInfo?: boolean;
+    showAvatarFrame?: boolean;
+    showNameplate?: boolean;
 }
 
 interface FriendLocationCardCapabilities {
@@ -352,7 +127,7 @@ interface FriendLocationCardActions {
 }
 
 export interface FriendLocationCardProps {
-    friend: FriendLocationCardFriend;
+    friend: FriendRecord;
     location?: FriendLocationCardLocationModel;
     presentation?: FriendLocationCardPresentation;
     capabilities?: FriendLocationCardCapabilities;
@@ -373,14 +148,14 @@ export function FriendLocationCard({
         label: locationLabel = '',
         groupHint = '',
         raw: rawLocation = '',
-        traveling: isTraveling = false,
-        travelingTo: travelingLocation = '',
         timerLocation = ''
     } = location;
     const {
         density: densityConfig = DEFAULT_CARD_DENSITY_CONFIG,
         contentMode = 'full',
-        displayInstanceInfo = true
+        displayInstanceInfo = true,
+        showAvatarFrame = false,
+        showNameplate = false
     } = presentation;
     const {
         useLocation: canUseFriendLocation = false,
@@ -398,45 +173,26 @@ export function FriendLocationCard({
         sendBoop: onSendBoop
     } = actions;
 
-    const currentUserSnapshot = useRuntimeStore(
-        (state) => state.auth.currentUserSnapshot
-    );
+    const decorationHover = useDecorationHover();
+    const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
+    const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
-    const tone = resolveStatusTone(friend, currentUserSnapshot);
+    const presence = friend.$presence;
+    const statusDotClassName = presenceDotClassName(presence, friend.status);
     const canOpenUser = typeof onOpenUser === 'function';
     const canOpenWorld = typeof onOpenWorld === 'function';
     const localLocation =
         location.source === 'gameLog'
             ? normalizeLocationValue(rawLocation)
             : '';
-    const cardLocation =
-        localLocation || resolveCardLocation(rawLocation, friend);
-    const source = readFriendRef(friend);
-    const hasRef = hasFriendRef(friend);
-    const sourceState = normalizeStatusText(
-        source?.stateBucket || source?.state
-    );
-    const rawSourceLocation =
-        localLocation || resolveRawCardLocation(rawLocation, friend);
-    const sourceLocation = isStaleOfflineLocationForLiveState(
-        rawSourceLocation,
-        sourceState
-    )
-        ? ''
-        : rawSourceLocation;
-    const sourceTravelingLocation =
-        normalizeLocationValue(
-            source?.travelingToLocation || source?.$travelingToLocation
-        ) ||
-        (hasRef ? '' : normalizeLocationValue(travelingLocation)) ||
-        '';
-    const isCardTraveling =
-        normalizeLocationStatus(sourceLocation) === 'traveling' ||
-        (!hasRef && Boolean(isTraveling));
-    const locationValue = isCardTraveling ? 'traveling' : cardLocation;
-    const travelingValue = isCardTraveling
-        ? sourceTravelingLocation || undefined
-        : undefined;
+    const locationValue =
+        localLocation ||
+        (presence.kind === 'active'
+            ? ''
+            : presenceLocationTag(presence, { preferTraveling: false }));
+    const travelingValue = localLocation
+        ? undefined
+        : presenceTravelingTag(presence) || undefined;
     const resolvedDensityConfig = densityConfig || DEFAULT_CARD_DENSITY_CONFIG;
     const isDense = resolvedDensityConfig.layout === 'item';
     const resolvedWorldActionLabel =
@@ -449,24 +205,23 @@ export function FriendLocationCard({
     const statusLineClampClass = resolveLineClampClass(
         resolvedDensityConfig.statusLineClamp
     );
-    const showStatusDot = !tone.dotClassName.includes('hidden');
     const showLocationInfo =
         contentMode === 'full' &&
         displayInstanceInfo &&
         (Boolean(locationValue) ||
             (Boolean(locationLabel) &&
-                normalizeStatusText(locationLabel) !== 'offline'));
+                normalizeUserStatus(locationLabel) !== 'offline'));
     const showStatusDescription =
         contentMode !== 'identity' &&
         resolvedDensityConfig.showStatusDescription &&
         Boolean(friend.statusDescription);
-    const hoverUserId = normalizeString(source?.id || friend?.id);
+    const hoverUserId = normalizeString(friend.id);
     const instanceEpoch = useFriendLocationTimeEpoch(
         hoverUserId,
         timerLocation || ''
     );
     const avatarNode = (
-        <UserHoverCard userId={hoverUserId} seed={source}>
+        <UserHoverCard userId={hoverUserId} seed={friend}>
             <Avatar className="size-[var(--friend-card-avatar-size)]">
                 {avatarUrl ? (
                     <AvatarImage
@@ -484,12 +239,16 @@ export function FriendLocationCard({
                 <AvatarFallback>
                     <UserIcon aria-hidden="true" />
                 </AvatarFallback>
-                {showStatusDot ? (
-                    <UserStatusDot
-                        statusDotClassName={tone.dotClassName}
-                        className="absolute -right-0.5 -bottom-0.5 z-10 size-[var(--friend-card-dot-size)]"
+                {iconFrameId ? (
+                    <ProfileAvatarFrame
+                        templateId={iconFrameId}
+                        active={decorationHover.active}
                     />
                 ) : null}
+                <UserStatusDot
+                    statusDotClassName={statusDotClassName}
+                    className="absolute -right-0.5 -bottom-0.5 z-10 size-[var(--friend-card-dot-size)]"
+                />
             </Avatar>
         </UserHoverCard>
     );
@@ -514,7 +273,7 @@ export function FriendLocationCard({
                 isDense ? 'items-center gap-2' : 'flex-col items-start'
             )}
         >
-            <UserHoverCard userId={hoverUserId} seed={source}>
+            <UserHoverCard userId={hoverUserId} seed={friend}>
                 <CardTitle
                     className={cn(
                         'min-w-0 truncate text-[length:var(--friend-card-title-font-size)]',
@@ -634,13 +393,14 @@ export function FriendLocationCard({
                     <Card
                         size="sm"
                         className={cn(
-                            'bg-object-surface ring-border hover:bg-object-surface-hover focus-visible:ring-ring/50 relative h-full rounded-lg transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none',
+                            'bg-object-surface border-border focus-visible:ring-ring/50 relative isolate h-full rounded-lg border ring-0 transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none hover:bg-[color-mix(in_oklch,var(--object-surface),var(--foreground)_7%)] focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none',
                             canOpenUser && 'cursor-pointer',
                             isDense
                                 ? 'flex-row items-center gap-[calc(var(--friend-card-gap)+2px)] rounded-lg p-[var(--friend-card-padding)]'
                                 : 'gap-[var(--friend-card-gap)] py-[var(--friend-card-padding)]'
                         )}
                         onClick={onOpenUser}
+                        {...decorationHover.hoverProps}
                         onKeyDown={(event) => {
                             if (
                                 event.target === event.currentTarget &&
@@ -666,6 +426,12 @@ export function FriendLocationCard({
                             '--friend-card-title-font-size': `${resolvedDensityConfig.titleFontSize}px`
                         }}
                     >
+                        {nameplateId ? (
+                            <ProfileNameplate
+                                templateId={nameplateId}
+                                active={decorationHover.active}
+                            />
+                        ) : null}
                         {cardActions}
                         {isDense ? (
                             <>

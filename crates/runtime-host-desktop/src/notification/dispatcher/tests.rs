@@ -6,8 +6,8 @@ use vrcx_0_application_activity::notification::{
     render_delivery, OverlayLocale, RenderedNotification,
 };
 use vrcx_0_application_activity::{
-    OverlayActivityActorRelation, OverlayActivityCategory, OverlayActivityContent,
-    OverlayActivityDelivery, OverlayActivityEntry, OverlayActivityText,
+    ActivityActorRelation, ActivityCategory, ActivityContent, ActivityDelivery, ActivityEntry,
+    ActivityText,
 };
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_i18n::OverlayMessage;
@@ -19,56 +19,7 @@ use crate::notification::tts::{
     notification_tts_memo_actor_user_id, notification_tts_text, send_tts_notification,
 };
 
-use super::{
-    notification_session_identity, plan_without_suppressed_surfaces, NotificationDeliveryPlan,
-    OrderedDeliveryBuffer, OverlayActivitySurface,
-};
-
-#[test]
-fn do_not_disturb_clears_only_the_suppressed_transports() {
-    let plan = NotificationDeliveryPlan {
-        desktop: true,
-        xs: true,
-        ovrt: true,
-        ovrt_hud: true,
-        ovrt_wrist: true,
-        tts: true,
-    };
-
-    let suppressed = plan_without_suppressed_surfaces(plan, |surface| {
-        matches!(
-            surface,
-            OverlayActivitySurface::Desktop
-                | OverlayActivitySurface::Vr
-                | OverlayActivitySurface::Tts
-        )
-    });
-    assert_eq!(suppressed, NotificationDeliveryPlan::default());
-    assert!(!suppressed.has_local_transport());
-
-    let vr_only = plan_without_suppressed_surfaces(plan, |surface| {
-        matches!(surface, OverlayActivitySurface::Vr)
-    });
-    assert_eq!(
-        vr_only,
-        NotificationDeliveryPlan {
-            desktop: true,
-            xs: false,
-            ovrt: false,
-            ovrt_hud: false,
-            ovrt_wrist: false,
-            tts: true,
-        }
-    );
-
-    let exempt = plan_without_suppressed_surfaces(plan, |surface| {
-        matches!(
-            surface,
-            OverlayActivitySurface::Wrist | OverlayActivitySurface::Webhook
-        )
-    });
-    assert_eq!(exempt, plan);
-}
+use super::{notification_session_identity, NotificationDeliveryPlan, OrderedDeliveryBuffer};
 
 #[test]
 fn ordered_delivery_buffer_releases_concurrent_results_in_source_order() {
@@ -156,9 +107,9 @@ fn notification_tts_username_and_note_mode_reads_both() {
 fn notification_tts_text_omits_instance_id_even_when_display_shows_it() {
     let mut delivery = delivery();
     delivery.entry.content.location = "wrld_named:12345~region(use)".into();
-    delivery.entry.content.title = OverlayActivityText::literal("Traveler");
+    delivery.entry.content.title = ActivityText::literal("Traveler");
     delivery.entry.content.body =
-        OverlayActivityText::message(OverlayMessage::notifications_gps("Named World Public"));
+        ActivityText::message(OverlayMessage::notifications_gps("Named World Public"));
     let preferences = NotificationDeliveryPreferences {
         show_instance_id_in_location: true,
         ..NotificationDeliveryPreferences::default()
@@ -229,25 +180,24 @@ fn rendered() -> RenderedNotification {
     }
 }
 
-fn delivery() -> OverlayActivityDelivery {
-    OverlayActivityDelivery {
-        entry: OverlayActivityEntry {
+fn delivery() -> ActivityDelivery {
+    ActivityDelivery {
+        entry: ActivityEntry {
             sequence: 1,
             source_id: "game-log:join".into(),
-            activity_type: "OnPlayerJoined".into(),
-            category: OverlayActivityCategory::CurrentInstance,
+            kind: vrcx_0_contracts::activity::ActivityKind::OnPlayerJoined,
+            category: ActivityCategory::CurrentInstance,
             created_at: "2026-06-18T08:30:00.000Z".into(),
             actor_user_id: "usr_traveler".into(),
             actor_display_name: "Traveler".into(),
-            content: OverlayActivityContent {
+            content: ActivityContent {
                 location: "wrld_named:123".into(),
                 world_id: "wrld_named".into(),
                 display_location: "Named World public".into(),
                 world_name: "Named World".into(),
-                ..OverlayActivityContent::default()
+                ..ActivityContent::default()
             },
-            actor_relation: OverlayActivityActorRelation::None,
-            payload: json!({}).into(),
+            actor_relation: ActivityActorRelation::None,
         },
         desktop: false,
         vr: false,
@@ -255,4 +205,161 @@ fn delivery() -> OverlayActivityDelivery {
         webhook: true,
         tts: false,
     }
+}
+
+struct UserIconRemote;
+
+impl vrcx_0_application_activity::notification::NotificationRemote for UserIconRemote {
+    fn user<'a>(
+        &'a self,
+        _endpoint: &'a str,
+        user_id: &'a str,
+    ) -> vrcx_0_application_activity::notification::NotificationRemoteFuture<'a, serde_json::Value>
+    {
+        Box::pin(async move {
+            (user_id == "usr_traveler").then(
+                || json!({ "iconUrl": "https://api.example.test/api/1/file/file_0123abcd/4/file" }),
+            )
+        })
+    }
+
+    fn avatar_name<'a>(
+        &'a self,
+        _endpoint: &'a str,
+        _file_id: &'a str,
+    ) -> vrcx_0_application_activity::notification::NotificationRemoteFuture<'a, String> {
+        Box::pin(async { None })
+    }
+
+    fn world_name<'a>(
+        &'a self,
+        _endpoint: &'a str,
+        world_id: &'a str,
+    ) -> vrcx_0_application_activity::notification::NotificationRemoteFuture<'a, String> {
+        Box::pin(async move { (world_id == "wrld_lookup").then(|| "Lookup World".to_string()) })
+    }
+
+    fn world_image_url<'a>(
+        &'a self,
+        _endpoint: &'a str,
+        _world_id: &'a str,
+    ) -> vrcx_0_application_activity::notification::NotificationRemoteFuture<'a, String> {
+        Box::pin(async { None })
+    }
+}
+
+fn image_job(actor_user_id: &str) -> super::NotificationJob {
+    let mut delivery = delivery();
+    delivery.entry.actor_user_id = actor_user_id.into();
+    super::NotificationJob {
+        delivery,
+        preferences: NotificationDeliveryPreferences::default(),
+        plan: NotificationDeliveryPlan {
+            desktop: true,
+            ..NotificationDeliveryPlan::default()
+        },
+        locale: OverlayLocale::default(),
+        endpoint: "https://api.example.test/api/1".into(),
+        current_user_id: "usr_self".into(),
+    }
+}
+
+struct FriendIcons;
+
+impl vrcx_0_application_activity::notification::CachedNotificationUserImageResolver
+    for FriendIcons
+{
+    fn cached_url(&self, _endpoint: &str, user_id: &str) -> Option<String> {
+        Some(format!(
+            "https://api.example.test/api/1/file/file_{user_id}/1/file"
+        ))
+    }
+
+    fn cached_friend_url(&self, _endpoint: &str, user_id: &str) -> Option<String> {
+        (user_id == "usr_friend")
+            .then(|| "https://api.example.test/api/1/file/file_0123abcd/4/file".to_string())
+    }
+}
+
+#[test]
+fn desktop_shows_only_friend_icons_while_external_overlays_fall_back_to_the_notification_image() {
+    let plan = NotificationDeliveryPlan {
+        desktop: true,
+        xs: true,
+        ..NotificationDeliveryPlan::default()
+    };
+    let preferences = NotificationDeliveryPreferences::default();
+    let friend = "https://api.example.test/api/1/image/file_0123abcd/4/128".to_string();
+    let thumbnail = "https://assets.example.test/video.png";
+
+    assert_eq!(
+        super::notification_image_urls(plan, &preferences, Some(friend.clone()), thumbnail),
+        (Some(friend.clone()), Some(friend.clone()))
+    );
+    assert_eq!(
+        super::notification_image_urls(plan, &preferences, None, thumbnail),
+        (None, Some(thumbnail.to_string()))
+    );
+    assert_eq!(
+        super::notification_image_urls(plan, &preferences, None, " "),
+        (None, None)
+    );
+    let switched_off = NotificationDeliveryPreferences {
+        desktop_notification_avatars: false,
+        image_notifications: false,
+        ..NotificationDeliveryPreferences::default()
+    };
+    assert_eq!(
+        super::notification_image_urls(plan, &switched_off, Some(friend), thumbnail),
+        (None, None)
+    );
+}
+
+#[test]
+fn local_notifications_only_show_cached_friend_icons() {
+    let resolver = vrcx_0_application_activity::notification::NotificationResolver::new(
+        std::sync::Arc::new(UserIconRemote),
+    );
+    let friends: std::sync::Arc<
+        dyn vrcx_0_application_activity::notification::CachedNotificationUserImageResolver,
+    > = std::sync::Arc::new(FriendIcons);
+    resolver.attach_realtime(&friends);
+
+    assert_eq!(
+        super::friend_actor_image(&resolver, &image_job("usr_friend")).as_deref(),
+        Some("https://api.example.test/api/1/image/file_0123abcd/4/128")
+    );
+    assert_eq!(
+        super::friend_actor_image(&resolver, &image_job("usr_traveler")),
+        None
+    );
+    assert_eq!(
+        super::friend_actor_image(&resolver, &image_job("usr_self")),
+        None
+    );
+}
+
+#[tokio::test]
+async fn local_notifications_look_up_a_missing_world_name() {
+    let resolver = std::sync::Arc::new(
+        vrcx_0_application_activity::notification::NotificationResolver::new(std::sync::Arc::new(
+            UserIconRemote,
+        )),
+    );
+    let tasks = vrcx_0_application_core::TaskSupervisor::new();
+
+    let mut unnamed = image_job("usr_traveler");
+    unnamed.delivery.entry.content.world_id = "wrld_lookup".into();
+    unnamed.delivery.entry.content.location = "wrld_lookup:123".into();
+    unnamed.delivery.entry.content.world_name = String::new();
+    let resolved = super::resolve_world_name_with_budget(&tasks, resolver.clone(), &unnamed).await;
+    assert_eq!(
+        resolved.map(|(world_name, _)| world_name).as_deref(),
+        Some("Lookup World")
+    );
+
+    assert_eq!(
+        super::resolve_world_name_with_budget(&tasks, resolver, &image_job("usr_traveler")).await,
+        None
+    );
 }

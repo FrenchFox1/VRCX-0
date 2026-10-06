@@ -36,7 +36,6 @@ export function SettingsIntegrationsTab() {
         discordPrefs,
         integrationPrefs,
         avatarProviderConfig,
-        setPrefs,
         setWebhookNotificationsDialogOpen,
         saveStringPreference,
         saveBoolPreference,
@@ -107,13 +106,6 @@ export function SettingsIntegrationsTab() {
         );
     }
 
-    function setWebhookUrlDraft(value: string) {
-        setPrefs((current) => ({
-            ...current,
-            webhookUrl: String(value ?? '')
-        }));
-    }
-
     function saveWebhookUrl(value: string) {
         saveStringPreference('webhookUrl', 'webhookUrl', value);
     }
@@ -173,7 +165,7 @@ export function SettingsIntegrationsTab() {
                         <Button
                             type="button"
                             variant="link"
-                            className="text-muted-foreground hover:text-foreground h-auto justify-start p-0 text-left text-xs font-normal underline-offset-4 hover:bg-transparent hover:underline"
+                            className="text-muted-foreground hover:text-foreground h-auto justify-start p-0 text-left text-xs font-normal hover:bg-transparent hover:no-underline"
                             onClick={openVrchatConfig}
                         >
                             {t(
@@ -286,8 +278,7 @@ export function SettingsIntegrationsTab() {
                 prefs={prefs}
                 onWebhookEnabledChange={saveWebhookEnabled}
                 onWebhookAuthEventsEnabledChange={saveWebhookAuthEventsEnabled}
-                onWebhookUrlDraftChange={setWebhookUrlDraft}
-                onWebhookUrlBlur={saveWebhookUrl}
+                onWebhookUrlCommit={saveWebhookUrl}
                 onWebhookFormatChange={saveWebhookFormat}
                 onWebhookFieldsChange={saveWebhookFields}
                 onOpenWebhookNotificationFiltersDialog={
