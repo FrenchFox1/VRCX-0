@@ -55,6 +55,7 @@ import {
     resolveTrustNameColour,
     type SidebarFriendRecord
 } from './friendsSidebarModel';
+import { useRecentlyOnline } from './useRecentlyOnline';
 import { useSidebarMenuDoubleClick } from './useSidebarMenuDoubleClick';
 
 export function resolveFriendRowDisplay(
@@ -191,6 +192,8 @@ export function FriendRow({
         showNameplate = false
     } = appearance || {};
     const decorationHover = useDecorationHover();
+    const recentlyOnline = useRecentlyOnline(friend.id || '');
+    const decorationActive = decorationHover.active || recentlyOnline;
     const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
     const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const { displaySource, imageUrl, displayName, nameStyle } =
@@ -250,7 +253,7 @@ export function FriendRow({
             {nameplateId ? (
                 <ProfileNameplate
                     templateId={nameplateId}
-                    active={decorationHover.active}
+                    active={decorationActive}
                 />
             ) : null}
             <UserDetailContent
@@ -260,7 +263,7 @@ export function FriendRow({
                     iconFrameId ? (
                         <ProfileAvatarFrame
                             templateId={iconFrameId}
-                            active={decorationHover.active}
+                            active={decorationActive}
                         />
                     ) : null
                 }

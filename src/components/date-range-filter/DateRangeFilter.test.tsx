@@ -58,7 +58,7 @@ describe('DateRangeFilter tooltip composition', () => {
         [1, 'Monday'],
         [0, 'Sunday'],
         [6, 'Saturday']
-    ])(
+    ] as const)(
         'starts calendar weeks on the preferred day %i',
         async (weekStartsOn, firstWeekday) => {
             usePreferencesStore.setState({ weekStartsOn });
