@@ -1184,6 +1184,7 @@
             "instance_population": "Hráčů v instanci: {users}",
             "instance_population_capacity": "Hráčů v instanci: {users} / max. {capacity}",
             "other_online": "Ostatní přátelé online",
+            "favorite_friends": "Oblíbení přátelé",
             "favorite": "Oblíbení",
             "same_instance": "Stejná instance",
             "active": "Aktivní",
@@ -1196,6 +1197,7 @@
                 "dense": "Hustá"
             },
             "show_same_instance_in_online": "Zobrazit stejnou instanci v Online",
+            "show_favorites_in_online": "Zobrazit oblíbené přátele v Online",
             "loading_more": "Načítání dalších",
             "busy": "Zaneprázdněn",
             "local_group": "Lokální: {name}",

@@ -1176,6 +1176,7 @@
             "instance_population": "房間內人數：{users}",
             "instance_population_capacity": "房間內人數：{users} / 上限 {capacity}",
             "other_online": "其他線上好友",
+            "favorite_friends": "收藏好友",
             "favorite": "收藏",
             "same_instance": "在同個房間",
             "active": "活躍",
@@ -1188,6 +1189,7 @@
                 "dense": "緊密"
             },
             "show_same_instance_in_online": "同時在「線上」中顯示同一房間的好友",
+            "show_favorites_in_online": "同時在「線上」中顯示收藏好友",
             "loading_more": "載入更多",
             "busy": "忙碌",
             "local_group": "本機：{name}",

@@ -1178,6 +1178,7 @@
             "instance_population": "Spieler in der Instanz: {users}",
             "instance_population_capacity": "Spieler in der Instanz: {users} / max. {capacity}",
             "other_online": "Weitere Online-Freunde",
+            "favorite_friends": "Favorisierte Freunde",
             "favorite": "Favoriten",
             "same_instance": "Gleiche Instanz",
             "active": "Aktiv",
@@ -1190,6 +1191,7 @@
                 "dense": "Dicht"
             },
             "show_same_instance_in_online": "Gleiche Instanz unter Online anzeigen",
+            "show_favorites_in_online": "Favorisierte Freunde unter Online anzeigen",
             "loading_more": "Weitere werden geladen",
             "busy": "Beschäftigt",
             "local_group": "Lokal: {name}",

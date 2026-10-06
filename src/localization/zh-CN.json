@@ -1056,7 +1056,7 @@
                 "no_friends": "没有匹配的好友",
                 "search_all": "在全部动态中搜索“{query}”"
             },
-            "favorites_only_tooltip": "仅显示被分组的好友",
+            "favorites_only_tooltip": "仅显示收藏的好友",
             "search_placeholder": "搜索",
             "date_range": "日期范围",
             "filters": {
@@ -1176,7 +1176,8 @@
             "instance_population": "房间内人数：{users}",
             "instance_population_capacity": "房间内人数：{users} / 上限 {capacity}",
             "other_online": "其他在线好友",
-            "favorite": "具有分组的好友",
+            "favorite_friends": "好友收藏",
+            "favorite": "好友收藏",
             "same_instance": "同一房间",
             "active": "活跃中（仅登录网页端）",
             "offline": "离线",
@@ -1188,6 +1189,7 @@
                 "dense": "紧密"
             },
             "show_same_instance_in_online": "在“在线”中也显示同一房间的好友",
+            "show_favorites_in_online": "在“在线”中也显示好友收藏",
             "loading_more": "加载中",
             "busy": "忙碌",
             "local_group": "本地：{name}",
@@ -1775,7 +1777,7 @@
             "bulk_unfriend_selection": "批量删除已选择的好友",
             "load": "拉取缺失的字段",
             "load_cancel": "取消",
-            "favorites_only_tooltip": "仅显示具有分组的好友",
+            "favorites_only_tooltip": "仅显示收藏的好友",
             "search_placeholder": "搜索好友",
             "load_mutual_friends": "加载共同好友",
             "search_filters": {
@@ -5333,7 +5335,7 @@
                 "on": "开启",
                 "friends": "所有好友",
                 "selectedFavorites": "仅选中的分组",
-                "allFavorites": "所有具有分组的好友",
+                "allFavorites": "所有收藏的好友",
                 "everyoneInInstance": "当前房间所有人"
             },
             "categories": {

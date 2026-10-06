@@ -1184,6 +1184,7 @@
             "instance_population": "Игроков в инстансе: {users}",
             "instance_population_capacity": "Игроков в инстансе: {users} / макс. {capacity}",
             "other_online": "Другие друзья в сети",
+            "favorite_friends": "Избранные друзья",
             "favorite": "Избранное",
             "same_instance": "Тот же пример",
             "active": "Активен",
@@ -1196,6 +1197,7 @@
                 "dense": "Плотность"
             },
             "show_same_instance_in_online": "Показывать тот же инстанс в статусе «В сети»",
+            "show_favorites_in_online": "Показывать избранных друзей в статусе «В сети»",
             "loading_more": "Загрузка больше",
             "busy": "Занятые",
             "local_group": "Местные: {name}",

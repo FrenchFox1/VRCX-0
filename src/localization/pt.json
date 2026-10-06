@@ -1178,6 +1178,7 @@
             "instance_population": "Jogadores na instância: {users}",
             "instance_population_capacity": "Jogadores na instância: {users} / máx. {capacity}",
             "other_online": "Outros amigos online",
+            "favorite_friends": "Amigos favoritos",
             "favorite": "Favoritos",
             "same_instance": "Mesma instância",
             "active": "Ativo",
@@ -1190,6 +1191,7 @@
                 "dense": "Denso"
             },
             "show_same_instance_in_online": "Mostrar a mesma instância em Online",
+            "show_favorites_in_online": "Mostrar amigos favoritos em Online",
             "loading_more": "Carregando mais",
             "busy": "Ocupado",
             "local_group": "Local: {name}",

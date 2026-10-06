@@ -1178,6 +1178,7 @@
             "instance_population": "Users in instance: {users}",
             "instance_population_capacity": "Users in instance: {users} / {capacity}",
             "other_online": "Other online friends",
+            "favorite_friends": "Favorite Friends",
             "favorite": "Favorites",
             "same_instance": "Same instance",
             "active": "Active",
@@ -1190,6 +1191,7 @@
                 "dense": "Dense"
             },
             "show_same_instance_in_online": "Also Show Same-Instance Friends Under Online",
+            "show_favorites_in_online": "Also Show Favorite Friends Under Online",
             "loading_more": "Loading more",
             "busy": "Busy",
             "local_group": "Local: {name}",
