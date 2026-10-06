@@ -141,7 +141,7 @@ type FriendRowAppearance = {
 };
 
 const PENDING_OFFLINE_BLINK = {
-    opacity: 0.5,
+    opacity: 0.6,
     halfCycles: 5,
     halfCycleMs: 650
 };
@@ -271,7 +271,7 @@ export function FriendRow({
             className={buttonVariants({
                 variant: 'ghost',
                 className:
-                    'relative isolate h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal data-pending-offline:*:opacity-50'
+                    'relative isolate h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal data-pending-offline:*:opacity-60'
             })}
             data-pending-offline={isPendingOffline || undefined}
             onClick={sidebarWindowMode ? undefined : onOpen}
