@@ -328,6 +328,10 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     showHoverCardAvatarFrame: true,
     showHoverCardProfileEffect: false,
     showHoverCardNameplate: false,
+    showFriendsLocationsPeopleAvatarFrame: true,
+    showFriendsLocationsPeopleNameplate: false,
+    showFriendsLocationsWorldsAvatarFrame: true,
+    showFriendsLocationsWorldsNameplate: true,
     weekStartsOn: 1,
     dtIsoFormat: false,
     dtHour12: false,
@@ -516,6 +520,18 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
             next.showHoverCardProfileEffect
         ),
         showHoverCardNameplate: normalizeBool(next.showHoverCardNameplate),
+        showFriendsLocationsPeopleAvatarFrame: normalizeBool(
+            next.showFriendsLocationsPeopleAvatarFrame
+        ),
+        showFriendsLocationsPeopleNameplate: normalizeBool(
+            next.showFriendsLocationsPeopleNameplate
+        ),
+        showFriendsLocationsWorldsAvatarFrame: normalizeBool(
+            next.showFriendsLocationsWorldsAvatarFrame
+        ),
+        showFriendsLocationsWorldsNameplate: normalizeBool(
+            next.showFriendsLocationsWorldsNameplate
+        ),
         weekStartsOn: normalizeWeekStartsOn(next.weekStartsOn),
         dtIsoFormat: normalizeBool(next.dtIsoFormat),
         dtHour12: normalizeBool(next.dtHour12),

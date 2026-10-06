@@ -9,6 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
+import {
+    ProfileAvatarFrame,
+    ProfileNameplate,
+    useDecorationHover
+} from '@/components/ProfileDecorations';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import {
@@ -100,6 +105,8 @@ interface FriendLocationCardPresentation {
     density?: FriendLocationCardDensity;
     contentMode?: FriendsLocationsCardContentMode;
     displayInstanceInfo?: boolean;
+    showAvatarFrame?: boolean;
+    showNameplate?: boolean;
 }
 
 interface FriendLocationCardCapabilities {
@@ -146,7 +153,9 @@ export function FriendLocationCard({
     const {
         density: densityConfig = DEFAULT_CARD_DENSITY_CONFIG,
         contentMode = 'full',
-        displayInstanceInfo = true
+        displayInstanceInfo = true,
+        showAvatarFrame = false,
+        showNameplate = false
     } = presentation;
     const {
         useLocation: canUseFriendLocation = false,
@@ -164,6 +173,9 @@ export function FriendLocationCard({
         sendBoop: onSendBoop
     } = actions;
 
+    const decorationHover = useDecorationHover();
+    const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
+    const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
     const presence = friend.$presence;
     const statusDotClassName = presenceDotClassName(presence, friend.status);
@@ -227,6 +239,12 @@ export function FriendLocationCard({
                 <AvatarFallback>
                     <UserIcon aria-hidden="true" />
                 </AvatarFallback>
+                {iconFrameId ? (
+                    <ProfileAvatarFrame
+                        templateId={iconFrameId}
+                        active={decorationHover.active}
+                    />
+                ) : null}
                 <UserStatusDot
                     statusDotClassName={statusDotClassName}
                     className="absolute -right-0.5 -bottom-0.5 z-10 size-[var(--friend-card-dot-size)]"
@@ -375,13 +393,14 @@ export function FriendLocationCard({
                     <Card
                         size="sm"
                         className={cn(
-                            'bg-object-surface border-border focus-visible:ring-ring/50 relative h-full rounded-lg border ring-0 transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none hover:bg-[color-mix(in_oklch,var(--object-surface),var(--foreground)_7%)] focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none',
+                            'bg-object-surface border-border focus-visible:ring-ring/50 relative isolate h-full rounded-lg border ring-0 transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none hover:bg-[color-mix(in_oklch,var(--object-surface),var(--foreground)_7%)] focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none',
                             canOpenUser && 'cursor-pointer',
                             isDense
                                 ? 'flex-row items-center gap-[calc(var(--friend-card-gap)+2px)] rounded-lg p-[var(--friend-card-padding)]'
                                 : 'gap-[var(--friend-card-gap)] py-[var(--friend-card-padding)]'
                         )}
                         onClick={onOpenUser}
+                        {...decorationHover.hoverProps}
                         onKeyDown={(event) => {
                             if (
                                 event.target === event.currentTarget &&
@@ -407,6 +426,12 @@ export function FriendLocationCard({
                             '--friend-card-title-font-size': `${resolvedDensityConfig.titleFontSize}px`
                         }}
                     >
+                        {nameplateId ? (
+                            <ProfileNameplate
+                                templateId={nameplateId}
+                                active={decorationHover.active}
+                            />
+                        ) : null}
                         {cardActions}
                         {isDense ? (
                             <>

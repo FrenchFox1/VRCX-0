@@ -25,6 +25,15 @@ vi.mock('@/components/user-hover-card/UserHoverCard', () => ({
     UserHoverCard: ({ children }: { children: ReactNode }) => children
 }));
 vi.mock('@/services/entityMediaService', () => ({ userImage: () => '' }));
+vi.mock('@/components/ProfileDecorations', () => ({
+    ProfileAvatarFrame: ({ templateId }: { templateId: string }) => (
+        <span data-avatar-frame={templateId} />
+    ),
+    ProfileNameplate: ({ templateId }: { templateId: string }) => (
+        <span data-nameplate={templateId} />
+    ),
+    useDecorationHover: () => ({ active: false, hoverProps: {} })
+}));
 vi.mock('@/components/friends/FriendInstanceTimer', () => ({
     FriendInstanceTimer: ({
         epoch,
@@ -140,6 +149,45 @@ describe('FriendLocationCard presentation', () => {
             fireEvent.keyDown(location, { key: 'Enter' });
         }
         expect(openUser).toHaveBeenCalledTimes(3);
+    });
+
+    it('renders the avatar frame and nameplate independently when enabled', () => {
+        const decorated = {
+            ...friend,
+            iconFrame: 'invt_frame',
+            nameplateEffect: 'invt_plate'
+        };
+        const { container, rerender } = render(
+            <FriendLocationCard friend={decorated} />
+        );
+        expect(container.querySelector('[data-avatar-frame]')).toBeNull();
+        expect(container.querySelector('[data-nameplate]')).toBeNull();
+
+        rerender(
+            <FriendLocationCard
+                friend={decorated}
+                presentation={{ showAvatarFrame: true }}
+            />
+        );
+        expect(
+            container
+                .querySelector('[data-avatar-frame]')
+                ?.getAttribute('data-avatar-frame')
+        ).toBe('invt_frame');
+        expect(container.querySelector('[data-nameplate]')).toBeNull();
+
+        rerender(
+            <FriendLocationCard
+                friend={decorated}
+                presentation={{ showNameplate: true }}
+            />
+        );
+        expect(container.querySelector('[data-avatar-frame]')).toBeNull();
+        expect(
+            container
+                .querySelector('[data-nameplate]')
+                ?.getAttribute('data-nameplate')
+        ).toBe('invt_plate');
     });
 });
 

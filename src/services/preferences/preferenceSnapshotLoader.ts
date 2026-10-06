@@ -113,6 +113,10 @@ export async function loadPreferenceSnapshot() {
         showHoverCardAvatarFrame,
         showHoverCardProfileEffect,
         showHoverCardNameplate,
+        showFriendsLocationsPeopleAvatarFrame,
+        showFriendsLocationsPeopleNameplate,
+        showFriendsLocationsWorldsAvatarFrame,
+        showFriendsLocationsWorldsNameplate,
         weekStartsOn,
         hideUserNotes,
         hideUserMemos,
@@ -261,6 +265,10 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('showHoverCardAvatarFrame', true),
         configRepository.getBool('showHoverCardProfileEffect', false),
         configRepository.getBool('showHoverCardNameplate', false),
+        configRepository.getBool('showFriendsLocationsPeopleAvatarFrame', true),
+        configRepository.getBool('showFriendsLocationsPeopleNameplate', false),
+        configRepository.getBool('showFriendsLocationsWorldsAvatarFrame', true),
+        configRepository.getBool('showFriendsLocationsWorldsNameplate', true),
         configRepository.getInt('weekStartsOn', 1),
         configRepository.getBool('hideUserNotes', false),
         configRepository.getBool('hideUserMemos', false),
@@ -481,6 +489,18 @@ export async function loadPreferenceSnapshot() {
         showHoverCardAvatarFrame: Boolean(showHoverCardAvatarFrame),
         showHoverCardProfileEffect: Boolean(showHoverCardProfileEffect),
         showHoverCardNameplate: Boolean(showHoverCardNameplate),
+        showFriendsLocationsPeopleAvatarFrame: Boolean(
+            showFriendsLocationsPeopleAvatarFrame
+        ),
+        showFriendsLocationsPeopleNameplate: Boolean(
+            showFriendsLocationsPeopleNameplate
+        ),
+        showFriendsLocationsWorldsAvatarFrame: Boolean(
+            showFriendsLocationsWorldsAvatarFrame
+        ),
+        showFriendsLocationsWorldsNameplate: Boolean(
+            showFriendsLocationsWorldsNameplate
+        ),
         weekStartsOn: normalizeWeekStartsOn(weekStartsOn),
         hideUserNotes: Boolean(hideUserNotes),
         hideUserMemos: Boolean(hideUserMemos),

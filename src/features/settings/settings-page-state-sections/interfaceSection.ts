@@ -243,6 +243,34 @@ export function buildInterfaceSection({
                 checked
             );
         },
+        onShowFriendsLocationsPeopleAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showFriendsLocationsPeopleAvatarFrame',
+                'showFriendsLocationsPeopleAvatarFrame',
+                checked
+            );
+        },
+        onShowFriendsLocationsPeopleNameplateChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showFriendsLocationsPeopleNameplate',
+                'showFriendsLocationsPeopleNameplate',
+                checked
+            );
+        },
+        onShowFriendsLocationsWorldsAvatarFrameChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showFriendsLocationsWorldsAvatarFrame',
+                'showFriendsLocationsWorldsAvatarFrame',
+                checked
+            );
+        },
+        onShowFriendsLocationsWorldsNameplateChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showFriendsLocationsWorldsNameplate',
+                'showFriendsLocationsWorldsNameplate',
+                checked
+            );
+        },
         onShowNewDashboardButtonChange: (checked: boolean) => {
             savePreferenceValue('showNewDashboardButton', checked, () =>
                 setShowNewDashboardButtonPreference(checked)

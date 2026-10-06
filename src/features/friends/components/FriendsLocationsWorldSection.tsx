@@ -8,6 +8,11 @@ import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { useInstancePopulation } from '@/components/location/useInstancePopulation';
 import { useLocationMetadata } from '@/components/location/useLocationMetadata';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import {
+    ProfileAvatarFrame,
+    ProfileNameplate,
+    useDecorationHover
+} from '@/components/ProfileDecorations';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
@@ -17,6 +22,7 @@ import { userImage } from '@/services/entityMediaService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import { parseLocation, translateAccessType } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -45,14 +51,21 @@ function FriendChip({
     isFavorite,
     statusDotClassName,
     twoLine,
+    showAvatarFrame,
+    showNameplate,
     onOpen
 }: {
     friend: FriendRecord;
     isFavorite: boolean;
     statusDotClassName: string;
     twoLine: boolean;
+    showAvatarFrame: boolean;
+    showNameplate: boolean;
     onOpen: () => void;
 }) {
+    const decorationHover = useDecorationHover();
+    const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
+    const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
     const isTraveling = friendLocationTarget(friend).isTraveling;
     const statusDescription = twoLine
@@ -64,11 +77,18 @@ function FriendChip({
             <button
                 type="button"
                 className={cn(
-                    'focus-visible:ring-ring/50 flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
+                    'focus-visible:ring-ring/50 relative isolate flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
                     twoLine ? 'h-10' : 'h-8'
                 )}
                 onClick={onOpen}
+                {...decorationHover.hoverProps}
             >
+                {nameplateId ? (
+                    <ProfileNameplate
+                        templateId={nameplateId}
+                        active={decorationHover.active}
+                    />
+                ) : null}
                 <Avatar
                     size={twoLine ? 'default' : 'sm'}
                     className="shrink-0 after:hidden"
@@ -79,6 +99,12 @@ function FriendChip({
                     <AvatarFallback>
                         <UserIcon aria-hidden="true" className="size-3" />
                     </AvatarFallback>
+                    {iconFrameId ? (
+                        <ProfileAvatarFrame
+                            templateId={iconFrameId}
+                            active={decorationHover.active}
+                        />
+                    ) : null}
                     <UserStatusDot
                         statusDotClassName={statusDotClassName}
                         className="absolute -right-0.5 -bottom-0.5 z-10 size-3"
@@ -118,6 +144,12 @@ export function FriendsLocationsFriendChips({
     twoLine: boolean;
     onOpenUser: (friend: FriendRecord) => void;
 }) {
+    const showAvatarFrame = usePreferencesStore(
+        (state) => state.showFriendsLocationsWorldsAvatarFrame
+    );
+    const showNameplate = usePreferencesStore(
+        (state) => state.showFriendsLocationsWorldsNameplate
+    );
     return (
         <div className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(0,200px))] gap-1.5">
             {friends.map((friend) => (
@@ -126,6 +158,8 @@ export function FriendsLocationsFriendChips({
                     friend={friend}
                     isFavorite={favoriteIds.has(friend.id)}
                     twoLine={twoLine}
+                    showAvatarFrame={showAvatarFrame}
+                    showNameplate={showNameplate}
                     statusDotClassName={resolveSidebarStatusDotClassName(
                         friend,
                         {
