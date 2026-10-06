@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -14,6 +14,7 @@ import {
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserDetailContent } from '@/components/UserDetailTile';
 import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
+import { dimBlink } from '@/lib/dimBlink';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { getNameColour, userImage } from '@/services/entityMediaService';
 import { TRUST_COLOR_DEFAULTS } from '@/shared/constants/trustColors';
@@ -139,6 +140,12 @@ type FriendRowAppearance = {
     showNameplate?: boolean;
 };
 
+const PENDING_OFFLINE_BLINK = {
+    opacity: 0.5,
+    halfCycles: 5,
+    halfCycleMs: 650
+};
+
 type FriendRowProps = {
     friend: SidebarFriendRecord;
     rowModel?: FriendRowModel;
@@ -231,12 +238,32 @@ export function FriendRow({
         parsedFriendLocation.worldId &&
         parsedFriendLocation.instanceId
     );
+    const podButtonRef = useRef<HTMLButtonElement>(null);
+    useEffect(() => {
+        const button = podButtonRef.current;
+        if (
+            !isPendingOffline ||
+            !button ||
+            document.documentElement.classList.contains('reduce-effects')
+        ) {
+            return undefined;
+        }
+        const blinks = Array.from(button.children, (child) =>
+            dimBlink(child, PENDING_OFFLINE_BLINK)
+        );
+        return () => {
+            for (const blink of blinks) {
+                blink.cancel();
+            }
+        };
+    }, [isPendingOffline]);
     const subline = isPendingOffline
         ? t('side_panel.pending_offline')
         : String(displaySource?.statusDescription || '');
 
     const podButton = (
         <button
+            ref={podButtonRef}
             type="button"
             data-slot="button"
             data-variant="ghost"
