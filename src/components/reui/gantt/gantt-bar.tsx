@@ -358,44 +358,40 @@ function GanttBar<TData = unknown>({
         ),
         children: (
             <>
-                {milestone &&
-                    !consumerOwnsContent && (
-                        // the filled diamond IS the milestone's body - chrome, so a custom
-                        // renderEvent still starts from a blank canvas (data-milestone
-                        // keeps the fact readable there)
-                        <span
-                            aria-hidden
-                            data-slot="gantt-bar-milestone"
-                            className={cn(
-                                'size-2.5 shrink-0 rotate-45 rounded-[2px] border border-(--gantt-event-color) bg-(--gantt-event-color)/80',
-                                isSelected && 'ring-ring/50 ring-2'
-                            )}
-                        />
-                    )}
-                {progress !== null &&
-                    !milestone && (
-                        // Chrome, not content: it is an absolutely-positioned layer BEHIND
-                        // whatever the bar renders, so a consumer bar (renderEvent) keeps
-                        // its completion fill instead of silently losing it. The inline
-                        // done-mark below stays gated, because that one really is content.
-                        <span
-                            aria-hidden
-                            data-slot="gantt-bar-progress"
-                            className="pointer-events-none absolute inset-y-0 start-0 border-e border-(--gantt-event-color)/65 bg-(--gantt-event-color)/40 data-full:border-e-0"
-                            data-full={progress === 100 || undefined}
-                            style={{ width: `${progress}%` }}
-                        />
-                    )}
-                {progress === 100 &&
-                    !consumerOwnsContent &&
-                    !milestone && (
-                        // done mark: completion chrome like the fill itself, so it shows
-                        // for outside-label bars too (where the inner content is empty)
-                        <CheckIcon
-                            className="relative size-2.5 shrink-0 opacity-80"
-                            aria-hidden="true"
-                        />
-                    )}
+                {milestone && !consumerOwnsContent && (
+                    // the filled diamond IS the milestone's body - chrome, so a custom
+                    // renderEvent still starts from a blank canvas (data-milestone
+                    // keeps the fact readable there)
+                    <span
+                        aria-hidden
+                        data-slot="gantt-bar-milestone"
+                        className={cn(
+                            'size-2.5 shrink-0 rotate-45 rounded-[2px] border border-(--gantt-event-color) bg-(--gantt-event-color)/80',
+                            isSelected && 'ring-ring/50 ring-2'
+                        )}
+                    />
+                )}
+                {progress !== null && !milestone && (
+                    // Chrome, not content: it is an absolutely-positioned layer BEHIND
+                    // whatever the bar renders, so a consumer bar (renderEvent) keeps
+                    // its completion fill instead of silently losing it. The inline
+                    // done-mark below stays gated, because that one really is content.
+                    <span
+                        aria-hidden
+                        data-slot="gantt-bar-progress"
+                        className="pointer-events-none absolute inset-y-0 start-0 border-e border-(--gantt-event-color)/65 bg-(--gantt-event-color)/40 data-full:border-e-0"
+                        data-full={progress === 100 || undefined}
+                        style={{ width: `${progress}%` }}
+                    />
+                )}
+                {progress === 100 && !consumerOwnsContent && !milestone && (
+                    // done mark: completion chrome like the fill itself, so it shows
+                    // for outside-label bars too (where the inner content is empty)
+                    <CheckIcon
+                        className="relative size-2.5 shrink-0 opacity-80"
+                        aria-hidden="true"
+                    />
+                )}
                 {content}
                 {resizeHandles}
             </>
