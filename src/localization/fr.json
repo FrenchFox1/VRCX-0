@@ -1178,6 +1178,7 @@
             "instance_population": "Utilisateurs dans l'instance: {users}",
             "instance_population_capacity": "Utilisateurs dans l'instance: {users} / {capacity}",
             "other_online": "Autres amis en ligne",
+            "favorite_friends": "Amis favoris",
             "favorite": "Favoris",
             "same_instance": "Même instance",
             "active": "Actif",
@@ -1190,6 +1191,7 @@
                 "dense": "Dense"
             },
             "show_same_instance_in_online": "Afficher la même instance dans En ligne",
+            "show_favorites_in_online": "Afficher les amis favoris dans En ligne",
             "loading_more": "Chargement...",
             "busy": "Occupé",
             "local_group": "Local : {name}",
@@ -2522,7 +2524,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Application",
+                    "startup_header": "Démarrage",
+                    "window_header": "Fenêtre & Barre d'état",
+                    "updates_header": "Mises à jour",
+                    "network_header": "Connexion et Réseau",
                     "startup": "Lancer au démarrage de Windows",
                     "startup_system": "Lancer au démarrage du système",
                     "startup_system_description": "Crée une entrée de démarrage automatique du bureau qui lance VRCX-0 avec --autostart.",
@@ -2717,6 +2722,9 @@
                     "layout": "Affichage des notifications",
                     "layout_notification_center": "Centre de notifications",
                     "layout_table": "Page des notifications",
+                    "in_app": {
+                        "header": "Indicateurs en jeu"
+                    },
                     "post_update_changelog_prompt": "Afficher les notes de mise à jour après l'installation",
                     "post_update_changelog_prompt_description": "Affiche ce qui est nouveau dans la version installée.",
                     "test_notification": {
@@ -3715,7 +3723,8 @@
                     "description": "Une visite apparaît ici une fois que vous quittez le monde.",
                     "filtered_title": "Aucune visite dans cette période"
                 },
-                "all_dates": "Toutes les dates"
+                "all_dates": "Toutes les dates",
+                "screenshots": "Captures d'écran"
             }
         },
         "my_groups": {
