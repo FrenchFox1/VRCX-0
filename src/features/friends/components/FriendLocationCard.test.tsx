@@ -10,6 +10,7 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 import {
     offlinePresence,
     onlinePresence,
+    pendingPresence,
     travelingPresence
 } from '@/test/presenceFixtures';
 
@@ -116,6 +117,30 @@ describe('FriendLocationCard presentation', () => {
             expect(queryByText('Exploring worlds')).toBeNull();
         }
     );
+
+    it('labels and dims a friend who may be offline without blinking the actions', () => {
+        const animate = vi.fn(() => ({ cancel: vi.fn() }));
+        Object.defineProperty(HTMLElement.prototype, 'animate', {
+            configurable: true,
+            value: animate
+        });
+        const { container, getByText, queryByText } = render(
+            <FriendLocationCard
+                friend={{ ...friend, $presence: pendingPresence() }}
+            />
+        );
+
+        expect(
+            container.querySelector('[data-pending-offline]')
+        ).not.toBeNull();
+        expect(getByText('side_panel.pending_offline')).toBeTruthy();
+        expect(queryByText('Exploring worlds')).toBeNull();
+        const animated = animate.mock.contexts as unknown as Element[];
+        expect(animated.length).toBeGreaterThan(0);
+        expect(
+            animated.some((element) => element.hasAttribute('data-dim-exempt'))
+        ).toBe(false);
+    });
 
     it('does not reserve a description node for a friend without a signature', () => {
         const { container } = render(

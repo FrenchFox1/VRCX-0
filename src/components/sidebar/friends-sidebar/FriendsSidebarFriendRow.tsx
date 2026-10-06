@@ -1,10 +1,11 @@
-import { type CSSProperties, useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
     FriendInstanceTimer,
     FriendLocationTimer
 } from '@/components/friends/FriendInstanceTimer';
+import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import {
     ProfileAvatarFrame,
@@ -14,7 +15,6 @@ import {
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserDetailContent } from '@/components/UserDetailTile';
 import type { InstanceRosterTimestamp } from '@/domain/instances/instanceRoster';
-import { dimBlink } from '@/lib/dimBlink';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { getNameColour, userImage } from '@/services/entityMediaService';
 import { TRUST_COLOR_DEFAULTS } from '@/shared/constants/trustColors';
@@ -140,12 +140,6 @@ type FriendRowAppearance = {
     showNameplate?: boolean;
 };
 
-const PENDING_OFFLINE_BLINK = {
-    opacity: 0.6,
-    halfCycles: 5,
-    halfCycleMs: 650
-};
-
 type FriendRowProps = {
     friend: SidebarFriendRecord;
     rowModel?: FriendRowModel;
@@ -238,25 +232,8 @@ export function FriendRow({
         parsedFriendLocation.worldId &&
         parsedFriendLocation.instanceId
     );
-    const podButtonRef = useRef<HTMLButtonElement>(null);
-    useEffect(() => {
-        const button = podButtonRef.current;
-        if (
-            !isPendingOffline ||
-            !button ||
-            document.documentElement.classList.contains('reduce-effects')
-        ) {
-            return undefined;
-        }
-        const blinks = Array.from(button.children, (child) =>
-            dimBlink(child, PENDING_OFFLINE_BLINK)
-        );
-        return () => {
-            for (const blink of blinks) {
-                blink.cancel();
-            }
-        };
-    }, [isPendingOffline]);
+    const podButtonRef =
+        usePendingOfflineBlink<HTMLButtonElement>(isPendingOffline);
     const subline = isPendingOffline
         ? t('side_panel.pending_offline')
         : String(displaySource?.statusDescription || '');
@@ -271,7 +248,7 @@ export function FriendRow({
             className={buttonVariants({
                 variant: 'ghost',
                 className:
-                    'relative isolate h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal data-pending-offline:*:opacity-60'
+                    'relative isolate h-auto w-full min-w-0 justify-start gap-2 p-1.5 text-left font-normal'
             })}
             data-pending-offline={isPendingOffline || undefined}
             onClick={sidebarWindowMode ? undefined : onOpen}

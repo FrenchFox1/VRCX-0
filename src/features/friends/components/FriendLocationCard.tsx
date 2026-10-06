@@ -7,6 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
+import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
 import {
@@ -213,10 +214,15 @@ export function FriendLocationCard({
         (Boolean(locationValue) ||
             (Boolean(locationLabel) &&
                 normalizeUserStatus(locationLabel) !== 'offline'));
+    const isPendingOffline = presence.kind === 'pendingOffline';
+    const cardRef = usePendingOfflineBlink<HTMLDivElement>(isPendingOffline);
+    const statusText = isPendingOffline
+        ? t('side_panel.pending_offline')
+        : friend.statusDescription;
     const showStatusDescription =
         contentMode !== 'identity' &&
         resolvedDensityConfig.showStatusDescription &&
-        Boolean(friend.statusDescription);
+        Boolean(statusText);
     const hoverUserId = normalizeString(friend.id);
     const instanceEpoch = useFriendLocationTimeEpoch(
         hoverUserId,
@@ -304,13 +310,14 @@ export function FriendLocationCard({
                     statusLineClampClass
                 )}
             >
-                {friend.statusDescription}
+                {statusText}
             </span>
         </CardDescription>
     ) : null;
     const cardActions = (
         <div
             role="presentation"
+            data-dim-exempt
             className="pointer-events-none absolute top-[var(--friend-card-padding)] right-[var(--friend-card-padding)] z-20 flex items-center gap-0.5 opacity-0 transition-opacity duration-(--motion-fast) ease-(--ease-out-ui) group-focus-within/card:pointer-events-auto group-focus-within/card:opacity-100 group-hover/card:pointer-events-auto group-hover/card:opacity-100 motion-reduce:transition-none"
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
@@ -393,7 +400,9 @@ export function FriendLocationCard({
             <ContextMenuTrigger
                 render={
                     <Card
+                        ref={cardRef}
                         size="sm"
+                        data-pending-offline={isPendingOffline || undefined}
                         className={cn(
                             'bg-object-surface border-border focus-visible:ring-ring/50 relative isolate h-full rounded-lg border ring-0 transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none hover:bg-[color-mix(in_oklch,var(--object-surface),var(--foreground)_7%)] focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none',
                             canOpenUser && 'cursor-pointer',
