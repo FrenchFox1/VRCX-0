@@ -56,7 +56,9 @@ describe('page reach telemetry', () => {
         mod.recordRouteEnter('/activity');
         mod.recordRouteEnter('/feed');
 
-        expect(appTelemetryRecordEvent.mock.calls.map(([event]) => event)).toEqual([
+        expect(
+            appTelemetryRecordEvent.mock.calls.map(([event]) => event)
+        ).toEqual([
             { type: 'pageVisit', route: 'feed', landing: true },
             { type: 'pageVisit', route: 'game_log', landing: false },
             { type: 'pageVisit', route: 'login', landing: false },

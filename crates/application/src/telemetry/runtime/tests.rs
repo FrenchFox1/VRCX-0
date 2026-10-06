@@ -272,14 +272,13 @@ fn heartbeat_payloads(transport: &FakeTransport) -> Vec<serde_json::Value> {
 }
 
 fn set_game_running(runtime: &TelemetryRuntime, is_game_running: bool) {
-    runtime
-        .inner
-        .session
-        .apply_game_process_status(vrcx_0_application_core::HostSessionGameProcessStatus {
+    runtime.inner.session.apply_game_process_status(
+        vrcx_0_application_core::HostSessionGameProcessStatus {
             is_game_running,
             is_steamvr_running: false,
             changed_at: "2026-10-06T00:00:00Z".into(),
-        });
+        },
+    );
 }
 
 #[tokio::test]
