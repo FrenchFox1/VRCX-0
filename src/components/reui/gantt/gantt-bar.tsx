@@ -3,7 +3,7 @@
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
 import { cn } from 'cn';
-import { RepeatIcon, CheckIcon } from 'lucide-react';
+import { CheckIcon, RepeatIcon } from 'lucide-react';
 import {
     createContext,
     useContext,
