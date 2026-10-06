@@ -24,7 +24,7 @@ use super::window::{configure_tray, configure_windows_webview_settings, create_m
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg(target_os = "windows")]
-const WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: &str = "--disable-back-forward-cache --disable-domain-reliability --disable-features=AutofillServerCommunication,BackgroundFetch,MediaRouter --disable-file-system --disable-notifications --disable-presentation-api --disable-remote-playback-api --disable-shared-workers --disable-speech-api";
+const WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: &str = "--disable-back-forward-cache --disable-domain-reliability --disable-features=AutofillServerCommunication,BackgroundFetch,MediaRouter --disable-file-system --disable-notifications --disable-presentation-api --disable-remote-playback-api --disable-shared-workers --disable-speech-api --force-prefers-no-reduced-motion";
 
 fn should_capture_gui_error(level: &Level, target: &str) -> bool {
     level == &Level::ERROR
