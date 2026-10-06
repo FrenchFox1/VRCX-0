@@ -62,7 +62,11 @@ vi.mock('./FriendsSidebarActionItems', () => ({
     FriendActionItems: () => null
 }));
 
-import { activePresence } from '@/test/presenceFixtures';
+import {
+    activePresence,
+    onlinePresence,
+    pendingPresence
+} from '@/test/presenceFixtures';
 
 import { FriendRow } from './FriendsSidebarFriendRow';
 
@@ -132,5 +136,32 @@ describe('FriendsSidebarFriendRow profile decorations', () => {
 
         expect(html).not.toContain('data-avatar-frame');
         expect(html).not.toContain('data-nameplate');
+    });
+});
+
+describe('FriendsSidebarFriendRow pending offline', () => {
+    it('mutes the whole row only while the friend may be offline', () => {
+        const pending = renderToStaticMarkup(
+            <FriendRow
+                friend={{
+                    id: 'usr_a',
+                    displayName: 'Friend',
+                    $presence: pendingPresence()
+                }}
+            />
+        );
+        const online = renderToStaticMarkup(
+            <FriendRow
+                friend={{
+                    id: 'usr_a',
+                    displayName: 'Friend',
+                    $presence: onlinePresence()
+                }}
+            />
+        );
+
+        expect(pending).toContain('data-pending-offline="true"');
+        expect(pending).toContain('side_panel.pending_offline');
+        expect(online).not.toContain('data-pending-offline=');
     });
 });
