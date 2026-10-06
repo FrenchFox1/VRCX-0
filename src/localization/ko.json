@@ -5472,7 +5472,10 @@
         "group_calendar": {
             "header": "그룹 캘린더",
             "loading_events": "이벤트를 불러오는 중",
-            "description": "선택한 날짜의 그룹 이벤트를 표시합니다.",
+            "description": "가입한 그룹과 주요 이벤트를 둘러봅니다.",
+            "today": "오늘",
+            "previous_month": "이전 달",
+            "next_month": "다음 달",
             "list_view": "목록 보기",
             "calendar_view": "달력 보기",
             "timeline_view": "타임라인 보기",
@@ -5495,13 +5498,15 @@
             "events_count_short": "이벤트 {count}개",
             "following_count_short": "{count}개 팔로우 중",
             "timeline": {
-                "today": "오늘",
                 "previous_day": "이전 날",
                 "next_day": "다음 날",
                 "zoom_in": "확대",
                 "zoom_out": "축소",
                 "jump_to_event": "'{title}'(으)로 이동",
                 "continues": "(계속)"
+            },
+            "series": {
+                "weekly": "매주 {weekday} {time}"
             }
         },
         "boop_dialog": {

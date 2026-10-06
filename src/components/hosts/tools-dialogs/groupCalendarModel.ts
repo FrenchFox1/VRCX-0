@@ -10,6 +10,7 @@ import { enUS } from 'react-day-picker/locale/en-US';
 import { ja } from 'react-day-picker/locale/ja';
 import { zhCN } from 'react-day-picker/locale/zh-CN';
 
+import { eventStatus } from '@/components/group-event/groupEventFormat';
 import { GANTT_COLORS } from '@/components/reui/gantt/gantt-bar';
 import type {
     GanttEvent,
@@ -167,4 +168,51 @@ export function buildTimelineData(
         )
         .map(([id, group]) => ({ id, title: group.name }));
     return { resources, events: timelineEvents };
+}
+
+export type GroupCalendarEventSeries = {
+    key: string;
+    events: GroupCalendarEventRecord[];
+};
+
+export function buildEventSeries(
+    events: GroupCalendarEventRecord[]
+): GroupCalendarEventSeries[] {
+    const series = new Map<string, GroupCalendarEventRecord[]>();
+    for (const event of events) {
+        const key = `${getEventGroupId(event)}:${(event.title || '').trim().toLowerCase()}`;
+        const rows = series.get(key);
+        if (rows) {
+            rows.push(event);
+        } else {
+            series.set(key, [event]);
+        }
+    }
+    return Array.from(series, ([key, rows]) => ({ key, events: rows }));
+}
+
+export function weeklySlotStart(events: GroupCalendarEventRecord[]) {
+    if (events.length < 2) {
+        return null;
+    }
+    const starts = events.map((event) => new Date(event.startsAt || ''));
+    const [first] = starts;
+    const sameSlot = starts.every(
+        (start) =>
+            isValid(start) &&
+            start.getDay() === first.getDay() &&
+            start.getHours() === first.getHours() &&
+            start.getMinutes() === first.getMinutes()
+    );
+    return sameSlot ? first : null;
+}
+
+export function defaultOccurrenceIndex(
+    events: GroupCalendarEventRecord[],
+    nowMs: number
+) {
+    const index = events.findIndex(
+        (event) => eventStatus(event, nowMs) !== 'ended'
+    );
+    return index === -1 ? events.length - 1 : index;
 }

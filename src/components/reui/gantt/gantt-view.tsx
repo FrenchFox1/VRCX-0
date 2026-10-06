@@ -2644,24 +2644,22 @@ function GanttView({
             have to line up with the header's spans exactly, so both use the
             same fraction formula */}
                     {gridLines.vertical !== null &&
-                        unitFractions
-                            .slice(1)
-                            .map(({ unit, start }) => (
-                                <span
-                                    key={`grid-${unit.key}`}
-                                    data-slot="gantt-grid-line"
-                                    data-axis="vertical"
-                                    className={cn(
-                                        'absolute inset-y-0 w-px',
-                                        gridLines.vertical === 'dashed'
-                                            ? 'bg-[repeating-linear-gradient(to_bottom,var(--color-border)_0,var(--color-border)_3px,transparent_3px,transparent_6px)]'
-                                            : 'bg-border'
-                                    )}
-                                    style={{
-                                        insetInlineStart: `calc(${start * 100}% - 1px)`
-                                    }}
-                                />
-                            ))}
+                        unitFractions.slice(1).map(({ unit, start }) => (
+                            <span
+                                key={`grid-${unit.key}`}
+                                data-slot="gantt-grid-line"
+                                data-axis="vertical"
+                                className={cn(
+                                    'absolute inset-y-0 w-px',
+                                    gridLines.vertical === 'dashed'
+                                        ? 'bg-[repeating-linear-gradient(to_bottom,var(--color-border)_0,var(--color-border)_3px,transparent_3px,transparent_6px)]'
+                                        : 'bg-border'
+                                )}
+                                style={{
+                                    insetInlineStart: `calc(${start * 100}% - 1px)`
+                                }}
+                            />
+                        ))}
                     {viewConfig.nowIndicator && (
                         <GanttNowLine
                             rangeStartMs={rangeStartMs}

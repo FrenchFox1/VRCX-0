@@ -3,10 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { GroupEventCard } from '@/components/hosts/tools-dialogs/GroupEventCard';
-import {
-    getEventGroupId,
-    getEventId
-} from '@/components/hosts/tools-dialogs/toolsDialogUtils';
+import { getEventId } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { LoadStatus } from '@/domain/shared/types';
@@ -146,8 +143,6 @@ function GroupEventsSection({
                         <GroupEventCard
                             key={`${getEventId(event) || 'event'}:${index}`}
                             event={event}
-                            mode="grid"
-                            groupName={group.name || getEventGroupId(event)}
                             groupProfile={group}
                             isFollowing={Boolean(
                                 event?.userInterest?.isFollowing

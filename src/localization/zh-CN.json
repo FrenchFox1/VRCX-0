@@ -5528,7 +5528,10 @@
         "group_calendar": {
             "header": "活动日历",
             "loading_events": "正在加载活动列表",
-            "description": "展示所选日期的群组活动",
+            "description": "浏览你所在群组的活动和精选活动",
+            "today": "今天",
+            "previous_month": "上个月",
+            "next_month": "下个月",
             "list_view": "列表视图",
             "calendar_view": "日历视图",
             "timeline_view": "时间线视图",
@@ -5551,13 +5554,15 @@
             "events_count_short": "{count} 个活动",
             "following_count_short": "已关注 {count} 个",
             "timeline": {
-                "today": "今天",
                 "previous_day": "前一天",
                 "next_day": "后一天",
                 "zoom_in": "放大",
                 "zoom_out": "缩小",
                 "jump_to_event": "跳到「{title}」",
                 "continues": "（续）"
+            },
+            "series": {
+                "weekly": "每{weekday} {time}"
             }
         },
         "boop_dialog": {

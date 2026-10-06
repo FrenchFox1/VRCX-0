@@ -5496,7 +5496,10 @@
         "group_calendar": {
             "header": "Календарь группы",
             "loading_events": "Загрузка событий",
-            "description": "Показать групповые события для выбранной даты.",
+            "description": "Просматривайте события своих групп и рекомендуемые события.",
+            "today": "Сегодня",
+            "previous_month": "Предыдущий месяц",
+            "next_month": "Следующий месяц",
             "list_view": "Просмотр списком",
             "calendar_view": "Просмотр календаря",
             "timeline_view": "Просмотр хронологии",
@@ -5519,13 +5522,15 @@
             "events_count_short": "{count} мероприятия",
             "following_count_short": "{count} После этого",
             "timeline": {
-                "today": "Сегодня",
                 "previous_day": "Предыдущий день",
                 "next_day": "Следующий день",
                 "zoom_in": "Увеличить",
                 "zoom_out": "Уменьшить",
                 "jump_to_event": "Перейти к «{title}»",
                 "continues": "(продолжение)"
+            },
+            "series": {
+                "weekly": "Еженедельно: {weekday}, {time}"
             }
         },
         "boop_dialog": {

@@ -5528,7 +5528,10 @@
         "group_calendar": {
             "header": "グループカレンダー",
             "loading_events": "イベントを読み込み中",
-            "description": "選択した日付のグループイベントを表示します。",
+            "description": "参加中のグループと注目のイベントをチェックできます。",
+            "today": "今日",
+            "previous_month": "前の月",
+            "next_month": "次の月",
             "list_view": "リスト表示",
             "calendar_view": "カレンダー表示",
             "timeline_view": "タイムライン表示",
@@ -5551,13 +5554,15 @@
             "events_count_short": "{count} 件の予定",
             "following_count_short": "{count} 件フォロー中",
             "timeline": {
-                "today": "今日",
                 "previous_day": "前の日",
                 "next_day": "次の日",
                 "zoom_in": "拡大",
                 "zoom_out": "縮小",
                 "jump_to_event": "「{title}」へ移動",
                 "continues": "（続き）"
+            },
+            "series": {
+                "weekly": "毎週{weekday} {time}"
             }
         },
         "boop_dialog": {

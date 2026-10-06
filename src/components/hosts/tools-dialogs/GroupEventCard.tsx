@@ -1,4 +1,3 @@
-import type { TFunction } from 'i18next';
 import {
     CalendarIcon,
     DownloadIcon,
@@ -10,124 +9,25 @@ import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    copyEventLink,
+    downloadEventIcs,
+    openCalendarEvent
+} from '@/components/group-event/groupEventActions';
+import { eventImageUrl } from '@/components/group-event/groupEventFormat';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
-import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import type {
     GroupCalendarEventRecord,
     GroupCalendarGroupRecord
 } from '@/repositories/vrchatToolsRepository';
-import { copyTextToClipboard } from '@/services/clipboardService';
 import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-import {
-    openCalendarFile,
-    saveCalendarFile
-} from '@/services/shellIntegrationService';
-import { toast } from '@/services/toastService';
-import { vrchatGroupCalendarUrl } from '@/shared/constants/vrchatWebUrls';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 
-import { getEventGroupId, getEventId } from './toolsDialogUtils';
-
-async function getCalendarIcs(event: GroupCalendarEventRecord, t: TFunction) {
-    const groupId = getEventGroupId(event);
-    const eventId = getEventId(event);
-    if (!groupId || !eventId) {
-        return '';
-    }
-    try {
-        const content = await vrchatToolsRepository.getGroupCalendarIcs({
-            groupId,
-            eventId
-        });
-        const normalizedContent = String(content || '')
-            .replace(/^\uFEFF/, '')
-            .trimStart();
-        if (!normalizedContent.startsWith('BEGIN:VCALENDAR')) {
-            toast.add({
-                type: 'error',
-                title: t(
-                    'dialog.tools.error.failed_to_download_ics_file_invalid_icalendar_content'
-                )
-            });
-            return '';
-        }
-        return normalizedContent;
-    } catch (error) {
-        toast.add({
-            type: 'error',
-            title: userFacingErrorMessage(
-                error,
-                t('host.tools_dialogs.toast.failed_to_download_ics_file')
-            )
-        });
-        return '';
-    }
-}
-
-async function openCalendarEvent(
-    event: GroupCalendarEventRecord,
-    t: TFunction
-) {
-    const content = await getCalendarIcs(event, t);
-    if (content) {
-        await openCalendarFile(content);
-    }
-}
-
-async function downloadEventIcs(event: GroupCalendarEventRecord, t: TFunction) {
-    const content = await getCalendarIcs(event, t);
-    if (!content) {
-        return;
-    }
-    const eventId = getEventId(event);
-    const fileName = `${eventId || 'group-event'}.ics`;
-    try {
-        await saveCalendarFile(fileName, content);
-    } catch (error) {
-        toast.add({
-            type: 'error',
-            title: userFacingErrorMessage(
-                error,
-                t('host.tools_dialogs.toast.failed_to_save_ics_file')
-            )
-        });
-    }
-}
-
-async function copyEventLink(event: GroupCalendarEventRecord, t: TFunction) {
-    const groupId = getEventGroupId(event);
-    const eventId = getEventId(event);
-    if (!groupId || !eventId) {
-        return;
-    }
-    await copyTextToClipboard(vrchatGroupCalendarUrl(groupId, eventId), {
-        successMessage: t('dialog.group_calendar.event_card.copied_event_link'),
-        errorMessage: (error) =>
-            userFacingErrorMessage(
-                error,
-                t('host.tools_dialogs.toast.failed_to_copy_event_link')
-            )
-    });
-}
-
-function getEventBannerUrl(
-    event: GroupCalendarEventRecord,
-    groupProfile?: GroupCalendarGroupRecord | null
-) {
-    return convertFileUrlToImageUrl(
-        event?.imageUrl ||
-            event?.thumbnailImageUrl ||
-            groupProfile?.bannerUrl ||
-            groupProfile?.iconUrl ||
-            '',
-        512
-    );
-}
+import { getEventGroupId } from './toolsDialogUtils';
 
 function formatEventTimeRange(
     event: GroupCalendarEventRecord,
@@ -163,15 +63,11 @@ function capitalizeFirst(value: string | undefined) {
 
 export function GroupEventCard({
     event,
-    mode = 'timeline',
-    groupName,
     groupProfile,
     isFollowing,
     onToggleFollow
 }: {
     event: GroupCalendarEventRecord;
-    mode?: 'timeline' | 'grid';
-    groupName?: string;
     groupProfile?: GroupCalendarGroupRecord | null;
     isFollowing: boolean;
     onToggleFollow?: () => void;
@@ -182,10 +78,11 @@ export function GroupEventCard({
     const [popoverOpen, setPopoverOpen] = useState(false);
     const [bannerError, setBannerError] = useState(false);
     const closeTimerRef = useRef<number | null>(null);
-    const bannerUrl = bannerError ? '' : getEventBannerUrl(event, groupProfile);
+    const bannerUrl = bannerError
+        ? ''
+        : eventImageUrl(event, groupProfile, 512);
     const title =
         event.title || t('dialog.group_calendar.event_card.untitled_event');
-    const showGroupName = mode === 'timeline';
     const closeAfterMinutes =
         event.closeInstanceAfterEndMinutes ?? event.closeAfterEndMinutes ?? '';
 
@@ -265,20 +162,6 @@ export function GroupEventCard({
                         <div className="p-3">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex min-w-0 flex-col gap-1">
-                                    {showGroupName ? (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            className="text-muted-foreground hover:text-foreground h-auto max-w-full justify-start p-0 text-left text-xs font-normal hover:bg-transparent"
-                                            onClick={stopAndRun(() =>
-                                                openGroupDialog({ groupId })
-                                            )}
-                                        >
-                                            <span className="truncate">
-                                                {groupName || groupId}
-                                            </span>
-                                        </Button>
-                                    ) : null}
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -292,7 +175,7 @@ export function GroupEventCard({
                                         </span>
                                     </Button>
                                     <div className="text-muted-foreground text-xs">
-                                        {formatEventTimeRange(event, mode)}{' '}
+                                        {formatEventTimeRange(event, 'grid')}{' '}
                                         {'\u00b7'}{' '}
                                         {capitalizeFirst(event.accessType)}
                                     </div>

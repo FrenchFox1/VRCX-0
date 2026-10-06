@@ -5534,7 +5534,10 @@
         "group_calendar": {
             "header": "Calendario del grupo",
             "loading_events": "Cargando eventos",
-            "description": "Muestra los eventos del grupo para la fecha seleccionada.",
+            "description": "Explora los eventos de tus grupos y los eventos destacados.",
+            "today": "Hoy",
+            "previous_month": "Mes anterior",
+            "next_month": "Mes siguiente",
             "list_view": "Vista de lista",
             "calendar_view": "Vista de calendario",
             "timeline_view": "Vista de cronología",
@@ -5557,13 +5560,15 @@
             "events_count_short": "{count} eventos",
             "following_count_short": "{count} seguidos",
             "timeline": {
-                "today": "Hoy",
                 "previous_day": "Día anterior",
                 "next_day": "Día siguiente",
                 "zoom_in": "Acercar",
                 "zoom_out": "Alejar",
                 "jump_to_event": "Ir a «{title}»",
                 "continues": "(continúa)"
+            },
+            "series": {
+                "weekly": "Cada {weekday}, {time}"
             }
         },
         "boop_dialog": {

@@ -5,6 +5,7 @@ import { zhCN } from 'react-day-picker/locale/zh-CN';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+    buildEventSeries,
     buildEventsByDate,
     buildFollowedCountByDate,
     buildTimelineData,
@@ -12,7 +13,9 @@ import {
     calendarDateKey,
     calendarLocaleForLanguage,
     dateKeyToLocalDate,
-    monthDateFromKey
+    defaultOccurrenceIndex,
+    monthDateFromKey,
+    weeklySlotStart
 } from './groupCalendarModel';
 
 describe('groupCalendarModel date helpers', () => {
@@ -231,5 +234,90 @@ describe('buildTimelineData', () => {
         expect(events).toHaveLength(1);
         expect(events[0].id).toBe('evt_bad_end');
         expect(events[0].end.getTime()).toBe(events[0].start.getTime());
+    });
+});
+
+describe('buildEventSeries', () => {
+    it('groups events of one group by trimmed, case-insensitive title in start order', () => {
+        const series = buildEventSeries([
+            { id: 'a1', ownerId: 'grp_a', title: 'Meetup' },
+            { id: 'b1', ownerId: 'grp_a', title: 'Other' },
+            { id: 'a2', ownerId: 'grp_a', title: ' meetup ' },
+            { id: 'c1', ownerId: 'grp_b', title: 'Meetup' }
+        ]);
+
+        expect(
+            series.map((entry) => entry.events.map((event) => event.id))
+        ).toEqual([['a1', 'a2'], ['b1'], ['c1']]);
+    });
+});
+
+describe('weeklySlotStart', () => {
+    it('returns the first start when every occurrence shares weekday and local time', () => {
+        const first = new Date(2026, 9, 4, 21, 0);
+        const slot = weeklySlotStart([
+            { startsAt: first.toISOString() },
+            { startsAt: new Date(2026, 9, 11, 21, 0).toISOString() },
+            { startsAt: new Date(2026, 9, 18, 21, 0).toISOString() }
+        ]);
+
+        expect(slot?.getTime()).toBe(first.getTime());
+    });
+
+    it('returns null for single events, different weekdays or different times', () => {
+        expect(
+            weeklySlotStart([
+                { startsAt: new Date(2026, 9, 4, 21, 0).toISOString() }
+            ])
+        ).toBeNull();
+        expect(
+            weeklySlotStart([
+                { startsAt: new Date(2026, 9, 4, 21, 0).toISOString() },
+                { startsAt: new Date(2026, 9, 5, 21, 0).toISOString() }
+            ])
+        ).toBeNull();
+        expect(
+            weeklySlotStart([
+                { startsAt: new Date(2026, 9, 4, 21, 0).toISOString() },
+                { startsAt: new Date(2026, 9, 11, 22, 0).toISOString() }
+            ])
+        ).toBeNull();
+    });
+});
+
+describe('defaultOccurrenceIndex', () => {
+    const events = [
+        {
+            startsAt: '2026-10-04T12:00:00.000Z',
+            endsAt: '2026-10-04T14:00:00.000Z'
+        },
+        {
+            startsAt: '2026-10-11T12:00:00.000Z',
+            endsAt: '2026-10-11T14:00:00.000Z'
+        }
+    ];
+
+    it('picks the first occurrence that has not ended yet', () => {
+        expect(
+            defaultOccurrenceIndex(
+                events,
+                Date.parse('2026-10-04T13:00:00.000Z')
+            )
+        ).toBe(0);
+        expect(
+            defaultOccurrenceIndex(
+                events,
+                Date.parse('2026-10-06T00:00:00.000Z')
+            )
+        ).toBe(1);
+    });
+
+    it('falls back to the last occurrence when all have ended', () => {
+        expect(
+            defaultOccurrenceIndex(
+                events,
+                Date.parse('2026-10-20T00:00:00.000Z')
+            )
+        ).toBe(1);
     });
 });

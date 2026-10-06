@@ -3,7 +3,7 @@ import { StarIcon, UsersRoundIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { GroupEventHoverCard } from '@/components/group-event-hover-card/GroupEventHoverCard';
+import { GroupEventHoverCard } from '@/components/group-event/GroupEventHoverCard';
 import {
     Gantt,
     type GanttColumnContext,
@@ -84,7 +84,7 @@ export function GroupCalendarTimeline({
     const i18n = useMemo(
         () => ({
             labels: {
-                today: t('dialog.group_calendar.timeline.today'),
+                today: t('dialog.group_calendar.today'),
                 previous: t('dialog.group_calendar.timeline.previous_day'),
                 next: t('dialog.group_calendar.timeline.next_day'),
                 loading: t('dialog.group_calendar.loading_events'),

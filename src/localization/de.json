@@ -5486,7 +5486,10 @@
         "group_calendar": {
             "header": "Gruppenkalender",
             "loading_events": "Events werden geladen",
-            "description": "Zeige Gruppenevents für das ausgewählte Datum an.",
+            "description": "Events deiner Gruppen und empfohlene Events durchsuchen.",
+            "today": "Heute",
+            "previous_month": "Vorheriger Monat",
+            "next_month": "Nächster Monat",
             "list_view": "Listenansicht",
             "calendar_view": "Kalenderansicht",
             "timeline_view": "Zeitleistenansicht",
@@ -5509,13 +5512,15 @@
             "events_count_short": "{count} Events",
             "following_count_short": "{count} gefolgt",
             "timeline": {
-                "today": "Heute",
                 "previous_day": "Vorheriger Tag",
                 "next_day": "Nächster Tag",
                 "zoom_in": "Vergrößern",
                 "zoom_out": "Verkleinern",
                 "jump_to_event": "Zu „{title}“ springen",
                 "continues": "(Fortsetzung)"
+            },
+            "series": {
+                "weekly": "Jeden {weekday}, {time}"
             }
         },
         "boop_dialog": {

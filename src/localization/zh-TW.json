@@ -5519,7 +5519,10 @@
         "group_calendar": {
             "header": "群組行事曆",
             "loading_events": "正在載入活動",
-            "description": "顯示所選日期的群組活動。",
+            "description": "瀏覽你所在群組的活動與精選活動。",
+            "today": "今天",
+            "previous_month": "上個月",
+            "next_month": "下個月",
             "list_view": "清單檢視",
             "calendar_view": "行事曆檢視",
             "timeline_view": "時間軸檢視",
@@ -5542,13 +5545,15 @@
             "events_count_short": "{count} 個活動",
             "following_count_short": "已追蹤 {count} 個",
             "timeline": {
-                "today": "今天",
                 "previous_day": "前一天",
                 "next_day": "後一天",
                 "zoom_in": "放大",
                 "zoom_out": "縮小",
                 "jump_to_event": "跳到「{title}」",
                 "continues": "（續）"
+            },
+            "series": {
+                "weekly": "每{weekday} {time}"
             }
         },
         "boop_dialog": {
