@@ -2516,7 +2516,10 @@
             },
             "general": {
                 "application": {
-                    "header": "首选项",
+                    "startup_header": "启动",
+                    "window_header": "窗口与托盘",
+                    "updates_header": "更新",
+                    "network_header": "登录与网络",
                     "startup": "在 Windows 启动时自动启动",
                     "startup_system": "随系统启动",
                     "startup_system_description": "创建桌面环境自启动项，并使用 --autostart 参数启动 VRCX-0。",
@@ -2711,8 +2714,8 @@
                     "layout": "通知视图",
                     "layout_notification_center": "通知中心",
                     "layout_table": "通知标签页",
-                    "post_update_changelog_prompt": "显示更新后的更新内容提示",
-                    "post_update_changelog_prompt_description": "升级后首次启动新版本时，在右下角查看更新内容。",
+                    "post_update_changelog_prompt": "更新后自动打开更新内容",
+                    "post_update_changelog_prompt_description": "升级后首次启动新版本时自动打开更新内容。",
                     "test_notification": {
                         "header": "测试通知",
                         "description": "向所有通知渠道发送一条示例事件。不经过通知筛选，但各渠道自身的开关、显示时机和勿扰模式仍然生效。",

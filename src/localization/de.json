@@ -2518,7 +2518,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Anwendung",
+                    "startup_header": "Start",
+                    "window_header": "Fenster & Infobereich",
+                    "updates_header": "Updates",
+                    "network_header": "Anmeldung & Netzwerk",
                     "startup": "Beim Windows-Start starten",
                     "startup_system": "Beim Systemstart starten",
                     "startup_system_description": "Erstellt einen Autostart-Eintrag, der VRCX-0 mit --autostart startet.",
@@ -2713,8 +2716,8 @@
                     "layout": "Benachrichtigungsansicht",
                     "layout_notification_center": "Benachrichtigungszentrale",
                     "layout_table": "Benachrichtigungsseite",
-                    "post_update_changelog_prompt": "Update-Hinweise nach Aktualisierung anzeigen",
-                    "post_update_changelog_prompt_description": "Zeigt die Neuerungen nach einer Aktualisierung an.",
+                    "post_update_changelog_prompt": "Update-Hinweise nach Aktualisierung öffnen",
+                    "post_update_changelog_prompt_description": "Öffnet beim ersten Start nach einer Aktualisierung automatisch die Neuerungen.",
                     "test_notification": {
                         "header": "Testbenachrichtigung",
                         "description": "Sendet ein Beispielereignis über alle Benachrichtigungskanäle. Benachrichtigungsfilter werden übersprungen; Schalter, Anzeigebedingung und „Nicht stören“ der einzelnen Kanäle gelten weiterhin.",

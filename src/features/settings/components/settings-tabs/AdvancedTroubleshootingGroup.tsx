@@ -7,6 +7,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { DeepLinkRegistrationField } from '../DeepLinkRegistrationField';
 import { SettingsCard } from '../SettingsCard';
 import { Field, JsonTreeView, SettingsSectionHeading } from '../SettingsField';
 import type {
@@ -131,6 +132,7 @@ export function AdvancedTroubleshootingGroup({
                     'view.settings.advanced.advanced_ui.troubleshooting.tools'
                 )}
             />
+            <DeepLinkRegistrationField />
             <Field
                 label={t(
                     'view.settings.advanced.advanced_ui.troubleshooting.database_usage'

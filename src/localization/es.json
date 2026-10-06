@@ -2522,7 +2522,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Aplicación",
+                    "startup_header": "Inicio",
+                    "window_header": "Ventana y bandeja",
+                    "updates_header": "Actualizaciones",
+                    "network_header": "Inicio de sesión y red",
                     "startup": "Iniciar al arrancar Windows",
                     "startup_system": "Iniciar al arrancar el sistema",
                     "startup_system_description": "Crea una entrada de inicio automático (.desktop) que inicia VRCX-0 con --autostart.",
@@ -2717,8 +2720,8 @@
                     "layout": "Vista de notificaciones",
                     "layout_notification_center": "Centro de notificaciones",
                     "layout_table": "Página de notificaciones",
-                    "post_update_changelog_prompt": "Mostrar las notas de la actualización tras actualizar",
-                    "post_update_changelog_prompt_description": "Muestra las novedades tras instalar una actualización.",
+                    "post_update_changelog_prompt": "Abrir las notas de la actualización tras actualizar",
+                    "post_update_changelog_prompt_description": "Abre automáticamente las novedades al iniciar por primera vez tras una actualización.",
                     "test_notification": {
                         "header": "Notificación de prueba",
                         "description": "Envía un evento de ejemplo por todos los canales de notificación. Se omiten los filtros de notificación, pero el interruptor, la condición de visualización y No molestar de cada canal siguen aplicándose.",

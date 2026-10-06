@@ -2526,7 +2526,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Приложение",
+                    "startup_header": "Запуск",
+                    "window_header": "Окно и трей",
+                    "updates_header": "Обновления",
+                    "network_header": "Вход и сеть",
                     "startup": "Запускать при старте Windows",
                     "startup_system": "Начать с запуска системы",
                     "startup_system_description": "Создаёт запись автозапуска на рабочем столе, которая запускает VRCX-0 с параметром --autostart.",
@@ -2721,8 +2724,8 @@
                     "layout": "Вид уведомления",
                     "layout_notification_center": "Центр уведомления",
                     "layout_table": "Уведомления Стр.",
-                    "post_update_changelog_prompt": "Показывать список изменений после обновления",
-                    "post_update_changelog_prompt_description": "Показывает нововведения после установки обновления.",
+                    "post_update_changelog_prompt": "Открывать список изменений после обновления",
+                    "post_update_changelog_prompt_description": "Автоматически открывает список изменений при первом запуске после обновления.",
                     "test_notification": {
                         "header": "Тестовое уведомление",
                         "description": "Отправляет пример события во все каналы уведомлений. Фильтры уведомлений не применяются, но переключатель, условие показа и режим «Не беспокоить» каждого канала продолжают действовать.",

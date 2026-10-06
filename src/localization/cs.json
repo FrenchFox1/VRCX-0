@@ -2528,7 +2528,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Aplikace",
+                    "startup_header": "Spuštění",
+                    "window_header": "Okno a systémová lišta",
+                    "updates_header": "Aktualizace",
+                    "network_header": "Přihlášení a síť",
                     "startup": "Spustit při startu Windows",
                     "startup_system": "Spustit při startu systému",
                     "startup_system_description": "Vytvoří položku automatického spouštění na ploše, která spustí VRCX-0 s parametrem --autostart.",
@@ -2723,8 +2726,8 @@
                     "layout": "Zobrazení oznámení",
                     "layout_notification_center": "Centrum oznámení",
                     "layout_table": "Stránka oznámení",
-                    "post_update_changelog_prompt": "Zobrazit poznámky k aktualizaci po aktualizaci",
-                    "post_update_changelog_prompt_description": "Zobrazí novinky po instalaci aktualizace.",
+                    "post_update_changelog_prompt": "Otevřít poznámky k aktualizaci po aktualizaci",
+                    "post_update_changelog_prompt_description": "Při prvním spuštění po aktualizaci automaticky otevře novinky.",
                     "test_notification": {
                         "header": "Testovací oznámení",
                         "description": "Odešle ukázkovou událost do všech kanálů oznámení. Filtry oznámení se přeskočí, ale přepínač, podmínka zobrazení a režim Nerušit každého kanálu stále platí.",

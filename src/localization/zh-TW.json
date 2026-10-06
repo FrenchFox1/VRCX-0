@@ -2516,7 +2516,10 @@
             },
             "general": {
                 "application": {
-                    "header": "應用程式",
+                    "startup_header": "啟動",
+                    "window_header": "視窗與系統列",
+                    "updates_header": "更新",
+                    "network_header": "登入與網路",
                     "startup": "在 Windows 啟動時啟動",
                     "startup_system": "隨系統啟動",
                     "startup_system_description": "建立桌面環境自動啟動項目，並使用 --autostart 參數啟動 VRCX-0。",
@@ -2711,8 +2714,8 @@
                     "layout": "通知顯示模式",
                     "layout_notification_center": "通知中心",
                     "layout_table": "通知頁面",
-                    "post_update_changelog_prompt": "更新後顯示更新內容",
-                    "post_update_changelog_prompt_description": "安裝更新後顯示新版本的更新內容。",
+                    "post_update_changelog_prompt": "更新後自動開啟更新內容",
+                    "post_update_changelog_prompt_description": "升級後首次啟動新版本時自動開啟更新內容。",
                     "test_notification": {
                         "header": "測試通知",
                         "description": "向所有通知管道傳送一則範例事件。不套用通知篩選，但各管道本身的開關、顯示時機與勿擾模式仍會生效。",

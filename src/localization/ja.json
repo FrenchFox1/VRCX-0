@@ -2516,7 +2516,10 @@
             },
             "general": {
                 "application": {
-                    "header": "アプリケーション",
+                    "startup_header": "起動",
+                    "window_header": "ウィンドウとタスクトレイ",
+                    "updates_header": "アップデート",
+                    "network_header": "ログインとネットワーク",
                     "startup": "Windows と一緒に起動",
                     "startup_system": "システム起動時に開始",
                     "startup_system_description": "--autostart 付きで VRCX-0 を起動するデスクトップ自動起動エントリを作成します。",
@@ -2711,8 +2714,8 @@
                     "layout": "通知のレイアウト",
                     "layout_notification_center": "通知センター",
                     "layout_table": "通知タブ",
-                    "post_update_changelog_prompt": "更新後に更新内容の通知を表示",
-                    "post_update_changelog_prompt_description": "アップデート後に更新内容を表示します。",
+                    "post_update_changelog_prompt": "アップデート後に更新内容を自動で開く",
+                    "post_update_changelog_prompt_description": "アップデート後の初回起動時に更新内容を自動で開きます。",
                     "test_notification": {
                         "header": "テスト通知",
                         "description": "すべての通知チャンネルにサンプルのイベントを送ります。通知フィルターは適用されませんが、各チャンネルのオン/オフ、表示タイミング、通知の一時停止はそのまま有効です。",

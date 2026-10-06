@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AppDataDirState } from '@/platform/tauri/bindings';
@@ -11,8 +11,6 @@ import { SettingsAdvancedTabContent as SettingsAdvancedTab } from './SettingsAdv
 import type { SettingsAdvancedModel } from './settingsAdvancedTypes';
 
 const labels: Record<string, string> = {
-    'view.settings.advanced.advanced_ui.behavior.deep_link_registration':
-        'Open VRCX-0 links',
     'view.settings.advanced.advanced_ui.storage.change_folder':
         'Change folder…',
     'view.settings.advanced.advanced_ui.storage.more':
@@ -22,16 +20,11 @@ const labels: Record<string, string> = {
     'view.settings.advanced.advanced.data_directory.source_default':
         'default directory',
     'view.settings.advanced.advanced.data_directory.source_persisted':
-        'custom directory',
-    'view.settings.advanced.advanced_ui.behavior.deep_link_repair': 'Fix',
-    'view.settings.advanced.advanced_ui.behavior.focus_on_join_header':
-        'Bring VRChat to the front'
+        'custom directory'
 };
 
 const commandMocks = vi.hoisted(() => ({
-    appBrowseHistoryRetentionDaysGet: vi.fn(),
-    appDeepLinkRegistrationStatus: vi.fn(),
-    appDeepLinkRegistrationRepair: vi.fn()
+    appBrowseHistoryRetentionDaysGet: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -71,7 +64,6 @@ function createModel(
 ): SettingsAdvancedModel {
     return {
         appDataDirState: appDataDirState(),
-        hostPlatform: 'windows',
         avatarAutoCleanupOptions: ['Off'],
         configTreeData: {},
         onAnonymousUsageTelemetryChange: vi.fn(),
@@ -80,7 +72,6 @@ function createModel(
         onClearConfigTreeData: vi.fn(),
         onGameLogDisabledChange: vi.fn(),
         onFeedPersistenceDisabledChange: vi.fn(),
-        onFocusVrchatOnJoinChange: vi.fn(),
         onLogResourceLoadChange: vi.fn(),
         onMigrateLegacyVrcxData: vi.fn(),
         onOpenAppDataDirSelector: vi.fn(),
@@ -90,10 +81,8 @@ function createModel(
         onRefreshConfigTreeData: vi.fn(),
         onRefreshOnlineVisits: vi.fn(),
         onRefreshSqliteTableSizes: vi.fn(),
-        onRelaunchVRChatAfterCrashChange: vi.fn(),
         onResetAppDataDir: vi.fn(),
         onUdonExceptionLoggingChange: vi.fn(),
-        onVrcQuitFixChange: vi.fn(),
         onlineVisitCount: null,
         prefs: {
             anonymousUsageTelemetry: false,
@@ -101,11 +90,8 @@ function createModel(
             avatarAutoCleanup: 'Off',
             gameLogDisabled: false,
             feedPersistenceDisabled: false,
-            focusVrchatOnJoin: false,
             logResourceLoad: false,
-            relaunchVRChatAfterCrash: false,
-            udonExceptionLogging: false,
-            vrcQuitFix: true
+            udonExceptionLogging: false
         },
         sqliteTableSizeRows: [],
         sqliteTableSizes: {},
@@ -130,12 +116,6 @@ describe('SettingsAdvancedTab data directory states', () => {
         commandMocks.appBrowseHistoryRetentionDaysGet
             .mockReset()
             .mockResolvedValue(30);
-        commandMocks.appDeepLinkRegistrationStatus
-            .mockReset()
-            .mockResolvedValue(null);
-        commandMocks.appDeepLinkRegistrationRepair
-            .mockReset()
-            .mockResolvedValue(true);
         vi.stubGlobal(
             'ResizeObserver',
             class {
@@ -144,36 +124,6 @@ describe('SettingsAdvancedTab data directory states', () => {
                 disconnect() {}
             }
         );
-    });
-
-    it('shows the cross-platform Fix action for registration errors', async () => {
-        commandMocks.appDeepLinkRegistrationStatus.mockRejectedValueOnce(
-            new Error('registry value is malformed')
-        );
-
-        renderTab(createModel());
-
-        expect(
-            await screen.findByRole('button', {
-                name: 'Fix'
-            })
-        ).not.toBeNull();
-        expect(screen.getByText('Open VRCX-0 links')).not.toBeNull();
-    });
-
-    it('keeps the repair action hidden on unsupported platforms', async () => {
-        renderTab(createModel());
-
-        await vi.waitFor(() => {
-            expect(
-                commandMocks.appDeepLinkRegistrationStatus
-            ).toHaveBeenCalledOnce();
-        });
-        expect(
-            screen.queryByRole('button', {
-                name: 'Fix'
-            })
-        ).toBeNull();
     });
 
     it('shows only Change folder for the default directory', () => {
@@ -247,30 +197,6 @@ describe('SettingsAdvancedTab data directory states', () => {
         expect(
             screen.queryByRole('button', {
                 name: 'More data location actions'
-            })
-        ).toBeNull();
-    });
-
-    it('offers the VRChat focus toggle switched off and turns it on', () => {
-        const onFocusVrchatOnJoinChange = vi.fn();
-        renderTab(createModel({ onFocusVrchatOnJoinChange }));
-
-        const toggle = screen.getByRole('switch', {
-            name: 'Bring VRChat to the front'
-        });
-        expect(toggle.getAttribute('aria-checked')).toBe('false');
-
-        fireEvent.click(toggle);
-
-        expect(onFocusVrchatOnJoinChange.mock.calls[0]?.[0]).toBe(true);
-    });
-
-    it('hides the VRChat focus toggle on platforms without window focus', () => {
-        renderTab(createModel({ hostPlatform: 'linux' }));
-
-        expect(
-            screen.queryByRole('switch', {
-                name: 'Bring VRChat to the front'
             })
         ).toBeNull();
     });

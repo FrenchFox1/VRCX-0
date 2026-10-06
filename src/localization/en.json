@@ -2522,7 +2522,10 @@
             },
             "general": {
                 "application": {
-                    "header": "Application",
+                    "startup_header": "Startup",
+                    "window_header": "Window & Tray",
+                    "updates_header": "Updates",
+                    "network_header": "Login & Network",
                     "startup": "Start at Windows Startup",
                     "startup_system": "Start at System Startup",
                     "startup_system_description": "Creates a desktop autostart entry that launches VRCX-0 with --autostart.",
@@ -2717,8 +2720,8 @@
                     "layout": "Notification View",
                     "layout_notification_center": "Notification Center",
                     "layout_table": "Notifications Page",
-                    "post_update_changelog_prompt": "Show Update Notes After Updating",
-                    "post_update_changelog_prompt_description": "Show what's new after an update is installed.",
+                    "post_update_changelog_prompt": "Open Update Notes After Updating",
+                    "post_update_changelog_prompt_description": "Automatically open what's new on first launch after an update.",
                     "test_notification": {
                         "header": "Test Notification",
                         "description": "Sends a sample event through every notification channel. Notification filters are skipped; each channel's switch, display condition and Do Not Disturb still apply.",
