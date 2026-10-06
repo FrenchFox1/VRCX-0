@@ -5546,11 +5546,6 @@
             "search_no_matching": "No se encontraron eventos coincidentes",
             "search_no_this_month": "No hay eventos este mes",
             "event_card": {
-                "category": "Categoría",
-                "interested_user": "Usuarios interesados",
-                "close_time": "Cerrar la instancia al terminar el evento",
-                "created": "Fecha de creación",
-                "description": "Descripción",
                 "export_to_calendar": "Exportar al calendario",
                 "download_ics": "Descargar .ics",
                 "copied_event_link": "URL del evento copiada al portapapeles",
@@ -5568,7 +5563,8 @@
                 "continues": "(continúa)"
             },
             "series": {
-                "weekly": "Cada {weekday}, {time}"
+                "weekly": "Cada {weekday}, {time}",
+                "show_all_dates": "Mostrar todas las fechas"
             }
         },
         "boop_dialog": {

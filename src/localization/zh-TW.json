@@ -5531,11 +5531,6 @@
             "search_no_matching": "沒有符合的活動",
             "search_no_this_month": "本月沒有活動",
             "event_card": {
-                "category": "類別",
-                "interested_user": "感興趣的用戶",
-                "close_time": "活動結束後關閉房間",
-                "created": "建立日期",
-                "description": "描述",
                 "export_to_calendar": "匯出至行事曆",
                 "download_ics": "下載 .ics 檔案",
                 "copied_event_link": "行事曆活動網址已複製至剪貼簿",
@@ -5553,7 +5548,8 @@
                 "continues": "（續）"
             },
             "series": {
-                "weekly": "每{weekday} {time}"
+                "weekly": "每{weekday} {time}",
+                "show_all_dates": "顯示全部日期"
             }
         },
         "boop_dialog": {

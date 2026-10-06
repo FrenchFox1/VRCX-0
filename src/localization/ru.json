@@ -5508,11 +5508,6 @@
             "search_no_matching": "Соответствующих событий не найдено",
             "search_no_this_month": "В этом месяце нет событий",
             "event_card": {
-                "category": "Категория",
-                "interested_user": "Заинтересованные пользователи",
-                "close_time": "Закрыть инстанс после завершения события",
-                "created": "Дата создания",
-                "description": "Описание",
                 "export_to_calendar": "Экспортировать в календарь",
                 "download_ics": "Загрузка .ics",
                 "copied_event_link": "URL события календаря скопирован в буфер обмена",
@@ -5530,7 +5525,8 @@
                 "continues": "(продолжение)"
             },
             "series": {
-                "weekly": "Еженедельно: {weekday}, {time}"
+                "weekly": "Еженедельно: {weekday}, {time}",
+                "show_all_dates": "Показать все даты"
             }
         },
         "boop_dialog": {

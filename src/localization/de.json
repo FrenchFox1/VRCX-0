@@ -5498,11 +5498,6 @@
             "search_no_matching": "Keine passenden Events gefunden",
             "search_no_this_month": "Keine Events in diesem Monat",
             "event_card": {
-                "category": "Kategorie",
-                "interested_user": "Interessierte Nutzer",
-                "close_time": "Instanz nach Eventende schließen",
-                "created": "Erstellungsdatum",
-                "description": "Beschreibung",
                 "export_to_calendar": "In Kalender exportieren",
                 "download_ics": ".ics herunterladen",
                 "copied_event_link": "Kalender-Event-URL in die Zwischenablage kopiert",
@@ -5520,7 +5515,8 @@
                 "continues": "(Fortsetzung)"
             },
             "series": {
-                "weekly": "Jeden {weekday}, {time}"
+                "weekly": "Jeden {weekday}, {time}",
+                "show_all_dates": "Alle Termine anzeigen"
             }
         },
         "boop_dialog": {

@@ -5514,11 +5514,6 @@
             "search_no_matching": "Nebyly nalezeny žádné odpovídající události",
             "search_no_this_month": "Tento měsíc nejsou žádné události",
             "event_card": {
-                "category": "Kategorie",
-                "interested_user": "Zájem projevili uživatelé",
-                "close_time": "Zavřít instanci po skončení události",
-                "created": "Datum vytvoření",
-                "description": "Popis",
                 "export_to_calendar": "Exportovat do kalendáře",
                 "download_ics": "Stáhnout .ics",
                 "copied_event_link": "URL kalendářní události zkopírována do schránky",
@@ -5536,7 +5531,8 @@
                 "continues": "(pokračuje)"
             },
             "series": {
-                "weekly": "Týdně: {weekday} {time}"
+                "weekly": "Týdně: {weekday} {time}",
+                "show_all_dates": "Zobrazit všechna data"
             }
         },
         "boop_dialog": {

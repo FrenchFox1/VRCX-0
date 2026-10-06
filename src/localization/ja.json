@@ -5540,11 +5540,6 @@
             "search_no_matching": "一致するイベントが見つかりません",
             "search_no_this_month": "今月のイベントはありません",
             "event_card": {
-                "category": "カテゴリ",
-                "interested_user": "興味のあるユーザー",
-                "close_time": "終了後にインスタンスを閉じる時間",
-                "created": "イベント作成日",
-                "description": "このイベントについて",
                 "export_to_calendar": "カレンダーにエクスポート",
                 "download_ics": ".ics ファイルをダウンロード",
                 "copied_event_link": "イベント URL をクリップボードにコピーしました",
@@ -5562,7 +5557,8 @@
                 "continues": "（続き）"
             },
             "series": {
-                "weekly": "毎週{weekday} {time}"
+                "weekly": "毎週{weekday} {time}",
+                "show_all_dates": "すべての日程を表示"
             }
         },
         "boop_dialog": {

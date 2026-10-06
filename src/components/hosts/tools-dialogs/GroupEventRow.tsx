@@ -6,7 +6,7 @@ import {
     Share2Icon,
     StarIcon
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type HTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -29,7 +29,6 @@ import type {
     GroupCalendarEventRecord,
     GroupCalendarGroupRecord
 } from '@/repositories/vrchatToolsRepository';
-import { openGroupDialog } from '@/services/dialogService';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -39,7 +38,9 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 
 import { defaultOccurrenceIndex, weeklySlotStart } from './groupCalendarModel';
-import { getEventGroupId, getEventId } from './toolsDialogUtils';
+import { getEventId } from './toolsDialogUtils';
+
+const COLLAPSED_CHIP_COUNT = 7;
 
 export function GroupEventRow({
     events,
@@ -47,6 +48,8 @@ export function GroupEventRow({
     groupProfile,
     followingIds,
     variant,
+    onOpen,
+    surface = 'card',
     onToggleFollow
 }: {
     events: GroupCalendarEventRecord[];
@@ -54,6 +57,8 @@ export function GroupEventRow({
     groupProfile?: GroupCalendarGroupRecord | null;
     followingIds: ReadonlySet<string>;
     variant: 'day' | 'series';
+    onOpen?: () => void;
+    surface?: 'card' | 'plain';
     onToggleFollow(event: GroupCalendarEventRecord): void;
 }) {
     const { t } = useTranslation();
@@ -62,8 +67,8 @@ export function GroupEventRow({
         defaultOccurrenceIndex(events, nowMs)
     );
     const [thumbnailError, setThumbnailError] = useState(false);
+    const [chipsExpanded, setChipsExpanded] = useState(false);
     const event = events[Math.min(selectedIndex, events.length - 1)];
-    const groupId = getEventGroupId(event);
     const isFollowing = followingIds.has(getEventId(event));
     const isSeries = events.length > 1;
     const weeklyStart = isSeries ? weeklySlotStart(events) : null;
@@ -81,9 +86,26 @@ export function GroupEventRow({
         event.title?.trim() ||
         t('dialog.group_calendar.event_card.untitled_event');
 
-    function openGroup() {
-        openGroupDialog({ groupId });
-    }
+    const visibleChipCount = chipsExpanded
+        ? events.length
+        : Math.max(COLLAPSED_CHIP_COUNT, selectedIndex + 1);
+    const linkProps: HTMLAttributes<HTMLDivElement> = onOpen
+        ? {
+              role: 'button',
+              tabIndex: 0,
+              'aria-label': title,
+              onClick: onOpen,
+              onKeyDown: (keyEvent) => {
+                  if (
+                      keyEvent.target === keyEvent.currentTarget &&
+                      (keyEvent.key === 'Enter' || keyEvent.key === ' ')
+                  ) {
+                      keyEvent.preventDefault();
+                      onOpen();
+                  }
+              }
+          }
+        : {};
 
     return (
         <GroupEventHoverCard
@@ -95,20 +117,14 @@ export function GroupEventRow({
             side="right"
         >
             <div
-                role="button"
-                tabIndex={0}
-                aria-label={title}
-                className="group/card bg-object-surface border-border focus-visible:ring-ring/50 relative flex min-w-0 cursor-pointer flex-col gap-2 rounded-lg border p-2 transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none hover:bg-[color-mix(in_oklch,var(--object-surface),var(--foreground)_7%)] focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none"
-                onClick={openGroup}
-                onKeyDown={(keyEvent) => {
-                    if (
-                        keyEvent.target === keyEvent.currentTarget &&
-                        (keyEvent.key === 'Enter' || keyEvent.key === ' ')
-                    ) {
-                        keyEvent.preventDefault();
-                        openGroup();
-                    }
-                }}
+                {...linkProps}
+                className={cn(
+                    'group/card focus-visible:ring-ring/50 relative flex min-w-0 flex-col gap-2 rounded-lg p-2 transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none focus-visible:ring-3 focus-visible:ring-inset motion-reduce:transition-none',
+                    surface === 'card'
+                        ? 'bg-object-surface border-border border hover:bg-[color-mix(in_oklch,var(--object-surface),var(--foreground)_7%)]'
+                        : 'hover:bg-(--state-hover-surface)',
+                    onOpen && 'cursor-pointer'
+                )}
             >
                 <div className="flex min-w-0 items-center gap-3">
                     <span
@@ -171,40 +187,57 @@ export function GroupEventRow({
                         onClick={(clickEvent) => clickEvent.stopPropagation()}
                         onKeyDown={(keyEvent) => keyEvent.stopPropagation()}
                     >
-                        {events.map((occurrence, index) => {
-                            const isSelected = occurrence === event;
-                            return (
-                                <button
-                                    key={getEventId(occurrence) || index}
-                                    type="button"
-                                    aria-pressed={isSelected}
-                                    className={cn(
-                                        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs tabular-nums transition-colors',
-                                        isSelected
-                                            ? 'bg-muted text-foreground'
-                                            : 'text-muted-foreground hover:text-foreground',
-                                        !isSelected &&
-                                            eventStatus(occurrence, nowMs) ===
-                                                'ended' &&
-                                            'opacity-50'
-                                    )}
-                                    onClick={() => setSelectedIndex(index)}
-                                >
-                                    {followingIds.has(
-                                        getEventId(occurrence)
-                                    ) ? (
-                                        <StarIcon
-                                            className="size-3 fill-current text-[var(--status-askme)]"
-                                            aria-hidden="true"
-                                        />
-                                    ) : null}
-                                    {formatDateTime(occurrence.startsAt, {
-                                        month: '2-digit',
-                                        day: '2-digit'
-                                    })}
-                                </button>
-                            );
-                        })}
+                        {events
+                            .slice(0, visibleChipCount)
+                            .map((occurrence, index) => {
+                                const isSelected = occurrence === event;
+                                return (
+                                    <button
+                                        key={getEventId(occurrence) || index}
+                                        type="button"
+                                        aria-pressed={isSelected}
+                                        className={cn(
+                                            'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs tabular-nums transition-colors',
+                                            isSelected
+                                                ? 'bg-muted text-foreground'
+                                                : 'text-muted-foreground hover:text-foreground',
+                                            !isSelected &&
+                                                eventStatus(
+                                                    occurrence,
+                                                    nowMs
+                                                ) === 'ended' &&
+                                                'opacity-50'
+                                        )}
+                                        onClick={() => setSelectedIndex(index)}
+                                    >
+                                        {followingIds.has(
+                                            getEventId(occurrence)
+                                        ) ? (
+                                            <StarIcon
+                                                className="size-3 fill-current text-[var(--status-askme)]"
+                                                aria-hidden="true"
+                                            />
+                                        ) : null}
+                                        {formatDateTime(occurrence.startsAt, {
+                                            month: '2-digit',
+                                            day: '2-digit',
+                                            weekday: 'short'
+                                        })}
+                                    </button>
+                                );
+                            })}
+                        {visibleChipCount < events.length ? (
+                            <button
+                                type="button"
+                                aria-label={t(
+                                    'dialog.group_calendar.series.show_all_dates'
+                                )}
+                                className="text-muted-foreground hover:text-foreground rounded-md px-1.5 py-0.5 text-xs tabular-nums transition-colors"
+                                onClick={() => setChipsExpanded(true)}
+                            >
+                                +{events.length - visibleChipCount}
+                            </button>
+                        ) : null}
                     </div>
                 ) : null}
                 <div

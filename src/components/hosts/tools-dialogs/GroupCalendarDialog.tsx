@@ -40,6 +40,7 @@ import vrchatToolsRepository, {
     type GroupCalendarEventRecord,
     type GroupCalendarGroupRecord
 } from '@/repositories/vrchatToolsRepository';
+import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { toast } from '@/services/toastService';
 import { isRecord } from '@/shared/utils/record';
@@ -669,6 +670,14 @@ export function GroupCalendarDialog({
                                                 }
                                                 followingIds={followingSet}
                                                 variant="day"
+                                                onOpen={() =>
+                                                    openGroupDialog({
+                                                        groupId:
+                                                            getEventGroupId(
+                                                                event
+                                                            )
+                                                    })
+                                                }
                                                 onToggleFollow={toggleFollow}
                                             />
                                         ))}
@@ -787,6 +796,12 @@ export function GroupCalendarDialog({
                                                             followingSet
                                                         }
                                                         variant="series"
+                                                        onOpen={() =>
+                                                            openGroupDialog({
+                                                                groupId:
+                                                                    group.groupId
+                                                            })
+                                                        }
                                                         onToggleFollow={
                                                             toggleFollow
                                                         }

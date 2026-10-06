@@ -5484,11 +5484,6 @@
             "search_no_matching": "일치하는 이벤트가 없습니다.",
             "search_no_this_month": "이번 달에는 이벤트가 없습니다.",
             "event_card": {
-                "category": "카테고리",
-                "interested_user": "관심 있는 사용자",
-                "close_time": "종료 후 인스턴스 닫기",
-                "created": "생성 날짜",
-                "description": "설명",
                 "export_to_calendar": "캘린더로 내보내기",
                 "download_ics": ".ics 다운로드",
                 "copied_event_link": "캘린더 일정 URL이 클립보드에 복사되었습니다.",
@@ -5506,7 +5501,8 @@
                 "continues": "(계속)"
             },
             "series": {
-                "weekly": "매주 {weekday} {time}"
+                "weekly": "매주 {weekday} {time}",
+                "show_all_dates": "모든 날짜 보기"
             }
         },
         "boop_dialog": {

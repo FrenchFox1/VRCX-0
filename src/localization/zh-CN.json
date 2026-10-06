@@ -5540,11 +5540,6 @@
             "search_no_matching": "没有找到任何符合条件的活动",
             "search_no_this_month": "这个月没有活动举行",
             "event_card": {
-                "category": "类别",
-                "interested_user": "感兴趣的人数",
-                "close_time": "结束后关闭房间",
-                "created": "创建日期",
-                "description": "描述",
                 "export_to_calendar": "导出到日历",
                 "download_ics": "下载 .ics 文件",
                 "copied_event_link": "相关活动日历的链接已复制到剪贴板",
@@ -5562,7 +5557,8 @@
                 "continues": "（续）"
             },
             "series": {
-                "weekly": "每{weekday} {time}"
+                "weekly": "每{weekday} {time}",
+                "show_all_dates": "显示全部日期"
             }
         },
         "boop_dialog": {
