@@ -3739,7 +3739,8 @@
                     "description": "Návštěva se zde zobrazí, jakmile opustíš svět.",
                     "filtered_title": "V tomto období žádné návštěvy"
                 },
-                "all_dates": "Všechna data"
+                "all_dates": "Všechna data",
+                "screenshots": "Snímky"
             }
         },
         "my_groups": {

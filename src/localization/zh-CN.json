@@ -3711,7 +3711,8 @@
                     "description": "离开世界后，这次访问就会出现在这里。",
                     "filtered_title": "这段时间没有访问记录"
                 },
-                "all_dates": "全部日期"
+                "all_dates": "全部日期",
+                "screenshots": "截图"
             }
         },
         "my_groups": {

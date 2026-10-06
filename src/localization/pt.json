@@ -3717,7 +3717,8 @@
                     "description": "A visita aparece aqui depois que você sai do mundo.",
                     "filtered_title": "Nenhuma visita neste período"
                 },
-                "all_dates": "Todas as datas"
+                "all_dates": "Todas as datas",
+                "screenshots": "Capturas"
             }
         },
         "my_groups": {

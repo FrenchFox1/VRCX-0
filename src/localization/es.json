@@ -3721,7 +3721,8 @@
                     "description": "Una visita aparece aquí cuando sales del mundo.",
                     "filtered_title": "Sin visitas en este periodo"
                 },
-                "all_dates": "Todas las fechas"
+                "all_dates": "Todas las fechas",
+                "screenshots": "Capturas"
             }
         },
         "my_groups": {

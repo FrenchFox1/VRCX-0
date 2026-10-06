@@ -3717,7 +3717,8 @@
                     "description": "Ein Besuch erscheint hier, sobald du die Welt verlässt.",
                     "filtered_title": "Keine Besuche in diesem Zeitraum"
                 },
-                "all_dates": "Alle Tage"
+                "all_dates": "Alle Tage",
+                "screenshots": "Screenshots"
             }
         },
         "my_groups": {

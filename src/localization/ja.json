@@ -3711,7 +3711,8 @@
                     "description": "ワールドを出ると、ここに記録されます。",
                     "filtered_title": "この期間の記録はありません"
                 },
-                "all_dates": "すべての日付"
+                "all_dates": "すべての日付",
+                "screenshots": "スクリーンショット"
             }
         },
         "my_groups": {

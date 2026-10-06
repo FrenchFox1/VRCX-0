@@ -3654,7 +3654,8 @@
                     "description": "월드를 나가면 여기에 방문 기록이 표시됩니다.",
                     "filtered_title": "이 기간에는 방문 기록이 없습니다"
                 },
-                "all_dates": "전체 기간"
+                "all_dates": "전체 기간",
+                "screenshots": "스크린샷"
             }
         },
         "my_groups": {

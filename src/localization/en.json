@@ -3721,7 +3721,8 @@
                     "description": "A visit shows up here once you leave the world.",
                     "filtered_title": "No visits in this date range"
                 },
-                "all_dates": "All dates"
+                "all_dates": "All dates",
+                "screenshots": "Screenshots"
             }
         },
         "my_groups": {

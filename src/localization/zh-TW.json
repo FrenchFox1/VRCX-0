@@ -3711,7 +3711,8 @@
                     "description": "離開世界後，這次造訪就會出現在這裡。",
                     "filtered_title": "這段時間沒有造訪紀錄"
                 },
-                "all_dates": "全部日期"
+                "all_dates": "全部日期",
+                "screenshots": "截圖"
             }
         },
         "my_groups": {
