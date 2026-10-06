@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import type { FeedLiveEntry } from '@/state/feedLiveTypes';
 
-const RECENTLY_ONLINE_MS = 2000;
+const RECENTLY_ONLINE_MS = 3000;
 
 export function latestOnlineAtMs(
     entries: readonly FeedLiveEntry[],

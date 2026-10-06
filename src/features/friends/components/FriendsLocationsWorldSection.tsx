@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
+import { useRecentlyOnline } from '@/components/friends/useRecentlyOnline';
 import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
 import { LocationPendingText } from '@/components/location/LocationPendingText';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
@@ -66,6 +67,8 @@ function FriendChip({
 }) {
     const { t } = useTranslation();
     const decorationHover = useDecorationHover();
+    const recentlyOnline = useRecentlyOnline(normalizeString(friend.id));
+    const decorationActive = decorationHover.active || recentlyOnline;
     const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
     const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
@@ -94,7 +97,7 @@ function FriendChip({
                 {nameplateId ? (
                     <ProfileNameplate
                         templateId={nameplateId}
-                        active={decorationHover.active}
+                        active={decorationActive}
                     />
                 ) : null}
                 <Avatar
@@ -110,7 +113,7 @@ function FriendChip({
                     {iconFrameId ? (
                         <ProfileAvatarFrame
                             templateId={iconFrameId}
-                            active={decorationHover.active || isTraveling}
+                            active={decorationActive || isTraveling}
                         />
                     ) : null}
                     <UserStatusDot

@@ -6,6 +6,7 @@ import {
     FriendLocationTimer
 } from '@/components/friends/FriendInstanceTimer';
 import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
+import { useRecentlyOnline } from '@/components/friends/useRecentlyOnline';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import {
     ProfileAvatarFrame,
@@ -56,7 +57,6 @@ import {
     resolveTrustNameColour,
     type SidebarFriendRecord
 } from './friendsSidebarModel';
-import { useRecentlyOnline } from './useRecentlyOnline';
 import { useSidebarMenuDoubleClick } from './useSidebarMenuDoubleClick';
 
 export function resolveFriendRowDisplay(

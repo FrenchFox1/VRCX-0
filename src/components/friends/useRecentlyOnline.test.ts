@@ -24,7 +24,7 @@ describe('useRecentlyOnline', () => {
         vi.useRealTimers();
     });
 
-    it('plays for two seconds after the friend Online feed event', () => {
+    it('plays for three seconds after the friend Online feed event', () => {
         const { result } = renderHook(() => useRecentlyOnline('usr_friend'));
         expect(result.current).toBe(false);
 
@@ -41,7 +41,7 @@ describe('useRecentlyOnline', () => {
         expect(result.current).toBe(true);
 
         act(() => {
-            vi.advanceTimersByTime(1_499);
+            vi.advanceTimersByTime(2_499);
         });
         expect(result.current).toBe(true);
 
@@ -51,13 +51,31 @@ describe('useRecentlyOnline', () => {
         expect(result.current).toBe(false);
     });
 
+    it('plays when the friend comes online already traveling', () => {
+        act(() => {
+            useFeedLiveStore.getState().pushEntries([
+                {
+                    sequence: 1,
+                    entry: onlineFeedEntry({
+                        location: 'traveling',
+                        created_at: '2026-08-11T00:00:10Z'
+                    })
+                }
+            ]);
+        });
+
+        const { result } = renderHook(() => useRecentlyOnline('usr_friend'));
+
+        expect(result.current).toBe(true);
+    });
+
     it('ignores other friends, other event types and stale Online events', () => {
         act(() => {
             useFeedLiveStore.getState().pushEntries([
                 {
                     sequence: 1,
                     entry: onlineFeedEntry({
-                        created_at: '2026-08-11T00:00:05Z'
+                        created_at: '2026-08-11T00:00:06Z'
                     })
                 },
                 {

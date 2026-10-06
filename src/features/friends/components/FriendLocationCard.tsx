@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 import { usePendingOfflineBlink } from '@/components/friends/usePendingOfflineBlink';
+import { useRecentlyOnline } from '@/components/friends/useRecentlyOnline';
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
 import {
@@ -175,6 +176,8 @@ export function FriendLocationCard({
     } = actions;
 
     const decorationHover = useDecorationHover();
+    const recentlyOnline = useRecentlyOnline(normalizeString(friend.id));
+    const decorationActive = decorationHover.active || recentlyOnline;
     const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
     const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
@@ -250,7 +253,7 @@ export function FriendLocationCard({
                 {iconFrameId ? (
                     <ProfileAvatarFrame
                         templateId={iconFrameId}
-                        active={decorationHover.active || isTraveling}
+                        active={decorationActive || isTraveling}
                     />
                 ) : null}
                 <UserStatusDot
@@ -440,7 +443,7 @@ export function FriendLocationCard({
                         {nameplateId ? (
                             <ProfileNameplate
                                 templateId={nameplateId}
-                                active={decorationHover.active}
+                                active={decorationActive}
                             />
                         ) : null}
                         {cardActions}
