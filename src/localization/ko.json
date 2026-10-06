@@ -171,6 +171,17 @@
         "no_mutual_friends": "공통 친구 없음",
         "name_separator": ", "
     },
+    "group_event_hover_card": {
+        "following": "팔로우 중",
+        "live": "진행 중",
+        "ended": "종료됨",
+        "starts_in": "{time} 시작",
+        "interested": "{count}명 관심",
+        "access": {
+            "public": "공개",
+            "group": "그룹 멤버 전용"
+        }
+    },
     "deep_link": {
         "import_collection": {
             "prompt": {
@@ -5464,6 +5475,7 @@
             "description": "선택한 날짜의 그룹 이벤트를 표시합니다.",
             "list_view": "목록 보기",
             "calendar_view": "달력 보기",
+            "timeline_view": "타임라인 보기",
             "no_events": "이벤트를 찾을 수 없습니다.",
             "search_placeholder": "그룹 또는 이벤트 검색",
             "search_no_matching": "일치하는 이벤트가 없습니다.",
@@ -5481,7 +5493,16 @@
             },
             "featured_events": "주요 이벤트",
             "events_count_short": "이벤트 {count}개",
-            "following_count_short": "{count}개 팔로우 중"
+            "following_count_short": "{count}개 팔로우 중",
+            "timeline": {
+                "today": "오늘",
+                "previous_day": "이전 날",
+                "next_day": "다음 날",
+                "zoom_in": "확대",
+                "zoom_out": "축소",
+                "jump_to_event": "'{title}'(으)로 이동",
+                "continues": "(계속)"
+            }
         },
         "boop_dialog": {
             "header": "콕찌르기",

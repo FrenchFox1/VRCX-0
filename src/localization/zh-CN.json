@@ -171,6 +171,17 @@
         "no_mutual_friends": "没有共同好友",
         "name_separator": "、"
     },
+    "group_event_hover_card": {
+        "following": "已关注",
+        "live": "进行中",
+        "ended": "已结束",
+        "starts_in": "{time}开始",
+        "interested": "{count} 人感兴趣",
+        "access": {
+            "public": "公开",
+            "group": "仅群组成员"
+        }
+    },
     "deep_link": {
         "import_collection": {
             "prompt": {
@@ -5520,6 +5531,7 @@
             "description": "展示所选日期的群组活动",
             "list_view": "列表视图",
             "calendar_view": "日历视图",
+            "timeline_view": "时间线视图",
             "no_events": "目前没有任何活动",
             "search_placeholder": "搜索群组或活动",
             "search_no_matching": "没有找到任何符合条件的活动",
@@ -5537,7 +5549,16 @@
             },
             "featured_events": "精选活动",
             "events_count_short": "{count} 个活动",
-            "following_count_short": "已关注 {count} 个"
+            "following_count_short": "已关注 {count} 个",
+            "timeline": {
+                "today": "今天",
+                "previous_day": "前一天",
+                "next_day": "后一天",
+                "zoom_in": "放大",
+                "zoom_out": "缩小",
+                "jump_to_event": "跳到「{title}」",
+                "continues": "（续）"
+            }
         },
         "boop_dialog": {
             "header": "戳一戳",

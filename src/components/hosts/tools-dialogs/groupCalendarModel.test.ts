@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     buildEventsByDate,
     buildFollowedCountByDate,
+    buildTimelineData,
+    groupPaletteColor,
     calendarDateKey,
     calendarLocaleForLanguage,
     dateKeyToLocalDate,
@@ -144,5 +146,90 @@ describe('groupCalendarModel event grouping', () => {
         ).toEqual({
             '2025-12-31': 1
         });
+    });
+});
+
+describe('groupPaletteColor', () => {
+    it('gives a group the same palette color every time and spreads groups across the palette', () => {
+        const groupIds = Array.from(
+            { length: 40 },
+            (_, index) => `grp_${index}`
+        );
+        const colors = groupIds.map(groupPaletteColor);
+
+        expect(groupIds.map(groupPaletteColor)).toEqual(colors);
+        expect(new Set(colors).size).toBeGreaterThan(5);
+        expect(colors.every((color) => color.startsWith('var(--color-'))).toBe(
+            true
+        );
+    });
+});
+
+describe('buildTimelineData', () => {
+    it('builds one row per group with followed groups first, then by earliest start', () => {
+        const { resources, events } = buildTimelineData(
+            [
+                {
+                    id: 'evt_late',
+                    ownerId: 'grp_a',
+                    title: 'Late',
+                    startsAt: '2026-10-06T14:00:00.000Z',
+                    endsAt: '2026-10-06T16:00:00.000Z'
+                },
+                {
+                    id: 'evt_early',
+                    ownerId: 'grp_b',
+                    title: 'Early',
+                    startsAt: '2026-10-06T10:00:00.000Z',
+                    endsAt: '2026-10-06T11:00:00.000Z'
+                },
+                {
+                    id: 'evt_followed',
+                    ownerId: 'grp_c',
+                    title: 'Followed',
+                    startsAt: '2026-10-06T20:00:00.000Z',
+                    endsAt: '2026-10-07T01:00:00.000Z'
+                }
+            ],
+            { grp_a: 'Group A', grp_c: 'Group C' },
+            ['evt_followed']
+        );
+
+        expect(resources).toEqual([
+            { id: 'grp_c', title: 'Group C' },
+            { id: 'grp_b', title: 'grp_b' },
+            { id: 'grp_a', title: 'Group A' }
+        ]);
+        expect(
+            events.map((event) => [event.id, event.resourceId, event.color])
+        ).toEqual([
+            ['evt_late', 'grp_a', groupPaletteColor('grp_a')],
+            ['evt_early', 'grp_b', groupPaletteColor('grp_b')],
+            ['evt_followed', 'grp_c', groupPaletteColor('grp_c')]
+        ]);
+        expect(events[2].end.toISOString()).toBe('2026-10-07T01:00:00.000Z');
+    });
+
+    it('drops events without id, group or valid start and clamps a bad end to the start', () => {
+        const { resources, events } = buildTimelineData(
+            [
+                { ownerId: 'grp_a', startsAt: '2026-10-06T10:00:00.000Z' },
+                { id: 'evt_no_group', startsAt: '2026-10-06T10:00:00.000Z' },
+                { id: 'evt_bad_start', ownerId: 'grp_a', startsAt: 'nope' },
+                {
+                    id: 'evt_bad_end',
+                    ownerId: 'grp_a',
+                    startsAt: '2026-10-06T10:00:00.000Z',
+                    endsAt: '2026-10-06T09:00:00.000Z'
+                }
+            ],
+            {},
+            []
+        );
+
+        expect(resources).toEqual([{ id: 'grp_a', title: 'grp_a' }]);
+        expect(events).toHaveLength(1);
+        expect(events[0].id).toBe('evt_bad_end');
+        expect(events[0].end.getTime()).toBe(events[0].start.getTime());
     });
 });

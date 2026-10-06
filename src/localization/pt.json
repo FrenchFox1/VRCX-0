@@ -171,6 +171,17 @@
         "no_mutual_friends": "Nenhum amigo mútuo",
         "name_separator": ", "
     },
+    "group_event_hover_card": {
+        "following": "Seguindo",
+        "live": "Acontecendo agora",
+        "ended": "Encerrado",
+        "starts_in": "Começa {time}",
+        "interested": "{count} interessados",
+        "access": {
+            "public": "Público",
+            "group": "Somente membros do grupo"
+        }
+    },
     "deep_link": {
         "import_collection": {
             "prompt": {
@@ -5478,6 +5489,7 @@
             "description": "Exibir eventos do grupo na data selecionada.",
             "list_view": "Visualização em Lista",
             "calendar_view": "Visualização em Calendário",
+            "timeline_view": "Visualização em Linha do Tempo",
             "no_events": "Nenhum evento encontrado",
             "search_placeholder": "Pesquisar grupos ou eventos",
             "search_no_matching": "Nenhum evento correspondente encontrado",
@@ -5495,7 +5507,16 @@
             },
             "featured_events": "Eventos em Destaque",
             "events_count_short": "{count} eventos",
-            "following_count_short": "{count} seguidos"
+            "following_count_short": "{count} seguidos",
+            "timeline": {
+                "today": "Hoje",
+                "previous_day": "Dia anterior",
+                "next_day": "Próximo dia",
+                "zoom_in": "Ampliar",
+                "zoom_out": "Reduzir",
+                "jump_to_event": "Ir para \"{title}\"",
+                "continues": "(continua)"
+            }
         },
         "boop_dialog": {
             "header": "Boop",

@@ -171,6 +171,17 @@
         "no_mutual_friends": "Žádní společní přátelé",
         "name_separator": ", "
     },
+    "group_event_hover_card": {
+        "following": "Sledováno",
+        "live": "Právě probíhá",
+        "ended": "Skončilo",
+        "starts_in": "Začíná {time}",
+        "interested": "Zájemci: {count}",
+        "access": {
+            "public": "Veřejné",
+            "group": "Jen pro členy skupiny"
+        }
+    },
     "deep_link": {
         "import_collection": {
             "prompt": {
@@ -5494,6 +5505,7 @@
             "description": "Zobrazit skupinové události pro vybrané datum.",
             "list_view": "Zobrazení seznamu",
             "calendar_view": "Zobrazení kalendáře",
+            "timeline_view": "Zobrazení časové osy",
             "no_events": "Nebyly nalezeny žádné události",
             "search_placeholder": "Hledat skupiny nebo události",
             "search_no_matching": "Nebyly nalezeny žádné odpovídající události",
@@ -5511,7 +5523,16 @@
             },
             "featured_events": "Doporučené události",
             "events_count_short": "{count} událostí",
-            "following_count_short": "{count} sleduje"
+            "following_count_short": "{count} sleduje",
+            "timeline": {
+                "today": "Dnes",
+                "previous_day": "Předchozí den",
+                "next_day": "Následující den",
+                "zoom_in": "Přiblížit",
+                "zoom_out": "Oddálit",
+                "jump_to_event": "Přejít na „{title}“",
+                "continues": "(pokračuje)"
+            }
         },
         "boop_dialog": {
             "header": "Boop",

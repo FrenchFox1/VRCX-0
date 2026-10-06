@@ -171,6 +171,17 @@
         "no_mutual_friends": "Keine gemeinsamen Freunde",
         "name_separator": ", "
     },
+    "group_event_hover_card": {
+        "following": "Gefolgt",
+        "live": "Läuft gerade",
+        "ended": "Beendet",
+        "starts_in": "Beginnt {time}",
+        "interested": "{count} interessiert",
+        "access": {
+            "public": "Öffentlich",
+            "group": "Nur für Gruppenmitglieder"
+        }
+    },
     "deep_link": {
         "import_collection": {
             "prompt": {
@@ -5478,6 +5489,7 @@
             "description": "Zeige Gruppenevents für das ausgewählte Datum an.",
             "list_view": "Listenansicht",
             "calendar_view": "Kalenderansicht",
+            "timeline_view": "Zeitleistenansicht",
             "no_events": "Keine Events gefunden",
             "search_placeholder": "Gruppen oder Events suchen",
             "search_no_matching": "Keine passenden Events gefunden",
@@ -5495,7 +5507,16 @@
             },
             "featured_events": "Empfohlene Events",
             "events_count_short": "{count} Events",
-            "following_count_short": "{count} gefolgt"
+            "following_count_short": "{count} gefolgt",
+            "timeline": {
+                "today": "Heute",
+                "previous_day": "Vorheriger Tag",
+                "next_day": "Nächster Tag",
+                "zoom_in": "Vergrößern",
+                "zoom_out": "Verkleinern",
+                "jump_to_event": "Zu „{title}“ springen",
+                "continues": "(Fortsetzung)"
+            }
         },
         "boop_dialog": {
             "header": "Boop",

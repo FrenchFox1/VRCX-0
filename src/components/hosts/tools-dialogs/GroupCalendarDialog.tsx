@@ -1,9 +1,11 @@
 import {
+    addMonths,
     addYears,
     compareAsc,
     endOfYear,
     format,
     isSameMonth,
+    startOfMonth,
     startOfYear,
     subYears
 } from 'date-fns';
@@ -68,6 +70,7 @@ import {
     formatCalendarRequestDate,
     monthDateFromKey
 } from './groupCalendarModel';
+import { GroupCalendarTimeline } from './GroupCalendarTimeline';
 import { GroupEventCard } from './GroupEventCard';
 import {
     getEventGroupId,
@@ -187,7 +190,9 @@ export function GroupCalendarDialog({
         monthDateFromKey(selectedDateKey(new Date()))
     );
     const [showFeaturedEvents, setShowFeaturedEvents] = useState(false);
-    const [viewMode, setViewMode] = useState<'timeline' | 'grid'>('timeline');
+    const [viewMode, setViewMode] = useState<'calendar' | 'timeline' | 'list'>(
+        'calendar'
+    );
     const [search, setSearch] = useState('');
     const [events, setEvents] = useState<GroupCalendarEvent[]>([]);
     const [followingIds, setFollowingIds] = useState<string[]>([]);
@@ -227,6 +232,13 @@ export function GroupCalendarDialog({
             timeZone: calendarTimeZone
         }),
         [calendarLocale, calendarTimeZone, eventsByDate, followedCountByDate]
+    );
+    const timelineRangeBounds = useMemo(
+        () => ({
+            min: visibleMonthDate,
+            max: startOfMonth(addMonths(visibleMonthDate, 1))
+        }),
+        [visibleMonthDate]
     );
     const selectedDayEvents = useMemo(
         () => eventsByDate[selectedDate] || [],
@@ -465,7 +477,7 @@ export function GroupCalendarDialog({
                 }
             }}
         >
-            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-7xl">
                 <DialogHeader>
                     <DialogTitle>
                         {t('dialog.group_calendar.header')}
@@ -518,24 +530,49 @@ export function GroupCalendarDialog({
                         onValueChange={(nextValue) => {
                             if (nextValue[0]) {
                                 if (
+                                    nextValue[0] === 'calendar' ||
                                     nextValue[0] === 'timeline' ||
-                                    nextValue[0] === 'grid'
+                                    nextValue[0] === 'list'
                                 ) {
                                     setViewMode(nextValue[0]);
                                 }
                             }
                         }}
                     >
-                        <ToggleGroupItem value="timeline">
+                        <ToggleGroupItem value="calendar">
                             {t('dialog.group_calendar.calendar_view')}
                         </ToggleGroupItem>
                         <ToggleGroupSeparator />
-                        <ToggleGroupItem value="grid">
+                        <ToggleGroupItem value="timeline">
+                            {t('dialog.group_calendar.timeline_view')}
+                        </ToggleGroupItem>
+                        <ToggleGroupSeparator />
+                        <ToggleGroupItem value="list">
                             {t('dialog.group_calendar.list_view')}
                         </ToggleGroupItem>
                     </ToggleGroup>
                 </div>
                 {viewMode === 'timeline' ? (
+                    <div className="min-w-0">
+                        <GroupCalendarTimeline
+                            events={events}
+                            groupNames={groupNames}
+                            groupProfiles={groupProfiles}
+                            followingIds={followingIds}
+                            date={selectedDateValue}
+                            rangeBounds={timelineRangeBounds}
+                            timeZone={calendarTimeZone}
+                            locale={calendarLocale}
+                            weekStartsOn={weekStartsOn}
+                            loading={loading}
+                            onDateChange={(nextDate) =>
+                                selectDateKey(
+                                    calendarDateKey(nextDate, calendarTimeZone)
+                                )
+                            }
+                        />
+                    </div>
+                ) : viewMode === 'calendar' ? (
                     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_32rem]">
                         <ScrollArea className="h-[52vh] rounded-md border p-4">
                             {selectedDayEvents.length ? (

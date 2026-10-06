@@ -171,6 +171,17 @@
         "no_mutual_friends": "Нет общих друзей",
         "name_separator": ", "
     },
+    "group_event_hover_card": {
+        "following": "Отслеживается",
+        "live": "Идёт сейчас",
+        "ended": "Завершено",
+        "starts_in": "Начнётся {time}",
+        "interested": "Интересуются: {count}",
+        "access": {
+            "public": "Публичное",
+            "group": "Только для участников группы"
+        }
+    },
     "deep_link": {
         "import_collection": {
             "prompt": {
@@ -5488,6 +5499,7 @@
             "description": "Показать групповые события для выбранной даты.",
             "list_view": "Просмотр списком",
             "calendar_view": "Просмотр календаря",
+            "timeline_view": "Просмотр хронологии",
             "no_events": "Событий не найдено",
             "search_placeholder": "Поиск групп или событий",
             "search_no_matching": "Соответствующих событий не найдено",
@@ -5505,7 +5517,16 @@
             },
             "featured_events": "Видимые события",
             "events_count_short": "{count} мероприятия",
-            "following_count_short": "{count} После этого"
+            "following_count_short": "{count} После этого",
+            "timeline": {
+                "today": "Сегодня",
+                "previous_day": "Предыдущий день",
+                "next_day": "Следующий день",
+                "zoom_in": "Увеличить",
+                "zoom_out": "Уменьшить",
+                "jump_to_event": "Перейти к «{title}»",
+                "continues": "(продолжение)"
+            }
         },
         "boop_dialog": {
             "header": "Буп",

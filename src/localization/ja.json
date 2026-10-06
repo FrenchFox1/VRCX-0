@@ -171,6 +171,17 @@
         "no_mutual_friends": "共通のフレンドはいません",
         "name_separator": "、"
     },
+    "group_event_hover_card": {
+        "following": "フォロー中",
+        "live": "開催中",
+        "ended": "終了",
+        "starts_in": "{time}に開始",
+        "interested": "{count} 人が興味あり",
+        "access": {
+            "public": "パブリック",
+            "group": "グループメンバー限定"
+        }
+    },
     "deep_link": {
         "import_collection": {
             "prompt": {
@@ -5520,6 +5531,7 @@
             "description": "選択した日付のグループイベントを表示します。",
             "list_view": "リスト表示",
             "calendar_view": "カレンダー表示",
+            "timeline_view": "タイムライン表示",
             "no_events": "イベントが見つかりません",
             "search_placeholder": "グループまたはイベントを検索",
             "search_no_matching": "一致するイベントが見つかりません",
@@ -5537,7 +5549,16 @@
             },
             "featured_events": "注目のイベント",
             "events_count_short": "{count} 件の予定",
-            "following_count_short": "{count} 件フォロー中"
+            "following_count_short": "{count} 件フォロー中",
+            "timeline": {
+                "today": "今日",
+                "previous_day": "前の日",
+                "next_day": "次の日",
+                "zoom_in": "拡大",
+                "zoom_out": "縮小",
+                "jump_to_event": "「{title}」へ移動",
+                "continues": "（続き）"
+            }
         },
         "boop_dialog": {
             "header": "つっつく",
