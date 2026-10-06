@@ -662,9 +662,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                             valueClassName="text-muted-foreground"
                         />
                         <StatusSegment
-                            visible={
-                                visibility.mutualGraph && mutualGraphVisible
-                            }
+                            visible={mutualGraphVisible}
                             showDot={false}
                             label={formatMutualGraphLabel(mutualGraph, t)}
                             value={formatMutualGraphValue(mutualGraph)}
