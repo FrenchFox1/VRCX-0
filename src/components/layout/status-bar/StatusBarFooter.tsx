@@ -261,6 +261,13 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                 <StatusSegment
                     visible={sidebarWindowMode || visibility.servers}
                     active={!vrcStatusHasIssue}
+                    alert={
+                        vrcStatusHasIssue
+                            ? vrcStatusIsMajor
+                                ? 'danger'
+                                : 'warn'
+                            : null
+                    }
                     dotClassName={cn(
                         vrcStatus.refreshing && 'motion-safe:animate-pulse',
                         vrcStatusHasIssue
