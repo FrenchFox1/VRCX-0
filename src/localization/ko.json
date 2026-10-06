@@ -2657,6 +2657,9 @@
                     "layout": "알림 보기",
                     "layout_notification_center": "알림 센터",
                     "layout_table": "알림 페이지",
+                    "in_app": {
+                        "header": "앱 내 알림 표시"
+                    },
                     "post_update_changelog_prompt": "업데이트 후 변경 사항 자동으로 열기",
                     "post_update_changelog_prompt_description": "업데이트 후 처음 실행할 때 변경 사항을 자동으로 엽니다.",
                     "test_notification": {

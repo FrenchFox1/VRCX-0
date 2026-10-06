@@ -2720,6 +2720,9 @@
                     "layout": "Vista de notificaciones",
                     "layout_notification_center": "Centro de notificaciones",
                     "layout_table": "Página de notificaciones",
+                    "in_app": {
+                        "header": "Indicadores en la aplicación"
+                    },
                     "post_update_changelog_prompt": "Abrir las notas de la actualización tras actualizar",
                     "post_update_changelog_prompt_description": "Abre automáticamente las novedades al iniciar por primera vez tras una actualización.",
                     "test_notification": {

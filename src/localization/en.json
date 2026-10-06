@@ -2720,6 +2720,9 @@
                     "layout": "Notification View",
                     "layout_notification_center": "Notification Center",
                     "layout_table": "Notifications Page",
+                    "in_app": {
+                        "header": "In-App Indicators"
+                    },
                     "post_update_changelog_prompt": "Open Update Notes After Updating",
                     "post_update_changelog_prompt_description": "Automatically open what's new on first launch after an update.",
                     "test_notification": {

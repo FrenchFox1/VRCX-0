@@ -2714,6 +2714,9 @@
                     "layout": "通知顯示模式",
                     "layout_notification_center": "通知中心",
                     "layout_table": "通知頁面",
+                    "in_app": {
+                        "header": "應用程式內提示"
+                    },
                     "post_update_changelog_prompt": "更新後自動開啟更新內容",
                     "post_update_changelog_prompt_description": "升級後首次啟動新版本時自動開啟更新內容。",
                     "test_notification": {

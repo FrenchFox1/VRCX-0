@@ -2724,6 +2724,9 @@
                     "layout": "Вид уведомления",
                     "layout_notification_center": "Центр уведомления",
                     "layout_table": "Уведомления Стр.",
+                    "in_app": {
+                        "header": "Уведомления в приложении"
+                    },
                     "post_update_changelog_prompt": "Открывать список изменений после обновления",
                     "post_update_changelog_prompt_description": "Автоматически открывает список изменений при первом запуске после обновления.",
                     "test_notification": {

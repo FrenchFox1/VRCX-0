@@ -2716,6 +2716,9 @@
                     "layout": "Benachrichtigungsansicht",
                     "layout_notification_center": "Benachrichtigungszentrale",
                     "layout_table": "Benachrichtigungsseite",
+                    "in_app": {
+                        "header": "Hinweise in der App"
+                    },
                     "post_update_changelog_prompt": "Update-Hinweise nach Aktualisierung öffnen",
                     "post_update_changelog_prompt_description": "Öffnet beim ersten Start nach einer Aktualisierung automatisch die Neuerungen.",
                     "test_notification": {

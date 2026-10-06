@@ -2726,6 +2726,9 @@
                     "layout": "Zobrazení oznámení",
                     "layout_notification_center": "Centrum oznámení",
                     "layout_table": "Stránka oznámení",
+                    "in_app": {
+                        "header": "Upozornění v aplikaci"
+                    },
                     "post_update_changelog_prompt": "Otevřít poznámky k aktualizaci po aktualizaci",
                     "post_update_changelog_prompt_description": "Při prvním spuštění po aktualizaci automaticky otevře novinky.",
                     "test_notification": {

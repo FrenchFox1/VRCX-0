@@ -325,7 +325,7 @@ describe('settingsPageStateSections', () => {
         }
     });
 
-    it('routes social bool preferences through the social section', () => {
+    it('routes friend log bool preferences through their sections', () => {
         const saveBoolPreference = vi.fn();
         const sections = buildSettingsPageStateSections(
             createInput({
@@ -334,7 +334,7 @@ describe('settingsPageStateSections', () => {
             })
         );
 
-        sections.social.onFriendLogNotificationDotChange(false);
+        sections.notifications.onFriendLogNotificationDotChange(false);
         sections.social.onHideUnfriendsChange(true);
         sections.social.onProfileBioScanEnabledChange(true);
 
