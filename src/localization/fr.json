@@ -57,8 +57,8 @@
         "gallery_images_description": "Les images que vous téléversez apparaîtront ici.",
         "inventory_title": "Aucun objet dans l'inventaire pour le moment",
         "inventory_description": "Les objets et cadeaux de votre inventaire apparaîtront ici.",
-        "prints_title": "Aucun impression VRChat pour le moment",
-        "prints_description": "Les impressions que vous créez sur VRChat apparaîtront ici.",
+        "prints_title": "Aucun imprimé VRChat pour le moment",
+        "prints_description": "Les imprimés que vous créez sur VRChat apparaîtront ici.",
         "world_screenshots_description": "Les captures d'écran que vous prenez dans ce monde apparaîtront ici.",
         "schedule_rules_title": "Aucune règle de temps pour le moment",
         "schedule_rules_description": "Ajoutez une règle de temps pour changer votre statut ou message de statut automatiquement.",
@@ -3648,6 +3648,7 @@
                 "when_you_play": "Quand vous jouez",
                 "top_worlds": "Où vous passez votre temps",
                 "companions": "Personnes avec qui vous passez du temps",
+                "strangers": "Personnes que vous rencontrez",
                 "highlights": "En vaut la peine",
                 "avatars": "Avatars utilisés le plus souvent"
             },
@@ -3682,6 +3683,7 @@
                 "fading_title": "Moins vu récemment",
                 "fading_caveat": "Moins de similitudes que la période précédente.",
                 "encountered_total": "{count} rencontres au total",
+                "strangers_caption": "Ignorer les amis, anciens et actuels",
                 "fading_last_seen": "Dernière fois vue {date}",
                 "order_minutes": "Par temps",
                 "order_days": "Par jours"
