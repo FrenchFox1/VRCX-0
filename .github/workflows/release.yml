@@ -295,11 +295,62 @@ jobs:
                   path: ${{ matrix.artifact_path }}
                   if-no-files-found: error
 
+    logger:
+        name: Logger (${{ matrix.arch }})
+        needs: prepare
+        runs-on: ${{ matrix.os }}
+        defaults:
+            run:
+                shell: bash
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - arch: x86_64
+                      os: ubuntu-24.04
+                      rust_target: x86_64-unknown-linux-musl
+                    - arch: aarch64
+                      os: ubuntu-24.04-arm
+                      rust_target: aarch64-unknown-linux-musl
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: ${{ matrix.rust_target }}
+
+            - name: Install musl toolchain
+              run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+            - name: Build logger
+              run: cargo build --locked --release -p vrcx-0-logger --target "${{ matrix.rust_target }}"
+
+            - name: Prepare logger asset
+              run: |
+                  mkdir -p logger-assets
+                  cp "target/${{ matrix.rust_target }}/release/vrcx-0-logger" "logger-assets/vrcx-0-logger_${{ needs.prepare.outputs.build_version }}_linux_${{ matrix.arch }}"
+
+            - uses: actions/setup-node@v6
+              if: matrix.arch == 'x86_64'
+              with:
+                  node-version: 24.x
+
+            - name: Generate logger third-party notices
+              if: matrix.arch == 'x86_64'
+              run: node scripts/generate-third-party-licenses.ts --logger "logger-assets/vrcx-0-logger_${{ needs.prepare.outputs.build_version }}_THIRD_PARTY_NOTICES.txt"
+
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: release-logger-${{ matrix.arch }}
+                  path: logger-assets/*
+                  if-no-files-found: error
+
     publish-draft:
         name: Publish Draft Release
         needs:
             - prepare
             - package
+            - logger
         runs-on: ubuntu-24.04
         permissions:
             contents: write

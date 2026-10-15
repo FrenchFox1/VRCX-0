@@ -377,6 +377,72 @@ const generatedCommands = {
     async appNoteExportCancel(): Promise<NoteExportStatus> {
         return await TAURI_INVOKE('app__note_export_cancel');
     },
+    async appFeedLoggerSettingsGet(): Promise<FeedLoggerSettingsView> {
+        return await TAURI_INVOKE('app__feed_logger_settings_get');
+    },
+    async appFeedLoggerSettingsSave(
+        address: string,
+        password: string
+    ): Promise<FeedLoggerProbe> {
+        return await TAURI_INVOKE('app__feed_logger_settings_save', {
+            address,
+            password
+        });
+    },
+    async appFeedLoggerSettingsClear(): Promise<null> {
+        return await TAURI_INVOKE('app__feed_logger_settings_clear');
+    },
+    async appFeedLoggerStatus(): Promise<FeedLoggerProbe> {
+        return await TAURI_INVOKE('app__feed_logger_status');
+    },
+    async appFeedLoggerBackfillHistory(): Promise<FeedLoggerBackfillHistory> {
+        return await TAURI_INVOKE('app__feed_logger_backfill_history');
+    },
+    async appFeedLoggerPushCredentials(
+        username: string,
+        password: string,
+        savePassword: boolean
+    ): Promise<FeedLoggerSession> {
+        return await TAURI_INVOKE('app__feed_logger_push_credentials', {
+            username,
+            password,
+            savePassword
+        });
+    },
+    async appFeedLoggerPushSavedCredentials(
+        savePassword: boolean
+    ): Promise<FeedLoggerSession> {
+        return await TAURI_INVOKE('app__feed_logger_push_saved_credentials', {
+            savePassword
+        });
+    },
+    async appFeedLoggerSubmitTwoFactor(
+        method: string,
+        code: string
+    ): Promise<FeedLoggerSession> {
+        return await TAURI_INVOKE('app__feed_logger_submit_two_factor', {
+            method,
+            code
+        });
+    },
+    async appFeedLoggerSetWebhook(
+        url: string | null,
+        format: FeedLoggerWebhookFormat
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__feed_logger_set_webhook', {
+            url,
+            format
+        });
+    },
+    async appFeedLoggerTestWebhook(): Promise<null> {
+        return await TAURI_INVOKE('app__feed_logger_test_webhook');
+    },
+    async appFeedLoggerUnpair(): Promise<null> {
+        return await TAURI_INVOKE('app__feed_logger_unpair');
+    },
+    async appFeedLoggerSync(): Promise<FeedLoggerSyncReport> {
+        return await TAURI_INVOKE('app__feed_logger_sync');
+    },
     async appTelemetryRecordEvent(event: TelemetryClientEvent): Promise<null> {
         return await TAURI_INVOKE('app__telemetry_record_event', { event });
     },
@@ -605,6 +671,13 @@ const generatedCommands = {
         input: FavoriteBulkRemoveInput
     ): Promise<FavoriteBulkRemoveResult> {
         return await TAURI_INVOKE('app__favorites_remove_selection', { input });
+    },
+    async appDesktopWidgetEnabledSet(
+        enabled: boolean
+    ): Promise<DesktopWidgetSnapshot> {
+        return await TAURI_INVOKE('app__desktop_widget_enabled_set', {
+            enabled
+        });
     },
     async appVrOverlayEnabledSet(
         enabled: boolean
@@ -2094,6 +2167,21 @@ const generatedCommands = {
             input
         });
     },
+    async appVrchatToolsModerationReportDelete(
+        input: VrchatToolsModerationReportDeleteInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE(
+            'app__vrchat_tools_moderation_report_delete',
+            { input }
+        );
+    },
+    async appVrchatToolsModerationReportsGet(
+        input: VrchatToolsModerationReportsInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_tools_moderation_reports_get', {
+            input
+        });
+    },
     async appVrchatToolsUserNoteSave(
         input: VrchatToolsUserNoteSaveInput
     ): Promise<HttpApiExecuteResponse> {
@@ -2245,6 +2333,14 @@ const generatedCommands = {
         input: VrchatLogTailReadInput
     ): Promise<VrchatLogEntriesReadOutput> {
         return await TAURI_INVOKE('app__vrchat_log_tail_read', { input });
+    },
+    async appLocalTestAvatarsList(): Promise<LocalTestAvatarOutput[]> {
+        return await TAURI_INVOKE('app__local_test_avatars_list');
+    },
+    async appLocalTestAvatarDelete(fileName: string): Promise<null> {
+        return await TAURI_INVOKE('app__local_test_avatar_delete', {
+            fileName
+        });
     },
     async appOpenVrcxAppDataFolder(): Promise<boolean> {
         return await TAURI_INVOKE('app__open_vrcx_app_data_folder');
@@ -2992,6 +3088,7 @@ export type ActivityTypeDefinition = {
     wristDefaultScope: ActivityScope;
     alertDefaultScope: ActivityScope;
     ttsDefaultScope: ActivityScope;
+    widgetDefaultScope: ActivityScope;
     aliases: string[];
 };
 export type ActivityViewBuildInput = {
@@ -3027,6 +3124,7 @@ export type AncillaryRuntimeSnapshot = {
     backgroundImageState: BackgroundImageProjection;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
     privacyLockState: PrivacyLockSnapshot;
+    desktopWidgetState: DesktopWidgetSnapshot;
 };
 export type AppDataDirSource = 'cli' | 'persisted' | 'default';
 export type AppDataDirState = {
@@ -3053,6 +3151,7 @@ export type AppErrorCode =
     | 'auth_session_invalidated'
     | 'integration_api_port_in_use'
     | 'integration_api_bind'
+    | 'feed_logger'
     | 'custom';
 export type AppErrorPayload = {
     code: AppErrorCode;
@@ -3060,6 +3159,7 @@ export type AppErrorPayload = {
     sqliteCategory?: SqliteErrorCategory | null;
     statusCode?: number | null;
     port?: number | null;
+    feedLoggerCode?: FeedLoggerErrorCode | null;
 };
 export type AppLauncherEntry = {
     id: string;
@@ -3424,8 +3524,11 @@ export type BackendRuntimeEventPayloadMap = {
     realtimeProjectionSync: RealtimeProjectionSync;
     updateIsGameRunning: HostSessionProjection;
     integrationApiStartFailed: IntegrationApiStartFailedPayload;
+    feedLoggerSync: FeedLoggerSyncEvent;
+    feedLoggerHealth: FeedLoggerProbe;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
     privacyLockState: PrivacyLockSnapshot;
+    desktopWidgetState: DesktopWidgetSnapshot;
 };
 export type BackendRuntimeGameLogStatus =
     | 'idle'
@@ -3724,6 +3827,7 @@ export type DataDirMigrationError = {
 export type DataDirMigrationErrorCode =
     | 'operationBusy'
     | 'databaseUnavailable'
+    | 'databaseInUse'
     | 'pendingRestore'
     | 'pendingLegacyMigration'
     | 'pendingMigration'
@@ -3871,7 +3975,14 @@ export type DesktopNotificationActivation = {
 };
 export type DesktopNotificationTarget =
     | { kind: 'openUserProfile'; userId: string }
-    | { kind: 'openGroupProfile'; groupId: string };
+    | { kind: 'openGroupProfile'; groupId: string }
+    | { kind: 'openLocation'; location: string };
+export type DesktopWidgetSnapshot = {
+    supported: boolean;
+    enabled: boolean;
+    pinned: boolean;
+    clickThrough: boolean;
+};
 export type EmojiLoopStyle = 'pingpong';
 export type EmojiUploadParams =
     | {
@@ -4286,6 +4397,95 @@ export type FeedLiveEntry =
           displayLocation?: string | null;
           ownerUserId: string;
       };
+export type FeedLoggerBackfillHistory = {
+    total: number;
+    recent: FeedLoggerBackfillRecord[];
+};
+export type FeedLoggerBackfillRecord = { at: number; inserted: number };
+export type FeedLoggerErrorCode =
+    | 'notConfigured'
+    | 'notSignedIn'
+    | 'syncInProgress'
+    | 'notPresent'
+    | 'noSavedCredentials'
+    | 'loggerTooOld'
+    | 'betaRecorder'
+    | 'backupRequired'
+    | 'accountMismatch'
+    | 'invalidAddress'
+    | 'invalidPassword'
+    | 'unreachable'
+    | 'unauthorized'
+    | 'clientTooOld'
+    | 'rejected'
+    | 'badResponse'
+    | 'storage';
+export type FeedLoggerProbe =
+    | { state: 'notConfigured' }
+    | { state: 'unreachable'; message: string }
+    | { state: 'unauthorized' }
+    | { state: 'clientTooOld' }
+    | { state: 'loggerTooOld' }
+    | { state: 'betaRecorder' }
+    | { state: 'badResponse'; message: string }
+    | { state: 'connected'; status: FeedLoggerStatus };
+export type FeedLoggerSession =
+    | { state: 'noCredentials' }
+    | { state: 'loggingIn' }
+    | { state: 'recording' }
+    | { state: 'reconnecting' }
+    | { state: 'awaitingTwoFactor'; methods: string[] }
+    | { state: 'loginFailed'; reason: string };
+export type FeedLoggerSettingsView = {
+    address: string | null;
+    savedCredentialsAvailable: boolean;
+};
+export type FeedLoggerStatus = {
+    loggerVersion: string;
+    protocolVersion: number;
+    startedAt: number;
+    serverTime: number;
+    session: FeedLoggerSession;
+    accountId: string | null;
+    passwordSaved: boolean;
+    lastLoginAt: number | null;
+    lastError: string | null;
+    storageError: string | null;
+    reloginAttempts: number;
+    connectedSince: number | null;
+    lastSnapshotAt: number | null;
+    unsyncedFrames: number;
+    oldestUnsyncedAt: number | null;
+    newestUnsyncedAt: number | null;
+    lastPullAt: number | null;
+    desktopPresent: boolean;
+    databaseBytes: number;
+    availableBytes: number | null;
+    retentionBytes: number | null;
+    retentionDays: number | null;
+    droppedUnsyncedFrames: number;
+    droppedAfterPasswordChange: number;
+    webhookConfigured: boolean;
+    webhookTarget: string | null;
+    webhookFormat: FeedLoggerWebhookFormat | null;
+    lastWebhookAt: number | null;
+    lastWebhookOk: boolean | null;
+};
+export type FeedLoggerSyncEvent =
+    | { state: 'pulling'; frames: number }
+    | { state: 'writing'; frames: number }
+    | { state: 'finished'; inserted: number; skipped: number }
+    | { state: 'failed'; message: string };
+export type FeedLoggerSyncReport =
+    | { result: 'notConfigured' }
+    | { result: 'accountMismatch'; loggerAccountId: string | null }
+    | {
+          result: 'synced';
+          frames: number;
+          inserted: number;
+          framesWithoutBaseline: number;
+      };
+export type FeedLoggerWebhookFormat = 'discord' | 'text';
 export type FeedQueryMode = 'search' | 'lookup' | 'instance';
 export type FeedReadModelOutput = {
     rows: FeedRowOutput[];
@@ -5287,6 +5487,12 @@ export type LocalModerationOutput = {
     block: boolean;
     mute: boolean;
 };
+export type LocalTestAvatarOutput = {
+    fileName: string;
+    name: string;
+    size: number;
+    modifiedAt: string | null;
+};
 export type LocalWorldDetailsRefreshOutput = {
     requested: number;
     refreshed: number;
@@ -5551,6 +5757,7 @@ export type NotificationActivityFilterProfiles = {
     desktop: ActivityFilterProfile;
     webhook: ActivityFilterProfile;
     tts: ActivityFilterProfile;
+    widget: ActivityFilterProfile;
 };
 export type NotificationActivityFilterSurface =
     | 'wrist'
@@ -5558,7 +5765,8 @@ export type NotificationActivityFilterSurface =
     | 'hmd'
     | 'desktop'
     | 'webhook'
-    | 'tts';
+    | 'tts'
+    | 'widget';
 export type NotificationActivityFiltersSetInput = {
     surface: NotificationActivityFilterSurface;
     filters: ActivityFilterProfile;
@@ -6926,6 +7134,12 @@ export type VrchatToolsInviteMessageEditInput = {
 export type VrchatToolsInviteMessagesInput = {
     currentUserId?: string;
     messageType: InviteMessageType;
+};
+export type VrchatToolsModerationReportDeleteInput = { reportId?: string };
+export type VrchatToolsModerationReportsInput = {
+    currentUserId?: string;
+    offset?: number;
+    closedOnly?: boolean;
 };
 export type VrchatToolsUserNoteSaveInput = {
     targetUserId?: string;

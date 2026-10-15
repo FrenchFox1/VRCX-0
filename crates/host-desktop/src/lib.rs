@@ -2,6 +2,8 @@ pub mod asset_bundle_cache;
 pub mod auto_launch;
 pub mod calendar;
 pub mod clipboard;
+#[cfg(windows)]
+pub mod desktop_widget_window;
 pub mod discord_rpc;
 pub mod game_launch;
 pub mod game_window;
@@ -9,6 +11,7 @@ pub mod host_capabilities;
 #[cfg(target_os = "linux")]
 pub mod linux_registry;
 pub mod local_player_moderations;
+pub mod local_test_avatars;
 pub mod log_scanner;
 #[cfg(any(windows, target_os = "linux"))]
 pub mod overlay_notifications;

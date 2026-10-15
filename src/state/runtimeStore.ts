@@ -8,6 +8,7 @@ import type {
     BackendRuntimeSnapshot,
     CapabilityStatus,
     DatabaseUpgradeStage,
+    DesktopWidgetSnapshot,
     FriendProfileBulkLoadStatus,
     HostCapabilities,
     MutualGraphFetchStatus,
@@ -222,6 +223,7 @@ type RuntimeStore = {
     backendRuntime: BackendRuntimeSnapshot | null;
     notificationDoNotDisturb: NotificationDoNotDisturbSnapshot;
     privacyLock: PrivacyLockSnapshot;
+    desktopWidget: DesktopWidgetSnapshot;
     authenticatedSession: AuthenticatedSessionProjection;
     shell: {
         backendRuntimeSnapshotHydrated: boolean;
@@ -246,6 +248,7 @@ type RuntimeStore = {
         snapshot: NotificationDoNotDisturbSnapshot
     ): void;
     setPrivacyLock(snapshot: PrivacyLockSnapshot): void;
+    setDesktopWidget(snapshot: DesktopWidgetSnapshot): void;
     setAuthenticatedSessionProjection(
         projection: AuthenticatedSessionProjection
     ): boolean;
@@ -491,6 +494,7 @@ type RuntimeStoreState = Omit<
     | 'setBackendRuntimeSnapshot'
     | 'setNotificationDoNotDisturb'
     | 'setPrivacyLock'
+    | 'setDesktopWidget'
     | 'setAuthenticatedSessionProjection'
     | 'setShellState'
     | 'setNowPlayingState'
@@ -598,8 +602,10 @@ const initialState: RuntimeStoreState = {
         exportFriendsListOpen: false,
         exportAvatarsListOpen: false,
         editInviteMessagesOpen: false,
+        moderationReportsOpen: false,
         llmEndpointsOpen: false,
-        profileBackupOpen: false
+        profileBackupOpen: false,
+        offlineRecordOpen: false
     },
     changelogTargetVersion: '',
     databaseUpgrade: {
@@ -630,6 +636,12 @@ const initialState: RuntimeStoreState = {
         userId: '',
         locked: false,
         hasPassword: false
+    },
+    desktopWidget: {
+        supported: false,
+        enabled: false,
+        pinned: true,
+        clickThrough: false
     },
     authenticatedSession: {
         revision: 0,
@@ -787,6 +799,9 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
             return;
         }
         set({ privacyLock: snapshot });
+    },
+    setDesktopWidget(snapshot: DesktopWidgetSnapshot) {
+        set({ desktopWidget: snapshot });
     },
     setAuthenticatedSessionProjection(projection) {
         if (projection.revision < get().authenticatedSession.revision) {

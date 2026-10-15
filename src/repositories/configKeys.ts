@@ -190,6 +190,8 @@ export const ConfigKeys = defineConfigKeys({
     hmdNotificationPosition: { type: 'string', default: 'bottom' },
     hmdNotificationStyle: { type: 'string', default: 'standard' },
     hmdNotificationAvatars: { type: 'bool', default: true },
+    desktopWidgetOpacity: { type: 'int', default: 55 },
+    desktopWidgetNewestOnTop: { type: 'bool', default: true },
     webhookEnabled: { type: 'bool', default: false },
     webhookAuthEventsEnabled: { type: 'bool', default: true },
     webhookUrl: { type: 'string', default: '' },
@@ -322,6 +324,7 @@ export const ConfigKeys = defineConfigKeys({
     localFavoriteFriendsGroups: { type: 'string', default: null },
     feedHiddenUsers: { type: 'string', default: null },
     feedHiddenUsersHideNotifications: { type: 'bool', default: true },
+    feedHiddenUsersHideAll: { type: 'bool', default: false },
 
     // ── Onboarding ───────────────────────────────────
     onboarding_welcome_seen: { type: 'bool', default: false },

@@ -11,6 +11,7 @@ use crate::app_launcher::start_app_launcher_snapshot_events;
 use crate::avatar::DesktopAvatarRuntime;
 use crate::context::DesktopRuntimeServicesDeps;
 use crate::data_dir::DesktopDataDirRuntime;
+use crate::desktop_widget::is_desktop_widget_config_key;
 use crate::external_api::ExternalApiRuntime;
 use crate::group::DesktopGroupRuntime;
 use crate::group_order::HostGroupOrderSource;
@@ -183,8 +184,10 @@ pub struct DesktopRuntimeBundle {
     pub host_file_access: HostFileAccess,
     pub discord_rpc: Arc<DiscordRpc>,
     pub vr_overlay_runtime: Arc<DesktopVrOverlayRuntime>,
+    pub desktop_widget: Arc<crate::desktop_widget::DesktopWidget>,
     pub app_update: AppUpdateRuntime,
     pub telemetry: TelemetryRuntime,
+    pub feed_logger: Arc<crate::feed_logger::DesktopFeedLoggerRuntime>,
     pub background_image: BackgroundImageService,
     pub community_theme: CommunityThemeService,
     pub integration_api: Arc<DesktopIntegrationApiRuntime>,
@@ -385,6 +388,7 @@ impl DesktopRuntimeHostState {
         }));
         let vr_overlay_runtime =
             Arc::new(DesktopVrOverlayRuntime::new(Arc::clone(&desktop_services))?);
+        let desktop_widget = Arc::new(crate::desktop_widget::DesktopWidget::new(&desktop_services));
         let game_log_sink: Arc<dyn GameLogEventSink> = game_log_runtime.clone();
         let log_watcher = LogWatcher::new_with_location_snapshot_scanner(
             Some(game_log_sink),
@@ -457,8 +461,21 @@ impl DesktopRuntimeHostState {
             host_file_access: host_file_access.clone(),
             discord_rpc,
             vr_overlay_runtime,
+            desktop_widget,
             app_update,
             telemetry,
+            feed_logger: Arc::new(
+                crate::feed_logger::DesktopFeedLoggerRuntime::new(
+                    Arc::clone(builder.database()),
+                    Arc::clone(builder.desktop_assembly().world_cache()),
+                    builder.desktop_assembly().file_cache().clone(),
+                    Arc::clone(builder.desktop_assembly().web_client()),
+                    builder.desktop_assembly().event_bus().clone(),
+                    builder.desktop_assembly().auth_scope().clone(),
+                    builder.desktop_assembly().auth_credentials_shared(),
+                )
+                .for_app_version(&app_version),
+            ),
             background_image,
             community_theme,
             integration_api: Arc::clone(&integration_api_runtime),
@@ -555,6 +572,7 @@ impl DesktopRuntimeHostState {
             runtime.profile_backup().clone(),
             desktop.host_file_access.clone(),
             runtime.paths().clone(),
+            Arc::clone(&desktop.feed_logger),
         );
         let external_api = ExternalApiRuntime::new(
             Arc::clone(runtime.web_client()),
@@ -842,6 +860,14 @@ impl DesktopRuntimeHostState {
 
     pub async fn shutdown_telemetry_flush(&self) {
         self.desktop.telemetry.shutdown_flush().await;
+    }
+
+    pub async fn leave_feed_logger(&self) {
+        self.desktop.feed_logger.leave().await;
+    }
+
+    pub fn feed_logger(&self) -> &Arc<crate::feed_logger::DesktopFeedLoggerRuntime> {
+        &self.desktop.feed_logger
     }
 
     pub async fn check_for_app_update(
@@ -2044,6 +2070,7 @@ impl DesktopRuntimeHostState {
     }
 
     pub fn stop_for_application_exit(&self, reason: &str, flush_telemetry: impl FnOnce()) {
+        self.desktop.desktop_widget.shutdown();
         self.runtime.stop_backend_runtime(reason);
         flush_telemetry();
         self.runtime.desktop_assembly().tasks().stop_all();
@@ -2144,17 +2171,31 @@ impl DesktopRuntimeHostState {
         &self,
         entries: Vec<crate::local_data::ConfigWriteEntry>,
     ) -> Result<()> {
+        let touches_desktop_widget = entries
+            .iter()
+            .any(|entry| is_desktop_widget_config_key(&entry.key));
         self.local_data.config_set_values(entries)?;
         self.desktop.services.reload_overlay_activity_filters();
         self.desktop.vr_overlay_runtime.mark_config_dirty();
+        if touches_desktop_widget {
+            self.desktop.desktop_widget.reload_settings();
+        }
         Ok(())
     }
 
     pub fn config_remove_value(&self, key: String) -> Result<i64> {
+        let touches_desktop_widget = is_desktop_widget_config_key(&key);
         let removed = self.local_data.config_remove_value(key)?;
         self.desktop.services.reload_overlay_activity_filters();
         self.desktop.vr_overlay_runtime.mark_config_dirty();
+        if touches_desktop_widget {
+            self.desktop.desktop_widget.reload_settings();
+        }
         Ok(removed)
+    }
+
+    pub fn desktop_widget(&self) -> Arc<crate::desktop_widget::DesktopWidget> {
+        Arc::clone(&self.desktop.desktop_widget)
     }
 
     pub async fn ancillary_runtime_snapshot(&self) -> AncillaryRuntimeSnapshot {
@@ -2360,6 +2401,7 @@ impl RuntimeHostProfileExtension for DesktopRuntimeProfileExtension {
     fn start_profile_maintenance(&self, state: &RuntimeHostState) {
         self.start_registry_backup_loop(state);
         self.start_desktop_maintenance_loops(state);
+        self.desktop.feed_logger.start_presence_loop(state);
     }
 }
 

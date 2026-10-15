@@ -241,6 +241,7 @@
         "error": {
             "operationBusy": "Již probíhá jiné zálohování, obnovení nebo přesun.",
             "databaseUnavailable": "Data teď nelze zkopírovat. Zkuste to později.",
+            "databaseInUse": "Data VRCX-0 právě používá jiný program. Zavřete ho a zkuste to znovu.",
             "pendingRestore": "Nejprve dokončete nebo zrušte čekající obnovení.",
             "pendingLegacyMigration": "Nejprve dokončete čekající převod starých dat.",
             "pendingMigration": "Čeká změna datové složky. Restartujte VRCX-0.",
@@ -402,6 +403,137 @@
             "unknown": "Při obnovování zálohy došlo k neočekávané chybě."
         }
     },
+    "offline_record": {
+        "header": "Vlastní záznamník (experimentální)",
+        "tools_description": "Zaznamenávat Zdroj, i když je VRCX-0 zavřené",
+        "dialog_description": "Na vašem vlastním serveru zaznamenává feed, zatímco je VRCX-0 zavřený, a při dalším spuštění ho doplní.",
+        "guide": "Návod",
+        "scope_note": "Doplňuje online, offline, polohu, stav a avatara, a se zapnutým „Udržovat bio přátel aktuální“ i bio.",
+        "shutdown_note": "Při pádu, vynuceném ukončení, uspání nebo ztrátě připojení se ztratí asi 30 sekund.",
+        "setup": {
+            "progress": "Krok {current} z {total}",
+            "backup_title": "Zapněte automatické zálohy",
+            "backup_description": "Doplněné záznamy se zapisují do místní databáze, proto nejprve zapněte zálohování.",
+            "address_title": "Adresa záznamníku",
+            "address_description": "Například http://192.168.1.10:8787.",
+            "password_title": "Heslo záznamníku",
+            "password_description": "Heslo, které zobrazil instalační skript (je také v souboru password), nebo vaše VRCX0_LOGGER_PASSWORD.",
+            "login_title": "Přihlášení záznamníku do VRChatu",
+            "login_description": "Záznamník potřebuje vlastní přihlášení do VRChatu."
+        },
+        "open_backup": "Nastavit zálohy",
+        "backup_off_confirm_title": "Vypnout automatické zálohy?",
+        "backup_off_confirm_description": "Vlastní záznamník vyžaduje automatické zálohy. Jejich vypnutím se vypne i záznamník: nejdřív se doplní už zaznamenaná aktivita, pak se záznamník odhlásí z VRChatu a odpojí. Pro další použití ho bude potřeba znovu nastavit.",
+        "backup_off_confirm": "Vypnout zálohy a záznamník",
+        "address": "Adresa záznamníku",
+        "password": "Heslo záznamníku",
+        "connect": "Připojit",
+        "next": "Další",
+        "back": "Zpět",
+        "disconnect": "Odpojit",
+        "disconnect_confirm_title": "Odpojit záznamník?",
+        "disconnect_confirm_description": "Nejprve se doplní aktivita, kterou záznamník už zaznamenal. Pak se záznamník odhlásí z VRChatu a VRCX-0 zapomene jeho adresu a heslo. Pro další použití ho bude nutné znovu nastavit.",
+        "sync_failed_title": "Doplnění ze záznamníku se nezdařilo",
+        "sync_failed_description": "Pokud budete pokračovat, aktivitu na záznamníku, která ještě nebyla doplněna, už nepůjde doplnit.",
+        "sign_out_failed_title": "Záznamník se nepodařilo odhlásit",
+        "sign_out_failed_description": "Záznamník může dál nahrávat pod vaším účtem VRChat. Chcete-li to zastavit, vypněte záznamník nebo smažte jeho datovou složku.",
+        "continue_anyway": "Přesto pokračovat",
+        "vrchat_login": "Přihlášení do VRChatu",
+        "risk_title": "Rizika",
+        "risk_description": "Záznamník se do VRChatu přihlašuje vaším účtem z jiné IP adresy. Může to způsobit odpojení nebo další ověřování, v nejhorším případě omezení nebo zablokování účtu. Experimentální funkce, používáte na vlastní riziko. Přihlašovací údaje se posílají jen do vašeho záznamníku.",
+        "risk_ack": "Rozumím rizikům a přijímám je",
+        "save_password": "Uložit heslo v záznamníku",
+        "save_password_description": "Záznamník se po vypršení relace přihlásí znovu sám.",
+        "push_saved_credentials": "Přihlásit uloženým účtem VRChat",
+        "vrchat_username": "Uživatelské jméno nebo e-mail VRChatu",
+        "vrchat_password": "Heslo VRChatu",
+        "push_credentials": "Přihlásit",
+        "two_factor_description": "Pro přihlášení záznamníku do VRChatu je potřeba kód dvoufázového ověření.",
+        "two_factor_code": "Kód",
+        "verify": "Ověřit",
+        "login_failed_reason": "Přihlášení selhalo: {reason}",
+        "relogin": "Přihlásit znovu",
+        "sign_out": "Odhlásit",
+        "sign_out_confirm_title": "Odhlásit záznamník?",
+        "sign_out_confirm_description": "Nejprve se doplní aktivita, kterou záznamník už zaznamenal. Pak záznamník přestane nahrávat a zapomene vaše přihlášení k VRChatu, dokud se znovu nepřihlásíte.",
+        "records": "Záznamy",
+        "unsynced_frames": "Čeká na doplnění",
+        "unsynced_range": "Období",
+        "database_size": "Místo v záznamníku",
+        "last_pull": "Naposledy doplněno",
+        "uptime": "Záznamník běží",
+        "backfill_total": "Celkem doplněno",
+        "backfill_record": "+{count}",
+        "available_space": "Volné místo v záznamníku",
+        "dropped_unsynced": "Smazáno kvůli limitu místa před doplněním",
+        "dropped_after_password_change": "Zahozeno po změně hesla",
+        "storage_error": "Záznamník nemůže ukládat záznamy: {reason}",
+        "last_error": "Poslední chyba: {reason}",
+        "sync_now": "Doplnit nyní",
+        "webhook": "Upozornění přes webhook",
+        "webhook_description": "Upozorní vás, když se záznamník nemůže přihlásit nebo vyžaduje pozornost.",
+        "webhook_last_sent": "Naposledy odesláno: {date} ({result})",
+        "webhook_result_ok": "doručeno",
+        "webhook_result_failed": "selhalo",
+        "webhook_events": {
+            "title": "Záznamník pošle zprávu, když:",
+            "login_stopped": "Jeho přihlášení do VRChatu skončilo a je potřeba ho znovu přihlásit ve VRCX-0",
+            "two_factor": "Opětovné přihlášení vyžaduje kód dvoufázového ověření",
+            "storage_failed": "Nemůže ukládat záznamy, například kvůli plnému disku",
+            "recovered": "Po problému znovu zaznamenává",
+            "records_dropped": "Kvůli limitu úložiště byly smazány dosud nedoplněné záznamy"
+        },
+        "webhook_format_text": "Prostý text",
+        "webhook_url": "URL webhooku",
+        "webhook_remove": "Odebrat",
+        "webhook_change": "Změnit",
+        "webhook_test": "Odeslat test",
+        "webhook_test_sent": "Testovací zpráva odeslána",
+        "action_failed": "Akce záznamníku selhala.",
+        "error": {
+            "not_configured": "Záznamník není nastaven",
+            "not_signed_in": "Nejprve se ve VRCX-0 přihlaste do VRChatu",
+            "sync_in_progress": "Doplňování už probíhá, počkejte",
+            "not_present": "VRCX-0 teď není propojen se záznamníkem, takže zatím nemůže doplňovat. Zkontrolujte, že je připojen VRChat i záznamník.",
+            "no_saved_credentials": "VRCX-0 nemá pro tento účet uložené heslo k VRChatu",
+            "invalid_address": "Adresa záznamníku není platná. Příklad: http://192.168.1.10:8787",
+            "invalid_password": "Toto heslo záznamníku nelze použít",
+            "rejected": "Záznamník požadavek odmítl: {message}",
+            "storage": "VRCX-0 nemohl uložit nastavení nebo záznamy záznamníku",
+            "backup_required": "Před vypnutím automatického zálohování odpojte vlastní záznamník",
+            "account_mismatch": "Záznamník se přihlásil k jinému účtu VRChat než VRCX-0, proto byl znovu odhlášen"
+        },
+        "status_unsynced": "Zaznamenává · k doplnění: {count}",
+        "two_factor_method": {
+            "totp": "Ověřovací aplikace",
+            "otp": "Záložní kód",
+            "emailOtp": "Kód z e-mailu"
+        },
+        "health": {
+            "unreachable": "Záznamník je nedostupný",
+            "unauthorized": "Heslo záznamníku je nesprávné",
+            "client_too_old": "Pro tento záznamník aktualizujte VRCX-0",
+            "logger_too_old": "Záznamník je potřeba aktualizovat",
+            "account_mismatch": "Záznamník je přihlášen k jinému účtu",
+            "recording": "Zaznamenává",
+            "logging_in": "Přihlašování…",
+            "reconnecting": "Opětovné připojování…",
+            "two_factor": "Je potřeba kód dvoufázového ověření",
+            "no_credentials": "Je potřeba přihlášení do VRChatu",
+            "login_failed": "Přihlášení selhalo",
+            "bad_response": "Neočekávaná odpověď záznamníku",
+            "beta_recorder": "Stabilní VRCX-0 funguje jen se stabilním záznamníkem. Přepněte záznamník na image latest"
+        },
+        "status_bar": {
+            "pulling": "Stahování ze záznamníku {count}",
+            "writing": "Doplňování Zdroje {count}"
+        },
+        "toast": {
+            "backfilled": "Ze záznamníku doplněno záznamů do Zdroje: {count}",
+            "backfill_failed": "Záznamy ze záznamníku se nepodařilo doplnit",
+            "skipped": "Nepodařilo se doplnit {count} záznamů, protože záznamník neměl výchozí seznam přátel"
+        }
+    },
     "common": {
         "no_data": "Žádná data",
         "no_matching_records": "Žádné odpovídající záznamy",
@@ -507,6 +639,18 @@
                 "online": "{name} se přihlásil(a)",
                 "offline": "{name} se odhlásil(a)"
             }
+        }
+    },
+    "desktop_widget": {
+        "title": "Desktopový overlay",
+        "menu": {
+            "pin": "Vždy navrchu",
+            "click_through": "Propouštět kliknutí myši",
+            "close": "Zavřít"
+        },
+        "tray": {
+            "turn_on": "Zapnout",
+            "show": "Přenést do popředí"
         }
     },
     "nativeShell": {
@@ -1170,7 +1314,9 @@
             },
             "context": {
                 "hide_user": "Skrýt změny polohy z Feedu",
-                "unhide_user": "Zobrazit změny polohy ve Feedu"
+                "unhide_user": "Zobrazit změny polohy ve Feedu",
+                "hide_user_all": "Skrýt z Feedu",
+                "unhide_user_all": "Zobrazit ve Feedu"
             }
         },
         "friends_locations": {
@@ -1311,7 +1457,8 @@
                 "style_list_could_not_be_loaded_unknown_style_selections_will": "Seznam stylů se nepodařilo načíst. Neznámé výběry stylů budou zachovány",
                 "selected_image_is_too_large": "Vybraný obrázek je příliš velký",
                 "selected_file_is_not_an_image": "Vybraný soubor není obrázek",
-                "avatar_inventory_failed_to_load": "Inventář avatarů se nepodařilo načíst"
+                "avatar_inventory_failed_to_load": "Inventář avatarů se nepodařilo načíst",
+                "local_test_avatars_failed_to_load": "Místní testovací avatary se nepodařilo načíst"
             },
             "success": {
                 "avatar_styles_updated": "Styly avataru aktualizovány",
@@ -1341,7 +1488,9 @@
                 "make_private": "Zneviditelnit",
                 "avatar_made_public": "Avatar zveřejněn",
                 "avatar_made_private": "Avatar zneviditelněn",
-                "untitled_avatar": "Avatar bez názvu"
+                "untitled_avatar": "Avatar bez názvu",
+                "local_test_avatars": "Místní testovací avatary",
+                "local_test_avatars_description": "Avatary sestavené pomocí Build & Test ve VRChat SDK. Ve hře je vidíte jen vy."
             },
             "action": {
                 "select_style": "Vybrat styl",
@@ -1352,12 +1501,16 @@
                 "show_avatar_grid": "Zobrazit mřížku avatarů",
                 "show_avatar_table": "Zobrazit tabulku avatarů",
                 "refresh_avatar_inventory": "Obnovit inventář avatarů",
-                "change_avatar_image": "Upravit obrázek avataru"
+                "change_avatar_image": "Upravit obrázek avataru",
+                "open_local_test_avatars": "Místní testovací avatary"
             },
             "empty": {
                 "this_avatar_has_no_local_tags_yet": "Tento avatar zatím nemá žádné lokální štítky",
                 "no_avatars_match_the_current_filters": "Žádné avatary neodpovídají aktuálním filtrům",
-                "no_authenticated_user_is_available_for_the_avatar_inventory": "Pro inventář avatarů není k dispozici žádný přihlášený uživatel."
+                "no_authenticated_user_is_available_for_the_avatar_inventory": "Pro inventář avatarů není k dispozici žádný přihlášený uživatel.",
+                "no_local_test_avatars": "Žádné místní testovací avatary",
+                "local_test_avatars_hint": "Zde se zobrazí avatary, které sestavíte pomocí Build & Test ve VRChat SDK.",
+                "no_local_test_avatars_match_the_search": "Hledání neodpovídají žádné místní testovací avatary"
             },
             "loading": {
                 "loading_the_avatar_inventory": "Načítání inventáře avatarů"
@@ -1369,13 +1522,16 @@
                 "failed_to_update_avatar": "Nepodařilo se aktualizovat avatar",
                 "failed_to_select_avatar": "Nepodařilo se vybrat avatar",
                 "failed_to_create_impostor": "Nepodařilo se vytvořit impostora",
-                "failed_to_upload_avatar_image": "Nepodařilo se nahrát obrázek avataru"
+                "failed_to_upload_avatar_image": "Nepodařilo se nahrát obrázek avataru",
+                "failed_to_delete_local_test_avatar": "Místní testovací avatar se nepodařilo smazat"
             },
             "modal": {
                 "create_impostor": "Vytvořit impostora?",
                 "create": "Vytvořit",
                 "make_avatar_public": "Zveřejnit avatar?",
-                "make_avatar_private": "Zneviditelnit avatar?"
+                "make_avatar_private": "Zneviditelnit avatar?",
+                "delete_local_test_avatar": "Smazat {value}?",
+                "delete_local_test_avatar_description": "Soubor bude z tohoto počítače odstraněn. Při příštím otevření nabídky avatarů ve VRChatu zmizí ze SDK Test Avatars."
             },
             "dynamic": {
                 "updated_local_tags_for_value": "Lokální štítky pro {value} aktualizovány",
@@ -2165,7 +2321,9 @@
             "other": {
                 "header": "Ostatní",
                 "edit_invite_message": "Šablony zpráv",
-                "edit_invite_message_description": "Upravte šablony zpráv pro pozvánky a žádosti"
+                "edit_invite_message_description": "Upravte šablony zpráv pro pozvánky a žádosti",
+                "moderation_reports": "Moje nahlášení",
+                "moderation_reports_description": "Zobrazit nebo stáhnout odeslaná nahlášení"
             },
             "success": {
                 "media_item_deleted": "Mediální položka byla odstraněna",
@@ -2369,15 +2527,17 @@
                     "description": "Pravidelně načítá veřejná bio přátel a změny zobrazuje ve Feedu. Aktualizace se mohou zpozdit a některé změny mohou být vynechány."
                 },
                 "hidden_feed": {
-                    "header": "Přátelé se skrytými změnami polohy",
-                    "description": "Skryje ve Feedu změny polohy vybraných přátel. Jejich ostatní aktivita se dál zobrazuje a uložená data se neodstraní.",
+                    "header": "Přátelé skrytí ve Feedu",
+                    "description": "Skryje ve Feedu změny polohy vybraných přátel, nebo veškerou jejich aktivitu. Uložená data se neodstraní.",
                     "add": "Přidat přítele",
                     "search_placeholder": "Hledat přátele",
                     "empty": "Zatím jste nikoho neskryli.",
                     "remove": "Odebrat skrytého přítele",
                     "unknown_friend": "Neznámý přítel",
+                    "hide_all": "Skrýt veškerou aktivitu",
+                    "hide_all_description": "Skryje veškerou aktivitu těchto přátel. Když je vypnuto, skrývají se jen změny polohy.",
                     "hide_notifications": "Skrýt i v oznámeních",
-                    "hide_notifications_description": "Jejich změny polohy se nezobrazí ani v oznámeních na ploše, TTS, VR overlayích, webhoocích ani v oznámeních v aplikaci.",
+                    "hide_notifications_description": "Skrytá aktivita se nezobrazí ani v oznámeních na ploše, TTS, VR overlayích, webhoocích ani v oznámeních v aplikaci.",
                     "hide_private_location_changes": "Neoznamovat přesuny do soukromých světů",
                     "hide_private_location_changes_description": "Když se přítel přesune do soukromého světa, neodešle se oznámení na ploše, TTS, VR oznámení ani webhook. Kanál zápěstního overlaye se řídí vlastním nastavením skrytí soukromých světů."
                 }
@@ -2778,6 +2938,16 @@
                         "desktop_notification_while_afk": "Desktop Notifications While AFK",
                         "notification_sound": "Zvuk oznámení",
                         "friend_icons": "Zobrazit ikony přátel"
+                    },
+                    "desktop_widget": {
+                        "header": "Desktopový overlay",
+                        "description": "Zobrazuje nedávné aktivity v okně na ploše a uchovává nejvýše 50 položek.",
+                        "usage_hint": "Zapíná a vypíná se na stavovém řádku. Kliknutím pravým tlačítkem na okno nastavíte Vždy navrchu nebo propouštění kliknutí myši. Když okno propouští kliknutí, vypněte to v nabídce na hlavním panelu.",
+                        "background_opacity": "Neprůhlednost pozadí",
+                        "order": "Pořadí",
+                        "order_newest_top": "Nejnovější nahoře",
+                        "order_newest_bottom": "Nejnovější dole",
+                        "activity_filters": "Filtry desktopového overlaye"
                     },
                     "webhook": {
                         "header": "Oznámení webhooku",
@@ -5317,6 +5487,10 @@
             "title": "Filtry desktopových oznámení",
             "description": "Vyberte, které aktivity spouští desktopová (systémová) oznámení. Výše uvedená podmínka pro desktopová oznámení stále platí."
         },
+        "desktop_widget": {
+            "title": "Filtry desktopového overlaye",
+            "description": "Vyberte, které aktivity se zobrazí v desktopovém overlayi."
+        },
         "webhook_notifications": {
             "title": "Filtry webhook oznámení",
             "description": "Vyberte, která běhová oznámení se odesílají na nakonfigurovaný webhook."
@@ -5766,6 +5940,19 @@
             "modal": {
                 "delete_instance_record": "Smazat záznam instance?"
             }
+        },
+        "moderation_reports": {
+            "header": "Moje nahlášení",
+            "description": "Nahlášení, která jste odeslali do VRChatu.",
+            "empty_open": "Žádná otevřená nahlášení",
+            "empty_closed": "Žádná uzavřená nahlášení",
+            "failed_to_load": "Nahlášení se nepodařilo načíst",
+            "withdraw": "Stáhnout",
+            "withdraw_title": "Stáhnout nahlášení {value}?",
+            "withdraw_description": "Tuto akci nelze vrátit zpět.",
+            "failed_to_withdraw": "Nahlášení se nepodařilo stáhnout",
+            "status_open": "Otevřené",
+            "status_closed": "Uzavřené"
         }
     },
     "confirm": {
@@ -6274,7 +6461,11 @@
         "proxy_disabled": "Proxy zakázána",
         "proxy_enabled_direct": "Proxy povolena, připojuje se přímo",
         "proxy_enabled_server": "Proxy povolena: {proxy}",
-        "proxy_network_issue": "Proxy povolena, síťový požadavek selhal"
+        "proxy_network_issue": "Proxy povolena, síťový požadavek selhal",
+        "desktop_widget_off": "Desktopový overlay je vypnutý",
+        "desktop_widget_on": "Desktopový overlay je zapnutý",
+        "desktop_widget_click_through": "Desktopový overlay je zapnutý (propouští kliknutí myši)",
+        "desktop_widget_failed": "Desktopový overlay se nepodařilo změnit"
     },
     "component": {
         "favorite_action_menu": {

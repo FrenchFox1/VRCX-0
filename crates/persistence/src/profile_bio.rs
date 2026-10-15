@@ -6,7 +6,7 @@ use crate::ownership::OwnerId;
 use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
 
-fn ensure_profile_bio_table(
+pub(crate) fn ensure_profile_bio_table(
     db: &DatabaseService,
     owner_user_id: &OwnerId,
 ) -> Result<String, Error> {
@@ -113,6 +113,23 @@ pub fn profile_bio_next_stale_friend(
         .first()
         .map(|row| row_string(row, 0))
         .filter(|user_id| !user_id.is_empty()))
+}
+
+pub fn profile_bio_checked_at_list(
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+) -> Result<Vec<(String, String)>, Error> {
+    let user_prefix = ensure_profile_bio_table(db, owner_user_id)?;
+    Ok(db
+        .execute(
+            &format!(
+                "SELECT user_id, checked_at FROM {user_prefix}_profile_bio WHERE checked_at <> ''"
+            ),
+            &Default::default(),
+        )?
+        .iter()
+        .map(|row| (row_string(row, 0), row_string(row, 1)))
+        .collect())
 }
 
 fn require_user_id(user_id: &str) -> Result<String, Error> {

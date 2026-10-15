@@ -105,9 +105,24 @@ describe('vrcNotificationStore', () => {
         useVrcNotificationStore.getState().resetVrcNotificationState();
     });
 
-    it('caps live upserts so a long session cannot grow rows without bound', () => {
+    async function loadRowsAtCap() {
+        notificationRepositoryMock.queryNotifications.mockResolvedValue(
+            Array.from({ length: 2000 }, (_, index) => ({
+                id: `notif_${index}`,
+                type: 'inviteResponse',
+                version: 2,
+                seen: true,
+                created_at: new Date(1700000000000 + index).toISOString()
+            }))
+        );
+        await useVrcNotificationStore.getState().loadForCurrentUser();
+        expect(useVrcNotificationStore.getState().rows).toHaveLength(2000);
+    }
+
+    it('caps live upserts so a long session cannot grow rows without bound', async () => {
+        await loadRowsAtCap();
         const store = useVrcNotificationStore.getState();
-        for (let index = 0; index < 2050; index += 1) {
+        for (let index = 2000; index < 2050; index += 1) {
             store.upsertNotification({
                 id: `notif_${index}`,
                 type: 'inviteResponse',
@@ -123,18 +138,9 @@ describe('vrcNotificationStore', () => {
         expect(rows.some((row) => row.id === 'notif_0')).toBe(false);
     });
 
-    it('keeps an upserted notification even when it sorts past the cap', () => {
+    it('keeps an upserted notification even when it sorts past the cap', async () => {
+        await loadRowsAtCap();
         const store = useVrcNotificationStore.getState();
-        for (let index = 0; index < 2000; index += 1) {
-            store.upsertNotification({
-                id: `notif_${index}`,
-                type: 'inviteResponse',
-                version: 2,
-                seen: true,
-                created_at: new Date(1700000000000 + index).toISOString()
-            });
-        }
-        expect(useVrcNotificationStore.getState().rows).toHaveLength(2000);
 
         store.upsertNotification({
             id: 'notif_backfill',

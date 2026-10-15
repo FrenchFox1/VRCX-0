@@ -52,6 +52,7 @@ export {
 } from './preferences/preferenceIntegrationSetters';
 export {
     setDesktopNotificationActivityFiltersPreference,
+    setDesktopWidgetActivityFiltersPreference,
     setHmdNotificationActivityFiltersPreference,
     setOverlayActivityFiltersPreference,
     setTtsNotificationActivityFiltersPreference,

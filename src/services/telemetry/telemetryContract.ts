@@ -42,11 +42,13 @@ export const TELEMETRY_TOOL_KEYS = [
     'group-calendar',
     'group-moderation',
     'my-groups',
+    'offline-record',
     'discord-names',
     'export-notes',
     'export-friend-list',
     'export-own-avatars',
-    'edit-invite-message'
+    'edit-invite-message',
+    'moderation-reports'
 ] as const;
 
 export type TelemetryPageRouteKey = (typeof TELEMETRY_ROUTE_KEYS)[number];

@@ -45,7 +45,9 @@ import {
 } from '@/ui/shadcn/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { DesktopWidgetToggle } from './DesktopWidgetToggle';
 import { DoNotDisturbMenu } from './DoNotDisturbMenu';
+import { OfflineRecordIndicator } from './OfflineRecordIndicator';
 import {
     AppUptimeValue,
     ClockValue,
@@ -359,6 +361,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                 >
                     {connections}
                     <div className="ml-auto flex shrink-0 items-center">
+                        <DesktopWidgetToggle />
                         {sessionActions}
                     </div>
                 </footer>
@@ -876,6 +879,8 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                 </TooltipContent>
                             </Tooltip>
                         ) : null}
+                        <DesktopWidgetToggle />
+                        <OfflineRecordIndicator />
                         {proxyEnabled ? (
                             <Popover
                                 open={proxyEditor.open}

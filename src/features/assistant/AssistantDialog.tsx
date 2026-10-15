@@ -241,11 +241,7 @@ export function AssistantDialog() {
     }
 
     function refreshSelectableModels() {
-        const stale = endpoints.filter(
-            (endpoint) =>
-                !endpoint.models.length ||
-                endpoint.id === runtimeSelection.endpointId
-        );
+        const stale = endpoints.filter((endpoint) => !endpoint.models.length);
         for (const endpoint of stale) {
             detectEndpointModels({
                 id: endpoint.id,

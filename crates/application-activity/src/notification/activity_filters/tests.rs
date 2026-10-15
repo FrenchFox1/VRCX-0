@@ -125,6 +125,35 @@ fn backend_load_reads_webhook_surface_key() -> std::result::Result<(), Box<dyn s
 }
 
 #[test]
+fn backend_load_reads_desktop_widget_key_with_its_own_defaults(
+) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    let (_dir, config) = test_config("overlay-activity-widget-key")?;
+    config.set_string(
+        "desktopWidgetActivityFilters",
+        &serde_json::to_string(&json!({
+            "version": 1,
+            "types": { "invite": { "scope": "off" } }
+        }))?,
+    )?;
+    let filters = load_overlay_activity_filters(&config);
+    let scope = |surface, activity_type| filters.rule_for(surface, activity_type).scope;
+
+    assert_eq!(
+        scope(NotificationSurface::DesktopWidget, ActivityKind::Invite),
+        ActivityScope::Off
+    );
+    assert_eq!(
+        scope(NotificationSurface::DesktopWidget, ActivityKind::Gps),
+        ActivityScope::AllFavorites
+    );
+    assert_eq!(
+        scope(NotificationSurface::Wrist, ActivityKind::Invite),
+        ActivityScope::Friends
+    );
+    Ok(())
+}
+
+#[test]
 fn types_missing_from_a_saved_surface_take_that_surface_defaults(
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
     let (_dir, config) = test_config("overlay-activity-missing-types")?;
@@ -377,19 +406,19 @@ fn hmd_rules_live_only_under_their_own_key() -> std::result::Result<(), Box<dyn 
 }
 
 #[test]
-fn location_hidden_users_load_from_the_feed_list_unless_the_switch_is_off(
+fn feed_hidden_notification_users_load_from_the_feed_list_unless_the_switch_is_off(
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let (_dir, config) = test_config("location-hidden-users")?;
+    let (_dir, config) = test_config("feed-hidden-users")?;
     config.set_string(
         "feedHiddenUsers",
         &serde_json::to_string(&json!([" usr_a ", { "userId": "usr_b" }, ""]))?,
     )?;
     assert_eq!(
-        load_location_hidden_user_ids(&config),
+        load_feed_hidden_notification_user_ids(&config),
         HashSet::from(["usr_a".to_string(), "usr_b".to_string()])
     );
 
     config.set_string("feedHiddenUsersHideNotifications", "false")?;
-    assert!(load_location_hidden_user_ids(&config).is_empty());
+    assert!(load_feed_hidden_notification_user_ids(&config).is_empty());
     Ok(())
 }

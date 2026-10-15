@@ -45,34 +45,45 @@ VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt 
 - **Social AI** — insights into your VRChat social life: who you play with
   most, who you're drifting away from, when friends are most likely online;
   just connect the AI service you already use
+- **Activity** — look back on each visit on a timeline, with the world, who was
+  there, and your screenshots; see the non-friends you keep running into
 - **Sidebar Mode** — keep an eye on friends from a narrow sidebar; docks to the
   screen edge and auto-hides on Windows and macOS
+- **Desktop Overlay** — a small desktop window of recent notifications for
+  desktop-mode players, in place of system notifications; Windows only
+- **Pinned worlds** — pin a world to the sidebar to see its public instances
+  and which friends are there, and join from right there
 - **Keyboard shortcuts** — common actions without the mouse; global hotkey on
   Windows
 - **Lock** — lock the interface with a code to protect your privacy
 - **Sharing** — share links for world collections, worlds, avatars, and
   instances
+- **Game Log import** — fill in the Game Log from VRChat's own logs for times
+  VRCX-0 wasn't running
 
 ### For advanced users
 
 - **MCP server** — let external AI tools use your local social data directly
 - **Integration API** — real-time in-game data for third-party apps
+- **Self-hosted Recorder (experimental)** — runs on your own server and keeps
+  your Feed recording while VRCX-0 is closed; the gap fills in the next time
+  you open it
 - **Headless mode** — run without a UI; see `crates/headless`
 
 ### Compared with VRCX
 
-| Feature               | VRCX                                                                   | VRCX-0 (+ = added)                                                            |
-| --------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Social automation** | Switch status when alone or with others; auto-reply to invite requests | + Schedules, multiple context rules with priorities, previous status restored |
-| **Notifications**     | Desktop, TTS, XSOverlay, OVR Toolkit, wrist overlay                    | + Discord webhooks, Do Not Disturb; per-event filtering on every channel      |
-| **VR overlay**        | Browser-rendered (100 MB+); OpenVR                                     | + Native rendering (tens of MB); OpenXR (**tested with WiVRn**)               |
-| Screenshots           | View and search metadata                                               | + Grid view, batch management, ZIP export                                     |
-| Avatar details        | Performance rank and file size                                         | + Full performance stats against each platform's limits                       |
-| Backup                | VRChat registry settings                                               | + Scheduled database backups, one-click restore                               |
-| Friend locations      | Group friends by instance                                              | + Worlds view                                                                 |
-| Group management      | Set visibility one group at a time                                     | + Batch leave and batch visibility; group roles in the player list            |
-| Themes                | Built-in themes, custom CSS file                                       | + Community themes, background image, in-app CSS editor, accent color         |
-| Game log              | All accounts mixed together                                            | Stored per account                                                            |
+| Feature               | VRCX                                                                   | VRCX-0 (+ = added)                                                                        |
+| --------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Social automation** | Switch status when alone or with others; auto-reply to invite requests | + Schedules, multiple context rules with priorities, previous status restored             |
+| **Notifications**     | Desktop, TTS, XSOverlay, OVR Toolkit, wrist overlay                    | + Desktop Overlay, Discord webhooks, Do Not Disturb; per-event filtering on every channel |
+| **VR overlay**        | Browser-rendered (100 MB+); OpenVR                                     | + Native rendering (tens of MB); OpenXR (**tested with WiVRn**)                           |
+| Screenshots           | View and search metadata                                               | + Grid view, batch management, ZIP export                                                 |
+| Avatar details        | Performance rank and file size                                         | + Full performance stats against each platform's limits                                   |
+| Backup                | VRChat registry settings                                               | + Scheduled database backups, one-click restore                                           |
+| Friend locations      | Group friends by instance                                              | + Worlds view                                                                             |
+| Group management      | Set visibility one group at a time                                     | + Batch leave and batch visibility; group roles in the player list                        |
+| Themes                | Built-in themes, custom CSS file                                       | + Community themes, background image, in-app CSS editor, accent color                     |
+| Game log              | All accounts mixed together                                            | Stored per account                                                                        |
 
 Everything else VRCX does, VRCX-0 does too.
 

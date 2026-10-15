@@ -156,6 +156,8 @@ export async function loadPreferenceSnapshot() {
         hmdNotificationPosition,
         hmdNotificationStyle,
         hmdNotificationAvatars,
+        desktopWidgetOpacity,
+        desktopWidgetNewestOnTop,
         webhookEnabled,
         webhookAuthEventsEnabled,
         webhookUrl,
@@ -202,6 +204,7 @@ export async function loadPreferenceSnapshot() {
         localFavoriteFriendsGroups,
         feedHiddenUsers,
         feedHiddenUsersHideNotifications,
+        feedHiddenUsersHideAll,
         hidePrivateFromFeed,
         activityFilterProfiles,
         feedTimeDisplayMode,
@@ -313,6 +316,8 @@ export async function loadPreferenceSnapshot() {
         configRepository.getString('hmdNotificationPosition', 'bottom'),
         configRepository.getString('hmdNotificationStyle', 'standard'),
         configRepository.getBool('hmdNotificationAvatars', true),
+        configRepository.getInt('desktopWidgetOpacity', 55),
+        configRepository.getBool('desktopWidgetNewestOnTop', true),
         configRepository.getBool('webhookEnabled', false),
         configRepository.getBool('webhookAuthEventsEnabled', true),
         configRepository.getString('webhookUrl', ''),
@@ -374,6 +379,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getArray('localFavoriteFriendsGroups', []),
         configRepository.getString('feedHiddenUsers', '[]'),
         configRepository.getBool('feedHiddenUsersHideNotifications', true),
+        configRepository.getBool('feedHiddenUsersHideAll', false),
         configRepository.getBool('hidePrivateFromFeed', false),
         commands.appNotificationActivityFiltersGet(),
         configRepository.getString('feedTimeDisplayMode', 'relative'),
@@ -566,6 +572,10 @@ export async function loadPreferenceSnapshot() {
         hmdNotificationStyle:
             normalizeHmdNotificationStyle(hmdNotificationStyle),
         hmdNotificationAvatars: Boolean(hmdNotificationAvatars),
+        desktopWidgetOpacity: Number.isFinite(desktopWidgetOpacity)
+            ? Math.min(100, Math.max(0, desktopWidgetOpacity))
+            : 55,
+        desktopWidgetNewestOnTop: Boolean(desktopWidgetNewestOnTop),
         webhookEnabled: Boolean(webhookEnabled),
         webhookAuthEventsEnabled: Boolean(webhookAuthEventsEnabled),
         webhookUrl: String(webhookUrl || ''),
@@ -623,11 +633,13 @@ export async function loadPreferenceSnapshot() {
         feedHiddenUsersHideNotifications: Boolean(
             feedHiddenUsersHideNotifications
         ),
+        feedHiddenUsersHideAll: Boolean(feedHiddenUsersHideAll),
         hidePrivateFromFeed: Boolean(hidePrivateFromFeed),
         overlayActivityFilters: activityFilterProfiles.wrist,
         vrNotificationActivityFilters: activityFilterProfiles.vr,
         hmdNotificationActivityFilters: activityFilterProfiles.hmd,
         desktopNotificationActivityFilters: activityFilterProfiles.desktop,
+        desktopWidgetActivityFilters: activityFilterProfiles.widget,
         webhookActivityFilters: activityFilterProfiles.webhook,
         ttsNotificationActivityFilters: activityFilterProfiles.tts,
         feedTimeDisplayMode: normalizeFeedTimeDisplayMode(feedTimeDisplayMode),

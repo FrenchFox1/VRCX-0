@@ -241,6 +241,7 @@
         "error": {
             "operationBusy": "Ya hay otra copia, restauración o traslado en curso.",
             "databaseUnavailable": "Ahora mismo no se pueden copiar los datos. Inténtalo de nuevo más tarde.",
+            "databaseInUse": "Otro programa está usando los datos de VRCX-0. Ciérralo e inténtalo de nuevo.",
             "pendingRestore": "Termina o cancela primero la restauración pendiente.",
             "pendingLegacyMigration": "Hay una migración de datos de VRCX pendiente. Reinicia VRCX-0 para completarla primero.",
             "pendingMigration": "Hay un traslado de datos pendiente. Reinicia VRCX-0.",
@@ -402,6 +403,137 @@
             "unknown": "Se produjo un error inesperado al restaurar la copia."
         }
     },
+    "offline_record": {
+        "header": "Grabador autoalojado (experimental)",
+        "tools_description": "Sigue registrando tu Feed mientras VRCX-0 está cerrado",
+        "dialog_description": "Graba tu feed en tu propio servidor mientras VRCX-0 está cerrado y lo completa cuando vuelves.",
+        "guide": "Guía",
+        "scope_note": "Completa conexiones, desconexiones, ubicación, estado y avatar, y también biografías con «Mantener actualizadas las biografías de amigos» activado.",
+        "shutdown_note": "Un cierre forzado, fallo, suspensión o pérdida de conexión pierde unos 30 segundos.",
+        "setup": {
+            "progress": "Paso {current} de {total}",
+            "backup_title": "Activa las copias de seguridad automáticas",
+            "backup_description": "Las entradas recuperadas se escriben en tu base de datos local, así que activa primero las copias de seguridad.",
+            "address_title": "Dirección del grabador",
+            "address_description": "Por ejemplo, http://192.168.1.10:8787.",
+            "password_title": "Contraseña del grabador",
+            "password_description": "La contraseña que mostró el script de instalación (también en el archivo password) o tu VRCX0_LOGGER_PASSWORD.",
+            "login_title": "Inicia sesión en VRChat desde el grabador",
+            "login_description": "El grabador necesita su propio inicio de sesión de VRChat."
+        },
+        "open_backup": "Configurar copias",
+        "backup_off_confirm_title": "¿Desactivar las copias de seguridad automáticas?",
+        "backup_off_confirm_description": "El grabador autoalojado necesita las copias automáticas. Si las desactivas, también se desactiva el grabador: primero se completa la actividad ya registrada, luego el grabador cierra la sesión de VRChat y se desconecta. Para volver a usarlo, tendrás que configurarlo de nuevo.",
+        "backup_off_confirm": "Desactivar copias y grabador",
+        "address": "Dirección del grabador",
+        "password": "Contraseña del grabador",
+        "connect": "Conectar",
+        "next": "Siguiente",
+        "back": "Atrás",
+        "disconnect": "Desconectar",
+        "disconnect_confirm_title": "¿Desconectar el grabador?",
+        "disconnect_confirm_description": "Primero se recupera la actividad que el grabador ya registró. Después, el grabador cierra sesión en VRChat y VRCX-0 olvida su dirección y contraseña. Para volver a usarlo, tendrás que configurarlo de nuevo.",
+        "sync_failed_title": "No se pudo recuperar desde el grabador",
+        "sync_failed_description": "Si continúas, la actividad del grabador que aún no se ha recuperado ya no podrá recuperarse.",
+        "sign_out_failed_title": "No se pudo cerrar la sesión del grabador",
+        "sign_out_failed_description": "El grabador podría seguir grabando con tu cuenta de VRChat. Para detenerlo, apaga el grabador o borra su carpeta de datos.",
+        "continue_anyway": "Continuar de todos modos",
+        "vrchat_login": "Inicio de sesión de VRChat",
+        "risk_title": "Riesgos",
+        "risk_description": "El grabador inicia sesión en VRChat con tu cuenta desde otra IP. Puede causar desconexiones o verificaciones adicionales y, en el peor caso, restricciones o un bloqueo. Experimental, úsalo bajo tu propio riesgo. Tus datos de acceso solo se envían a tu propio grabador.",
+        "risk_ack": "Entiendo y acepto los riesgos",
+        "save_password": "Guardar la contraseña en el grabador",
+        "save_password_description": "Permite que el grabador vuelva a iniciar sesión cuando caduque la sesión.",
+        "push_saved_credentials": "Iniciar sesión con tu cuenta de VRChat guardada",
+        "vrchat_username": "Usuario o correo de VRChat",
+        "vrchat_password": "Contraseña de VRChat",
+        "push_credentials": "Iniciar sesión",
+        "two_factor_description": "VRChat pide un código de autenticación en dos pasos para el grabador.",
+        "two_factor_code": "Código",
+        "verify": "Verificar",
+        "login_failed_reason": "Error al iniciar sesión: {reason}",
+        "relogin": "Volver a iniciar sesión",
+        "sign_out": "Cerrar sesión",
+        "sign_out_confirm_title": "¿Cerrar la sesión del grabador?",
+        "sign_out_confirm_description": "Primero se recupera la actividad que el grabador ya registró. Después, el grabador deja de grabar y olvida tu inicio de sesión de VRChat hasta que vuelvas a iniciar sesión.",
+        "records": "Registros",
+        "unsynced_frames": "Pendientes de completar",
+        "unsynced_range": "Intervalo",
+        "database_size": "Espacio del grabador",
+        "last_pull": "Última recuperación",
+        "uptime": "Grabador activo desde hace",
+        "backfill_total": "Recuperadas en total",
+        "backfill_record": "+{count}",
+        "available_space": "Espacio libre del grabador",
+        "dropped_unsynced": "Borrados por el límite de espacio antes de recuperarlos",
+        "dropped_after_password_change": "Descartados tras cambiar la contraseña",
+        "storage_error": "El grabador no puede guardar registros: {reason}",
+        "last_error": "Último error: {reason}",
+        "sync_now": "Completar ahora",
+        "webhook": "Avisos por webhook",
+        "webhook_description": "Te avisa cuando el grabador no puede iniciar sesión o necesita atención.",
+        "webhook_last_sent": "Último envío: {date} ({result})",
+        "webhook_result_ok": "entregado",
+        "webhook_result_failed": "fallido",
+        "webhook_events": {
+            "title": "El grabador envía un mensaje cuando:",
+            "login_stopped": "Su inicio de sesión en VRChat se detuvo y debes volver a iniciarla desde VRCX-0",
+            "two_factor": "Volver a iniciar sesión requiere un código de dos pasos",
+            "storage_failed": "No puede guardar registros, por ejemplo porque el disco está lleno",
+            "recovered": "Vuelve a registrar tras un problema",
+            "records_dropped": "Se borraron registros aún no completados para respetar el límite de almacenamiento"
+        },
+        "webhook_format_text": "Texto plano",
+        "webhook_url": "URL del webhook",
+        "webhook_remove": "Quitar",
+        "webhook_change": "Cambiar",
+        "webhook_test": "Enviar prueba",
+        "webhook_test_sent": "Mensaje de prueba enviado",
+        "action_failed": "Falló la acción del grabador.",
+        "error": {
+            "not_configured": "El grabador no está configurado",
+            "not_signed_in": "Primero inicia sesión en VRChat en VRCX-0",
+            "sync_in_progress": "Ya se está recuperando, espera un momento",
+            "not_present": "VRCX-0 no está enlazado con el grabador ahora mismo, así que aún no puede recuperar. Comprueba que VRChat y el grabador estén conectados.",
+            "no_saved_credentials": "VRCX-0 no tiene guardada la contraseña de VRChat de esta cuenta",
+            "invalid_address": "La dirección del grabador no es válida. Ejemplo: http://192.168.1.10:8787",
+            "invalid_password": "No se puede usar esta contraseña del grabador",
+            "rejected": "El grabador rechazó la solicitud: {message}",
+            "storage": "VRCX-0 no pudo guardar la configuración o los registros del grabador",
+            "backup_required": "Desconecta el grabador autoalojado antes de desactivar las copias de seguridad automáticas",
+            "account_mismatch": "El grabador inició sesión con una cuenta de VRChat distinta de la de VRCX-0, así que se cerró su sesión"
+        },
+        "status_unsynced": "Registrando · {count} pendientes",
+        "two_factor_method": {
+            "totp": "App de autenticación",
+            "otp": "Código de recuperación",
+            "emailOtp": "Código por correo"
+        },
+        "health": {
+            "unreachable": "No se puede conectar con el grabador",
+            "unauthorized": "La contraseña del grabador es incorrecta",
+            "client_too_old": "Actualiza VRCX-0 para usar este grabador",
+            "logger_too_old": "Hay que actualizar el grabador",
+            "account_mismatch": "El grabador tiene otra cuenta iniciada",
+            "recording": "Registrando",
+            "logging_in": "Iniciando sesión…",
+            "reconnecting": "Reconectando…",
+            "two_factor": "Se necesita el código de dos pasos",
+            "no_credentials": "Se necesita iniciar sesión en VRChat",
+            "login_failed": "Error al iniciar sesión",
+            "bad_response": "Respuesta inesperada del grabador",
+            "beta_recorder": "Un VRCX-0 estable solo funciona con un grabador estable. Cambia el grabador a la imagen latest"
+        },
+        "status_bar": {
+            "pulling": "Obteniendo del grabador {count}",
+            "writing": "Completando el Feed {count}"
+        },
+        "toast": {
+            "backfilled": "Se completaron {count} entradas del Feed desde el grabador",
+            "backfill_failed": "No se pudieron completar las entradas del grabador",
+            "skipped": "No se pudieron completar {count} registros porque el grabador no tenía una lista de amigos de partida"
+        }
+    },
     "common": {
         "no_data": "Sin datos",
         "no_matching_records": "No hay registros coincidentes",
@@ -507,6 +639,18 @@
                 "online": "{name} se conectó",
                 "offline": "{name} se desconectó"
             }
+        }
+    },
+    "desktop_widget": {
+        "title": "Overlay de escritorio",
+        "menu": {
+            "pin": "Siempre visible",
+            "click_through": "Dejar pasar los clics del ratón",
+            "close": "Cerrar"
+        },
+        "tray": {
+            "turn_on": "Activar",
+            "show": "Traer al frente"
         }
     },
     "nativeShell": {
@@ -1166,7 +1310,9 @@
             },
             "context": {
                 "hide_user": "Ocultar cambios de ubicación del feed",
-                "unhide_user": "Mostrar cambios de ubicación en el feed"
+                "unhide_user": "Mostrar cambios de ubicación en el feed",
+                "hide_user_all": "Ocultar del feed",
+                "unhide_user_all": "Mostrar en el feed"
             }
         },
         "friends_locations": {
@@ -1306,7 +1452,8 @@
                 "style_list_could_not_be_loaded_unknown_style_selections_will": "No se pudieron cargar los estilos de avatar. Se conservarán tus selecciones de estilo actuales.",
                 "selected_image_is_too_large": "La imagen seleccionada es demasiado grande",
                 "selected_file_is_not_an_image": "El archivo seleccionado no es una imagen",
-                "avatar_inventory_failed_to_load": "No se pudieron cargar tus avatares"
+                "avatar_inventory_failed_to_load": "No se pudieron cargar tus avatares",
+                "local_test_avatars_failed_to_load": "No se pudieron cargar los avatares de prueba locales"
             },
             "success": {
                 "avatar_styles_updated": "Estilos de avatar actualizados",
@@ -1337,7 +1484,9 @@
                 "make_private": "Hacer privado",
                 "avatar_made_public": "El avatar ahora es público",
                 "avatar_made_private": "El avatar ahora es privado",
-                "untitled_avatar": "Avatar sin título"
+                "untitled_avatar": "Avatar sin título",
+                "local_test_avatars": "Avatares de prueba locales",
+                "local_test_avatars_description": "Avatares creados con Build & Test en el SDK de VRChat. En el juego solo los ves tú."
             },
             "action": {
                 "select_style": "Seleccionar estilo",
@@ -1348,12 +1497,16 @@
                 "show_avatar_grid": "Mostrar cuadrícula de avatares",
                 "show_avatar_table": "Mostrar tabla de avatares",
                 "refresh_avatar_inventory": "Actualizar avatares",
-                "change_avatar_image": "Editar imagen del avatar"
+                "change_avatar_image": "Editar imagen del avatar",
+                "open_local_test_avatars": "Avatares de prueba locales"
             },
             "empty": {
                 "this_avatar_has_no_local_tags_yet": "Este avatar aún no tiene etiquetas locales",
                 "no_avatars_match_the_current_filters": "Ningún avatar coincide con los filtros actuales",
-                "no_authenticated_user_is_available_for_the_avatar_inventory": "Inicia sesión para ver tus avatares."
+                "no_authenticated_user_is_available_for_the_avatar_inventory": "Inicia sesión para ver tus avatares.",
+                "no_local_test_avatars": "No hay avatares de prueba locales",
+                "local_test_avatars_hint": "Los avatares que crees con Build & Test en el SDK de VRChat aparecerán aquí.",
+                "no_local_test_avatars_match_the_search": "Ningún avatar de prueba local coincide con la búsqueda"
             },
             "loading": {
                 "loading_the_avatar_inventory": "Cargando tus avatares"
@@ -1365,13 +1518,16 @@
                 "failed_to_update_avatar": "No se pudo actualizar el avatar",
                 "failed_to_select_avatar": "No se pudo seleccionar el avatar",
                 "failed_to_create_impostor": "No se pudo crear el impostor",
-                "failed_to_upload_avatar_image": "No se pudo subir la imagen del avatar"
+                "failed_to_upload_avatar_image": "No se pudo subir la imagen del avatar",
+                "failed_to_delete_local_test_avatar": "No se pudo eliminar el avatar de prueba local"
             },
             "modal": {
                 "create_impostor": "¿Crear impostor?",
                 "create": "Crear",
                 "make_avatar_public": "¿Hacer público el avatar?",
-                "make_avatar_private": "¿Hacer privado el avatar?"
+                "make_avatar_private": "¿Hacer privado el avatar?",
+                "delete_local_test_avatar": "¿Eliminar {value}?",
+                "delete_local_test_avatar_description": "El archivo se eliminará de este equipo. Desaparecerá de SDK Test Avatars la próxima vez que abras el menú de avatares en VRChat."
             },
             "dynamic": {
                 "updated_local_tags_for_value": "Etiquetas locales actualizadas para {value}",
@@ -2159,7 +2315,9 @@
             "other": {
                 "header": "Otros",
                 "edit_invite_message": "Plantillas de mensajes",
-                "edit_invite_message_description": "Editar plantillas de mensajes de invitación y solicitud"
+                "edit_invite_message_description": "Editar plantillas de mensajes de invitación y solicitud",
+                "moderation_reports": "Mis denuncias",
+                "moderation_reports_description": "Consulta o retira las denuncias que has enviado"
             },
             "success": {
                 "media_item_deleted": "Elemento multimedia eliminado",
@@ -2363,15 +2521,17 @@
                     "description": "Obtiene periódicamente las biografías públicas de tus amigos y muestra los cambios en el feed. Las actualizaciones pueden retrasarse y algunos cambios pueden pasar inadvertidos."
                 },
                 "hidden_feed": {
-                    "header": "Amigos con cambios de ubicación ocultos",
-                    "description": "Oculta en el feed los cambios de ubicación de los amigos seleccionados. El resto de su actividad se sigue mostrando y no se eliminan datos guardados.",
+                    "header": "Amigos ocultos en el feed",
+                    "description": "Oculta en el feed los cambios de ubicación o toda la actividad de los amigos seleccionados. No se eliminan datos guardados.",
                     "add": "Añadir amigo",
                     "search_placeholder": "Buscar amigos",
                     "empty": "Aún no has ocultado a nadie.",
                     "remove": "Volver a mostrar amigo",
                     "unknown_friend": "Amigo desconocido",
+                    "hide_all": "Ocultar toda la actividad",
+                    "hide_all_description": "Oculta toda la actividad de estos amigos. Si está desactivado, solo se ocultan sus cambios de ubicación.",
                     "hide_notifications": "Ocultar también en las notificaciones",
-                    "hide_notifications_description": "Sus cambios de ubicación tampoco aparecerán en las notificaciones del escritorio, TTS, overlays de VR, webhooks ni en las notificaciones de la app.",
+                    "hide_notifications_description": "La actividad oculta tampoco aparecerá en las notificaciones del escritorio, TTS, overlays de VR, webhooks ni en las notificaciones de la app.",
                     "hide_private_location_changes": "No avisar al ir a mundos privados",
                     "hide_private_location_changes_description": "Cuando un amigo va a un mundo privado, no se envían notificaciones de escritorio, TTS, notificaciones de VR ni webhooks. El feed del overlay de muñeca usa su propio ajuste de ocultar mundos privados."
                 }
@@ -2772,6 +2932,16 @@
                         "desktop_notification_while_afk": "Mostrar notificaciones estando AFK",
                         "notification_sound": "Sonido de notificación",
                         "friend_icons": "Mostrar iconos de amigos"
+                    },
+                    "desktop_widget": {
+                        "header": "Overlay de escritorio",
+                        "description": "Muestra la actividad reciente en una ventana del escritorio y conserva hasta 50 entradas.",
+                        "usage_hint": "Actívalo o desactívalo desde la barra de estado. Haz clic derecho en la ventana para configurar Siempre visible o dejar pasar los clics del ratón. Mientras deje pasar los clics, desactívalo desde el menú de la bandeja.",
+                        "background_opacity": "Opacidad del fondo",
+                        "order": "Orden",
+                        "order_newest_top": "Más recientes arriba",
+                        "order_newest_bottom": "Más recientes abajo",
+                        "activity_filters": "Filtros del overlay de escritorio"
                     },
                     "webhook": {
                         "header": "Notificaciones por webhook",
@@ -5341,6 +5511,10 @@
             "title": "Filtros de notificaciones de escritorio",
             "description": "Elige qué actividades activan las notificaciones de escritorio (del sistema). La condición de notificación de escritorio anterior sigue aplicándose."
         },
+        "desktop_widget": {
+            "title": "Filtros del overlay de escritorio",
+            "description": "Elige qué actividades aparecen en el overlay de escritorio."
+        },
         "webhook_notifications": {
             "title": "Filtros de notificaciones de Webhook",
             "description": "Elige qué notificaciones se envían al webhook configurado."
@@ -5790,6 +5964,19 @@
             "modal": {
                 "delete_instance_record": "¿Eliminar esta visita?"
             }
+        },
+        "moderation_reports": {
+            "header": "Mis denuncias",
+            "description": "Denuncias que has enviado a VRChat.",
+            "empty_open": "No hay denuncias abiertas",
+            "empty_closed": "No hay denuncias cerradas",
+            "failed_to_load": "No se pudieron cargar las denuncias",
+            "withdraw": "Retirar",
+            "withdraw_title": "¿Retirar tu denuncia sobre {value}?",
+            "withdraw_description": "Esta acción no se puede deshacer.",
+            "failed_to_withdraw": "No se pudo retirar la denuncia",
+            "status_open": "Abierta",
+            "status_closed": "Cerrada"
         }
     },
     "confirm": {
@@ -6302,7 +6489,11 @@
         "proxy_disabled": "Proxy desactivado",
         "proxy_enabled_direct": "Proxy activado, conectando directamente",
         "proxy_enabled_server": "Proxy activado: {proxy}",
-        "proxy_network_issue": "Proxy activado, la solicitud de red falló"
+        "proxy_network_issue": "Proxy activado, la solicitud de red falló",
+        "desktop_widget_off": "El overlay de escritorio está desactivado",
+        "desktop_widget_on": "El overlay de escritorio está activado",
+        "desktop_widget_click_through": "El overlay de escritorio está activado (deja pasar los clics)",
+        "desktop_widget_failed": "No se pudo actualizar el overlay de escritorio"
     },
     "component": {
         "favorite_action_menu": {

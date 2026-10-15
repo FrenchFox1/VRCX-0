@@ -60,6 +60,11 @@ const ExportAvatarsListDialog = lazy(() =>
         default: module.ExportAvatarsListDialog
     }))
 );
+const ModerationReportsDialog = lazy(() =>
+    import('./tools-dialogs/ModerationReportsDialog').then((module) => ({
+        default: module.ModerationReportsDialog
+    }))
+);
 const LlmEndpointsDialog = lazy(() =>
     import('./tools-dialogs/LlmEndpointsDialog').then((module) => ({
         default: module.LlmEndpointsDialog
@@ -69,6 +74,14 @@ const ProfileBackupDialog = lazy(() =>
     import('./tools-dialogs/ProfileBackupDialog').then((module) => ({
         default: module.ProfileBackupDialog
     }))
+);
+
+const OfflineRecordDialog = lazy(() =>
+    import('./tools-dialogs/offline-record/OfflineRecordDialog').then(
+        (module) => ({
+            default: module.OfflineRecordDialog
+        })
+    )
 );
 
 export function ToolsDialogsHost() {
@@ -102,11 +115,17 @@ export function ToolsDialogsHost() {
     const editInviteMessagesOpen = useRuntimeStore(
         (state) => state.systemHosts.editInviteMessagesOpen
     );
+    const moderationReportsOpen = useRuntimeStore(
+        (state) => state.systemHosts.moderationReportsOpen
+    );
     const llmEndpointsOpen = useRuntimeStore(
         (state) => state.systemHosts.llmEndpointsOpen
     );
     const profileBackupOpen = useRuntimeStore(
         (state) => state.systemHosts.profileBackupOpen
+    );
+    const offlineRecordOpen = useRuntimeStore(
+        (state) => state.systemHosts.offlineRecordOpen
     );
     const setSystemHostOpen = useRuntimeStore(
         (state) => state.setSystemHostOpen
@@ -196,6 +215,14 @@ export function ToolsDialogsHost() {
                     endpoint={getEndpoint()}
                 />
             </MountOnFirstOpen>
+            <MountOnFirstOpen open={moderationReportsOpen}>
+                <ModerationReportsDialog
+                    open={moderationReportsOpen}
+                    onOpenChange={(open) =>
+                        setSystemHostOpen('moderationReportsOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
             <MountOnFirstOpen open={llmEndpointsOpen}>
                 <LlmEndpointsDialog
                     open={llmEndpointsOpen}
@@ -209,6 +236,14 @@ export function ToolsDialogsHost() {
                     open={profileBackupOpen}
                     onOpenChange={(open) =>
                         setSystemHostOpen('profileBackupOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={offlineRecordOpen}>
+                <OfflineRecordDialog
+                    open={offlineRecordOpen}
+                    onOpenChange={(open) =>
+                        setSystemHostOpen('offlineRecordOpen', open)
                     }
                 />
             </MountOnFirstOpen>

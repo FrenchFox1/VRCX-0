@@ -1,6 +1,6 @@
 [package]
 name = "vrcx-0"
-version = "2.31.0"
+version = "2.32.0"
 edition = "2021"
 license.workspace = true
 description = "VRCX-0 desktop shell"
@@ -28,7 +28,8 @@ tokio = { workspace = true, features = [
     "time",
     "net",
     "io-util",
-    "fs"
+    "fs",
+    "signal"
 ] }
 rustls = { version = "0.23", default-features = false, features = [
     "aws_lc_rs",
@@ -53,6 +54,7 @@ vrcx-0-contracts = { path = "../crates/contracts" }
 vrcx-0-application-activity = { path = "../crates/application-activity" }
 vrcx-0-application-core = { path = "../crates/application-core" }
 vrcx-0-application-realtime = { path = "../crates/application-realtime" }
+vrcx-0-logger-protocol = { path = "../crates/logger-protocol", features = ["specta"] }
 vrcx-0-application-game = { path = "../crates/application-game" }
 vrcx-0-mcp = { path = "../crates/mcp" }
 vrcx-0-integration-api = { path = "../crates/integration-api" }

@@ -14,8 +14,8 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_contracts::telemetry::{
     AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, PageHealthPayload,
-    TelemetryConfigSnapshot, TelemetryContext, TelemetryRuntimeMode, TelemetryVrcxOrigin,
-    ToolUsagePayload,
+    TelemetryConfigSnapshot, TelemetryContext, TelemetryOfflineRecord, TelemetryRuntimeMode,
+    TelemetryVrcxOrigin, ToolUsagePayload,
 };
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};
@@ -27,6 +27,8 @@ const TELEMETRY_BASIC_INFO_REPORTED_VERSION_CONFIG_KEY: &str = "telemetryBasicIn
 const TELEMETRY_CONFIG_REPORTED_VERSION_CONFIG_KEY: &str = "telemetryConfigReportedVersion";
 const TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY: &str =
     "telemetryAccountConfigReportedVersion";
+const TELEMETRY_OFFLINE_RECORD_REPORTED_CONFIG_KEY: &str = "telemetryOfflineRecordReported";
+const OFFLINE_RECORD_SETTINGS_CONFIG_KEY: &str = "feedLogger";
 const LEGACY_VRCX_MARKER_CONFIG_KEYS: [&str; 2] = ["VRCX_lastVRCXVersion", "VRCX_id"];
 const ACCOUNT_SNAPSHOT_FRIEND_GRACE: Duration = Duration::from_secs(5 * 60);
 const TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY: &str = "telemetryClientErrorCursor";
@@ -131,6 +133,7 @@ struct TelemetryState {
     config_snapshot_attempted_at: Option<Instant>,
     account_config_snapshot_sent: bool,
     account_config_snapshot_attempted_at: Option<Instant>,
+    offline_record_checked_at: Option<Instant>,
     signed_in_at: Option<Instant>,
     last_heartbeat_at: Option<Instant>,
     vrchat_seen: bool,
@@ -267,6 +270,7 @@ impl TelemetryRuntime {
         self.ensure_session_start(&session).await;
         self.send_config_snapshot_once(&session).await;
         self.send_account_config_snapshot_once(&session).await;
+        self.send_offline_record_change(&session).await;
         self.observe_vrchat();
         self.send_heartbeat_if_due(&session).await;
     }
@@ -389,12 +393,8 @@ impl TelemetryRuntime {
             return;
         }
         let scale = self.inner.environment.database_scale();
-        let payload = ConfigSnapshotPayload {
-            context: self.context(session, None),
-            config: self.config_snapshot(scale),
-        };
         if self
-            .post_debug("/api/v1/telemetry/config", &payload, "config snapshot")
+            .post_config_snapshot(session, scale, "config snapshot")
             .await
         {
             self.mark_config_snapshot_sent();
@@ -443,21 +443,66 @@ impl TelemetryRuntime {
         if !account_snapshot_ready(scale.friend_count, now.duration_since(signed_in_at)) {
             return;
         }
-        let payload = ConfigSnapshotPayload {
-            context: self.context(session, None),
-            config: self.config_snapshot(scale),
-        };
         if self
-            .post_debug(
-                "/api/v1/telemetry/config",
-                &payload,
-                "account config snapshot",
-            )
+            .post_config_snapshot(session, scale, "account config snapshot")
             .await
         {
             self.mark_account_config_snapshot_sent();
             self.persist_reported_version(TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY);
         }
+    }
+
+    async fn send_offline_record_change(&self, session: &TelemetrySession) {
+        if !self.config_snapshot_sent() {
+            return;
+        }
+        let now = Instant::now();
+        {
+            let Ok(mut state) = self.inner.state.lock() else {
+                return;
+            };
+            if !attempt_due(state.offline_record_checked_at, now) {
+                return;
+            }
+            state.offline_record_checked_at = Some(now);
+        }
+        if !self.usage_enabled() {
+            return;
+        }
+        let reported = self.config_string(
+            TELEMETRY_OFFLINE_RECORD_REPORTED_CONFIG_KEY,
+            TelemetryOfflineRecord::Off.as_str(),
+        );
+        if reported == self.offline_record().as_str() {
+            return;
+        }
+        let scale = self.inner.environment.database_scale();
+        self.post_config_snapshot(session, scale, "offline record config snapshot")
+            .await;
+    }
+
+    async fn post_config_snapshot(
+        &self,
+        session: &TelemetrySession,
+        scale: TelemetryDatabaseScale,
+        label: &str,
+    ) -> bool {
+        let payload = ConfigSnapshotPayload {
+            context: self.context(session, None),
+            config: self.config_snapshot(scale),
+        };
+        let sent = self
+            .post_debug("/api/v1/telemetry/config", &payload, label)
+            .await;
+        if sent {
+            if let Err(error) = self.inner.environment.set_string(
+                TELEMETRY_OFFLINE_RECORD_REPORTED_CONFIG_KEY,
+                payload.config.offline_record.as_str(),
+            ) {
+                tracing::debug!("failed to mark telemetry offline record: {error}");
+            }
+        }
+        sent
     }
 
     fn persist_reported_version(&self, key: &str) {
@@ -702,6 +747,19 @@ impl TelemetryRuntime {
             friend_log_rows_bucket: row_bucket(scale.friend_log_rows),
             friend_count_bucket: friend_count_bucket(scale.friend_count),
             vrcx_origin: self.vrcx_origin(),
+            offline_record: self.offline_record(),
+        }
+    }
+
+    fn offline_record(&self) -> TelemetryOfflineRecord {
+        if self
+            .config_string(OFFLINE_RECORD_SETTINGS_CONFIG_KEY, "")
+            .trim()
+            .is_empty()
+        {
+            TelemetryOfflineRecord::Off
+        } else {
+            TelemetryOfflineRecord::On
         }
     }
 

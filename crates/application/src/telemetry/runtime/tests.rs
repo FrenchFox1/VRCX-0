@@ -260,6 +260,66 @@ async fn startup_config_with_stored_friends_skips_the_sign_in_resend() {
     assert_eq!(payloads[0]["friendCountBucket"], "100_500");
 }
 
+fn clear_offline_record_check_backoff(runtime: &TelemetryRuntime) {
+    runtime
+        .inner
+        .state
+        .lock()
+        .unwrap()
+        .offline_record_checked_at = None;
+}
+
+#[tokio::test]
+async fn turning_the_offline_recorder_on_or_off_resends_the_config_snapshot() {
+    let environment = Arc::new(FakeEnvironment::default());
+    let transport = Arc::new(FakeTransport::new(None));
+    let runtime = runtime(environment.clone(), transport.clone());
+
+    runtime.tick().await;
+    clear_offline_record_check_backoff(&runtime);
+    runtime.tick().await;
+
+    environment.set(
+        OFFLINE_RECORD_SETTINGS_CONFIG_KEY,
+        r#"{"address":"http://nas:8787"}"#,
+    );
+    clear_offline_record_check_backoff(&runtime);
+    runtime.tick().await;
+    clear_offline_record_check_backoff(&runtime);
+    runtime.tick().await;
+
+    environment.set(OFFLINE_RECORD_SETTINGS_CONFIG_KEY, "");
+    clear_offline_record_check_backoff(&runtime);
+    runtime.tick().await;
+
+    let reported = config_payloads(&transport)
+        .iter()
+        .map(|config| config["offlineRecord"].clone())
+        .collect::<Vec<_>>();
+    assert_eq!(reported, ["off", "on", "off"].map(serde_json::Value::from));
+}
+
+#[tokio::test]
+async fn an_offline_recorder_set_up_before_the_upgrade_is_reported_once_with_the_new_version() {
+    let environment = Arc::new(FakeEnvironment::default());
+    environment.set(
+        OFFLINE_RECORD_SETTINGS_CONFIG_KEY,
+        r#"{"address":"http://nas:8787"}"#,
+    );
+    let transport = Arc::new(FakeTransport::new(None));
+    let runtime = runtime(environment.clone(), transport.clone());
+
+    runtime.tick().await;
+    clear_offline_record_check_backoff(&runtime);
+    runtime.tick().await;
+
+    let reported = config_payloads(&transport)
+        .iter()
+        .map(|config| config["offlineRecord"].clone())
+        .collect::<Vec<_>>();
+    assert_eq!(reported, ["on"].map(serde_json::Value::from));
+}
+
 fn heartbeat_payloads(transport: &FakeTransport) -> Vec<serde_json::Value> {
     transport
         .payloads

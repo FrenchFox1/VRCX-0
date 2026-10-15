@@ -241,6 +241,7 @@
         "error": {
             "operationBusy": "另一个备份、恢复或数据迁移任务正在运行。",
             "databaseUnavailable": "暂时无法复制数据，请稍后重试。",
+            "databaseInUse": "有其他程序正在使用 VRCX-0 的数据，请关闭相关程序后重试。",
             "pendingRestore": "请先完成或取消待进行的数据恢复。",
             "pendingLegacyMigration": "有一项 VRCX 数据迁移尚未完成，请先重启 VRCX-0 完成迁移。",
             "pendingMigration": "已有待完成的数据文件夹迁移，请重启 VRCX-0 完成。",
@@ -402,6 +403,137 @@
             "unknown": "恢复备份时发生意外错误。"
         }
     },
+    "offline_record": {
+        "header": "自建记录端（实验性）",
+        "tools_description": "关闭 VRCX-0 时继续记录好友动态",
+        "dialog_description": "在自己的服务器上运行记录端，VRCX-0 关闭期间继续记录好友动态，下次打开时补回。",
+        "guide": "使用说明",
+        "scope_note": "补回上线、下线、位置、状态和模型变更；开启“自动更新好友简介”后也补回简介。",
+        "shutdown_note": "崩溃、强制退出、睡眠或断网时，约丢失 30 秒的记录。",
+        "setup": {
+            "progress": "第 {current} 步，共 {total} 步",
+            "backup_title": "开启自动备份",
+            "backup_description": "补回的记录会写入本地数据库，请先开启自动备份。",
+            "address_title": "记录端地址",
+            "address_description": "例如 http://192.168.1.10:8787。",
+            "password_title": "记录端密码",
+            "password_description": "安装脚本显示的密码（也保存在 password 文件中），或你设置的 VRCX0_LOGGER_PASSWORD。",
+            "login_title": "让记录端登录 VRChat",
+            "login_description": "记录端需要自己登录 VRChat。"
+        },
+        "open_backup": "设置备份",
+        "backup_off_confirm_title": "关闭自动备份？",
+        "backup_off_confirm_description": "自建记录端依赖自动备份。关闭备份会同时关闭记录端：会先补回记录端已经记录的动态，然后让记录端退出 VRChat 登录并断开连接。之后要再使用，需要重新配置。",
+        "backup_off_confirm": "关闭备份和记录端",
+        "address": "记录端地址",
+        "password": "记录端密码",
+        "connect": "连接",
+        "next": "下一步",
+        "back": "上一步",
+        "disconnect": "断开连接",
+        "disconnect_confirm_title": "断开记录端？",
+        "disconnect_confirm_description": "会先补回记录端已经记录的动态，然后让记录端退出 VRChat 登录，并清除 VRCX-0 保存的记录端地址和密码。之后要再使用，需要重新配置。",
+        "sync_failed_title": "未能从记录端补回",
+        "sync_failed_description": "继续的话，记录端上尚未补回的动态将无法再补回。",
+        "sign_out_failed_title": "记录端退出登录失败",
+        "sign_out_failed_description": "记录端可能会继续用你的 VRChat 账号记录。要停止，请关闭记录端或删除它的数据目录。",
+        "continue_anyway": "仍然继续",
+        "vrchat_login": "VRChat 登录",
+        "risk_title": "风险提示",
+        "risk_description": "记录端会用你的账号从另一个 IP 登录 VRChat，可能导致掉线或反复验证，严重时账号受限或封禁。实验性功能，风险自负。登录信息只发送到你自己的记录端。",
+        "risk_ack": "我已了解并自行承担风险",
+        "save_password": "在记录端保存密码",
+        "save_password_description": "登录过期时记录端可自动重新登录。",
+        "push_saved_credentials": "用已保存的 VRChat 账号登录",
+        "vrchat_username": "VRChat 用户名或邮箱",
+        "vrchat_password": "VRChat 密码",
+        "push_credentials": "登录",
+        "two_factor_description": "记录端登录 VRChat 需要双重认证验证码。",
+        "two_factor_code": "验证码",
+        "verify": "验证",
+        "login_failed_reason": "登录失败：{reason}",
+        "relogin": "重新登录",
+        "sign_out": "退出登录",
+        "sign_out_confirm_title": "让记录端退出登录？",
+        "sign_out_confirm_description": "会先补回记录端已经记录的动态，然后记录端停止记录并清除你的 VRChat 登录信息，直到你再次登录。",
+        "records": "记录",
+        "unsynced_frames": "待补回",
+        "unsynced_range": "时间范围",
+        "database_size": "记录端占用空间",
+        "last_pull": "上次补回",
+        "uptime": "记录端已运行",
+        "backfill_total": "累计补回",
+        "backfill_record": "补回 {count} 条",
+        "available_space": "记录端剩余空间",
+        "dropped_unsynced": "补回前因空间上限被删",
+        "dropped_after_password_change": "改密码后丢弃",
+        "storage_error": "记录端无法保存记录：{reason}",
+        "last_error": "最近错误：{reason}",
+        "sync_now": "立即补回",
+        "webhook": "Webhook 提醒",
+        "webhook_description": "记录端无法登录或需要处理时发送提醒。",
+        "webhook_last_sent": "上次发送：{date}（{result}）",
+        "webhook_result_ok": "成功",
+        "webhook_result_failed": "失败",
+        "webhook_events": {
+            "title": "记录端会在这些情况下发送通知：",
+            "login_stopped": "VRChat 登录已停止，需要在 VRCX-0 中重新登录",
+            "two_factor": "重新登录时需要双重认证验证码",
+            "storage_failed": "无法保存记录，例如磁盘已满",
+            "recovered": "出问题后恢复记录",
+            "records_dropped": "因存储上限删除了尚未补回的记录"
+        },
+        "webhook_format_text": "纯文本",
+        "webhook_url": "Webhook 地址",
+        "webhook_remove": "移除",
+        "webhook_change": "修改",
+        "webhook_test": "发送测试",
+        "webhook_test_sent": "测试消息已发送",
+        "action_failed": "记录端操作失败。",
+        "error": {
+            "not_configured": "还没有配置记录端",
+            "not_signed_in": "请先在 VRCX-0 登录 VRChat",
+            "sync_in_progress": "正在补回，请稍候",
+            "not_present": "VRCX-0 当前未与记录端保持连接，暂时无法补回。请确认 VRChat 和记录端都已连上。",
+            "no_saved_credentials": "VRCX-0 没有保存当前账号的 VRChat 密码",
+            "invalid_address": "记录端地址格式不正确，示例：http://192.168.1.10:8787",
+            "invalid_password": "记录端密码无法使用",
+            "rejected": "记录端拒绝了请求：{message}",
+            "storage": "VRCX-0 无法保存记录端设置或记录",
+            "backup_required": "请先断开自建记录端，再关闭自动备份",
+            "account_mismatch": "记录端登录的账号与 VRCX-0 当前账号不一致，已让它退出登录"
+        },
+        "status_unsynced": "记录中 · 待补回 {count}",
+        "two_factor_method": {
+            "totp": "身份验证器",
+            "otp": "恢复码",
+            "emailOtp": "邮箱验证码"
+        },
+        "health": {
+            "unreachable": "无法连接记录端",
+            "unauthorized": "记录端密码错误",
+            "client_too_old": "需要更新 VRCX-0 才能使用此记录端",
+            "logger_too_old": "记录端需要更新",
+            "account_mismatch": "记录端登录的是其他账号",
+            "recording": "记录中",
+            "logging_in": "正在登录…",
+            "reconnecting": "正在重连…",
+            "two_factor": "需要双重认证验证码",
+            "no_credentials": "需要登录 VRChat",
+            "login_failed": "登录失败",
+            "bad_response": "记录端响应异常",
+            "beta_recorder": "正式版 VRCX-0 只能连接正式版记录端，请把记录端切换到 latest 镜像"
+        },
+        "status_bar": {
+            "pulling": "正在从记录端拉取 {count}",
+            "writing": "正在补写好友动态 {count}"
+        },
+        "toast": {
+            "backfilled": "已从记录端补回 {count} 条好友动态",
+            "backfill_failed": "从记录端补回失败",
+            "skipped": "{count} 条记录缺少好友列表起点，未能补回"
+        }
+    },
     "common": {
         "no_data": "这里空空如也~",
         "no_matching_records": "无匹配记录",
@@ -507,6 +639,18 @@
                 "online": "{name} 已登录",
                 "offline": "{name} 已登出"
             }
+        }
+    },
+    "desktop_widget": {
+        "title": "桌面叠加界面",
+        "menu": {
+            "pin": "窗口置顶",
+            "click_through": "鼠标穿透",
+            "close": "关闭"
+        },
+        "tray": {
+            "turn_on": "开启",
+            "show": "显示到最前"
         }
     },
     "nativeShell": {
@@ -1164,7 +1308,9 @@
             },
             "context": {
                 "hide_user": "在动态中隐藏位置变动",
-                "unhide_user": "在动态中显示位置变动"
+                "unhide_user": "在动态中显示位置变动",
+                "hide_user_all": "在动态中隐藏",
+                "unhide_user_all": "在动态中显示"
             }
         },
         "friends_locations": {
@@ -1303,7 +1449,8 @@
                 "style_list_could_not_be_loaded_unknown_style_selections_will": "无法加载模型样式，将保留你当前选择的样式。",
                 "selected_image_is_too_large": "所选图片过大",
                 "selected_file_is_not_an_image": "所选文件不是图片",
-                "avatar_inventory_failed_to_load": "模型列表加载失败"
+                "avatar_inventory_failed_to_load": "模型列表加载失败",
+                "local_test_avatars_failed_to_load": "无法加载本地测试模型"
             },
             "success": {
                 "avatar_styles_updated": "模型样式已更新",
@@ -1333,7 +1480,9 @@
                 "make_private": "设为私密",
                 "avatar_made_public": "模型已设为公开",
                 "avatar_made_private": "模型已设为私密",
-                "untitled_avatar": "未命名模型"
+                "untitled_avatar": "未命名模型",
+                "local_test_avatars": "本地测试模型",
+                "local_test_avatars_description": "在 VRChat SDK 中通过 Build & Test 构建的模型，游戏内只有你自己能看到。"
             },
             "action": {
                 "select_style": "选择样式",
@@ -1344,12 +1493,16 @@
                 "show_avatar_grid": "显示模型网格",
                 "show_avatar_table": "显示模型表格",
                 "refresh_avatar_inventory": "刷新模型列表",
-                "change_avatar_image": "更换模型图片"
+                "change_avatar_image": "更换模型图片",
+                "open_local_test_avatars": "本地测试模型"
             },
             "empty": {
                 "this_avatar_has_no_local_tags_yet": "这个模型还没有本地标签",
                 "no_avatars_match_the_current_filters": "没有符合当前筛选器设置的模型",
-                "no_authenticated_user_is_available_for_the_avatar_inventory": "登录后即可查看你的模型。"
+                "no_authenticated_user_is_available_for_the_avatar_inventory": "登录后即可查看你的模型。",
+                "no_local_test_avatars": "没有本地测试模型",
+                "local_test_avatars_hint": "在 VRChat SDK 中用 Build & Test 构建的模型会显示在这里。",
+                "no_local_test_avatars_match_the_search": "没有符合搜索条件的本地测试模型"
             },
             "loading": {
                 "loading_the_avatar_inventory": "正在加载模型列表"
@@ -1361,13 +1514,16 @@
                 "failed_to_update_avatar": "更新模型失败",
                 "failed_to_select_avatar": "切换模型失败",
                 "failed_to_create_impostor": "创建模型替身失败",
-                "failed_to_upload_avatar_image": "上传模型图片失败"
+                "failed_to_upload_avatar_image": "上传模型图片失败",
+                "failed_to_delete_local_test_avatar": "删除本地测试模型失败"
             },
             "modal": {
                 "create_impostor": "创建模型替身？",
                 "create": "创建",
                 "make_avatar_public": "将模型设为公开？",
-                "make_avatar_private": "将模型设为私密？"
+                "make_avatar_private": "将模型设为私密？",
+                "delete_local_test_avatar": "删除 {value}？",
+                "delete_local_test_avatar_description": "文件将从这台电脑上删除。下次在 VRChat 中打开模型菜单时，它会从 SDK Test Avatars 中消失。"
             },
             "dynamic": {
                 "updated_local_tags_for_value": "已更新 {value} 的本地标签",
@@ -2153,7 +2309,9 @@
             "other": {
                 "header": "其它",
                 "edit_invite_message": "消息模板",
-                "edit_invite_message_description": "编辑邀请或申请加入时使用的消息"
+                "edit_invite_message_description": "编辑邀请或申请加入时使用的消息",
+                "moderation_reports": "我的举报",
+                "moderation_reports_description": "查看或撤回你提交过的举报"
             },
             "success": {
                 "media_item_deleted": "已删除媒体项目",
@@ -2357,15 +2515,17 @@
                     "description": "定期获取好友的公开简介，变化会显示在好友动态中。更新可能延迟，部分变化可能漏记。"
                 },
                 "hidden_feed": {
-                    "header": "已隐藏位置变动的好友",
-                    "description": "在好友动态中隐藏所选好友的位置变动，其他动态照常显示，也不会删除已保存的数据。",
+                    "header": "在动态中隐藏的好友",
+                    "description": "在好友动态中隐藏所选好友的位置变动或全部动态，不会删除已保存的数据。",
                     "add": "添加好友",
                     "search_placeholder": "搜索好友",
                     "empty": "还没有隐藏任何人。",
                     "remove": "取消隐藏好友",
                     "unknown_friend": "未知好友",
+                    "hide_all": "隐藏全部动态",
+                    "hide_all_description": "隐藏这些好友的所有动态。关闭时只隐藏位置变动。",
                     "hide_notifications": "通知中也隐藏",
-                    "hide_notifications_description": "这些好友的位置变动也不会出现在桌面通知、TTS、VR 叠加界面、Webhook 和应用内通知中。",
+                    "hide_notifications_description": "被隐藏的动态也不会出现在桌面通知、TTS、VR 叠加界面、Webhook 和应用内通知中。",
                     "hide_private_location_changes": "好友进入私人世界时不通知",
                     "hide_private_location_changes_description": "好友进入私人世界时，不发送桌面通知、TTS、VR 通知和 Webhook。手腕叠加界面的动态由它自己的“隐藏私人世界”设置控制。"
                 }
@@ -2766,6 +2926,16 @@
                         "desktop_notification_while_afk": "当处于 AFK 状态时显示桌面通知",
                         "notification_sound": "通知音",
                         "friend_icons": "显示好友头像"
+                    },
+                    "desktop_widget": {
+                        "header": "桌面叠加界面",
+                        "description": "在桌面窗口中显示最近的活动，最多保留 50 条。",
+                        "usage_hint": "可在状态栏中开启或关闭。右键单击窗口可设置窗口置顶或鼠标穿透；启用鼠标穿透后，请通过托盘菜单关闭。",
+                        "background_opacity": "背景不透明度",
+                        "order": "排列顺序",
+                        "order_newest_top": "最新在上",
+                        "order_newest_bottom": "最新在下",
+                        "activity_filters": "桌面叠加界面过滤器"
                     },
                     "webhook": {
                         "header": "Webhook 通知",
@@ -5331,6 +5501,10 @@
             "title": "桌面通知过滤器",
             "description": "选择哪些活动会触发桌面（系统）通知。上方的桌面通知显示条件依然生效。"
         },
+        "desktop_widget": {
+            "title": "桌面叠加界面过滤器",
+            "description": "选择哪些活动会显示在桌面叠加界面中。"
+        },
         "webhook_notifications": {
             "title": "Webhook 通知过滤器",
             "description": "选择哪些通知会发送到已配置的 Webhook。"
@@ -5780,6 +5954,19 @@
             "modal": {
                 "delete_instance_record": "要删除房间记录吗？"
             }
+        },
+        "moderation_reports": {
+            "header": "我的举报",
+            "description": "你向 VRChat 提交过的举报。",
+            "empty_open": "没有处理中的举报",
+            "empty_closed": "没有已关闭的举报",
+            "failed_to_load": "无法加载举报",
+            "withdraw": "撤回",
+            "withdraw_title": "撤回对 {value} 的举报？",
+            "withdraw_description": "撤回后无法恢复。",
+            "failed_to_withdraw": "无法撤回举报",
+            "status_open": "处理中",
+            "status_closed": "已关闭"
         }
     },
     "confirm": {
@@ -6292,7 +6479,11 @@
         "proxy_disabled": "代理已关闭",
         "proxy_enabled_direct": "代理已启用，当前直连",
         "proxy_enabled_server": "代理已启用：{proxy}",
-        "proxy_network_issue": "代理已启用，网络请求失败"
+        "proxy_network_issue": "代理已启用，网络请求失败",
+        "desktop_widget_off": "桌面叠加界面已关闭",
+        "desktop_widget_on": "桌面叠加界面已开启",
+        "desktop_widget_click_through": "桌面叠加界面已开启（鼠标穿透）",
+        "desktop_widget_failed": "无法更新桌面叠加界面"
     },
     "component": {
         "favorite_action_menu": {

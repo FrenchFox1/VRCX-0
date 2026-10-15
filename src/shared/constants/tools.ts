@@ -26,8 +26,10 @@ export type ToolDialogKey =
     | 'export-friends-list'
     | 'export-avatars-list'
     | 'edit-invite-messages'
+    | 'moderation-reports'
     | 'llm-endpoints'
-    | 'profile-backup';
+    | 'profile-backup'
+    | 'offline-record';
 
 type ToolHostCapabilityKey =
     | 'gameLaunch'
@@ -228,6 +230,16 @@ const toolDefinitions: ToolDefinition[] = [
         descriptionKey: 'profile_backup.tools_description',
         navEligible: true,
         action: { type: 'dialog', dialogKey: 'profile-backup' }
+    },
+    {
+        key: 'offline-record',
+        category: 'data',
+        iconKey: 'radio-tower',
+        navIcon: 'lucide:RadioTower',
+        titleKey: 'offline_record.header',
+        descriptionKey: 'offline_record.tools_description',
+        navEligible: true,
+        action: { type: 'dialog', dialogKey: 'offline-record' }
     },
     {
         key: 'llm-endpoints',
@@ -436,6 +448,16 @@ const toolDefinitions: ToolDefinition[] = [
         descriptionKey: 'view.tools.other.edit_invite_message_description',
         navEligible: true,
         action: { type: 'dialog', dialogKey: 'edit-invite-messages' }
+    },
+    {
+        key: 'moderation-reports',
+        category: 'other',
+        iconKey: 'flag',
+        navIcon: 'lucide:Flag',
+        titleKey: 'view.tools.other.moderation_reports',
+        descriptionKey: 'view.tools.other.moderation_reports_description',
+        navEligible: true,
+        action: { type: 'dialog', dialogKey: 'moderation-reports' }
     }
 ];
 

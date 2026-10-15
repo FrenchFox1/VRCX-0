@@ -35,6 +35,22 @@ pub enum TelemetryVrcxOrigin {
     Fresh,
 }
 
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TelemetryOfflineRecord {
+    On,
+    Off,
+}
+
+impl TelemetryOfflineRecord {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::On => "on",
+            Self::Off => "off",
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryConfigSnapshot {
@@ -48,6 +64,7 @@ pub struct TelemetryConfigSnapshot {
     pub friend_log_rows_bucket: String,
     pub friend_count_bucket: String,
     pub vrcx_origin: TelemetryVrcxOrigin,
+    pub offline_record: TelemetryOfflineRecord,
 }
 
 #[derive(Clone, Debug, Serialize)]

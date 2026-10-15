@@ -124,21 +124,24 @@ pub(crate) fn stop_runtime_services(app_handle: &AppHandle) {
         state
             .runtime_host()
             .stop_for_application_exit("application-exit", || {
-                flush_telemetry_before_task_shutdown(&state);
+                flush_before_task_shutdown(&state);
             });
     }
 }
 
-fn flush_telemetry_before_task_shutdown(state: &AppState) {
+fn flush_before_task_shutdown(state: &AppState) {
+    let runtime_host = state.runtime_host();
+    let flush = async {
+        runtime_host.shutdown_telemetry_flush().await;
+        runtime_host.leave_feed_logger().await;
+    };
     match tokio::runtime::Handle::try_current() {
         Ok(handle) if handle.runtime_flavor() == tokio::runtime::RuntimeFlavor::MultiThread => {
-            tokio::task::block_in_place(|| {
-                handle.block_on(state.runtime_host().shutdown_telemetry_flush())
-            });
+            tokio::task::block_in_place(|| handle.block_on(flush));
         }
         Ok(_) => {}
         Err(_) => {
-            tauri::async_runtime::block_on(state.runtime_host().shutdown_telemetry_flush());
+            tauri::async_runtime::block_on(flush);
         }
     }
 }

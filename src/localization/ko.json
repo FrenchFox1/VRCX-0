@@ -241,6 +241,7 @@
         "error": {
             "operationBusy": "다른 백업, 복원 또는 데이터 이동이 진행 중입니다.",
             "databaseUnavailable": "지금은 데이터를 복사할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+            "databaseInUse": "다른 프로그램이 VRCX-0 데이터를 사용하고 있습니다. 해당 프로그램을 닫은 후 다시 시도해 주세요.",
             "pendingRestore": "대기 중인 프로필 복원을 먼저 완료하거나 취소하세요.",
             "pendingLegacyMigration": "VRCX 데이터 마이그레이션이 대기 중입니다. 먼저 VRCX-0을 다시 시작해 마이그레이션을 완료하세요.",
             "pendingMigration": "데이터 폴더 이동이 대기 중입니다. VRCX-0을 다시 시작하세요.",
@@ -402,6 +403,137 @@
             "unknown": "백업 복원 중 예기치 않은 오류가 발생했습니다."
         }
     },
+    "offline_record": {
+        "header": "자체 호스팅 기록기 (실험적)",
+        "tools_description": "VRCX-0을 닫아 둔 동안에도 피드를 기록",
+        "dialog_description": "내 서버에서 기록기를 실행해 VRCX-0이 꺼져 있는 동안 피드를 기록하고, 다시 열 때 채웁니다.",
+        "guide": "사용 방법",
+        "scope_note": "온라인·오프라인, 위치, 상태, 아바타 변경을 채웁니다. '친구 자기소개 자동 업데이트'를 켜면 자기소개도 채웁니다.",
+        "shutdown_note": "충돌, 강제 종료, 절전, 연결 끊김 시 약 30초의 기록이 빠집니다.",
+        "setup": {
+            "progress": "{total}단계 중 {current}단계",
+            "backup_title": "자동 백업 켜기",
+            "backup_description": "채운 기록은 로컬 데이터베이스에 쓰이므로 먼저 자동 백업을 켜세요.",
+            "address_title": "기록기 주소",
+            "address_description": "예: http://192.168.1.10:8787",
+            "password_title": "기록기 비밀번호",
+            "password_description": "설치 스크립트가 보여 준 비밀번호(password 파일에도 저장됨) 또는 직접 설정한 VRCX0_LOGGER_PASSWORD.",
+            "login_title": "기록기를 VRChat에 로그인",
+            "login_description": "기록기는 VRChat에 따로 로그인해야 합니다."
+        },
+        "open_backup": "백업 설정",
+        "backup_off_confirm_title": "자동 백업을 끌까요?",
+        "backup_off_confirm_description": "자체 호스팅 기록기는 자동 백업이 필요합니다. 백업을 끄면 기록기도 함께 꺼집니다. 기록기가 이미 기록한 활동을 먼저 채워 넣은 뒤, 기록기를 VRChat에서 로그아웃하고 연결을 해제합니다. 다시 사용하려면 처음부터 설정해야 합니다.",
+        "backup_off_confirm": "백업과 기록기 끄기",
+        "address": "기록기 주소",
+        "password": "기록기 비밀번호",
+        "connect": "연결",
+        "next": "다음",
+        "back": "이전",
+        "disconnect": "연결 해제",
+        "disconnect_confirm_title": "기록기 연결을 해제할까요?",
+        "disconnect_confirm_description": "먼저 기록기가 이미 기록한 활동을 채운 뒤, 기록기를 VRChat에서 로그아웃시키고 VRCX-0에 저장된 주소와 비밀번호를 지웁니다. 다시 사용하려면 새로 설정해야 합니다.",
+        "sync_failed_title": "기록기에서 채우지 못했습니다",
+        "sync_failed_description": "계속하면 기록기에 아직 채우지 않은 활동은 더 이상 채울 수 없습니다.",
+        "sign_out_failed_title": "기록기를 로그아웃하지 못했습니다",
+        "sign_out_failed_description": "기록기가 계속 VRChat 계정으로 기록할 수 있습니다. 멈추려면 기록기를 끄거나 데이터 폴더를 삭제하세요.",
+        "continue_anyway": "그래도 계속",
+        "vrchat_login": "VRChat 로그인",
+        "risk_title": "위험",
+        "risk_description": "기록기는 사용자 계정으로 다른 IP에서 VRChat에 로그인합니다. 연결이 끊기거나 추가 인증이 필요할 수 있고, 최악의 경우 계정 제한이나 정지가 될 수 있습니다. 실험적인 기능이므로 책임은 사용자에게 있습니다. 로그인 정보는 사용자의 기록기로만 전송됩니다.",
+        "risk_ack": "위험을 이해했으며 책임을 집니다",
+        "save_password": "기록기에 비밀번호 저장",
+        "save_password_description": "세션이 만료되면 기록기가 스스로 다시 로그인합니다.",
+        "push_saved_credentials": "저장된 VRChat 계정으로 로그인",
+        "vrchat_username": "VRChat 사용자 이름 또는 이메일",
+        "vrchat_password": "VRChat 비밀번호",
+        "push_credentials": "로그인",
+        "two_factor_description": "기록기의 VRChat 로그인에 2단계 인증 코드가 필요합니다.",
+        "two_factor_code": "코드",
+        "verify": "인증",
+        "login_failed_reason": "로그인 실패: {reason}",
+        "relogin": "다시 로그인",
+        "sign_out": "로그아웃",
+        "sign_out_confirm_title": "기록기를 로그아웃할까요?",
+        "sign_out_confirm_description": "먼저 기록기가 이미 기록한 활동을 채웁니다. 그 뒤 기록기는 기록을 멈추고, 다시 로그인할 때까지 VRChat 로그인 정보를 지웁니다.",
+        "records": "기록",
+        "unsynced_frames": "채울 기록",
+        "unsynced_range": "기간",
+        "database_size": "기록기 저장 용량",
+        "last_pull": "마지막으로 채운 시각",
+        "uptime": "기록기 실행 시간",
+        "backfill_total": "누적 채운 기록",
+        "backfill_record": "{count}건 채움",
+        "available_space": "기록기 남은 공간",
+        "dropped_unsynced": "채우기 전에 용량 한도로 삭제됨",
+        "dropped_after_password_change": "비밀번호 변경으로 폐기됨",
+        "storage_error": "기록기가 기록을 저장하지 못합니다: {reason}",
+        "last_error": "최근 오류: {reason}",
+        "sync_now": "지금 채우기",
+        "webhook": "Webhook 알림",
+        "webhook_description": "기록기가 로그인하지 못하거나 확인이 필요할 때 알려 줍니다.",
+        "webhook_last_sent": "마지막 전송: {date} ({result})",
+        "webhook_result_ok": "성공",
+        "webhook_result_failed": "실패",
+        "webhook_events": {
+            "title": "기록기는 다음과 같은 경우에 알림을 보냅니다:",
+            "login_stopped": "VRChat 로그인이 중지되어 VRCX-0에서 다시 로그인해야 할 때",
+            "two_factor": "다시 로그인하는 데 2단계 인증 코드가 필요할 때",
+            "storage_failed": "디스크가 가득 차는 등의 이유로 기록을 저장할 수 없을 때",
+            "recovered": "문제가 해결되어 다시 기록할 때",
+            "records_dropped": "저장 용량 한도 때문에 아직 채우지 않은 기록을 삭제했을 때"
+        },
+        "webhook_format_text": "일반 텍스트",
+        "webhook_url": "Webhook URL",
+        "webhook_remove": "삭제",
+        "webhook_change": "변경",
+        "webhook_test": "테스트 전송",
+        "webhook_test_sent": "테스트 메시지를 보냈습니다",
+        "action_failed": "기록기 작업에 실패했습니다.",
+        "error": {
+            "not_configured": "기록기가 설정되지 않았습니다",
+            "not_signed_in": "먼저 VRCX-0에서 VRChat에 로그인하세요",
+            "sync_in_progress": "이미 채우는 중입니다. 잠시 기다려 주세요",
+            "not_present": "VRCX-0이 지금 기록기와 연결되어 있지 않아 아직 채울 수 없습니다. VRChat과 기록기가 모두 연결되어 있는지 확인하세요.",
+            "no_saved_credentials": "VRCX-0에 이 계정의 VRChat 비밀번호가 저장되어 있지 않습니다",
+            "invalid_address": "기록기 주소 형식이 올바르지 않습니다. 예: http://192.168.1.10:8787",
+            "invalid_password": "이 기록기 비밀번호는 사용할 수 없습니다",
+            "rejected": "기록기가 요청을 거부했습니다: {message}",
+            "storage": "VRCX-0이 기록기 설정이나 기록을 저장하지 못했습니다",
+            "backup_required": "자동 백업을 끄기 전에 자체 호스팅 기록기 연결을 해제하세요",
+            "account_mismatch": "기록기가 VRCX-0과 다른 VRChat 계정으로 로그인해서 로그아웃시켰습니다"
+        },
+        "status_unsynced": "기록 중 · 채울 기록 {count}",
+        "two_factor_method": {
+            "totp": "인증 앱",
+            "otp": "복구 코드",
+            "emailOtp": "이메일 코드"
+        },
+        "health": {
+            "unreachable": "기록기에 연결할 수 없음",
+            "unauthorized": "기록기 비밀번호가 올바르지 않음",
+            "client_too_old": "이 기록기를 쓰려면 VRCX-0을 업데이트해야 함",
+            "logger_too_old": "기록기를 업데이트해야 함",
+            "account_mismatch": "기록기가 다른 계정으로 로그인됨",
+            "recording": "기록 중",
+            "logging_in": "로그인 중…",
+            "reconnecting": "다시 연결 중…",
+            "two_factor": "2단계 인증 코드 필요",
+            "no_credentials": "VRChat 로그인 필요",
+            "login_failed": "로그인 실패",
+            "bad_response": "기록기 응답이 올바르지 않습니다",
+            "beta_recorder": "정식 버전 VRCX-0은 정식 버전 기록기에만 연결할 수 있습니다. 기록기를 latest 이미지로 바꾸세요"
+        },
+        "status_bar": {
+            "pulling": "기록기에서 가져오는 중 {count}",
+            "writing": "피드 채우는 중 {count}"
+        },
+        "toast": {
+            "backfilled": "기록기에서 피드 {count}개를 채웠습니다",
+            "backfill_failed": "기록기에서 채우지 못했습니다",
+            "skipped": "시작점이 될 친구 목록이 없어 기록 {count}개를 채우지 못했습니다"
+        }
+    },
     "common": {
         "no_data": "데이터 없음",
         "no_matching_records": "일치하는 기록이 없습니다",
@@ -507,6 +639,18 @@
                 "online": "{name}님이 온라인 상태가 되었습니다",
                 "offline": "{name}님이 오프라인 상태가 되었습니다"
             }
+        }
+    },
+    "desktop_widget": {
+        "title": "데스크톱 오버레이",
+        "menu": {
+            "pin": "항상 위에 표시",
+            "click_through": "마우스 클릭 통과",
+            "close": "닫기"
+        },
+        "tray": {
+            "turn_on": "켜기",
+            "show": "맨 앞으로 가져오기"
         }
     },
     "nativeShell": {
@@ -1107,7 +1251,9 @@
             },
             "context": {
                 "hide_user": "피드에서 위치 변경 숨기기",
-                "unhide_user": "피드에서 위치 변경 표시"
+                "unhide_user": "피드에서 위치 변경 표시",
+                "hide_user_all": "피드에서 숨기기",
+                "unhide_user_all": "피드에 표시"
             }
         },
         "friends_locations": {
@@ -1246,7 +1392,8 @@
                 "style_list_could_not_be_loaded_unknown_style_selections_will": "아바타 스타일을 불러오지 못했습니다. 현재 스타일 선택은 그대로 유지됩니다.",
                 "selected_image_is_too_large": "선택한 이미지가 너무 큽니다.",
                 "selected_file_is_not_an_image": "선택한 파일은 이미지가 아닙니다",
-                "avatar_inventory_failed_to_load": "아바타를 불러오지 못했습니다."
+                "avatar_inventory_failed_to_load": "아바타를 불러오지 못했습니다.",
+                "local_test_avatars_failed_to_load": "로컬 테스트 아바타를 불러오지 못했습니다"
             },
             "success": {
                 "avatar_styles_updated": "아바타 스타일이 업데이트되었습니다.",
@@ -1276,7 +1423,9 @@
                 "make_private": "비공개로 설정",
                 "avatar_made_public": "아바타를 공개했습니다",
                 "avatar_made_private": "아바타가 비공개로 설정됨",
-                "untitled_avatar": "제목 없는 아바타"
+                "untitled_avatar": "제목 없는 아바타",
+                "local_test_avatars": "로컬 테스트 아바타",
+                "local_test_avatars_description": "VRChat SDK의 Build & Test로 빌드한 아바타입니다. 게임에서는 본인에게만 보입니다."
             },
             "action": {
                 "select_style": "스타일 선택",
@@ -1287,12 +1436,16 @@
                 "show_avatar_grid": "아바타 그리드 표시",
                 "show_avatar_table": "아바타 테이블 표시",
                 "refresh_avatar_inventory": "아바타 새로고침",
-                "change_avatar_image": "아바타 이미지 변경"
+                "change_avatar_image": "아바타 이미지 변경",
+                "open_local_test_avatars": "로컬 테스트 아바타"
             },
             "empty": {
                 "this_avatar_has_no_local_tags_yet": "이 아바타에는 아직 로컬 태그가 없습니다.",
                 "no_avatars_match_the_current_filters": "현재 필터와 일치하는 아바타가 없습니다.",
-                "no_authenticated_user_is_available_for_the_avatar_inventory": "아바타를 보려면 로그인하세요."
+                "no_authenticated_user_is_available_for_the_avatar_inventory": "아바타를 보려면 로그인하세요.",
+                "no_local_test_avatars": "로컬 테스트 아바타가 없습니다",
+                "local_test_avatars_hint": "VRChat SDK의 Build & Test로 빌드한 아바타가 여기에 표시됩니다.",
+                "no_local_test_avatars_match_the_search": "검색과 일치하는 로컬 테스트 아바타가 없습니다"
             },
             "loading": {
                 "loading_the_avatar_inventory": "아바타 불러오는 중"
@@ -1304,13 +1457,16 @@
                 "failed_to_update_avatar": "아바타를 업데이트하지 못했습니다.",
                 "failed_to_select_avatar": "아바타를 선택하지 못했습니다.",
                 "failed_to_create_impostor": "임포스터를 생성하지 못했습니다.",
-                "failed_to_upload_avatar_image": "아바타 이미지를 업로드하지 못했습니다."
+                "failed_to_upload_avatar_image": "아바타 이미지를 업로드하지 못했습니다.",
+                "failed_to_delete_local_test_avatar": "로컬 테스트 아바타를 삭제하지 못했습니다"
             },
             "modal": {
                 "create_impostor": "임포스터를 생성하시겠습니까?",
                 "create": "만들기",
                 "make_avatar_public": "아바타를 공개하시겠습니까?",
-                "make_avatar_private": "아바타를 비공개로 설정하시겠습니까?"
+                "make_avatar_private": "아바타를 비공개로 설정하시겠습니까?",
+                "delete_local_test_avatar": "{value}을(를) 삭제할까요?",
+                "delete_local_test_avatar_description": "이 컴퓨터에서 파일이 삭제됩니다. 다음에 VRChat에서 아바타 메뉴를 열면 SDK Test Avatars에서 사라집니다."
             },
             "dynamic": {
                 "updated_local_tags_for_value": "{value}에 대한 로컬 태그가 업데이트되었습니다.",
@@ -2096,7 +2252,9 @@
             "other": {
                 "header": "기타",
                 "edit_invite_message": "메시지 템플릿",
-                "edit_invite_message_description": "초대 및 요청 메시지 템플릿 편집"
+                "edit_invite_message_description": "초대 및 요청 메시지 템플릿 편집",
+                "moderation_reports": "신고 내역",
+                "moderation_reports_description": "제출한 신고를 확인하거나 철회"
             },
             "success": {
                 "media_item_deleted": "미디어 항목이 삭제되었습니다.",
@@ -2300,15 +2458,17 @@
                     "description": "친구의 공개 자기소개를 주기적으로 가져와 변경 사항을 피드에 표시합니다. 업데이트가 지연되거나 일부 누락될 수 있습니다."
                 },
                 "hidden_feed": {
-                    "header": "위치 변경 숨김 친구",
-                    "description": "선택한 친구의 위치 변경을 피드에서 숨깁니다. 다른 소식은 그대로 표시되며 저장된 데이터는 삭제되지 않습니다.",
+                    "header": "피드에서 숨긴 친구",
+                    "description": "선택한 친구의 위치 변경 또는 모든 소식을 피드에서 숨깁니다. 저장된 데이터는 삭제되지 않습니다.",
                     "add": "친구 추가",
                     "search_placeholder": "친구 검색",
                     "empty": "아직 숨긴 친구가 없습니다.",
                     "remove": "숨김 해제",
                     "unknown_friend": "알 수 없는 친구",
+                    "hide_all": "모든 소식 숨기기",
+                    "hide_all_description": "이 친구의 모든 소식을 숨깁니다. 끄면 위치 변경만 숨깁니다.",
                     "hide_notifications": "알림에서도 숨기기",
-                    "hide_notifications_description": "데스크톱 알림, TTS, VR 오버레이, Webhook 및 앱 내 알림에서도 이 친구의 위치 변경을 알리지 않습니다.",
+                    "hide_notifications_description": "숨긴 소식은 데스크톱 알림, TTS, VR 오버레이, Webhook 및 앱 내 알림에서도 알리지 않습니다.",
                     "hide_private_location_changes": "비공개 월드로 이동하면 알리지 않기",
                     "hide_private_location_changes_description": "친구가 비공개 월드로 이동해도 데스크톱 알림, TTS, VR 알림, Webhook을 보내지 않습니다. 손목 오버레이 피드는 자체 '비공개 월드 숨기기' 설정을 따릅니다."
                 }
@@ -2709,6 +2869,16 @@
                         "desktop_notification_while_afk": "AFK 동안 알림 표시",
                         "notification_sound": "알림음",
                         "friend_icons": "친구 아이콘 표시"
+                    },
+                    "desktop_widget": {
+                        "header": "데스크톱 오버레이",
+                        "description": "최근 활동을 데스크톱 창에 표시하며, 최대 50개까지 유지합니다.",
+                        "usage_hint": "상태 표시줄에서 켜거나 끌 수 있습니다. 창을 마우스 오른쪽 버튼으로 클릭하면 항상 위에 표시와 마우스 클릭 통과를 설정할 수 있습니다. 마우스 클릭 통과를 켠 동안에는 트레이 메뉴에서 해제하세요.",
+                        "background_opacity": "배경 불투명도",
+                        "order": "정렬 순서",
+                        "order_newest_top": "최신 항목을 위에",
+                        "order_newest_bottom": "최신 항목을 아래에",
+                        "activity_filters": "데스크톱 오버레이 필터"
                     },
                     "webhook": {
                         "header": "Webhook 알림",
@@ -5275,6 +5445,10 @@
             "title": "데스크톱 알림 필터",
             "description": "어떤 활동이 데스크톱(OS) 알림을 표시할지 선택합니다. 위의 데스크톱 알림 조건도 계속 적용됩니다."
         },
+        "desktop_widget": {
+            "title": "데스크톱 오버레이 필터",
+            "description": "데스크톱 오버레이에 표시할 활동을 선택합니다."
+        },
         "webhook_notifications": {
             "title": "Webhook 알림 필터",
             "description": "설정한 웹훅으로 보낼 알림을 선택합니다."
@@ -5724,6 +5898,19 @@
             "modal": {
                 "delete_instance_record": "이 방문 기록을 삭제할까요?"
             }
+        },
+        "moderation_reports": {
+            "header": "신고 내역",
+            "description": "VRChat에 제출한 신고입니다.",
+            "empty_open": "처리 중인 신고가 없습니다",
+            "empty_closed": "종료된 신고가 없습니다",
+            "failed_to_load": "신고 내역을 불러오지 못했습니다",
+            "withdraw": "철회",
+            "withdraw_title": "{value}에 대한 신고를 철회하시겠습니까?",
+            "withdraw_description": "이 작업은 되돌릴 수 없습니다.",
+            "failed_to_withdraw": "신고를 철회하지 못했습니다",
+            "status_open": "처리 중",
+            "status_closed": "종료됨"
         }
     },
     "confirm": {
@@ -6236,7 +6423,11 @@
         "proxy_disabled": "프록시 비활성화됨",
         "proxy_enabled_direct": "프록시 활성화됨, 직접 연결 중",
         "proxy_enabled_server": "프록시 활성화됨: {proxy}",
-        "proxy_network_issue": "프록시가 활성화되었지만 네트워크 요청에 실패했습니다"
+        "proxy_network_issue": "프록시가 활성화되었지만 네트워크 요청에 실패했습니다",
+        "desktop_widget_off": "데스크톱 오버레이가 꺼져 있습니다",
+        "desktop_widget_on": "데스크톱 오버레이가 켜져 있습니다",
+        "desktop_widget_click_through": "데스크톱 오버레이가 켜져 있습니다(마우스 클릭 통과)",
+        "desktop_widget_failed": "데스크톱 오버레이를 변경하지 못했습니다"
     },
     "component": {
         "favorite_action_menu": {
