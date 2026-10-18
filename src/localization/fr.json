@@ -559,7 +559,10 @@
             "search": "Rechercher",
             "select": "Sélectionner",
             "cancel": "Annuler",
-            "view_options": "Options d'affichage"
+            "view_options": "Options d'affichage",
+            "cut": "Couper",
+            "paste": "Coller",
+            "select_all": "Tout sélectionner"
         },
         "sort_by": "Trier par :",
         "time_units": {
@@ -2342,8 +2345,9 @@
                 "refresh_this_tab_to_load_inventory_items": "Actualisez cet onglet pour charger les objets d'inventaire",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Chargez une capture d'écran pour examiner les métadonnées intégrées du monde, de l'utilisateur et du fichier"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "Le chemin de la capture d'écran déposée n'est pas disponible"
+            "file_drop": {
+                "upload_to": "Déposer pour télécharger vers {target}",
+                "open_screenshot": "Déposer pour ouvrir la capture d'écran"
             },
             "loading": {
                 "deleting_metadata": "Suppression des métadonnées",
@@ -2900,7 +2904,9 @@
                         "end_on_game_start": "Désactiver au lancement de VRChat",
                         "end_on_game_start_description": "Only applies when VRChat changes from stopped to running. You can turn Do Not Disturb on again while playing.",
                         "busy_status": "Activer lorsque votre statut est défini sur \"Ne pas déranger\"",
-                        "busy_status_description": "Tant que votre statut VRChat est défini sur \"Ne pas déranger\", les notifications sont mis en pause de la même manière que le mode Ne pas déranger."
+                        "busy_status_description": "Tant que votre statut VRChat est défini sur \"Ne pas déranger\", les notifications sont mis en pause de la même manière que le mode Ne pas déranger.",
+                        "hide_video_errors": "Ne pas notifier les erreurs de lecture vidéo",
+                        "hide_video_errors_description": "Quand un lecteur vidéo échoue (par exemple, YouTube ne se charge pas), aucune notification de bureau, TTS, notification VR ou webhook n'est envoyé."
                     },
                     "vr_notifications": {
                         "header": "Notifications de l'overlay VR",
@@ -3317,6 +3323,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "Certains changements prendront effet après le redémarrage de VRCX-0.",
+                "restart_now": "Redémarrer maintenant"
             }
         },
         "dashboard": {
@@ -3699,6 +3709,12 @@
                 "override_disabled": "CSS personnalisé désactivé.",
                 "override_cleared": "CSS de remplacement effacé.",
                 "disable_failed": "Échec de la mise à jour des paramètres des thèmes de la communauté."
+            },
+            "confirm": {
+                "delete_theme_title": "Supprimer ce thème?",
+                "delete_theme_description": "Le thème sera supprimé de cet appareil.",
+                "clear_override_title": "Effacer le CSS personnalisé?",
+                "clear_override_description": "Votre CSS personnalisé enregistré sera supprimé. Cette action est irréversible."
             }
         },
         "themes": {
