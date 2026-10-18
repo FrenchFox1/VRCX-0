@@ -36,6 +36,7 @@ import {
 import { toast } from '@/services/toastService';
 import { isDevToolsBuild } from '@/shared/buildLabel';
 import { communityThemeControlsAccent } from '@/state/communityThemeStore';
+import { useModalStore } from '@/state/modalStore';
 import type { ThemeMode } from '@/state/shellStore';
 
 import { resolveActiveThemeSource, type ThemeSource } from './themeHelpers';
@@ -59,6 +60,7 @@ export function useThemesController() {
         loading,
         error
     } = useThemesRuntimeState();
+    const confirm = useModalStore((state) => state.confirm);
     const [overrideDraft, setOverrideDraft] = useState('');
     const [customCssOpen, setCustomCssOpen] = useState(
         Boolean(overrideCssLength)
@@ -177,6 +179,18 @@ export function useThemesController() {
     }
 
     async function deleteTheme(themeId?: string) {
+        const result = await confirm({
+            title: t('view.community_themes.confirm.delete_theme_title'),
+            description: t(
+                'view.community_themes.confirm.delete_theme_description'
+            ),
+            confirmText: t('common.actions.delete'),
+            cancelText: t('common.actions.cancel'),
+            destructive: true
+        });
+        if (!result.ok) {
+            return;
+        }
         try {
             await deleteInstalledCommunityTheme(themeId);
             toast.add({
@@ -231,6 +245,18 @@ export function useThemesController() {
     }
 
     async function clearOverride() {
+        const result = await confirm({
+            title: t('view.community_themes.confirm.clear_override_title'),
+            description: t(
+                'view.community_themes.confirm.clear_override_description'
+            ),
+            confirmText: t('common.actions.clear'),
+            cancelText: t('common.actions.cancel'),
+            destructive: true
+        });
+        if (!result.ok) {
+            return;
+        }
         try {
             await clearCommunityThemeOverrideCss();
             setOverrideDraft('');

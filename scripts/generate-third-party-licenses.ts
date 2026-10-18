@@ -50,7 +50,7 @@ const tauriResourceNoticePath = path.join(
 );
 const bundledFontPackages = Object.freeze(['@fontsource-variable/geist']);
 const crateLicenseFilePattern = /^(licen[cs]e|copying|notice|unlicense)/i;
-const loggerTarget = 'x86_64-unknown-linux-musl';
+const defaultLoggerTarget = 'x86_64-unknown-linux-musl';
 const vendoredLicenseDir = path.join(
     rootDir,
     'scripts',
@@ -420,7 +420,7 @@ function removeIntermediateFrontendManifest(): void {
     }
 }
 
-function readLoggerPackages(): Set<string> {
+function readLoggerPackages(target: string): Set<string> {
     const output = execFileSync(
         'cargo',
         [
@@ -432,7 +432,7 @@ function readLoggerPackages(): Set<string> {
             '-e',
             'normal',
             '--target',
-            loggerTarget,
+            target,
             '--prefix',
             'none',
             '--format',
@@ -443,10 +443,10 @@ function readLoggerPackages(): Set<string> {
     return parseCargoTreePackages(output);
 }
 
-function writeLoggerNotices(outputPath: string): void {
+function writeLoggerNotices(outputPath: string, target: string): void {
     const entries = rustEntries(
-        readCargoMetadata(loggerTarget),
-        readLoggerPackages()
+        readCargoMetadata(target),
+        readLoggerPackages(target)
     ).sort((left, right) => left.name.localeCompare(right.name));
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(
@@ -468,7 +468,15 @@ function main(): void {
         if (!outputPath) {
             throw new Error('--logger requires an output path');
         }
-        writeLoggerNotices(path.resolve(outputPath));
+        const targetFlag = process.argv.indexOf('--target');
+        const target =
+            targetFlag >= 0
+                ? process.argv[targetFlag + 1]
+                : defaultLoggerTarget;
+        if (!target) {
+            throw new Error('--target requires a Rust target triple');
+        }
+        writeLoggerNotices(path.resolve(outputPath), target);
         return;
     }
 

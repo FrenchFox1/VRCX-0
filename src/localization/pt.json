@@ -559,7 +559,10 @@
             "search": "Pesquisar",
             "select": "Selecionar",
             "cancel": "Cancelar",
-            "view_options": "Opções de exibição"
+            "view_options": "Opções de exibição",
+            "cut": "Recortar",
+            "paste": "Colar",
+            "select_all": "Selecionar tudo"
         },
         "sort_by": "Ordenar por:",
         "time_units": {
@@ -2338,8 +2341,9 @@
                 "refresh_this_tab_to_load_inventory_items": "Atualize esta aba para carregar os itens de inventário",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Carregue uma captura de tela para inspecionar os metadados embutidos de mundo, jogador e arquivo"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "O caminho da captura de tela arrastada não está disponível"
+            "file_drop": {
+                "upload_to": "Solte para enviar para {target}",
+                "open_screenshot": "Solte para abrir a captura de tela"
             },
             "loading": {
                 "deleting_metadata": "Excluindo metadados",
@@ -2896,7 +2900,9 @@
                         "end_on_game_start": "Desativar ao iniciar o VRChat",
                         "end_on_game_start_description": "Aplica-se apenas quando o VRChat passa de fechado para em execução. Pode voltar a ativar Não incomodar durante o jogo.",
                         "busy_status": "Ativar com o status Não Perturbe",
-                        "busy_status_description": "Enquanto seu status no VRChat for Não Perturbe, as notificações ficam pausadas como no modo Não incomodar."
+                        "busy_status_description": "Enquanto seu status no VRChat for Não Perturbe, as notificações ficam pausadas como no modo Não incomodar.",
+                        "hide_video_errors": "Não avisar erros de reprodução de vídeo",
+                        "hide_video_errors_description": "Quando o player de vídeo falha (por exemplo, se o YouTube não carrega), não são enviadas notificações na área de trabalho, TTS, notificações de VR nem webhooks."
                     },
                     "vr_notifications": {
                         "header": "Notificações do Overlay de VR",
@@ -3313,6 +3319,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "Algumas alterações só serão aplicadas depois de reiniciar o VRCX-0.",
+                "restart_now": "Reiniciar agora"
             }
         },
         "dashboard": {
@@ -3695,6 +3705,12 @@
                 "override_disabled": "CSS personalizado desativado.",
                 "override_cleared": "CSS de override limpo.",
                 "disable_failed": "Falha ao atualizar as configurações de tema da comunidade."
+            },
+            "confirm": {
+                "delete_theme_title": "Excluir este tema?",
+                "delete_theme_description": "O tema será removido deste dispositivo.",
+                "clear_override_title": "Limpar o CSS personalizado?",
+                "clear_override_description": "O CSS personalizado salvo será excluído. Não é possível desfazer."
             }
         },
         "themes": {

@@ -559,7 +559,10 @@
             "search": "Vyhledat",
             "select": "Vybrat",
             "cancel": "Zrušit",
-            "view_options": "Možnosti zobrazení"
+            "view_options": "Možnosti zobrazení",
+            "cut": "Vyjmout",
+            "paste": "Vložit",
+            "select_all": "Vybrat vše"
         },
         "sort_by": "Seřadit dle:",
         "time_units": {
@@ -2348,8 +2351,9 @@
                 "refresh_this_tab_to_load_inventory_items": "Obnovte tuto kartu, chcete-li načíst položky inventáře",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Načtěte snímek obrazovky pro zobrazení vloženého světa, hráče a metadat souboru"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "Cesta k přetaženému snímku obrazovky není k dispozici"
+            "file_drop": {
+                "upload_to": "Pusťte pro nahrání do sekce {target}",
+                "open_screenshot": "Pusťte pro otevření snímku obrazovky"
             },
             "loading": {
                 "deleting_metadata": "Odstraňování metadat",
@@ -2906,7 +2910,9 @@
                         "end_on_game_start": "Vypnout při spuštění VRChat",
                         "end_on_game_start_description": "Platí pouze při přechodu VRChat z vypnutého do spuštěného stavu. Během hraní lze režim Nerušit znovu zapnout.",
                         "busy_status": "Zapnout při stavu Busy",
-                        "busy_status_description": "Dokud je tvůj stav ve VRChatu Busy, oznámení se pozastaví stejně jako v režimu Nerušit."
+                        "busy_status_description": "Dokud je tvůj stav ve VRChatu Busy, oznámení se pozastaví stejně jako v režimu Nerušit.",
+                        "hide_video_errors": "Neoznamovat chyby přehrávání videa",
+                        "hide_video_errors_description": "Při chybách přehrávače videa (například když se YouTube nenačte) se neodešle oznámení na ploše, TTS, VR oznámení ani webhook."
                     },
                     "vr_notifications": {
                         "header": "Oznámení v překryvné vrstvě VR",
@@ -3323,6 +3329,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "Některé změny se projeví až po restartu VRCX-0.",
+                "restart_now": "Restartovat nyní"
             }
         },
         "dashboard": {
@@ -3709,6 +3719,12 @@
                 "override_disabled": "Vlastní CSS bylo zakázáno.",
                 "override_cleared": "Upravené CSS bylo vymazáno.",
                 "disable_failed": "Aktualizace nastavení komunitního motivu se nezdařila."
+            },
+            "confirm": {
+                "delete_theme_title": "Smazat tento motiv?",
+                "delete_theme_description": "Motiv bude z tohoto zařízení odstraněn.",
+                "clear_override_title": "Vymazat vlastní CSS?",
+                "clear_override_description": "Uložené vlastní CSS bude smazáno. Tuto akci nelze vrátit."
             }
         },
         "themes": {

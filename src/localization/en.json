@@ -559,7 +559,10 @@
             "search": "Search",
             "select": "Select",
             "cancel": "Cancel",
-            "view_options": "View options"
+            "view_options": "View options",
+            "cut": "Cut",
+            "paste": "Paste",
+            "select_all": "Select all"
         },
         "sort_by": "Sort by:",
         "time_units": {
@@ -2342,8 +2345,9 @@
                 "refresh_this_tab_to_load_inventory_items": "Refresh this tab to load inventory items",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Load a screenshot to inspect embedded world, player and file metadata"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "Couldn't read the dropped file. Try selecting the screenshot again."
+            "file_drop": {
+                "upload_to": "Drop to upload to {target}",
+                "open_screenshot": "Drop to open the screenshot"
             },
             "loading": {
                 "deleting_metadata": "Deleting metadata",
@@ -2900,7 +2904,9 @@
                         "end_on_game_start": "Turn off when VRChat starts",
                         "end_on_game_start_description": "Only applies when VRChat changes from stopped to running. You can turn Do Not Disturb on again while playing.",
                         "busy_status": "Turn on while your status is Do Not Disturb",
-                        "busy_status_description": "While your VRChat status is Do Not Disturb, notifications pause the same way as Do Not Disturb mode."
+                        "busy_status_description": "While your VRChat status is Do Not Disturb, notifications pause the same way as Do Not Disturb mode.",
+                        "hide_video_errors": "Don't notify video playback errors",
+                        "hide_video_errors_description": "When a video player fails (for example, YouTube won't load), no desktop notification, TTS, VR notification, or webhook is sent."
                     },
                     "vr_notifications": {
                         "header": "VR Overlay Notifications",
@@ -3317,6 +3323,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "Some changes take effect after VRCX-0 restarts.",
+                "restart_now": "Restart now"
             }
         },
         "dashboard": {
@@ -3699,6 +3709,12 @@
                 "override_disabled": "Custom CSS disabled.",
                 "override_cleared": "Custom CSS cleared.",
                 "disable_failed": "Failed to update community theme settings."
+            },
+            "confirm": {
+                "delete_theme_title": "Delete this theme?",
+                "delete_theme_description": "The theme will be removed from this device.",
+                "clear_override_title": "Clear custom CSS?",
+                "clear_override_description": "Your saved custom CSS will be deleted. This can't be undone."
             }
         },
         "themes": {

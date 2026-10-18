@@ -559,7 +559,10 @@
             "search": "Поиск",
             "select": "Выбрать",
             "cancel": "Отмена",
-            "view_options": "Параметры отображения"
+            "view_options": "Параметры отображения",
+            "cut": "Вырезать",
+            "paste": "Вставить",
+            "select_all": "Выделить всё"
         },
         "sort_by": "Сортировать по:",
         "time_units": {
@@ -2346,8 +2349,9 @@
                 "refresh_this_tab_to_load_inventory_items": "Обновить эту вкладку для загрузки инвентарных запасов",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Загрузить скриншот для проверки встроенного мира, игрока и файловых метаданных"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "Сбросить скриншот недоступен"
+            "file_drop": {
+                "upload_to": "Отпустите, чтобы загрузить в раздел «{target}»",
+                "open_screenshot": "Отпустите, чтобы открыть скриншот"
             },
             "loading": {
                 "deleting_metadata": "Удаление метаданных",
@@ -2904,7 +2908,9 @@
                         "end_on_game_start": "Отключать при запуске VRChat",
                         "end_on_game_start_description": "Срабатывает только при переходе VRChat из остановленного состояния в запущенное. Режим можно снова включить во время игры.",
                         "busy_status": "Включать при статусе «Занят»",
-                        "busy_status_description": "Пока ваш статус в VRChat — «Занят», уведомления приостанавливаются, как в режиме «Не беспокоить»."
+                        "busy_status_description": "Пока ваш статус в VRChat — «Занят», уведомления приостанавливаются, как в режиме «Не беспокоить».",
+                        "hide_video_errors": "Не уведомлять об ошибках воспроизведения видео",
+                        "hide_video_errors_description": "При ошибках видеоплеера (например, если YouTube не загружается) уведомления на рабочем столе, TTS, VR-уведомления и вебхуки не отправляются."
                     },
                     "vr_notifications": {
                         "header": "VR Уведомления о накладных расходах",
@@ -3321,6 +3327,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "Некоторые изменения вступят в силу после перезапуска VRCX-0.",
+                "restart_now": "Перезапустить сейчас"
             }
         },
         "dashboard": {
@@ -3703,6 +3713,12 @@
                 "override_disabled": "Пользовательский CSS отключён.",
                 "override_cleared": "Пользовательский CSS очищен.",
                 "disable_failed": "Не удалось обновить тематические параметры сообщества."
+            },
+            "confirm": {
+                "delete_theme_title": "Удалить эту тему?",
+                "delete_theme_description": "Тема будет удалена с этого устройства.",
+                "clear_override_title": "Очистить пользовательский CSS?",
+                "clear_override_description": "Сохранённый пользовательский CSS будет удалён без возможности восстановления."
             }
         },
         "themes": {

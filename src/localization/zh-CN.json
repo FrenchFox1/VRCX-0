@@ -559,7 +559,10 @@
             "search": "搜索",
             "select": "选择",
             "cancel": "取消",
-            "view_options": "显示选项"
+            "view_options": "显示选项",
+            "cut": "剪切",
+            "paste": "粘贴",
+            "select_all": "全选"
         },
         "sort_by": "排序方式：",
         "time_units": {
@@ -2336,8 +2339,9 @@
                 "refresh_this_tab_to_load_inventory_items": "刷新此标签页以加载库存项目",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "加载截图以查看嵌入的世界、玩家和文件元数据"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "无法读取拖入的文件，请重新选择截图。"
+            "file_drop": {
+                "upload_to": "松开即可上传到{target}",
+                "open_screenshot": "松开即可打开截图"
             },
             "loading": {
                 "deleting_metadata": "正在删除元数据",
@@ -2894,7 +2898,9 @@
                         "end_on_game_start": "启动 VRChat 时关闭勿扰模式",
                         "end_on_game_start_description": "仅在 VRChat 从未运行变为运行时触发。进入游戏后仍可再次开启勿扰模式。",
                         "busy_status": "VRChat 状态为“请勿打扰”时开启勿扰模式",
-                        "busy_status_description": "你的 VRChat 状态为“请勿打扰”时，通知会像勿扰模式一样暂停。"
+                        "busy_status_description": "你的 VRChat 状态为“请勿打扰”时，通知会像勿扰模式一样暂停。",
+                        "hide_video_errors": "视频播放失败时不通知",
+                        "hide_video_errors_description": "视频播放器出错（例如无法加载 YouTube）时，不发送桌面通知、TTS、VR 通知和 Webhook。"
                     },
                     "vr_notifications": {
                         "header": "VR 叠加界面通知",
@@ -3311,6 +3317,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "部分设置需要重启 VRCX-0 后才会生效。",
+                "restart_now": "立即重启"
             }
         },
         "dashboard": {
@@ -3693,6 +3703,12 @@
                 "override_disabled": "自定义 CSS 已禁用。",
                 "override_cleared": "自定义 CSS 已清空。",
                 "disable_failed": "更新社区主题设置失败。"
+            },
+            "confirm": {
+                "delete_theme_title": "删除这个主题？",
+                "delete_theme_description": "主题将从此设备上移除。",
+                "clear_override_title": "清空自定义 CSS？",
+                "clear_override_description": "已保存的自定义 CSS 会被删除，且无法恢复。"
             }
         },
         "themes": {

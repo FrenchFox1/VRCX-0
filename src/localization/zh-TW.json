@@ -559,7 +559,10 @@
             "search": "搜尋",
             "select": "選擇",
             "cancel": "取消",
-            "view_options": "顯示選項"
+            "view_options": "顯示選項",
+            "cut": "剪下",
+            "paste": "貼上",
+            "select_all": "全選"
         },
         "sort_by": "排序方式：",
         "time_units": {
@@ -2336,8 +2339,9 @@
                 "refresh_this_tab_to_load_inventory_items": "重新整理此標籤頁以載入庫存物品",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "載入螢幕截圖以查看嵌入的世界、用戶和檔案後設資料"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "無法取得拖曳的螢幕截圖路徑"
+            "file_drop": {
+                "upload_to": "放開即可上傳到{target}",
+                "open_screenshot": "放開即可開啟螢幕截圖"
             },
             "loading": {
                 "deleting_metadata": "正在刪除後設資料",
@@ -2894,7 +2898,9 @@
                         "end_on_game_start": "啟動 VRChat 時關閉勿擾模式",
                         "end_on_game_start_description": "僅在 VRChat 從未執行變為執行時觸發。進入遊戲後仍可再次開啟勿擾模式。",
                         "busy_status": "VRChat 狀態為「請勿打擾」時開啟勿擾模式",
-                        "busy_status_description": "你的 VRChat 狀態為「請勿打擾」時，通知會像勿擾模式一樣暫停。"
+                        "busy_status_description": "你的 VRChat 狀態為「請勿打擾」時，通知會像勿擾模式一樣暫停。",
+                        "hide_video_errors": "影片播放失敗時不通知",
+                        "hide_video_errors_description": "影片播放器出錯（例如無法載入 YouTube）時，不發送桌面通知、TTS、VR 通知與 Webhook。"
                     },
                     "vr_notifications": {
                         "header": "VR 疊加通知",
@@ -3311,6 +3317,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "部分設定需要重新啟動 VRCX-0 後才會生效。",
+                "restart_now": "立即重新啟動"
             }
         },
         "dashboard": {
@@ -3693,6 +3703,12 @@
                 "override_disabled": "自訂 CSS 已停用。",
                 "override_cleared": "自訂 CSS 已清除。",
                 "disable_failed": "更新社群主題設定失敗。"
+            },
+            "confirm": {
+                "delete_theme_title": "刪除這個主題？",
+                "delete_theme_description": "主題將從這台裝置移除。",
+                "clear_override_title": "清除自訂 CSS？",
+                "clear_override_description": "已儲存的自訂 CSS 會被刪除，且無法復原。"
             }
         },
         "themes": {

@@ -559,7 +559,10 @@
             "search": "Suchen",
             "select": "Auswählen",
             "cancel": "Abbrechen",
-            "view_options": "Ansichtsoptionen"
+            "view_options": "Ansichtsoptionen",
+            "cut": "Ausschneiden",
+            "paste": "Einfügen",
+            "select_all": "Alles auswählen"
         },
         "sort_by": "Sortieren nach:",
         "time_units": {
@@ -2338,8 +2341,9 @@
                 "refresh_this_tab_to_load_inventory_items": "Aktualisiere diesen Tab, um Inventar-Items zu laden",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Lade einen Screenshot, um eingebettete Welt-, Spieler- und Dateimetadaten zu untersuchen"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "Der Pfad des abgelegten Screenshots ist nicht verfügbar"
+            "file_drop": {
+                "upload_to": "Zum Hochladen in „{target}“ hier ablegen",
+                "open_screenshot": "Zum Öffnen des Screenshots hier ablegen"
             },
             "loading": {
                 "deleting_metadata": "Metadaten werden gelöscht",
@@ -2896,7 +2900,9 @@
                         "end_on_game_start": "Beim Start von VRChat ausschalten",
                         "end_on_game_start_description": "Gilt nur, wenn VRChat vom beendeten in den laufenden Zustand wechselt. Während des Spielens kann „Nicht stören“ erneut aktiviert werden.",
                         "busy_status": "Bei Status „Nicht stören“ aktivieren",
-                        "busy_status_description": "Solange dein VRChat-Status „Nicht stören“ ist, werden Benachrichtigungen wie im Nicht-stören-Modus pausiert."
+                        "busy_status_description": "Solange dein VRChat-Status „Nicht stören“ ist, werden Benachrichtigungen wie im Nicht-stören-Modus pausiert.",
+                        "hide_video_errors": "Videowiedergabefehler nicht melden",
+                        "hide_video_errors_description": "Bei Fehlern des Videoplayers (z. B. wenn YouTube nicht lädt) werden keine Desktop-Benachrichtigung, kein TTS, keine VR-Benachrichtigung und kein Webhook gesendet."
                     },
                     "vr_notifications": {
                         "header": "VR-Overlay-Benachrichtigungen",
@@ -3313,6 +3319,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "Einige Änderungen werden erst nach einem Neustart von VRCX-0 wirksam.",
+                "restart_now": "Jetzt neu starten"
             }
         },
         "dashboard": {
@@ -3695,6 +3705,12 @@
                 "override_disabled": "Benutzerdefiniertes CSS deaktiviert.",
                 "override_cleared": "Override-CSS gelöscht.",
                 "disable_failed": "Einstellungen für Community-Theme konnten nicht aktualisiert werden."
+            },
+            "confirm": {
+                "delete_theme_title": "Dieses Theme löschen?",
+                "delete_theme_description": "Das Theme wird von diesem Gerät entfernt.",
+                "clear_override_title": "Benutzerdefiniertes CSS löschen?",
+                "clear_override_description": "Ihr gespeichertes CSS wird gelöscht. Das lässt sich nicht rückgängig machen."
             }
         },
         "themes": {

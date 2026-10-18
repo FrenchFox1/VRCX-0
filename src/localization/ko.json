@@ -559,7 +559,10 @@
             "search": "검색",
             "select": "선택",
             "cancel": "취소",
-            "view_options": "보기 옵션"
+            "view_options": "보기 옵션",
+            "cut": "잘라내기",
+            "paste": "붙여넣기",
+            "select_all": "모두 선택"
         },
         "sort_by": "정렬 기준:",
         "time_units": {
@@ -2279,8 +2282,9 @@
                 "refresh_this_tab_to_load_inventory_items": "인벤토리 항목을 불러오려면 이 탭을 새로고침하세요.",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "스크린샷을 불러와 포함된 월드, 플레이어, 파일 메타데이터를 확인하세요."
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "끌어다 놓은 파일을 읽지 못했습니다. 스크린샷을 다시 선택해 보세요."
+            "file_drop": {
+                "upload_to": "놓으면 {target}에 업로드됩니다",
+                "open_screenshot": "놓으면 스크린샷이 열립니다"
             },
             "loading": {
                 "deleting_metadata": "메타데이터 삭제 중",
@@ -2837,7 +2841,9 @@
                         "end_on_game_start": "VRChat 시작 시 방해 금지 끄기",
                         "end_on_game_start_description": "VRChat이 중지 상태에서 실행 상태로 바뀔 때만 적용됩니다. 플레이 중 다시 방해 금지를 켤 수 있습니다.",
                         "busy_status": "상태가 '방해 금지'일 때 방해 금지 켜기",
-                        "busy_status_description": "VRChat 상태가 '방해 금지'인 동안 방해 금지 모드처럼 알림을 일시 중지합니다."
+                        "busy_status_description": "VRChat 상태가 '방해 금지'인 동안 방해 금지 모드처럼 알림을 일시 중지합니다.",
+                        "hide_video_errors": "동영상 재생 오류는 알리지 않기",
+                        "hide_video_errors_description": "동영상 플레이어 오류(YouTube를 불러오지 못하는 경우 등)가 발생해도 데스크톱 알림, TTS, VR 알림, Webhook을 보내지 않습니다."
                     },
                     "vr_notifications": {
                         "header": "VR 오버레이 알림",
@@ -3254,6 +3260,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "일부 설정은 VRCX-0을 다시 시작해야 적용됩니다.",
+                "restart_now": "지금 다시 시작"
             }
         },
         "dashboard": {
@@ -3636,6 +3646,12 @@
                 "override_disabled": "사용자 정의 CSS가 비활성화되었습니다.",
                 "override_cleared": "사용자 정의 CSS를 지웠습니다.",
                 "disable_failed": "커뮤니티 테마 설정을 업데이트하지 못했습니다."
+            },
+            "confirm": {
+                "delete_theme_title": "이 테마를 삭제할까요?",
+                "delete_theme_description": "테마가 이 기기에서 제거됩니다.",
+                "clear_override_title": "사용자 정의 CSS를 지울까요?",
+                "clear_override_description": "저장된 사용자 정의 CSS가 삭제되며 되돌릴 수 없습니다."
             }
         },
         "themes": {

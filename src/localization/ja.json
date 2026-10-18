@@ -559,7 +559,10 @@
             "search": "検索",
             "select": "選択",
             "cancel": "キャンセル",
-            "view_options": "表示オプション"
+            "view_options": "表示オプション",
+            "cut": "切り取り",
+            "paste": "貼り付け",
+            "select_all": "すべて選択"
         },
         "sort_by": "並べ替え:",
         "time_units": {
@@ -2336,8 +2339,9 @@
                 "refresh_this_tab_to_load_inventory_items": "このタブを更新してインベントリ項目を読み込みます",
                 "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "スクリーンショットを読み込んで、埋め込みのワールド、プレイヤー、ファイルメタデータを確認します"
             },
-            "error": {
-                "dropped_screenshot_path_is_not_available": "ドロップされたファイルを読み込めませんでした。スクリーンショットを選択し直してください。"
+            "file_drop": {
+                "upload_to": "ドロップして{target}にアップロード",
+                "open_screenshot": "ドロップしてスクリーンショットを開く"
             },
             "loading": {
                 "deleting_metadata": "メタデータを削除中",
@@ -2894,7 +2898,9 @@
                         "end_on_game_start": "VRChatの起動時に一時停止を解除",
                         "end_on_game_start_description": "VRChatが停止中から起動中に変わったときだけ解除します。プレイ中にもう一度一時停止することもできます。",
                         "busy_status": "ステータスが「取り込み中」の間も一時停止",
-                        "busy_status_description": "VRChat のステータスが「取り込み中」の間は、通知の一時停止と同じように通知を止めます。"
+                        "busy_status_description": "VRChat のステータスが「取り込み中」の間は、通知の一時停止と同じように通知を止めます。",
+                        "hide_video_errors": "動画の再生エラーは通知しない",
+                        "hide_video_errors_description": "動画プレイヤーのエラー（YouTube が読み込めない場合など）では、デスクトップ通知、TTS、VR 通知、Webhook を送りません。"
                     },
                     "vr_notifications": {
                         "header": "VR オーバーレイ通知",
@@ -3311,6 +3317,10 @@
             },
             "dynamic": {
                 "value_value": "{value} {value2}"
+            },
+            "restart_pending": {
+                "description": "一部の設定は VRCX-0 を再起動すると反映されます。",
+                "restart_now": "今すぐ再起動"
             }
         },
         "dashboard": {
@@ -3693,6 +3703,12 @@
                 "override_disabled": "カスタム CSS を無効化しました。",
                 "override_cleared": "カスタム CSS をクリアしました。",
                 "disable_failed": "コミュニティテーマ設定の更新に失敗しました。"
+            },
+            "confirm": {
+                "delete_theme_title": "このテーマを削除しますか？",
+                "delete_theme_description": "テーマはこのデバイスから削除されます。",
+                "clear_override_title": "カスタム CSS をクリアしますか？",
+                "clear_override_description": "保存済みのカスタム CSS は削除され、元に戻せません。"
             }
         },
         "themes": {
