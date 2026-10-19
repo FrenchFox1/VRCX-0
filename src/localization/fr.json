@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "{count} utilisateurs",
-            "instance_duration": "Instance {duration}"
+            "instance_duration": "Instance {duration}",
+            "online_duration": "En ligne {duration}"
         },
         "generic_instance_location": "une instance",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "Toutes les notifications.",
             "my_avatars": "Mes avatars",
             "avatar_collection_page": "Avatars mis en ligne.",
+            "vrchat_log": "Visualisation des journaux VRChat",
+            "vrchat_log_page": "Journal de sortie VRChat en direct que vous pouvez filtrer.",
             "tools": "Outils",
             "tools_launcher_page": "Ensemble des outils VRCX-0."
         }
@@ -2555,6 +2558,7 @@
                     "style_standard": "Standard",
                     "style_compact": "Compact",
                     "friend_icons": "Afficher les icônes d'amis",
+                    "tracker_disconnect": "Alertes de déconnexion des traqueurs",
                     "timeout": "Durée d'affichage",
                     "opacity": "Opacité",
                     "filters": "Filtres des notifications du casque"
@@ -6307,6 +6311,10 @@
         "event_title": "Événement",
         "external_title": "Appplication externe",
         "video_play_title": "Lecture vidéo",
+        "tracker_title": "Traqueur",
+        "tracker_disconnected": "déconnecté",
+        "tracker_disconnected_battery": "déconnecté · dernière batterie {percent}%",
+        "trackers_disconnected": "{count} déconnectés",
         "avatar_change": "a changé pour l'avatar {avatar}",
         "blocked_player_joined": "Un utilisateur bloqué a rejoint l'instance",
         "blocked_player_left": "Un utilisateur bloqué a quitté l'instance",
