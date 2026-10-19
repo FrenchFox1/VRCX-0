@@ -43,7 +43,7 @@ tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-autostart = "2"
 tauri-plugin-window-state = "2"
 percent-encoding = { workspace = true }
-tauri-plugin-updater = "2"
+tauri-plugin-updater = { version = "2", default-features = false, features = ["rustls-tls", "system-proxy"] }
 sha2.workspace = true
 vrcx-0-core = { path = "../crates/core" }
 vrcx-0-platform = { path = "../crates/platform" }

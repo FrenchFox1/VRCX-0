@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "{count} jugadores",
-            "instance_duration": "Instancia {duration}"
+            "instance_duration": "Instancia {duration}",
+            "online_duration": "En línea {duration}"
         },
         "generic_instance_location": "una instancia",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "Todas tus notificaciones.",
             "my_avatars": "Mis avatares",
             "avatar_collection_page": "Avatares que has subido.",
+            "vrchat_log": "Visor de registros de VRChat",
+            "vrchat_log_page": "Consulta y filtra en directo el registro de salida de VRChat.",
             "tools": "Herramientas",
             "tools_launcher_page": "Todas las herramientas en un solo lugar."
         }
@@ -2555,6 +2558,7 @@
                     "style_standard": "Estándar",
                     "style_compact": "Compacto",
                     "friend_icons": "Mostrar iconos de amigos",
+                    "tracker_disconnect": "Avisar si se desconecta un tracker",
                     "timeout": "Duración",
                     "opacity": "Opacidad",
                     "filters": "Filtros de notificaciones del visor"
@@ -6307,6 +6311,10 @@
         "event_title": "Evento",
         "external_title": "App externa",
         "video_play_title": "Reproducción de vídeo",
+        "tracker_title": "Tracker",
+        "tracker_disconnected": "desconectado",
+        "tracker_disconnected_battery": "desconectado · última batería {percent}%",
+        "trackers_disconnected": "{count} desconectados",
         "avatar_change": "cambió al avatar {avatar}",
         "blocked_player_joined": "Un usuario bloqueado se ha unido",
         "blocked_player_left": "Un usuario bloqueado se ha ido",

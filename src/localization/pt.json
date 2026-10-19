@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "{count} jogadores",
-            "instance_duration": "Instância {duration}"
+            "instance_duration": "Instância {duration}",
+            "online_duration": "Online {duration}"
         },
         "generic_instance_location": "uma instância",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "Página da central de notificações.",
             "my_avatars": "Meus Avatares",
             "avatar_collection_page": "Página da coleção de avatares.",
+            "vrchat_log": "Visualizador de Logs do VRChat",
+            "vrchat_log_page": "Veja e filtre o output log do VRChat em tempo real.",
             "tools": "Ferramentas",
             "tools_launcher_page": "Página de inicialização de ferramentas."
         }
@@ -2551,6 +2554,7 @@
                     "style_standard": "Padrão",
                     "style_compact": "Compacto",
                     "friend_icons": "Mostrar Ícones de Amigos",
+                    "tracker_disconnect": "Avisar quando um tracker desconectar",
                     "timeout": "Duração",
                     "opacity": "Opacidade",
                     "filters": "Filtros de notificações do headset"

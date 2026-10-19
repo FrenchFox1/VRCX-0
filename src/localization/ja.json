@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "{count}人",
-            "instance_duration": "滞在 {duration}"
+            "instance_duration": "滞在 {duration}",
+            "online_duration": "オンライン {duration}"
         },
         "generic_instance_location": "インスタンス",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "すべての通知を表示します。",
             "my_avatars": "自分のアバター",
             "avatar_collection_page": "アップロードしたアバターを表示します。",
+            "vrchat_log": "VRChat ログビューアー",
+            "vrchat_log_page": "VRChat の出力ログをリアルタイムで確認・絞り込みできます。",
             "tools": "ツール",
             "tools_launcher_page": "すべてのツールをまとめて表示します。"
         }
@@ -2549,6 +2552,7 @@
                     "style_standard": "標準",
                     "style_compact": "コンパクト",
                     "friend_icons": "フレンドのアイコン画像を表示",
+                    "tracker_disconnect": "トラッカーの切断を通知",
                     "timeout": "表示時間",
                     "opacity": "不透明度",
                     "filters": "ヘッドセット通知フィルター"
@@ -6297,6 +6301,10 @@
         "event_title": "イベント",
         "external_title": "外部アプリ",
         "video_play_title": "動画再生",
+        "tracker_title": "トラッカー",
+        "tracker_disconnected": "接続が切れました",
+        "tracker_disconnected_battery": "接続が切れました · 最後の残量 {percent}%",
+        "trackers_disconnected": "{count}台の接続が切れました",
         "avatar_change": "がアバターを {avatar} に変更しました",
         "blocked_player_joined": "ブロックしたユーザーが参加しました",
         "blocked_player_left": "ブロックしたユーザーが退出しました",

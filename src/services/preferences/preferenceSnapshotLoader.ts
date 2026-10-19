@@ -157,6 +157,7 @@ export async function loadPreferenceSnapshot() {
         hmdNotificationPosition,
         hmdNotificationStyle,
         hmdNotificationAvatars,
+        hmdNotificationTrackerDisconnect,
         desktopWidgetOpacity,
         desktopWidgetNewestOnTop,
         webhookEnabled,
@@ -318,6 +319,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getString('hmdNotificationPosition', 'bottom'),
         configRepository.getString('hmdNotificationStyle', 'standard'),
         configRepository.getBool('hmdNotificationAvatars', true),
+        configRepository.getBool('hmdNotificationTrackerDisconnect', true),
         configRepository.getInt('desktopWidgetOpacity', 55),
         configRepository.getBool('desktopWidgetNewestOnTop', true),
         configRepository.getBool('webhookEnabled', false),
@@ -575,6 +577,9 @@ export async function loadPreferenceSnapshot() {
         hmdNotificationStyle:
             normalizeHmdNotificationStyle(hmdNotificationStyle),
         hmdNotificationAvatars: Boolean(hmdNotificationAvatars),
+        hmdNotificationTrackerDisconnect: Boolean(
+            hmdNotificationTrackerDisconnect
+        ),
         desktopWidgetOpacity: Number.isFinite(desktopWidgetOpacity)
             ? Math.min(100, Math.max(0, desktopWidgetOpacity))
             : 55,

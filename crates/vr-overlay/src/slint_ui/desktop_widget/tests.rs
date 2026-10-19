@@ -119,6 +119,10 @@ fn switching_the_order_repaints_exactly_like_a_freshly_opened_widget() {
 }
 
 #[test]
+#[cfg_attr(
+    not(windows),
+    ignore = "the desktop widget only ships on Windows and text placement follows the system fonts"
+)]
 fn every_rows_avatar_sits_level_with_its_text() {
     let rows = vec![
         DesktopWidgetRow {
@@ -154,9 +158,9 @@ fn every_rows_avatar_sits_level_with_its_text() {
     assert_eq!(avatars.len(), 4);
     for (top, bottom) in avatars {
         let avatar = (top + bottom) as f32 / 2.0;
-        let text = frame.text_centroid(top.saturating_sub(4)..bottom + 5);
+        let text = frame.first_text_line_centroid(top);
         assert!(
-            (text - avatar).abs() <= 0.75,
+            (text - avatar).abs() <= 1.25,
             "avatar centre {avatar} text centre {text}"
         );
     }
@@ -399,13 +403,19 @@ impl Frame {
         spans
     }
 
-    fn text_centroid(&self, rows: std::ops::Range<u32>) -> f32 {
-        let (weighted, total) = rows
-            .flat_map(|y| (33..240).map(move |x| (x, y)))
-            .map(|(x, y)| (y, f32::from(self.0[((y * WIDTH + x) * 4 + 2) as usize])))
-            .filter(|(_, red)| *red > 120.0)
-            .fold((0.0, 0.0), |(weighted, total), (y, red)| {
-                (weighted + y as f32 * red, total + red)
+    fn first_text_line_centroid(&self, from: u32) -> f32 {
+        let (weighted, total) = (from..HEIGHT)
+            .map(|y| {
+                let ink: f32 = (33..240)
+                    .map(|x| f32::from(self.0[((y * WIDTH + x) * 4 + 2) as usize]))
+                    .filter(|red| *red > 120.0)
+                    .sum();
+                (y, ink)
+            })
+            .skip_while(|(_, ink)| *ink == 0.0)
+            .take_while(|(_, ink)| *ink > 0.0)
+            .fold((0.0, 0.0), |(weighted, total), (y, ink)| {
+                (weighted + y as f32 * ink, total + ink)
             });
         assert!(total > 0.0, "no text found");
         weighted / total

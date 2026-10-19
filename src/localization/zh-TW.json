@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "{count} 位用戶",
-            "instance_duration": "停留 {duration}"
+            "instance_duration": "停留 {duration}",
+            "online_duration": "線上 {duration}"
         },
         "generic_instance_location": "一個房間",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "你的所有通知。",
             "my_avatars": "我的角色",
             "avatar_collection_page": "你上傳的角色。",
+            "vrchat_log": "VRChat 紀錄查看器",
+            "vrchat_log_page": "即時查看並篩選 VRChat 輸出日誌。",
             "tools": "工具",
             "tools_launcher_page": "所有工具集中於此。"
         }
@@ -2549,6 +2552,7 @@
                     "style_standard": "標準",
                     "style_compact": "緊湊",
                     "friend_icons": "顯示好友頭像",
+                    "tracker_disconnect": "追蹤器中斷連線提醒",
                     "timeout": "通知時長",
                     "opacity": "不透明度",
                     "filters": "頭顯通知篩選器"
@@ -6288,6 +6292,10 @@
         "event_title": "活動",
         "external_title": "外部應用程式",
         "video_play_title": "影片播放",
+        "tracker_title": "追蹤器",
+        "tracker_disconnected": "已中斷連線",
+        "tracker_disconnected_battery": "已中斷連線 · 最後電量 {percent}%",
+        "trackers_disconnected": "{count} 個已中斷連線",
         "avatar_change": "已切換為角色 「{avatar}」",
         "blocked_player_joined": "被封鎖的用戶已加入",
         "blocked_player_left": "被封鎖的用戶已離開",

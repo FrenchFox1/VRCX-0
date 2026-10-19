@@ -374,6 +374,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     hmdNotificationPosition: 'bottom',
     hmdNotificationStyle: 'standard',
     hmdNotificationAvatars: true,
+    hmdNotificationTrackerDisconnect: true,
     desktopWidgetOpacity: 55,
     desktopWidgetNewestOnTop: true,
     webhookEnabled: false,
@@ -634,6 +635,9 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
             next.hmdNotificationStyle
         ),
         hmdNotificationAvatars: normalizeBool(next.hmdNotificationAvatars),
+        hmdNotificationTrackerDisconnect: normalizeBool(
+            next.hmdNotificationTrackerDisconnect
+        ),
         desktopWidgetOpacity: normalizeBoundedInt(next.desktopWidgetOpacity, {
             min: 0,
             max: 100,

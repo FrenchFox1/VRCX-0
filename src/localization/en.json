@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "{count} players",
-            "instance_duration": "Instance {duration}"
+            "instance_duration": "Instance {duration}",
+            "online_duration": "Online {duration}"
         },
         "generic_instance_location": "an instance",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "All your notifications.",
             "my_avatars": "My Avatars",
             "avatar_collection_page": "Avatars you've uploaded.",
+            "vrchat_log": "VRChat Log Viewer",
+            "vrchat_log_page": "Live VRChat output log you can filter.",
             "tools": "Tools",
             "tools_launcher_page": "All tools in one place."
         }
@@ -2555,6 +2558,7 @@
                     "style_standard": "Standard",
                     "style_compact": "Compact",
                     "friend_icons": "Show Friend Icons",
+                    "tracker_disconnect": "Tracker Disconnect Alerts",
                     "timeout": "Display Duration",
                     "opacity": "Opacity",
                     "filters": "HMD Notification Filters"
@@ -6307,6 +6311,10 @@
         "event_title": "Event",
         "external_title": "External App",
         "video_play_title": "Video Play",
+        "tracker_title": "Tracker",
+        "tracker_disconnected": "disconnected",
+        "tracker_disconnected_battery": "disconnected · last battery {percent}%",
+        "trackers_disconnected": "{count} disconnected",
         "avatar_change": "changed avatar to {avatar}",
         "blocked_player_joined": "Blocked user has joined",
         "blocked_player_left": "Blocked user has left",

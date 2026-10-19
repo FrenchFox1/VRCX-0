@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "Игроков: {count}",
-            "instance_duration": "Инстанс {duration}"
+            "instance_duration": "Инстанс {duration}",
+            "online_duration": "Онлайн {duration}"
         },
         "generic_instance_location": "инстанс",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "Страница центра уведомлений.",
             "my_avatars": "Мои Аватары",
             "avatar_collection_page": "Страница коллекции аватаров.",
+            "vrchat_log": "VRChat Просмотр журнала",
+            "vrchat_log_page": "Выходной журнал VRChat в реальном времени с фильтрами.",
             "tools": "Инструменты",
             "tools_launcher_page": "Страница для запуска инструментов."
         }
@@ -2559,6 +2562,7 @@
                     "style_standard": "Стандартный",
                     "style_compact": "Компактный",
                     "friend_icons": "Показывать иконки друзей",
+                    "tracker_disconnect": "Уведомлять об отключении трекера",
                     "timeout": "Длительность показа",
                     "opacity": "Непрозрачность",
                     "filters": "Фильтры уведомлений в шлеме"

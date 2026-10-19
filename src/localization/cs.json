@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "{count} hráčů",
-            "instance_duration": "Instance {duration}"
+            "instance_duration": "Instance {duration}",
+            "online_duration": "Online {duration}"
         },
         "generic_instance_location": "instanci",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "Stránka centra oznámení.",
             "my_avatars": "Moji avataři",
             "avatar_collection_page": "Stránka sbírky avatarů.",
+            "vrchat_log": "Prohlížeč záznamů VRChat",
+            "vrchat_log_page": "Živý výstupní protokol VRChat s filtry.",
             "tools": "Nástroje",
             "tools_launcher_page": "Stránka spouštěče nástrojů."
         }
@@ -2561,6 +2564,7 @@
                     "style_standard": "Standardní",
                     "style_compact": "Kompaktní",
                     "friend_icons": "Zobrazit ikony přátel",
+                    "tracker_disconnect": "Upozornit na odpojení trackeru",
                     "timeout": "Doba zobrazení",
                     "opacity": "Neprůhlednost",
                     "filters": "Filtry oznámení v headsetu"

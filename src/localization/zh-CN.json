@@ -627,7 +627,8 @@
     "overlay": {
         "footer": {
             "players": "{count} 名玩家",
-            "instance_duration": "停留 {duration}"
+            "instance_duration": "停留 {duration}",
+            "online_duration": "在线 {duration}"
         },
         "generic_instance_location": "某个房间",
         "discord": {
@@ -870,6 +871,8 @@
             "notification_center_page": "你的所有通知。",
             "my_avatars": "我的模型",
             "avatar_collection_page": "你上传的模型。",
+            "vrchat_log": "VRChat 日志查看器",
+            "vrchat_log_page": "实时查看并筛选 VRChat 客户端日志。",
             "tools": "工具",
             "tools_launcher_page": "全部工具集中于此。"
         }
@@ -2549,6 +2552,7 @@
                     "style_standard": "标准",
                     "style_compact": "紧凑",
                     "friend_icons": "显示好友头像",
+                    "tracker_disconnect": "追踪器断开提醒",
                     "timeout": "显示时长",
                     "opacity": "不透明度",
                     "filters": "头显通知过滤"
@@ -6297,6 +6301,10 @@
         "event_title": "事件",
         "external_title": "外部应用",
         "video_play_title": "视频播放",
+        "tracker_title": "追踪器",
+        "tracker_disconnected": "已断开",
+        "tracker_disconnected_battery": "已断开 · 最后电量 {percent}%",
+        "trackers_disconnected": "{count} 个已断开",
         "avatar_change": "更换模型为 {avatar}",
         "blocked_player_joined": "被你屏蔽的用户加入了房间",
         "blocked_player_left": "被你屏蔽的用户离开了房间",
