@@ -219,6 +219,7 @@ export const ConfigKeys = defineConfigKeys({
     autoAcceptInviteRequests: { type: 'string', default: 'Off' },
     autoDeclineFriendRequests: { type: 'bool', default: false },
     autoAcceptInviteGroups: { type: 'string', default: '[]' },
+    autoAcceptInviteStatuses: { type: 'string', default: '[]' },
     presenceAutomationTimeRules: { type: 'string', default: '[]' },
     presenceAutomationContextRules: { type: 'string', default: '[]' },
     presenceAutomationMinStatusWriteIntervalMs: {
@@ -364,6 +365,11 @@ export const FAVORITES_LAYOUT_CONFIG_KEYS = Object.freeze({
         friend: 'VRCX_FavoritesFriendSort',
         world: 'VRCX_FavoritesWorldSort',
         avatar: 'VRCX_FavoritesAvatarSort'
+    }),
+    selectedGroup: Object.freeze({
+        friend: 'VRCX_FavoritesFriendSelectedGroup',
+        world: 'VRCX_FavoritesWorldSelectedGroup',
+        avatar: 'VRCX_FavoritesAvatarSelectedGroup'
     })
 });
 

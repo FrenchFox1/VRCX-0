@@ -624,6 +624,23 @@
             "label_count": "フィルター ({count})"
         }
     },
+    "economy": {
+        "free": "無料",
+        "vrc_plus_price": "VRC+ なら {price}",
+        "subscription_term": "サブスクリプション・{duration}",
+        "permanent": "買い切り",
+        "owned": "所持済み",
+        "store_header": "ストア",
+        "store_read_only_hint": "購入はゲーム内か公式サイトから行えます。",
+        "store_failed_to_load": "ストアを読み込めませんでした",
+        "store_empty": "出品中の商品はありません",
+        "duration": {
+            "day_other": "{count} 日",
+            "week_other": "{count} 週間",
+            "month_other": "{count} か月",
+            "year_other": "{count} 年"
+        }
+    },
     "overlay": {
         "footer": {
             "players": "{count}人",
@@ -1490,6 +1507,10 @@
                 "local_test_avatars": "ローカルテストアバター",
                 "local_test_avatars_description": "VRChat SDK の Build & Test でビルドしたアバターです。ゲーム内では自分にしか見えません。"
             },
+            "source": {
+                "own": "アップロード",
+                "licensed": "購入済み"
+            },
             "action": {
                 "select_style": "スタイルを選択",
                 "add_local_tag": "ローカルタグを追加",
@@ -1851,7 +1872,8 @@
                         "closed": "モデレーションの通報が完了"
                     },
                     "contentrestriction": "コンテンツ制限のモデレーション",
-                    "notice": "モデレーションのお知らせ"
+                    "notice": "モデレーションのお知らせ",
+                    "sanction": "モデレーション処分"
                 },
                 "instance": {
                     "closed": "閉じたインスタンス"
@@ -2123,6 +2145,7 @@
                 "last_backup": "最終バックアップ {date}",
                 "connections_configured": "接続 {count} 件",
                 "apps_count": "アプリ {count} 件",
+                "unopened_bundles": "未開封 {count} 件",
                 "automatic_backup": "自動バックアップ",
                 "show_details": "詳細を表示"
             },
@@ -2304,6 +2327,8 @@
                 "all_favorite_friends": "すべてのお気に入りフレンド",
                 "selected_favorite_groups": "選択したお気に入りグループ",
                 "selected_favorite_groups_label": "選択したお気に入りグループ",
+                "allowed_statuses_label": "自分のステータスがこれらのときだけ",
+                "allowed_statuses_description": "何も選ばなければ、どのステータスでも返信します。",
                 "automatic_replies_note": "VRChat 起動中かつ招待可能な場所でのみ動作します。送信者ごとにクールダウンがあります。",
                 "failed_to_load_schedule_rules": "スケジュールルールの読み込みに失敗しました。",
                 "failed_to_save_schedule_rules": "スケジュールルールの保存に失敗しました。",
@@ -2317,7 +2342,9 @@
                 "edit_invite_message": "メッセージテンプレート",
                 "edit_invite_message_description": "招待とリクエストのメッセージテンプレートを編集",
                 "moderation_reports": "通報履歴",
-                "moderation_reports_description": "送信した通報を確認・取り消しする"
+                "moderation_reports_description": "送信した通報を確認・取り消しする",
+                "purchase_history": "購入履歴",
+                "purchase_history_description": "購入したアイテムとクレジットの履歴を確認する"
             },
             "success": {
                 "media_item_deleted": "メディア項目を削除しました",
@@ -2465,7 +2492,8 @@
         "profile": {
             "game_info": {
                 "online_users": "オンラインユーザー数",
-                "user_online": "{count} 人のユーザーがオンライン"
+                "user_online": "{count} 人のユーザーがオンライン",
+                "instances_active": "{count} 個のインスタンスが稼働中"
             },
             "config_json": "設定の JSON"
         },
@@ -3663,7 +3691,7 @@
             },
             "action": {
                 "install": "インストールして有効化",
-                "update_enable": "更新",
+                "update": "更新",
                 "enable_theme": "テーマを有効化",
                 "disable_theme": "テーマを無効化",
                 "delete_theme": "テーマを削除",
@@ -3706,7 +3734,10 @@
                 "override_saved": "カスタム CSS を適用しました。",
                 "override_disabled": "カスタム CSS を無効化しました。",
                 "override_cleared": "カスタム CSS をクリアしました。",
-                "disable_failed": "コミュニティテーマ設定の更新に失敗しました。"
+                "disable_failed": "コミュニティテーマ設定の更新に失敗しました。",
+                "update_available": "テーマ「{{name}}」の新しいバージョンがあります",
+                "theme_updated": "コミュニティテーマを {{version}} に更新しました。",
+                "update_failed": "コミュニティテーマを更新できませんでした。"
             },
             "confirm": {
                 "delete_theme_title": "このテーマを削除しますか？",
@@ -3923,6 +3954,8 @@
             "exit_edit_mode": "完了",
             "section_own": "自分のグループ",
             "section_joined": "参加したグループ",
+            "section_pending": "招待と参加リクエスト",
+            "section_blocked": "ブロック中のグループ",
             "order_hint": "グループをドラッグして、VRChat 内での表示順を変更します。",
             "order_game_running": "VRChatが起動中です。並び順の変更はゲーム終了時に上書きされることがあります。",
             "order_unavailable": "並び順を変更できません：{reason}",
@@ -3930,6 +3963,15 @@
             "order_save_failed": "ゲーム内の並び順を保存できませんでした。",
             "row_actions": "グループの操作",
             "leave": "退出",
+            "accept_invite": "参加する",
+            "decline_invite": "辞退",
+            "block": "ブロック",
+            "unblock": "ブロック解除",
+            "cancel_request": "リクエストを取り消す",
+            "confirm_block_title": "このグループをブロックしますか？",
+            "invite_accepted": "グループに参加しました",
+            "membership_load_failed": "グループの招待を読み込めませんでした",
+            "membership_action_failed": "グループの操作に失敗しました",
             "leave_partial": "{count} 件を退出",
             "leave_owner_locked": "自分が所有するグループからは退出できません。",
             "leave_completed": "{count} 件のグループから退出しました。",
@@ -4045,11 +4087,11 @@
                 "moderation_enable_chatbox": "チャットボックスをミュート解除",
                 "moderation_disable_chatbox": "チャットボックスをミュート",
                 "edit_status": "ソーシャルステータスを編集",
-                "edit_profile_details": "プロフィール詳細を編集",
-                "edit_profile_media": "プロフィール写真とアイコン画像を編集",
-                "report_hacking": "チート行為を通報",
+                "report_user": "ユーザーを通報…",
                 "unfriend": "フレンドを解除",
-                "edit_note_memo": "ノートとローカルノートを編集"
+                "edit_note_memo": "ノートとローカルノートを編集",
+                "edit_profile": "プロフィールを編集",
+                "account_standing": "アカウントの状態"
             },
             "group_invite": {
                 "select_group": "グループを選択",
@@ -4110,6 +4152,7 @@
                 "join_count": "参加した回数",
                 "time_together": "一緒に居た時間",
                 "play_time": "プレイ時間",
+                "vrc_credits": "VRChat クレジット",
                 "estimated_online_for": "約 {duration} オンライン",
                 "last_activity": "最終活動時間",
                 "date_joined": "アカウント作成日",
@@ -4173,7 +4216,8 @@
                 "sort_by_uploaded": "アップロード順",
                 "all": "すべて",
                 "public": "パブリック",
-                "private": "プライベート"
+                "private": "プライベート",
+                "licensed": "購入済み"
             },
             "json": {
                 "header": "JSON"
@@ -4237,6 +4281,14 @@
             },
             "note_memo": {
                 "header": "ノートとローカルノートを編集"
+            },
+            "report": {
+                "header": "ユーザーを通報",
+                "category": "カテゴリー",
+                "reason": "理由",
+                "description": "詳細（任意）",
+                "description_placeholder": "何があったかを書いてください",
+                "no_options": "VRChat から通報項目をまだ読み込めていません。しばらくしてからもう一度お試しください。"
             },
             "action": {
                 "open_user_icon": "ユーザーのアイコン画像を開く",
@@ -4321,9 +4373,7 @@
             "description": {
                 "update_your_social_status_and_status_description": "ソーシャルステータスとステータスメッセージを更新",
                 "status_description": "ステータスメッセージ",
-                "clear_status_description": "ステータスメッセージをクリア",
-                "edit_profile_details": "プロフィール詳細を編集",
-                "update_your_profile_details": "カードに表示されるプロフィール詳細を編集します。"
+                "clear_status_description": "ステータスメッセージをクリア"
             },
             "toast": {
                 "memo_saved": "ローカルノートを保存しました",
@@ -4366,7 +4416,6 @@
                 "failed_to_update_group_order": "グループの並び順を更新できませんでした"
             },
             "modal": {
-                "report_hacking": "チート行為を通報しますか？",
                 "report": "通報",
                 "send_invite": "招待を送信しますか？",
                 "request_invite": "招待をリクエストしますか？",
@@ -4394,6 +4443,20 @@
                 "left_value_groups": "{value} 件のグループを退出しました",
                 "enable_value": "{value} を有効にする",
                 "disable_value": "{value} を無効にする"
+            },
+            "profile_edit": {
+                "details": "基本情報",
+                "avatar_image": "アバター画像",
+                "solid_color": "単色",
+                "apply_color": "色を適用"
+            },
+            "account_standing": {
+                "header": "アカウントの状態",
+                "description": "VRChat から取得したアカウントの状態です。",
+                "status": "状態",
+                "issue_clear_days": "問題が解消されるまでの日数",
+                "sanctions": "処分",
+                "load_failed": "アカウントの状態を読み込めませんでした"
             }
         },
         "world": {
@@ -4439,6 +4502,7 @@
             },
             "instances": {
                 "header": "インスタンス",
+                "closed": "終了済み",
                 "public_count": "パブリック {count}",
                 "private_count": "プライベート {count}",
                 "capacity_count": "定員 {count}（最大 {max}）",
@@ -4688,6 +4752,9 @@
                 "memo_placeholder": "クリックしてローカルノートを追加",
                 "listings": "出品",
                 "gallery": "ギャラリー",
+                "gallery_move_earlier": "前へ移動",
+                "gallery_move_later": "後ろへ移動",
+                "gallery_delete_image": "画像を削除",
                 "attributes": "属性"
             },
             "performance": {
@@ -4775,6 +4842,7 @@
             },
             "label": {
                 "avatar_gallery_image_uploaded": "アバターギャラリー画像をアップロードしました",
+                "avatar_gallery_image_deleted": "ギャラリー画像を削除しました",
                 "local_tags": "ローカルタグ",
                 "vrchat_tags": "VRChat タグ",
                 "built_in_content_tags": "組み込みコンテンツタグ",
@@ -4812,6 +4880,8 @@
                 "selected_file_is_not_an_image": "選択したファイルは画像ではありません",
                 "failed_to_upload_avatar_image": "アバター画像のアップロードに失敗しました",
                 "failed_to_upload_avatar_gallery_image": "アバターギャラリー画像のアップロードに失敗しました",
+                "failed_to_reorder_avatar_gallery": "ギャラリーの並び替えに失敗しました",
+                "failed_to_delete_avatar_gallery_image": "ギャラリー画像の削除に失敗しました",
                 "impostor_queued_for_creation": "インポスターの作成をキューに追加しました",
                 "failed_to_create_impostor": "インポスターの作成に失敗しました",
                 "impostor_deleted": "インポスターを削除しました",
@@ -4824,6 +4894,7 @@
                 "select_fallback_avatar": "フォールバックアバターを選択しますか？",
                 "select_fallback": "フォールバックを選択",
                 "delete_avatar": "アバターを削除しますか？",
+                "delete_gallery_image": "このギャラリー画像を削除しますか？",
                 "edit_local_memo": "ローカルノートを編集",
                 "create_impostor_title": "インポスターを作成しますか？",
                 "create": "作成",
@@ -4859,6 +4930,9 @@
                 "visibility_friends": "フレンドのみ",
                 "visibility_hidden": "自分のみ",
                 "create_post": "投稿を作成",
+                "create_event": "イベントを作成",
+                "manage_roles": "ロールを管理",
+                "view_roles": "ロールを見る",
                 "moderation_tools": "管理用ツール",
                 "leave": "グループを退出",
                 "block": "グループをブロック",
@@ -5112,6 +5186,18 @@
                 "self_invite": "自分への招待"
             },
             "subtitle_fallback": "VRChat のインスタンス",
+            "avatar_switch": {
+                "toggle": "入室前にアバターを切り替える",
+                "placeholder": "アバターを選択",
+                "search_placeholder": "アバターを検索",
+                "hint": "アバターは VRChat API 経由で切り替えます。反映までの時間は VRChat 次第のため、すぐに切り替わらない場合があります。",
+                "timeout": "VRChat サーバーがアバターの切り替えに応答しなかったため、入室を中断しました",
+                "group": {
+                    "current": "現在のアバター",
+                    "own": "自分のアバター",
+                    "favorite": "お気に入りのアバター"
+                }
+            },
             "tile": {
                 "vr": "VR",
                 "desktop": "デスクトップ",
@@ -5290,7 +5376,9 @@
                 "compact": "コンパクト",
                 "dense": "高密度"
             },
-            "crop_image": "トリミングしてアップロード"
+            "crop_image": "トリミングしてアップロード",
+            "locked_title": "アップロードした画像は一時的にロックされています",
+            "locked_description": "画像は保存されたままです。VRC+ に加入すると再び使えるようになります。"
         },
         "inventory": {
             "header": "インベントリ",
@@ -5736,6 +5824,118 @@
         "group_post_edit": {
             "title": "タイトル"
         },
+        "group_event_edit": {
+            "create_header": "グループイベントを作成",
+            "edit_header": "グループイベントを編集",
+            "title": "タイトル",
+            "description": "説明",
+            "starts_at": "開始日時",
+            "ends_at": "終了日時",
+            "start_in_past": "開始日時は現在より後にしてください。",
+            "invalid_date_range": "終了日時は開始日時より後にしてください。",
+            "repeat": "繰り返し",
+            "repeat_values": {
+                "none": "繰り返さない",
+                "weekly": "毎週",
+                "monthly": "毎月",
+                "yearly": "毎年"
+            },
+            "repeat_every": "繰り返す間隔",
+            "weekly_pattern": "毎週の繰り返し方",
+            "weekly_pattern_values": {
+                "every_week": "毎週",
+                "weekdays": "平日のみ",
+                "weekend": "週末のみ",
+                "custom": "曜日を指定"
+            },
+            "ends": "終了条件",
+            "ends_values": {
+                "never": "終了しない",
+                "afterOccurrences": "回数を指定",
+                "afterDate": "日付を指定"
+            },
+            "occurrence_count": "回数",
+            "end_date": "終了日",
+            "access_type": "公開範囲",
+            "access_group": "グループメンバー",
+            "access_public": "全体公開",
+            "category": "カテゴリー",
+            "categories": {
+                "arts": "アート",
+                "avatars": "アバター",
+                "dance": "ダンス",
+                "education": "学び",
+                "exploration": "探索",
+                "film_media": "映像・メディア",
+                "gaming": "ゲーム",
+                "hangout": "雑談",
+                "music": "音楽",
+                "other": "その他",
+                "performance": "パフォーマンス",
+                "roleplaying": "ロールプレイ",
+                "wellness": "ウェルネス"
+            },
+            "tags": "タグ",
+            "tags_help": "カンマ区切りで最大5つまで。",
+            "platforms": "プラットフォーム",
+            "platform_values": {
+                "standalonewindows": "PC",
+                "android": "Android",
+                "ios": "iOS"
+            },
+            "roles": "ロール",
+            "roles_help": "何も選ばなければ全メンバーが対象です。",
+            "host_early_join": "ホストの先行入室（分）",
+            "guest_early_join": "参加者の先行入室（分）",
+            "close_after_end": "終了後にインスタンスを閉じる（分）",
+            "send_notification": "作成時にメンバーへ通知する",
+            "delete": "イベントを削除",
+            "save": "変更を保存",
+            "create": "イベントを作成",
+            "create_success": "グループイベントを作成しました",
+            "edit_success": "グループイベントを更新しました",
+            "delete_success": "グループイベントを削除しました",
+            "save_error": "グループイベントを保存できませんでした",
+            "delete_error": "グループイベントを削除できませんでした",
+            "delete_confirm": "このグループイベントを削除しますか？"
+        },
+        "group_roles": {
+            "header": "グループロールの管理",
+            "view_header": "グループロール",
+            "new_role": "新しいロール",
+            "no_roles": "ロールがありません",
+            "no_role_selected": "編集するロールを選ぶか、新しく作成してください",
+            "name": "名前",
+            "description": "説明",
+            "self_assignable": "自分で付与可能",
+            "self_assignable_description": "メンバーが自分でこのロールを付けられます",
+            "added_on_join": "参加時に付与",
+            "added_on_join_description": "新しいメンバーに自動で付与されます",
+            "requires_two_factor": "2段階認証が必要",
+            "requires_two_factor_description": "このロールの利用には2段階認証が必要です",
+            "requires_purchase": "購入が必要",
+            "requires_purchase_description": "グループのサブスクリプション購入で付与されます",
+            "permissions": "権限",
+            "management_permissions": "管理権限",
+            "default_role": "デフォルト",
+            "management_roles": "管理ロール",
+            "member_roles": "メンバーロール",
+            "assigned_to_you": "自分",
+            "delete": "ロールを削除",
+            "delete_confirm": "このロールを削除しますか？元に戻せません。",
+            "create": "ロールを作成",
+            "save": "保存",
+            "saved": "ロールを保存しました",
+            "save_failed": "ロールを保存できませんでした",
+            "deleted": "ロールを削除しました",
+            "delete_failed": "ロールを削除できませんでした",
+            "add_self": "自分に付ける",
+            "remove_self": "自分から外す",
+            "self_role_added": "ロールを付けました",
+            "self_role_removed": "ロールを外しました",
+            "self_role_failed": "自分のロールを更新できませんでした",
+            "load_failed": "グループロールを読み込めませんでした"
+        },
         "group_calendar": {
             "header": "グループカレンダー",
             "loading_events": "イベントを読み込み中",
@@ -5925,6 +6125,7 @@
                 "android": "Android:",
                 "ios": "iOS:",
                 "game_version": "ゲームバージョン",
+                "languages": "言語:",
                 "instance_queuing_enabled": "インスタンスキューが有効です",
                 "disabled_content": "無効化されたコンテンツ",
                 "instance_closed": "閉じたインスタンス",
@@ -5986,7 +6187,31 @@
             "withdraw_description": "この操作は元に戻せません。",
             "failed_to_withdraw": "通報を取り消せませんでした",
             "status_open": "対応中",
-            "status_closed": "終了"
+            "status_closed": "終了",
+            "type_filter": {
+                "all": "すべて",
+                "user": "ユーザー",
+                "world": "ワールド",
+                "avatar": "アバター",
+                "group": "グループ"
+            }
+        },
+        "purchase_history": {
+            "header": "購入履歴",
+            "description": "購入したアイテムと VRChat クレジットの履歴",
+            "purchases": "購入",
+            "transactions": "クレジット履歴",
+            "all_types": "すべての種類",
+            "gift": "ギフト",
+            "inactive": "期限切れ",
+            "seller": "販売者 {name}",
+            "ends": "{date} に終了",
+            "from": "送り主",
+            "to": "宛先",
+            "balance": "残高 {value}",
+            "failed_to_load": "購入履歴を読み込めませんでした",
+            "empty_purchases": "購入履歴はまだありません",
+            "empty_transactions": "クレジットの履歴はまだありません"
         }
     },
     "confirm": {
@@ -6560,6 +6785,23 @@
                 "failed_to_refresh_instance": "インスタンスを更新できませんでした",
                 "failed_to_close_instance": "インスタンスを閉じられませんでした",
                 "failed_to_launch_instance": "インスタンスの起動に失敗しました"
+            },
+            "calendar_link": {
+                "header": "グループイベントを割り当て",
+                "event": "イベント",
+                "no_events": "前後6時間以内に割り当てられるグループイベントはありません。",
+                "assign": "割り当てる",
+                "remove": "割り当てを解除",
+                "linked": "このインスタンスにグループイベントを割り当てました",
+                "unlinked": "このインスタンスのグループイベントの割り当てを解除しました",
+                "failed": "インスタンスのグループイベントを更新できませんでした"
+            },
+            "calendar_event": "グループイベントに割り当て済み",
+            "rename": {
+                "header": "インスタンス名を変更",
+                "description": "空欄にすると名前を消去します。",
+                "renamed": "インスタンス名を変更しました",
+                "failed": "インスタンス名を変更できませんでした"
             },
             "modal": {
                 "close_instance": "インスタンスを閉じますか？"

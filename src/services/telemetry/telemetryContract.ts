@@ -48,7 +48,8 @@ export const TELEMETRY_TOOL_KEYS = [
     'export-friend-list',
     'export-own-avatars',
     'edit-invite-message',
-    'moderation-reports'
+    'moderation-reports',
+    'purchase-history'
 ] as const;
 
 export type TelemetryPageRouteKey = (typeof TELEMETRY_ROUTE_KEYS)[number];

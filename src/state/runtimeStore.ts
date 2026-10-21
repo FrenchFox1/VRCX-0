@@ -603,6 +603,7 @@ const initialState: RuntimeStoreState = {
         exportAvatarsListOpen: false,
         editInviteMessagesOpen: false,
         moderationReportsOpen: false,
+        purchaseHistoryOpen: false,
         llmEndpointsOpen: false,
         profileBackupOpen: false,
         offlineRecordOpen: false

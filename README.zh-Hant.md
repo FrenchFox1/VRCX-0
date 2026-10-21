@@ -99,7 +99,7 @@ macOS 首次啟動若被系統阻擋，請前往 **系統設定 → 隱私權與
 以下步驟適用於參與開發，或在本機自行建置 VRCX-0。參與貢獻前，請先閱讀 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 依賴：Node.js ≥ 24.10、npm ≥ 11.5，以及透過 rustup 安裝的穩定版 Rust 工具鏈。
-Windows 使用者還需安裝 **Visual Studio Build Tools**，並勾選 **「使用 C++ 的桌面開發」**。
+Windows 使用者還需安裝 **Visual Studio Build Tools**，並勾選 **“使用 C++ 的桌面開發”**。
 
 ```bash
 git clone https://github.com/Map1en/VRCX-0

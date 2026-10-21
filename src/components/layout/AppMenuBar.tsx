@@ -148,6 +148,15 @@ export function AppMenuBar({ showHelp = true }: { showHelp?: boolean }) {
                             </MenuItem>
                             <MenuItem
                                 onClick={() =>
+                                    runAfterRestoringNormalWindow(() =>
+                                        navigate('/themes')
+                                    )
+                                }
+                            >
+                                {t('app.routes.themes')}
+                            </MenuItem>
+                            <MenuItem
+                                onClick={() =>
                                     setSystemHostOpen('updaterOpen', true)
                                 }
                             >
